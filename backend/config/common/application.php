@@ -3,6 +3,6 @@
 declare(strict_types=1);
 
 return [
-    'name' => 'My Project',
-    'version' => '1.0',
+    'name' => 'BBG — Business Management & Marketplace Platform',
+    'version' => '1.0.0',
 ];

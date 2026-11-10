@@ -1,20 +1,22 @@
-name: bbc
+name: bbg
 
 services:
   php:
     image: bbc-php:8.4
-    container_name: bbc-php
+    container_name: bbg-php
     working_dir: /var/www/html
     volumes:
       - ./backend:/var/www/html
     environment:
+      APP_ENV: ${APP_ENV:-dev}
+      APP_DEBUG: ${APP_DEBUG:-true}
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_NAME: ${MYSQL_DATABASE}
+      DB_NAME: ${MYSQL_DATABASE:-bbg}
       DB_USER: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_PASSWORD}
     networks:
-      - bbc-network
+      - bbg-network
     depends_on:
       mysql:
         condition: service_healthy
@@ -22,32 +24,32 @@ services:
 
   nginx:
     image: nginx:stable
-    container_name: bbc-nginx
+    container_name: bbg-nginx
     ports:
-      - "8080:80"
+      - "${NGINX_PORT:-8080}:80"
     volumes:
       - ./backend:/var/www/html:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - php
     networks:
-      - bbc-network
+      - bbg-network
     restart: unless-stopped
 
   mysql:
     image: mysql:8.4
-    container_name: bbc-mysql
+    container_name: bbg-mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-bbg}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - bbc-network
+      - bbg-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -56,9 +58,9 @@ services:
 
   phpmyadmin:
     image: phpmyadmin:latest
-    container_name: bbc-phpmyadmin
+    container_name: bbg-phpmyadmin
     ports:
-      - "8081:80"
+      - "${PHPMYADMIN_PORT:-8081}:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
@@ -67,20 +69,20 @@ services:
       mysql:
         condition: service_healthy
     networks:
-      - bbc-network
+      - bbg-network
     restart: unless-stopped
 
   frontend:
     image: node:26-bookworm-slim
-    container_name: bbc-frontend
+    container_name: bbg-frontend
     working_dir: /app
     volumes:
       - ./frontend:/app
     ports:
-      - "4200:4200"
+      - "${FRONTEND_PORT:-4200}:4200"
     command: sh -c "npm start -- --host 0.0.0.0 --port 4200"
     networks:
-      - bbc-network
+      - bbg-network
     restart: unless-stopped
 
 volumes:
@@ -89,5 +91,5 @@ volumes:
     name: dark-store_mysql_data
 
 networks:
-  bbc-network:
+  bbg-network:
     driver: bridge

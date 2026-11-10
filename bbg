@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMPOSE_FILE="${BBG_COMPOSE_FILE:-$ROOT_DIR/docker-compose.yml}"
+ENV_FILE="${BBG_ENV_FILE:-$ROOT_DIR/.env}"
+BACKUP_DIR="${BBG_BACKUP_DIR:-$ROOT_DIR/backups}"
+
+dc() {
+  docker compose --project-directory "$ROOT_DIR" -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
+}
+
+need_docker() {
+  docker info >/dev/null 2>&1 || { echo "Docker Desktop is not running. Start it with: open -a Docker" >&2; exit 1; }
+}
+
+usage() {
+  cat <<'HELP'
+BBG local development manager
+
+Usage:
+  ./bbg start|stop|restart|status|logs|rebuild
+  ./bbg php|frontend|mysql
+  ./bbg backup
+  ./bbg restore <backup.sql[.gz]>
+  ./bbg health
+  ./bbg deps [all|php|frontend]
+  ./bbg git <git arguments...>
+  ./bbg yii <Yii console arguments...>
+HELP
+}
+
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  start) need_docker; dc up -d; dc ps ;;
+  stop) need_docker; dc stop ;;
+  restart) need_docker; dc restart; dc ps ;;
+  status) need_docker; dc ps ;;
+  logs) need_docker; dc logs -f --tail=100 "$@" ;;
+  rebuild) need_docker; dc up -d --build --force-recreate; dc ps ;;
+  php|frontend|mysql)
+    need_docker
+    dc exec "$cmd" sh
+    ;;
+  backup)
+    need_docker
+    mkdir -p "$BACKUP_DIR"
+    stamp="$(date '+%Y%m%d_%H%M%S')"
+    out="$BACKUP_DIR/bbg_${stamp}.sql.gz"
+    echo "Creating database backup: $out"
+    dc exec -T mysql sh -c 'export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"; exec mysqldump -uroot --single-transaction --routines --triggers --events "$MYSQL_DATABASE"' | gzip > "$out"
+    [[ -s "$out" ]] || { rm -f "$out"; echo "Backup failed or was empty." >&2; exit 1; }
+    echo "Backup completed: $out"
+    ;;
+  restore)
+    need_docker
+    backup="${1:-}"
+    [[ -n "$backup" ]] || { echo "Usage: ./bbg restore <backup.sql[.gz]>" >&2; exit 2; }
+    [[ "$backup" = /* ]] || backup="$ROOT_DIR/$backup"
+    [[ -f "$backup" ]] || { echo "Backup file not found: $backup" >&2; exit 1; }
+    echo "WARNING: this overwrites data in the configured BBG database."
+    echo "The existing external MySQL volume is not removed."
+    read -r -p "Type RESTORE to continue: " confirm
+    [[ "$confirm" == "RESTORE" ]] || { echo "Restore cancelled."; exit 1; }
+    if [[ "$backup" == *.gz ]]; then
+      gzip -dc "$backup" | dc exec -T mysql sh -c 'export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"; exec mysql -uroot "$MYSQL_DATABASE"'
+    else
+      cat "$backup" | dc exec -T mysql sh -c 'export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"; exec mysql -uroot "$MYSQL_DATABASE"'
+    fi
+    echo "Restore completed."
+    ;;
+  health)
+    need_docker
+    dc ps
+    for item in "API|http://localhost:8080" "Angular|http://localhost:4200" "phpMyAdmin|http://localhost:8081"; do
+      name="${item%%|*}"; url="${item#*|}"
+      code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 8 "$url" || true)"
+      printf '%-12s %s (%s)\n' "$name" "$url" "${code:-no response}"
+    done
+    dc exec -T mysql sh -c 'export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"; mysqladmin ping -h 127.0.0.1 -uroot --silent'
+    ;;
+  deps)
+    need_docker
+    target="${1:-all}"
+    case "$target" in
+      all|php) dc exec php composer install ;;
+    esac
+    case "$target" in
+      all|frontend) dc exec frontend npm ci ;;
+    esac
+    [[ "$target" == all || "$target" == php || "$target" == frontend ]] || { echo "Usage: ./bbg deps [all|php|frontend]" >&2; exit 2; }
+    ;;
+  git) command -v git >/dev/null 2>&1 || exit 1; cd "$ROOT_DIR"; git "$@" ;;
+  yii)
+    need_docker
+    [[ -f "$ROOT_DIR/backend/yii" ]] || { echo "backend/yii was not found; inspect the Yii console entrypoint before running this command." >&2; exit 1; }
+    dc exec php php yii "$@"
+    ;;
+  help|-h|--help) usage ;;
+  *) echo "Unknown command: $cmd" >&2; usage; exit 2 ;;
+esac

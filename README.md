@@ -1,103 +1,23 @@
-# BBC Command-Line Manager
+# BBG — Business Management & Marketplace Platform
 
-A lightweight macOS shell wrapper for the existing BBC Docker Compose project.
+Yii 3 API backend, Angular 22 frontend, MySQL 8.4, Nginx/PHP-FPM, and Docker Compose for local development.
 
-## Safety notes
+## Local setup
+1. Copy .env.example to .env and replace placeholder passwords.
+2. Start Docker Desktop.
+3. Run ./bbg start and ./bbg deps.
+4. Local URLs: API http://localhost:8080, Angular http://localhost:4200, phpMyAdmin http://localhost:8081.
+5. Run ./bbg help for available commands.
 
-- The database volume is expected to remain `dark-store_mysql_data`.
-- The Compose file must declare it as an external volume:
-  ```yaml
-  volumes:
-    mysql_data:
-      external: true
-      name: dark-store_mysql_data
-  ```
-- `./bbc stop` stops containers but does not remove them or their data.
-- `./bbc down` and `docker compose down -v` are intentionally not provided.
-- `./bbc restore` overwrites data in the configured database and requires typing `RESTORE`.
-- Backups are written to `./backups/`. Keep this folder out of Git.
+The existing external MySQL volume dark-store_mysql_data and PHP image tag bbc-php:8.4 are intentionally preserved to protect the working local setup.
 
-## Install
+## Configuration
+Root .env configures local Compose. backend/.env.example documents backend variables. Angular development and production API URLs are configured separately in src/environments/environment.ts and environment.production.ts. Production secrets must be injected by the hosting platform and never committed.
 
-From the project root (the folder containing `docker-compose.yml`):
+The production API path defaults to /api for same-origin reverse-proxy routing. If the API is hosted separately, configure a full HTTPS API origin and an explicit CORS allowlist.
 
-```bash
-mkdir -p scripts backups
-# Copy the supplied `bbc` file into the project root.
-chmod +x bbc
-```
+## Architecture and data safety
+The backend follows the seven documented layers: InDto, Controller, Versioned Services, Core Services, DAO, Model, Utils. See backend/src/Architecture/README.md. The supplied BBG database design remains authoritative: preserve its table names, types, logical relationships, five common audit columns, and A/Z soft-delete convention. This foundation change does not create tables or run migrations.
 
-Add this to `.gitignore`:
-
-```gitignore
-/backups/
-*.sql
-*.sql.gz
-```
-
-Check the external volume declaration in `docker-compose.yml`, then validate:
-
-```bash
-docker compose config --quiet
-docker volume inspect dark-store_mysql_data
-```
-
-Start Docker Desktop and the stack:
-
-```bash
-open -a Docker
-./bbc start
-./bbc health
-```
-
-## Commands
-
-| Command | Purpose |
-|---|---|
-| `./bbc start` | Start all services |
-| `./bbc stop` | Stop all services without deleting containers or volumes |
-| `./bbc restart` | Restart all services |
-| `./bbc status` | Show Compose service status |
-| `./bbc logs [service]` | Follow logs; optionally limit to a service |
-| `./bbc rebuild` | Build and recreate services |
-| `./bbc php` | Open shell in PHP container |
-| `./bbc frontend` | Open shell in Angular container |
-| `./bbc mysql` | Open shell in MySQL container |
-| `./bbc backup` | Create timestamped compressed MySQL dump |
-| `./bbc restore <file>` | Restore a `.sql` or `.sql.gz` backup (confirmation required) |
-| `./bbc health` | Check HTTP endpoints and MySQL |
-| `./bbc deps` | Run Composer install and npm ci |
-| `./bbc deps php` | Run Composer install only |
-| `./bbc deps frontend` | Run npm ci only |
-| `./bbc git <args>` | Run Git from the project root |
-| `./bbc yii <args>` | Run the Yii console entrypoint |
-
-## Expected service URLs
-
-- Backend/Nginx: http://localhost:8080
-- Angular: http://localhost:4200
-- phpMyAdmin: http://localhost:8081
-
-## Notes about this project
-
-Based on the currently shared Compose configuration:
-- Services: `php`, `nginx`, `mysql`, `phpmyadmin`, `frontend`
-- PHP image: `bbc-php:8.4`
-- MySQL image: `mysql:8.4`
-- Nginx image: `nginx:stable`
-- Frontend image: `node:26-bookworm-slim`
-- Database name shown in the existing environment: `dark_store`
-
-The helper assumes the PHP container includes Composer and that the Yii console entrypoint is `backend/yii`. If either differs, use the targeted command shown by the script's error or adjust that command after checking the actual backend files.
-
-## First-run verification
-
-```bash
-./bbc status
-./bbc health
-./bbc backup
-./bbc git status
-./bbc yii help
-```
-
-If `./bbc yii help` reports that `backend/yii` is missing, inspect the backend root and identify the Yii 3 console entrypoint before using the Yii wrapper.
+## Production checklist
+Set APP_ENV=prod and APP_DEBUG=false; inject database credentials/secrets securely; terminate TLS; configure the production API URL; keep phpMyAdmin and development ports private; configure persistent MySQL storage, backups, monitoring, rollback, Angular SPA fallback, and API reverse proxying. Hosting provider, live domain, TLS topology, CI/CD, and production DB endpoint remain undecided.
