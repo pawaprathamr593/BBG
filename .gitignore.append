@@ -1,0 +1,4 @@
+# BBC local database backups (never commit credentials or database dumps)
+/backups/
+*.sql
+*.sql.gz

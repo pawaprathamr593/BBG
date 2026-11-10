@@ -1,0 +1,29 @@
+
+# BBC database backups
+/backups/
+*.sql
+*.sql.gz
+.env
+.env.*
+!.env.example
+
+# Sensitive environment files
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Database backups
+/backups/
+*.sql
+*.sql.gz
+
+# Dependencies and generated files
+node_modules/
+vendor/
+.angular/
+dist/
+.DS_Store
+
+# Docker configuration backup
+docker-compose.yml.backup-before-bbc
