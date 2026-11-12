@@ -7,6 +7,7 @@ use App\Modules\Api\V1\Controllers\AuthController;
 use App\Modules\Api\V1\Controllers\CartController;
 use App\Modules\Api\V1\Controllers\OrderController;
 use App\Modules\Api\V1\Controllers\MarketplaceController;
+use App\Modules\Api\V1\Controllers\TenantController;
 use Yiisoft\Router\Route;
 
 /** @var array $params */
@@ -44,4 +45,8 @@ return [
     Route::post('/api/v1/marketplace/promotions/list')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/promotions/list'),
     Route::post('/api/v1/marketplace/promotions/detail')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/promotions/detail'),
     Route::post('/api/v1/marketplace/home')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/home'),
+
+    Route::post('/api/v1/tenants/mine/list')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/mine/list'),
+    Route::post('/api/v1/tenants/mine/detail')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/mine/detail'),
+    Route::post('/api/v1/tenants/members/list')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/members/list'),
 ];
