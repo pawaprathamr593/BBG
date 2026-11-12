@@ -361,7 +361,11 @@ final readonly class OrderServices implements IOrderServices
             return $resArr;
         }
 
-        $newStatus = match ($action) {\n            'confirmWhatsAppOrder' => 'CONFIRMED',\n            'cancelWhatsAppOrder' => 'CANCELLED',\n            default => strtoupper(trim((string) ($actionData['new_status'] ?? ''))),\n        };\n        if (!in_array($newStatus, array('CONFIRMED', 'CANCELLED'), true)) {\n            $resArr['msgArr'][] = 'new_status must be CONFIRMED or CANCELLED.';\n            return $resArr;\n        }
+        $newStatus = match ($action) {
+            'confirmWhatsAppOrder' => 'CONFIRMED',
+            'cancelWhatsAppOrder' => 'CANCELLED',
+            default => strtoupper(trim((string) ($actionData['new_status'] ?? ''))),
+        };\n        if (!in_array($newStatus, array('CONFIRMED', 'CANCELLED'), true)) {\n            $resArr['msgArr'][] = 'new_status must be CONFIRMED or CANCELLED.';\n            return $resArr;\n        }
         $transaction = $this->db->beginTransaction();
 
         try {
@@ -382,7 +386,7 @@ final readonly class OrderServices implements IOrderServices
             if ($order['status'] !== 'SUCCESS') {
                 $transaction->rollBack();
                 $resArr = $order;
-                $resArr['msgArr'][] = 'Failed in OrderServices::manageWhatsAppOrder while retrieving the order.';
+                $resArr['msgArr'][] = 'Failed in OrderServices::manageOrder while retrieving the order.';
                 return $resArr;
             }
             if ($order['data'] === array()) {
