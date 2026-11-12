@@ -34,7 +34,7 @@ The Model layer remains reference-only for new development; Utils contains reusa
 | `POST /api/v1/auth/refresh` | `manageAuth/refresh` | Rotate refresh session |
 | `POST /api/v1/auth/logout` | `manageAuth/logout` | Revoke current session |
 | `POST /api/v1/auth/logout-all` | `manageAuth/logoutAll` | Revoke all user sessions |
-| `POST /api/v1/auth/profile` | `getAuth/getProfile` | Read authenticated profile |
+| `POST /api/v1/auth/profile` | `getAuth/getProfile` | Read authenticated profile |\n| `POST /api/v1/auth/profile/update` | `manageAuth/updateProfile` | Update own name/email/mobile |\n| `POST /api/v1/auth/permissions` | `getAuth/getPermissions` | Read platform or authorized tenant permission snapshot |
 
 ### Cart and orders
 | Route | Dispatcher/action | Purpose |
@@ -79,7 +79,7 @@ The Model layer remains reference-only for new development; Utils contains reusa
 | `POST /api/v1/customers/addresses/list` | `listMyAddresses` | Own address book |
 | `POST /api/v1/customers/addresses/create` | `createMyAddress` | Add address |
 | `POST /api/v1/customers/addresses/update` | `updateMyAddress` | Update own address |
-| `POST /api/v1/customers/addresses/delete` | `deleteMyAddress` | Soft-delete own address |
+| `POST /api/v1/customers/addresses/delete` | `deleteMyAddress` | Soft-delete own address |\n| `POST /api/v1/customers/addresses/default` | `setMyDefaultAddress` | Set the default address for the selected tenant |
 
 ### Enquiries
 | Route | Action | Purpose |
@@ -119,7 +119,7 @@ The Model layer remains reference-only for new development; Utils contains reusa
 | `POST /api/v1/business/application/resubmit` | `resubmitBusinessApplication` | Resubmit after rejection |
 | `POST /api/v1/business/profile/get` | `getMyBusinessProfile` | Read tenant business profile |
 | `POST /api/v1/business/profile/update` | `updateMyBusinessProfile` | Update allowed business fields |
-| `POST /api/v1/business/verification/get` | `getBusinessVerification` | Read approval/publication state |
+| `POST /api/v1/business/verification/get` | `getBusinessVerification` | Read approval/publication state |\n| `POST /api/v1/business/storefront/get` | `getMyStorefront` | Read own storefront settings |\n| `POST /api/v1/business/storefront/update` | `updateMyStorefront` | Update storefront preferences and WhatsApp settings |\n| `POST /api/v1/business/storefront/publish` | `publishMyStorefront` | Publish an approved business with an active subscription |\n| `POST /api/v1/business/storefront/unpublish` | `unpublishMyStorefront` | Unpublish own storefront |
 
 ### Catalogue
 | Route | Action | Purpose |
@@ -237,7 +237,26 @@ The following are deliberately not operationalized in this API set:
 - Expenses/cash workflows and expanded workspace reporting, because their Phase 1 inclusion and business rules are not approved in the current frontend requirements.
 - Binary upload/storage endpoints until a storage provider, MIME/size limits, retention and access policy are selected. The media/proof metadata endpoints accept only a server-issued stored file reference, never an arbitrary public URL.
 
-## 9. Contract rules
+## 9. Implementation status and guarded dependencies
+
+The routes listed in Sections 2–7 are registered on `feature/auth-foundation` and have corresponding V1/Core Services and DAO implementations, including the additions below:
+
+- Auth: profile update and permission snapshot.
+- Business: storefront read/update/publish/unpublish.
+- Customers: default-address selection.
+- Catalogue: product media linking from an already stored, tenant-scoped relative path.
+- Orders: tenant order queue covers all tenant orders; status changes remain limited to REQUESTED/PLACED → CONFIRMED/CANCELLED.
+
+Implementation is **not production-verified** until the PHP 8.4 workflow, clean MySQL migration workflow, live-schema compatibility checks, and API integration/security tests pass. A registered route is not a claim that a local or production API call has been tested.
+
+Guarded dependencies:
+- Subscription proof submission stores a server-issued relative file reference; binary upload is not implemented until private storage is selected.
+- Product media linking likewise expects a file reference already created by a storage/upload service. The route does not upload bytes or verify an external storage provider.
+- Gold product cap (50) and Platinum promotional-post entitlement are seeded only when matching plan codes exist. Other plan entitlements must be configured from approved commercial plan definitions.
+- Platform admin APIs remain unavailable until a trusted platform user is explicitly assigned the PLATFORM_ADMIN role.
+- Workspace candidates for members/roles management, invoices, expenses, cash sessions/movements and expanded reporting remain outside the approved API V1 scope; they are not future inventory/purchasing APIs, but their Phase 1 inclusion/business rules are still unapproved.
+
+## 10. Contract rules
 
 - Pagination defaults and maximums are validated server-side; tenant/active filters are applied before counts.
 - Existing response keys and request envelopes are preserved. No silent breaking changes.
