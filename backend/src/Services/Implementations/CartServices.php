@@ -65,7 +65,10 @@ final readonly class CartServices implements ICartServices {
                     $product=$this->dao->getProduct($this->db,$tenant,(int)$item['product_id'],$variantId);
                     if($product['status']!=='SUCCESS'||$product['data']===[]){$tx->rollBack();return $this->fail('A cart product is no longer available for ordering.');}
                     $qty=(string)$item['quantity'];
-                    if(preg_match('/^\\d+(?:\\.\\d{3,})$/D',$qty)===1){$tx->rollBack();return $this->fail('Order quantities support at most two decimal places in the current order schema.');}
+                    // CART_ITEMS stores three decimal places; ignore trailing zeros
+                    // before enforcing the two-decimal ORDER_ITEMS precision.
+                    if(str_contains($qty,'.')){$qty=rtrim(rtrim($qty,'0'),'.');}
+                    if(preg_match('/^\\d+\\.\\d{3,}$/D',$qty)===1){$tx->rollBack();return $this->fail('Order quantities support at most two decimal places in the current order schema.');}
                     $unitPrice=(float)$product['data']['current_price'];$rate=(float)$product['data']['tax_rate'];
                     $base=round((float)$qty*$unitPrice,2);$tax=round($base*$rate/100,2);$line=round($base+$tax,2);
                     $subtotal+=$base;$taxTotal+=$tax;
