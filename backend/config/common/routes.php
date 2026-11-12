@@ -90,6 +90,7 @@ return [
     Route::post('/api/v1/catalogue/products/update')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/update'),
     Route::post('/api/v1/catalogue/products/delete')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/delete'),
     Route::post('/api/v1/catalogue/products/media/list')->action([CatalogueController::class, 'actionGetCatalogue'])->name('api/v1/catalogue/products/media/list'),
+    Route::post('/api/v1/catalogue/products/media/link')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/media/link'),
     Route::post('/api/v1/catalogue/products/media/delete')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/media/delete'),
 
     Route::post('/api/v1/customers/profile')->action([CustomerController::class, 'actionGetCustomer'])->name('api/v1/customers/profile'),
