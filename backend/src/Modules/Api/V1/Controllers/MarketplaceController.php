@@ -13,74 +13,66 @@ use Throwable;
 
 final class MarketplaceController
 {
-    public function actionListBusinesses(
+    public function actionGetMarketplace(
         ServerRequestInterface $request,
         MarketplaceServicesV1 $services,
         ResponseFactoryInterface $responses,
         StreamFactoryInterface $streams,
     ): ResponseInterface {
-        return $this->run($request, $services, $responses, $streams, 'listBusinesses');
-    }
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $path = $request->getUri()->getPath();
+        $action = match ($path) {
+            '/api/v1/marketplace/businesses/list' => 'listBusinesses',
+            '/api/v1/marketplace/businesses/detail' => 'getBusiness',
+            '/api/v1/marketplace/products/list' => 'listProducts',
+            '/api/v1/marketplace/products/detail' => 'getProduct',
+            '/api/v1/marketplace/categories/list' => 'listPublicCategories',
+            '/api/v1/marketplace/promotions/list' => 'listPublicPromotions',
+            '/api/v1/marketplace/promotions/detail' => 'getPublicPromotion',
+            '/api/v1/marketplace/home' => 'getHomeSummary',
+            default => '',
+        };
 
-    public function actionGetBusiness(
-        ServerRequestInterface $request,
-        MarketplaceServicesV1 $services,
-        ResponseFactoryInterface $responses,
-        StreamFactoryInterface $streams,
-    ): ResponseInterface {
-        return $this->run($request, $services, $responses, $streams, 'getBusiness');
-    }
+        if ($action === '') {
+            $resArr['msgArr'][] = 'Unsupported marketplace route.';
+            return $this->respond($resArr, $responses, $streams);
+        }
 
-    public function actionListProducts(
-        ServerRequestInterface $request,
-        MarketplaceServicesV1 $services,
-        ResponseFactoryInterface $responses,
-        StreamFactoryInterface $streams,
-    ): ResponseInterface {
-        return $this->run($request, $services, $responses, $streams, 'listProducts');
-    }
-
-    public function actionGetProduct(
-        ServerRequestInterface $request,
-        MarketplaceServicesV1 $services,
-        ResponseFactoryInterface $responses,
-        StreamFactoryInterface $streams,
-    ): ResponseInterface {
-        return $this->run($request, $services, $responses, $streams, 'getProduct');
-    }
-
-    private function run(
-        ServerRequestInterface $request,
-        MarketplaceServicesV1 $services,
-        ResponseFactoryInterface $responses,
-        StreamFactoryInterface $streams,
-        string $action,
-    ): ResponseInterface {
         $body = $request->getParsedBody();
         $input = is_array($body) ? $body : [];
         $param = is_array($input['marketplaceParam'] ?? null) ? $input['marketplaceParam'] : [];
-        $data = is_array($param['actionData'] ?? null) ? $param['actionData'] : [];
-        $data['action'] = $action;
+        $actionData = is_array($param['actionData'] ?? null) ? $param['actionData'] : [];
+        $actionData['action'] = $action;
         $param['actionType'] = 'getMarketplace';
-        $param['actionData'] = $data;
+        $param['actionData'] = $actionData;
         $input['marketplaceParam'] = $param;
 
         try {
-            $result = $services->getMarketplace($input);
+            $resArr = $services->getMarketplace($input);
         } catch (Throwable) {
-            $result = ['status' => 'EXCEPTION', 'msgArr' => ['Marketplace request failed unexpectedly.'], 'data' => []];
+            $resArr = ['status' => 'EXCEPTION', 'msgArr' => ['Marketplace request failed unexpectedly.'], 'data' => []];
         }
+        return $this->respond($resArr, $responses, $streams);
+    }
 
-        $state = $result['status'] ?? 'EXCEPTION';
-        $http = $state === 'SUCCESS' ? 200 : ($state === 'FAILED' ? 400 : 500);
+    private function respond(
+        array $resArr,
+        ResponseFactoryInterface $responses,
+        StreamFactoryInterface $streams,
+    ): ResponseInterface {
+        $status = $resArr['status'] ?? 'EXCEPTION';
+        $httpStatus = match ($status) {
+            'SUCCESS' => 200,
+            'FAILED' => 400,
+            default => 500,
+        };
         try {
-            $json = json_encode($result, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+            $json = json_encode($resArr, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
         } catch (Throwable) {
-            $http = 500;
+            $httpStatus = 500;
             $json = '{"status":"EXCEPTION","msgArr":["Unable to serialize API response."],"data":[]}';
         }
-
-        return $responses->createResponse($http)
+        return $responses->createResponse($httpStatus)
             ->withHeader('Content-Type', 'application/json; charset=utf-8')
             ->withBody($streams->createStream($json));
     }
