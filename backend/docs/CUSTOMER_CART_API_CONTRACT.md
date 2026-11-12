@@ -26,6 +26,15 @@ The authenticated user ID comes only from the verified Bearer access token. The 
 | `POST /api/v1/cart/clear` | `clearCart` | Soft-delete active lines |
 | `POST /api/v1/cart/checkout` | `checkout` | Revalidate items, create a tenant order and delivery snapshot, convert cart transactionally |
 
+## Customer order read APIs
+
+| Route | Action | Purpose |
+|---|---|---|
+| `POST /api/v1/orders/list` | `listMyOrders` | Paginated order history for the authenticated customer |
+| `POST /api/v1/orders/detail` | `getMyOrder` | Own order, line snapshots, status history and fulfilment details |
+
+Order reads are scoped through the authenticated user's `CUSTOMER_IDENTITIES` record and the matching tenant-customer relationship. Changing an order ID does not grant access to another customer's order.
+
 ## Rules
 
 - All reads/writes are scoped by authenticated user, tenant and `status='A'`.
