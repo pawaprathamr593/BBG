@@ -127,7 +127,7 @@ final readonly class CartServices implements ICartServices {
             if($saved['status']!=='SUCCESS'){$tx->rollBack();return $saved;}
             $touch=$this->dao->touch($this->db,$user,$cartId);if($touch['status']!=='SUCCESS'){$tx->rollBack();return $touch;}
             $tx->commit();return $this->ok(['cart_id'=>$cartId]);
-        } catch(Throwable $e){if($tx->isActive())$tx->rollBack();$this->logger->error('CartServices::manageCart failed.',['exception'=>$e]);return ['status'=>'EXCEPTION','msgArr'=>['Cart operation failed unexpectedly.'],'data'=>[]];}
+        } catch(Throwable $e){if($tx->isActive())$tx->rollBack();$this->logger->error('CartServices::manageCart failed.',['exception'=>$e]);$resArr['status']='EXCEPTION';$resArr['msgArr'][]='Cart operation failed unexpectedly.';$resArr['data']=[];return $resArr;}
     }
     private function createWhatsAppOrder(array $d,array $profile,int $user,int $tenant,int $cartId,array $store): array {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
@@ -190,7 +190,7 @@ final readonly class CartServices implements ICartServices {
     private function fmt(float $v): string {return rtrim(rtrim(number_format($v,3,'.',''),'0'),'.')?:'0';}
     private function precisionOk(string $q,int $p,bool $fraction): bool {if(!$fraction&&floor((float)$q)!==(float)$q)return false;$parts=explode('.',$q);return strlen($parts[1]??'')<=min(3,max(0,$p));}
     private function ok(array $d): array{
-        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];return ['status'=>'SUCCESS','msgArr'=>[],'data'=>$d];}
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];$resArr['status']='SUCCESS';$resArr['data']=$d;return $resArr;}
     private function fail(string $m): array{
-        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];return ['status'=>'FAILED','msgArr'=>[$m],'data'=>[]];}
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];$resArr['msgArr'][]=$m;return $resArr;}
 }
