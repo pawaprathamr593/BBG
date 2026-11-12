@@ -31,8 +31,8 @@ final readonly class OrderDao {
         try{$rows=$db->createCommand("SELECT fulfilment_type,fulfilment_status,delivery_partner,tracking_reference,dispatched_on,delivered_on,recipient_name,recipient_mobile,delivery_address_snapshot FROM ORDER_FULFILMENTS WHERE tenant_id=:tenant AND order_id=:order AND status='A' ORDER BY id",[':tenant'=>$tenantId,':order'=>$orderId])->queryAll();return $this->ok(is_array($rows)?$rows:[]);}
         catch(Throwable $e){return $this->error('getOrderFulfilments',$e);}
     }
-    public function hasTenantOrderManagementPermission(ConnectionInterface $db,int $userId,int $tenantId): array {
-        return $this->one($db,"SELECT 1 AS allowed
+    public function hasTenantOrderManagementPermission(ConnectionInterface $db,int $userId,int $tenantId,bool $lock=false): array {
+        $sql="SELECT 1 AS allowed
             FROM USERS u
             INNER JOIN TENANT_MEMBERSHIPS tm ON tm.user_id=u.id AND tm.status='A' AND tm.membership_status='ACTIVE'
             INNER JOIN TENANTS t ON t.id=tm.tenant_id AND t.status='A' AND t.tenant_status='ACTIVE'
@@ -42,7 +42,9 @@ final readonly class OrderDao {
             INNER JOIN ROLE_PERMISSIONS rp ON rp.role_id=r.id AND rp.status='A'
             INNER JOIN PERMISSIONS p ON p.id=rp.permission_id AND p.permission_code='ORDERS_MANAGE' AND p.module_code='ORDERS' AND p.status='A'
             WHERE u.id=:user AND u.status='A' AND u.account_status='ACTIVE' AND tm.tenant_id=:tenant
-            LIMIT 1",[':user'=>$userId,':tenant'=>$tenantId],'hasTenantOrderManagementPermission');
+            LIMIT 1";
+        if($lock)$sql.=' FOR UPDATE';
+        return $this->one($db,$sql,[':user'=>$userId,':tenant'=>$tenantId],'hasTenantOrderManagementPermission');
     }
     public function getTenantWhatsAppOrders(ConnectionInterface $db,int $tenantId,int $limit,int $offset): array {
         try {
