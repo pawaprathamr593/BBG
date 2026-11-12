@@ -192,7 +192,7 @@ final readonly class BusinessDao
                 AND r.scope_type = 'TENANT' AND r.status = 'A'
              WHERE bp.status = 'A' AND (:tenant_id = 0 OR bp.tenant_id = :tenant_id)
              ORDER BY bp.id DESC LIMIT 1",
-            [':user_id' => $userId, ':tenant_id' => $tenantId],
+            [':user_id' => $userId, ':tenant_id_filter' => $tenantId, ':tenant_id_match' => $tenantId],
             'getMyBusinessApplication',
         );
     }
