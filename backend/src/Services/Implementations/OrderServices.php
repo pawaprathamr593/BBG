@@ -78,7 +78,7 @@ final readonly class OrderServices implements IOrderServices
 
         switch ($param['actionType']) {
             case 'manageOrders':
-                $resArr = $this->manageWhatsAppOrder($param['actionData']);
+                $resArr = $this->manageOrder($param['actionData']);
                 break;
 
             default:
@@ -210,7 +210,7 @@ final readonly class OrderServices implements IOrderServices
             return $resArr;
         }
 
-        if (in_array($action, array('listTenantWhatsAppOrders', 'getTenantWhatsAppOrder'), true)) {
+        if (in_array($action, array('listTenantOrders', 'getTenantOrder', 'listTenantWhatsAppOrders', 'getTenantWhatsAppOrder'), true)) {
             if ($tenantId === null) {
                 $resArr['msgArr'][] = 'A valid tenant_id is required.';
                 return $resArr;
@@ -227,22 +227,22 @@ final readonly class OrderServices implements IOrderServices
                 return $resArr;
             }
 
-            if ($action === 'listTenantWhatsAppOrders') {
+            if (in_array($action, array('listTenantOrders', 'listTenantWhatsAppOrders'), true)) {
                 $page = max(1, (int) ($actionData['page'] ?? 1));
                 $pageSize = min(50, max(1, (int) ($actionData['page_size'] ?? 20)));
                 $offset = ($page - 1) * $pageSize;
 
-                $rows = $this->dao->getTenantWhatsAppOrders($this->db, $tenantId, $pageSize, $offset);
+                $rows = $this->dao->getTenantOrders($this->db, $tenantId, $pageSize, $offset);
                 if ($rows['status'] !== 'SUCCESS') {
                     $resArr = $rows;
-                    $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while retrieving tenant WhatsApp orders.';
+                    $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while retrieving tenant orders.';
                     return $resArr;
                 }
 
-                $count = $this->dao->countTenantWhatsAppOrders($this->db, $tenantId);
+                $count = $this->dao->countTenantOrders($this->db, $tenantId);
                 if ($count['status'] !== 'SUCCESS') {
                     $resArr = $count;
-                    $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while counting tenant WhatsApp orders.';
+                    $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while counting tenant orders.';
                     return $resArr;
                 }
 
@@ -264,14 +264,14 @@ final readonly class OrderServices implements IOrderServices
                 return $resArr;
             }
 
-            $order = $this->dao->getTenantWhatsAppOrder($this->db, $tenantId, (int) $orderId);
+            $order = $this->dao->getTenantOrder($this->db, $tenantId, (int) $orderId);
             if ($order['status'] !== 'SUCCESS') {
                 $resArr = $order;
-                $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while retrieving tenant WhatsApp order.';
+                $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while retrieving tenant order.';
                 return $resArr;
             }
             if ($order['data'] === array()) {
-                $resArr['msgArr'][] = 'WhatsApp order was not found for this tenant.';
+                $resArr['msgArr'][] = 'Order was not found for this tenant.';
                 return $resArr;
             }
 
@@ -313,7 +313,7 @@ final readonly class OrderServices implements IOrderServices
     /**
      * Level 2 management worker. The transaction remains owned by Core Services.
      */
-    private function manageWhatsAppOrder(array $actionData): array
+    private function manageOrder(array $actionData): array
     {
         $resArr = array(
             'status' => 'FAILED',
@@ -322,7 +322,7 @@ final readonly class OrderServices implements IOrderServices
         );
 
         $action = (string) ($actionData['action'] ?? '');
-        if (!in_array($action, array('confirmWhatsAppOrder', 'cancelWhatsAppOrder'), true)) {
+        if (!in_array($action, array('changeTenantOrderStatus', 'confirmWhatsAppOrder', 'cancelWhatsAppOrder'), true)) {
             $resArr['msgArr'][] = 'Unsupported order management action.';
             return $resArr;
         }
@@ -361,7 +361,7 @@ final readonly class OrderServices implements IOrderServices
             return $resArr;
         }
 
-        $newStatus = $action === 'confirmWhatsAppOrder' ? 'CONFIRMED' : 'CANCELLED';
+        $newStatus = match ($action) {\n            'confirmWhatsAppOrder' => 'CONFIRMED',\n            'cancelWhatsAppOrder' => 'CANCELLED',\n            default => strtoupper(trim((string) ($actionData['new_status'] ?? ''))),\n        };\n        if (!in_array($newStatus, array('CONFIRMED', 'CANCELLED'), true)) {\n            $resArr['msgArr'][] = 'new_status must be CONFIRMED or CANCELLED.';\n            return $resArr;\n        }
         $transaction = $this->db->beginTransaction();
 
         try {
@@ -369,7 +369,7 @@ final readonly class OrderServices implements IOrderServices
             if ($permission['status'] !== 'SUCCESS') {
                 $transaction->rollBack();
                 $resArr = $permission;
-                $resArr['msgArr'][] = 'Failed in OrderServices::manageWhatsAppOrder while checking tenant order permission.';
+                $resArr['msgArr'][] = 'Failed in OrderServices::manageOrder while checking tenant order permission.';
                 return $resArr;
             }
             if ($permission['data'] === array()) {
@@ -378,7 +378,7 @@ final readonly class OrderServices implements IOrderServices
                 return $resArr;
             }
 
-            $order = $this->dao->getTenantWhatsAppOrder($this->db, (int) $tenantId, (int) $orderId, true);
+            $order = $this->dao->getTenantOrder($this->db, (int) $tenantId, (int) $orderId, true);
             if ($order['status'] !== 'SUCCESS') {
                 $transaction->rollBack();
                 $resArr = $order;
@@ -387,18 +387,18 @@ final readonly class OrderServices implements IOrderServices
             }
             if ($order['data'] === array()) {
                 $transaction->rollBack();
-                $resArr['msgArr'][] = 'WhatsApp order was not found for this tenant.';
+                $resArr['msgArr'][] = 'Order was not found for this tenant.';
                 return $resArr;
             }
 
             $oldStatus = (string) $order['data']['order_status'];
-            if ($oldStatus !== 'REQUESTED') {
+            if (!in_array($oldStatus, array('REQUESTED', 'PLACED'), true)) {
                 $transaction->rollBack();
-                $resArr['msgArr'][] = 'Only requested WhatsApp orders can be confirmed or cancelled.';
+                $resArr['msgArr'][] = 'Only REQUESTED or PLACED orders can be confirmed or cancelled.';
                 return $resArr;
             }
 
-            $updated = $this->dao->updateWhatsAppOrderStatus(
+            $updated = $this->dao->updateTenantOrderStatus(
                 $this->db,
                 (int) $tenantId,
                 (int) $orderId,
