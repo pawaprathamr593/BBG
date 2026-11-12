@@ -24,4 +24,5 @@ return [
     Route::post('/api/v1/cart/update')->action([CartController::class, 'actionManageCart'])->name('api/v1/cart/update'),
     Route::post('/api/v1/cart/remove')->action([CartController::class, 'actionManageCart'])->name('api/v1/cart/remove'),
     Route::post('/api/v1/cart/clear')->action([CartController::class, 'actionManageCart'])->name('api/v1/cart/clear'),
+    Route::post('/api/v1/cart/checkout')->action([CartController::class, 'actionManageCart'])->name('api/v1/cart/checkout'),
 ];
