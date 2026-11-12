@@ -1,52 +1,75 @@
 # BBG backend implementation status — Phase 1
 
-**Branch:** `feature/auth-foundation`  
+**Branch:** feature/auth-foundation  
 **Stack:** Yii 3 / PHP 8.4 / MySQL 8.4  
-**Status:** active implementation; not yet production-ready
+**Status:** broad API implementation is registered; production readiness and integration verification remain incomplete.
 
-## Implemented
+## Implemented API areas
 
-- Password registration/login, access-token issuance and verification, rotating refresh sessions, reuse detection, logout/logout-all and authenticated profile.
-- Customer cart: retrieve, add, update, remove, clear.
-- Customer checkout: server-side product/price revalidation, tax calculation, customer identity association, order/item snapshots, order status history, delivery-address snapshot and cart conversion in one Core Service transaction.
-- Customer order history: paginated own-order list and own-order detail with line items, status history and fulfilment snapshots.
-- Customer order history: paginated own-order list and own-order detail with line items, status history and fulfilment.
-- Additive Phase 1 schema scripts for business application history, carts, storefront/catalogue, customer records, orders and fulfilment.
-- Seven-layer Cart and Order module wiring; parameterized DAO queries; A/Z soft-delete on cart lines.
+- **Authentication:** registration/login, access-token verification, rotating refresh sessions, reuse detection, logout/logout-all, profile read/update and permission snapshot.
+- **Tenant context:** own tenant list/detail and tenant-member list, with server-side membership/permission checks.
+- **Business:** application submit/read/update/resubmit, business profile read/update, verification state and storefront settings read/update/publish/unpublish.
+- **Marketplace:** public business directory/storefront/products, home summary, public categories and public promotions.
+- **Catalogue:** tenant categories and product CRUD, product limits through subscription entitlements, product media metadata list/link/delete.
+- **Customer:** customer identity/profile and tenant-scoped address list/create/update/delete/default.
+- **Cart and orders:** cart read/add/update/remove/clear, transactional checkout and WhatsApp handoff; customer order history/detail; tenant-wide order queue/detail and guarded status changes.
+- **Enquiries:** customer create/history/thread and tenant list/detail/respond/close.
+- **Engagement:** product/post likes, comments, reports and eligible view records.
+- **Promotions:** tenant promotion create/update/soft-delete/publish/unpublish and engagement summary.
+- **Subscriptions:** active plans, tenant subscription list/detail/request/renewal and proof metadata submission.
+- **Payments:** customer and tenant payment list/detail, including safe transaction/refund metadata reads. No payment collection or gateway mutation is implemented.
+- **Platform administration:** user list/detail/suspend/restore; business review/approve/reject/reopen; subscription review/approve/reject/active list; category CRUD/statistics; analytics summary/trends; moderation queue/action/history; safe health summary.
+- **Dashboards:** consumer and entrepreneur summary endpoints.
+
+All newly added modules use the seven logical layers and the .agents $resArr response convention. Public DAO methods take the database connection first and scalar arguments thereafter. Tenant-scoped operations verify membership and permissions in Core Services.
 
 ## Automated validation
 
-GitHub Actions workflow `.github/workflows/backend-validation.yml` checks PHP syntax and applies the two additive migrations to a clean MySQL 8.4 service, then verifies the expected tables and four generated cart-key columns.
+GitHub Actions workflow .github/workflows/backend-validation.yml runs PHP 8.4 syntax checks and applies the two additive migration scripts to a clean MySQL 8.4 service, then verifies the expected tables and generated cart-key columns.
 
-A passing CI run validates PHP syntax and migration compatibility only. It is not an end-to-end API test against the developer's local database.
+A passing workflow validates PHP syntax and clean-database migration compatibility only. It does not establish live-schema compatibility, API integration correctness, business workflow correctness, or production readiness. No end-to-end API/security suite has been completed as part of this implementation pass.
 
-## Not yet implemented
+## Guarded / not implemented
 
-- Business application HTTP workflows: submit/edit/resubmit, document upload/versioning, Platform Admin reopen/review/approve/reject.
-- Tenant creation/activation workflow and initial role/permission seeding/assignment.
-- Product/category CRUD and public business directory/storefront/product read APIs.
-- Business-side incoming order list/detail/status transitions.
-- Customer address-book CRUD; checkout currently accepts and stores a delivery-address snapshot.
-- Payment initiation, QR/payment-proof review, gateway integration, reconciliation, refunds and invoices.
-- Customer enquiries/conversations, promotions/engagement, notifications and moderation APIs.
-- Full permission catalogue enforcement and comprehensive cross-tenant/security integration tests.
-- Angular integration.
+- Binary upload/storage endpoints for business documents, product media and subscription proofs. The metadata/link endpoints accept safe tenant-scoped relative file references; the storage provider, MIME/size policy, retention and access policy remain unselected.
+- Payment initiation, UPI QR generation, gateway webhooks, reconciliation, payment confirmation automation and refund workflows. The approved schema has no tenant UPI/QR configuration contract; QR display or proof submission must never mark an order paid.
+- Automated invoice generation and invoice numbering/tax policy.
+- Expense and cash-session/movement workflows.
+- Tenant member invitations, role assignment, role changes and the broader tenant workspace permissions UI.
+- Notification delivery providers and notification preference/dispatch workflows.
+- Expanded workspace reporting and exports.
+- OAuth provider integration until the provider/credentials/callback contract is approved.
+- Deep-link token contract for enquiry/order status sharing.
+- Full moderation policy for comments and other target types beyond the supported product/post report actions.
+- Comprehensive API integration, concurrency, IDOR, cross-tenant, rate-limit, CSRF and security tests.
 
-## Current constraints
+The workspace candidates above are not automatically treated as future inventory/purchasing scope; they remain unimplemented because their Phase 1 inclusion or business rules are not approved in the current API catalogue.
 
-- Cart is per customer per business. No guest cart or multi-vendor combined checkout.
-- Checkout creates an order with provisional status `PLACED`, payment `UNPAID`, fulfilment `UNFULFILLED`; delivery fee and discount are currently zero.
-- Payment is not collected by checkout. A QR display or uploaded proof is not proof of payment.
-- The approved database design defines `ORDER_ITEMS.quantity` with two decimal places. Checkout rejects quantities with more than two decimal places rather than rounding.
-- Inventory, stock reservation and purchasing remain future scope.
-- Migrations are additive. They have not been applied to the user's local database by this implementation process.
-- No production deployment or merge to `main` has been performed.
+## Plan and role configuration dependencies
 
-## Next backend sequence
+- The Gold PRODUCT_LIMIT=50 and Platinum PROMOTIONAL_POSTS=1 seed applies only when active plans with matching plan codes exist.
+- Other product limits and entitlements must be configured from approved commercial plan definitions.
+- Platform administration is default-deny until a trusted platform operator is explicitly assigned the PLATFORM_ADMIN role.
+- Tenant APIs require the relevant tenant role/permission assignment. The seed scripts do not grant platform administration to a test user.
 
-1. Business application and Platform Admin approval APIs.
-2. Role/permission seed and enforcement.
-3. Catalogue management and public storefront APIs.
-4. Business-side order management and status transitions.
-5. Payments and invoices after payment method/provider decisions.
-6. End-to-end API tests against a local MySQL database.
+## Data and release constraints
+
+- Preserve the existing database; migrations are additive and must not be used as a database reset.
+- The five common columns are status, created_by, created_on, updated_by, updated_on; use status='A' for active and status='Z' for soft-deleted rows.
+- No physical delete is used for application records.
+- Cart remains per customer per business; no guest cart or multi-vendor combined checkout.
+- Checkout creates an order with provisional status PLACED, payment UNPAID, fulfilment UNFULFILLED; delivery fee and discount remain zero in the current implementation.
+- Tenant order status transitions are currently restricted to REQUESTED/PLACED → CONFIRMED/CANCELLED. Further fulfilment/payment transitions require approved lifecycle rules.
+- Checkout does not collect payment. An uploaded proof or displayed QR is not proof of payment.
+- ORDER_ITEMS.quantity uses two decimal places; checkout rejects quantities with more than two decimal places rather than rounding.
+- Supplier, purchasing and inventory/costing tables remain future scope and have no active APIs.
+- No production deployment, merge to main, or end-to-end verification against the user's local database has been performed.
+
+## Next verification sequence
+
+1. Confirm the latest PHP 8.4 GitHub Actions syntax job passes.
+2. Run the migration workflow against a clean MySQL 8.4 service.
+3. Compare every DAO query against the user's actual live schema (schema-only inspection; no destructive changes).
+4. Run API smoke tests for authentication, tenant isolation, customer flows, business approval, catalogue, orders, enquiries, subscriptions, engagement and admin.
+5. Run security tests for cross-tenant access, privilege escalation, stale tokens, IDOR, replay and rate limiting.
+6. Review the guarded storage, payment, OAuth and workspace contracts before implementing those dependencies.
