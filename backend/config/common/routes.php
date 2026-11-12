@@ -11,6 +11,7 @@ use App\Modules\Api\V1\Controllers\TenantController;
 use App\Modules\Api\V1\Controllers\BusinessController;
 use App\Modules\Api\V1\Controllers\CatalogueController;
 use App\Modules\Api\V1\Controllers\CustomerController;
+use App\Modules\Api\V1\Controllers\EnquiryController;
 use Yiisoft\Router\Route;
 
 /** @var array $params */
@@ -80,4 +81,12 @@ return [
     Route::post('/api/v1/customers/addresses/update')->action([CustomerController::class, 'actionManageCustomer'])->name('api/v1/customers/addresses/update'),
     Route::post('/api/v1/customers/addresses/delete')->action([CustomerController::class, 'actionManageCustomer'])->name('api/v1/customers/addresses/delete'),
     Route::post('/api/v1/customers/addresses/default')->action([CustomerController::class, 'actionManageCustomer'])->name('api/v1/customers/addresses/default'),
+
+    Route::post('/api/v1/enquiries/create')->action([EnquiryController::class, 'actionManageEnquiry'])->name('api/v1/enquiries/create'),
+    Route::post('/api/v1/enquiries/mine/list')->action([EnquiryController::class, 'actionGetEnquiry'])->name('api/v1/enquiries/mine/list'),
+    Route::post('/api/v1/enquiries/mine/detail')->action([EnquiryController::class, 'actionGetEnquiry'])->name('api/v1/enquiries/mine/detail'),
+    Route::post('/api/v1/enquiries/tenant/list')->action([EnquiryController::class, 'actionGetEnquiry'])->name('api/v1/enquiries/tenant/list'),
+    Route::post('/api/v1/enquiries/tenant/detail')->action([EnquiryController::class, 'actionGetEnquiry'])->name('api/v1/enquiries/tenant/detail'),
+    Route::post('/api/v1/enquiries/tenant/respond')->action([EnquiryController::class, 'actionManageEnquiry'])->name('api/v1/enquiries/tenant/respond'),
+    Route::post('/api/v1/enquiries/tenant/close')->action([EnquiryController::class, 'actionManageEnquiry'])->name('api/v1/enquiries/tenant/close'),
 ];
