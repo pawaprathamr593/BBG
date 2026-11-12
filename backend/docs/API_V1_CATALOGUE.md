@@ -34,7 +34,9 @@ The Model layer remains reference-only for new development; Utils contains reusa
 | `POST /api/v1/auth/refresh` | `manageAuth/refresh` | Rotate refresh session |
 | `POST /api/v1/auth/logout` | `manageAuth/logout` | Revoke current session |
 | `POST /api/v1/auth/logout-all` | `manageAuth/logoutAll` | Revoke all user sessions |
-| `POST /api/v1/auth/profile` | `getAuth/getProfile` | Read authenticated profile |\n| `POST /api/v1/auth/profile/update` | `manageAuth/updateProfile` | Update own name/email/mobile |\n| `POST /api/v1/auth/permissions` | `getAuth/getPermissions` | Read platform or authorized tenant permission snapshot |
+| `POST /api/v1/auth/profile` | `getAuth/getProfile` | Read authenticated profile |
+| `POST /api/v1/auth/profile/update` | `manageAuth/updateProfile` | Update own name/email/mobile |
+| `POST /api/v1/auth/permissions` | `getAuth/getPermissions` | Read platform or authorized tenant permission snapshot |
 
 ### Cart and orders
 | Route | Dispatcher/action | Purpose |
@@ -79,7 +81,8 @@ The Model layer remains reference-only for new development; Utils contains reusa
 | `POST /api/v1/customers/addresses/list` | `listMyAddresses` | Own address book |
 | `POST /api/v1/customers/addresses/create` | `createMyAddress` | Add address |
 | `POST /api/v1/customers/addresses/update` | `updateMyAddress` | Update own address |
-| `POST /api/v1/customers/addresses/delete` | `deleteMyAddress` | Soft-delete own address |\n| `POST /api/v1/customers/addresses/default` | `setMyDefaultAddress` | Set the default address for the selected tenant |
+| `POST /api/v1/customers/addresses/delete` | `deleteMyAddress` | Soft-delete own address |
+| `POST /api/v1/customers/addresses/default` | `setMyDefaultAddress` | Set the default address for the selected tenant |
 
 ### Enquiries
 | Route | Action | Purpose |
@@ -119,7 +122,11 @@ The Model layer remains reference-only for new development; Utils contains reusa
 | `POST /api/v1/business/application/resubmit` | `resubmitBusinessApplication` | Resubmit after rejection |
 | `POST /api/v1/business/profile/get` | `getMyBusinessProfile` | Read tenant business profile |
 | `POST /api/v1/business/profile/update` | `updateMyBusinessProfile` | Update allowed business fields |
-| `POST /api/v1/business/verification/get` | `getBusinessVerification` | Read approval/publication state |\n| `POST /api/v1/business/storefront/get` | `getMyStorefront` | Read own storefront settings |\n| `POST /api/v1/business/storefront/update` | `updateMyStorefront` | Update storefront preferences and WhatsApp settings |\n| `POST /api/v1/business/storefront/publish` | `publishMyStorefront` | Publish an approved business with an active subscription |\n| `POST /api/v1/business/storefront/unpublish` | `unpublishMyStorefront` | Unpublish own storefront |
+| `POST /api/v1/business/verification/get` | `getBusinessVerification` | Read approval/publication state |
+| `POST /api/v1/business/storefront/get` | `getMyStorefront` | Read own storefront settings |
+| `POST /api/v1/business/storefront/update` | `updateMyStorefront` | Update storefront preferences and WhatsApp settings |
+| `POST /api/v1/business/storefront/publish` | `publishMyStorefront` | Publish an approved business with an active subscription |
+| `POST /api/v1/business/storefront/unpublish` | `unpublishMyStorefront` | Unpublish own storefront |
 
 ### Catalogue
 | Route | Action | Purpose |
