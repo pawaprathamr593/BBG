@@ -17,6 +17,7 @@ use App\Modules\Api\V1\Controllers\EngagementController;
 use App\Modules\Api\V1\Controllers\SubscriptionController;
 use App\Modules\Api\V1\Controllers\AdminController;
 use App\Modules\Api\V1\Controllers\PaymentController;
+use App\Modules\Api\V1\Controllers\DashboardController;
 use Yiisoft\Router\Route;
 
 /** @var array $params */
@@ -153,4 +154,7 @@ return [
     Route::post('/api/v1/payments/mine/detail')->action([PaymentController::class, 'actionGetPayment'])->name('api/v1/payments/mine/detail'),
     Route::post('/api/v1/payments/tenant/list')->action([PaymentController::class, 'actionGetPayment'])->name('api/v1/payments/tenant/list'),
     Route::post('/api/v1/payments/tenant/detail')->action([PaymentController::class, 'actionGetPayment'])->name('api/v1/payments/tenant/detail'),
+
+    Route::post('/api/v1/dashboard/consumer/summary')->action([DashboardController::class, 'actionGetDashboard'])->name('api/v1/dashboard/consumer/summary'),
+    Route::post('/api/v1/dashboard/entrepreneur/summary')->action([DashboardController::class, 'actionGetDashboard'])->name('api/v1/dashboard/entrepreneur/summary'),
 ];
