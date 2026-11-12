@@ -106,7 +106,7 @@ final readonly class CatalogueDao
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->one($db, "SELECT id FROM TENANT_PRODUCT_CATEGORIES
-            WHERE id = :id AND tenant_id = :tenant_id AND status = 'A' LIMIT 1",
+            WHERE id = :id AND tenant_id = :tenant_id AND product_status = 'ACTIVE' AND status = 'A' LIMIT 1",
             [':id' => $categoryId, ':tenant_id' => $tenantId], 'isTenantCategoryAvailable');
     }
 
@@ -128,7 +128,7 @@ final readonly class CatalogueDao
             JOIN UNITS_OF_MEASURE u ON u.id = p.base_unit_id AND u.status = 'A'
             LEFT JOIN TENANT_PRODUCT_CATEGORIES pc ON pc.id = p.category_id
                 AND pc.tenant_id = p.tenant_id AND pc.status = 'A'
-            WHERE p.tenant_id = :tenant_id AND p.status = 'A' " . $searchSql . "
+            WHERE p.tenant_id = :tenant_id AND p.product_status = 'ACTIVE' AND p.status = 'A' " . $searchSql . "
             ORDER BY p.product_name ASC, p.id DESC LIMIT :limit OFFSET :offset",
             $params, 'getTenantProducts');
     }
@@ -144,7 +144,7 @@ final readonly class CatalogueDao
             $searchSql = ' AND (product_name LIKE :search_name OR product_code LIKE :search_code)';
         }
         return $this->one($db, "SELECT COUNT(*) AS total FROM PRODUCTS
-            WHERE tenant_id = :tenant_id AND status = 'A' " . $searchSql, $params, 'countTenantProducts');
+            WHERE tenant_id = :tenant_id AND product_status = 'ACTIVE' AND status = 'A' " . $searchSql, $params, 'countTenantProducts');
     }
 
     public function getTenantProduct(ConnectionInterface $db, int $tenantId, int $productId): array
@@ -155,6 +155,16 @@ final readonly class CatalogueDao
             track_inventory, is_variant_product, publication_status, product_status
             FROM PRODUCTS WHERE id = :id AND tenant_id = :tenant_id AND status = 'A' LIMIT 1",
             [':id' => $productId, ':tenant_id' => $tenantId], 'getTenantProduct');
+    }
+
+    public function isProductCodeAvailable(ConnectionInterface $db, int $tenantId, string $productCode, int $excludeProductId = 0): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT id FROM PRODUCTS
+            WHERE tenant_id = :tenant_id AND product_code = :product_code
+                AND id <> :exclude_id AND status = 'A' LIMIT 1",
+            [':tenant_id' => $tenantId, ':product_code' => $productCode, ':exclude_id' => $excludeProductId],
+            'isProductCodeAvailable');
     }
 
     public function insertProduct(ConnectionInterface $db, int $tenantId, string $code, string $name, string $description, ?int $categoryId, ?int $globalCategoryId, int $unitId, string $brand, string $barcode, string $costPrice, string $sellingPrice, string $taxRate, int $trackInventory, int $isVariant, int $userId): array
