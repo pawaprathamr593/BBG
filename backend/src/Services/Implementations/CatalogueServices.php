@@ -472,6 +472,11 @@ final readonly class CatalogueServices implements ICatalogueServices
         $transaction = $this->db->beginTransaction();
         try {
             if ($isPrimary === 1) {
+                $lockedProduct = $this->dao->lockTenantProduct($this->db, $tenantId, $productId);
+                if ($lockedProduct['status'] !== 'SUCCESS' || $lockedProduct['data'] === []) {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($lockedProduct, 'CatalogueServices::manageProductMedia');
+                }
                 $cleared = $this->dao->clearPrimaryProductMedia($this->db, $tenantId, $productId, $variantId, $userId);
                 if ($cleared['status'] !== 'SUCCESS') {
                     $transaction->rollBack();
