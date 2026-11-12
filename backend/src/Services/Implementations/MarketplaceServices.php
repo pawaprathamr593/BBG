@@ -18,151 +18,198 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         private LoggerInterface $logger,
     ) {}
 
-    public function getMarketplace(array $param): array
+    public function getMarketplace(array $marketplaceParam): array
     {
-        if (!isset($param['actionType'], $param['actionData']) || !is_array($param['actionData'])) {
-            return $this->failed('Invalid marketplace request envelope.');
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+
+        if (!is_array($marketplaceParam)) {
+            return $this->failure('Invalid marketplace parameter array.');
         }
-        if ($param['actionType'] !== 'getMarketplace') {
-            return $this->failed('Unsupported actionType for getMarketplace.');
+        if (!isset($marketplaceParam['actionType'])) {
+            return $this->failure("Missing required key 'actionType'.");
+        }
+        if (!isset($marketplaceParam['actionData']) || !is_array($marketplaceParam['actionData'])) {
+            return $this->failure("Missing or invalid 'actionData'.");
+        }
+        if ($marketplaceParam['actionType'] !== 'getMarketplace') {
+            return $this->failure('Unsupported actionType for getMarketplace.');
         }
 
-        $data = $param['actionData'];
+        $actionData = $marketplaceParam['actionData'];
         try {
-            return match ((string) ($data['action'] ?? '')) {
-                'listBusinesses' => $this->listBusinesses($data),
-                'getBusiness' => $this->getBusiness($data),
-                'listProducts' => $this->listProducts($data),
-                'getProduct' => $this->getProduct($data),
-                default => $this->failed('Unsupported marketplace read action.'),
-            };
+            switch ((string) ($actionData['action'] ?? '')) {
+                case 'listBusinesses':
+                    $resArr = $this->getBusinesses($actionData);
+                    break;
+                case 'getBusiness':
+                    $resArr = $this->getBusiness($actionData);
+                    break;
+                case 'listProducts':
+                    $resArr = $this->getProducts($actionData);
+                    break;
+                case 'getProduct':
+                    $resArr = $this->getProduct($actionData);
+                    break;
+                case 'listPublicCategories':
+                    $resArr = $this->getCategories($actionData);
+                    break;
+                case 'listPublicPromotions':
+                    $resArr = $this->getPromotions($actionData);
+                    break;
+                case 'getPublicPromotion':
+                    $resArr = $this->getPromotion($actionData);
+                    break;
+                case 'getHomeSummary':
+                    $resArr = $this->getHomeSummary($actionData);
+                    break;
+                default:
+                    $resArr['msgArr'][] = 'Unsupported marketplace read action.';
+                    break;
+            }
         } catch (Throwable $exception) {
             $this->logger->error('MarketplaceServices::getMarketplace failed.', ['exception' => $exception]);
-            return ['status' => 'EXCEPTION', 'msgArr' => ['Marketplace request failed unexpectedly.'], 'data' => []];
+            $resArr['status'] = 'EXCEPTION';
+            $resArr['msgArr'][] = 'Marketplace request failed unexpectedly.';
+            $resArr['data'] = [];
         }
+
+        return $resArr;
     }
 
-    private function listBusinesses(array $data): array
+    private function getBusinesses(array $actionData): array
     {
-        $page = $this->positiveInt($data['page'] ?? 1) ?? 1;
-        $pageSize = min(50, $this->positiveInt($data['page_size'] ?? 20) ?? 20);
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(50, $this->positiveInt($actionData['page_size'] ?? 20) ?? 20);
         $categoryId = null;
-        if (isset($data['category_id']) && $data['category_id'] !== '') {
-            $categoryId = $this->positiveInt($data['category_id']);
+        if (isset($actionData['category_id']) && $actionData['category_id'] !== '') {
+            $categoryId = $this->positiveInt($actionData['category_id']);
             if ($categoryId === null) {
-                return $this->failed('A valid category_id is required.');
+                $resArr['msgArr'][] = 'A valid category_id is required.';
+                return $resArr;
             }
         }
 
-        $filters = [
-            'search' => $this->filterText($data['search'] ?? '', 100),
-            'city' => $this->filterText($data['city'] ?? '', 100),
-            'state' => $this->filterText($data['state'] ?? '', 100),
-            'category_id' => $categoryId,
-        ];
-        $rows = $this->dao->getBusinesses($this->db, $filters, $pageSize, ($page - 1) * $pageSize);
+        $search = $this->filterText($actionData['search'] ?? '', 100);
+        $city = $this->filterText($actionData['city'] ?? '', 100);
+        $state = $this->filterText($actionData['state'] ?? '', 100);
+        $rows = $this->dao->getBusinesses($this->db, $search, $city, $state, $categoryId, $pageSize, ($page - 1) * $pageSize);
         if ($rows['status'] !== 'SUCCESS') {
-            return $rows;
+            return $this->propagateFailure($rows, 'MarketplaceServices::getBusinesses');
         }
-        $count = $this->dao->countBusinesses($this->db, $filters);
+        $count = $this->dao->countBusinesses($this->db, $search, $city, $state, $categoryId);
         if ($count['status'] !== 'SUCCESS') {
-            return $count;
+            return $this->propagateFailure($count, 'MarketplaceServices::getBusinesses');
         }
 
         $items = array_map(fn (array $row): array => $this->publicBusiness($row, false), $rows['data']);
-        return $this->ok([
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
             'items' => $items,
             'pagination' => [
                 'page' => $page,
                 'page_size' => $pageSize,
                 'total' => (int) ($count['data']['total'] ?? 0),
             ],
-        ]);
+        ];
+        return $resArr;
     }
 
-    private function getBusiness(array $data): array
+    private function getBusiness(array $actionData): array
     {
-        $slug = $this->businessSlug($data['business_slug'] ?? null);
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $slug = $this->businessSlug($actionData['business_slug'] ?? null);
         if ($slug === null) {
-            return $this->failed('A valid business_slug is required.');
+            $resArr['msgArr'][] = 'A valid business_slug is required.';
+            return $resArr;
         }
 
         $result = $this->dao->getBusinessBySlug($this->db, $slug);
         if ($result['status'] !== 'SUCCESS') {
-            return $result;
+            return $this->propagateFailure($result, 'MarketplaceServices::getBusiness');
         }
         if ($result['data'] === []) {
-            return $this->failed('Published business storefront was not found.');
+            $resArr['msgArr'][] = 'Published business storefront was not found.';
+            return $resArr;
         }
 
         $row = $result['data'];
-        $business = $this->publicBusiness($row, true);
-        $storefront = [
-            'title' => $row['storefront_title'],
-            'description' => $row['storefront_description'],
-            'theme_code' => $row['theme_code'],
-            'show_prices' => (bool) $row['show_prices'],
-            'accept_online_orders' => (bool) $row['accept_online_orders'],
-            'whatsapp_enabled' => (bool) $row['whatsapp_enabled'],
-            'currency' => $row['default_currency'],
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
+            'business' => $this->publicBusiness($row, true),
+            'storefront' => [
+                'title' => $row['storefront_title'],
+                'description' => $row['storefront_description'],
+                'theme_code' => $row['theme_code'],
+                'show_prices' => (bool) $row['show_prices'],
+                'accept_online_orders' => (bool) $row['accept_online_orders'],
+                'whatsapp_enabled' => (bool) $row['whatsapp_enabled'],
+                'currency' => $row['default_currency'],
+            ],
         ];
-
-        return $this->ok(['business' => $business, 'storefront' => $storefront]);
+        return $resArr;
     }
 
-    private function listProducts(array $data): array
+    private function getProducts(array $actionData): array
     {
-        $slug = $this->businessSlug($data['business_slug'] ?? null);
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $slug = $this->businessSlug($actionData['business_slug'] ?? null);
         if ($slug === null) {
-            return $this->failed('A valid business_slug is required.');
+            $resArr['msgArr'][] = 'A valid business_slug is required.';
+            return $resArr;
         }
         $business = $this->dao->getBusinessBySlug($this->db, $slug);
         if ($business['status'] !== 'SUCCESS') {
-            return $business;
+            return $this->propagateFailure($business, 'MarketplaceServices::getProducts');
         }
         if ($business['data'] === []) {
-            return $this->failed('Published business storefront was not found.');
+            $resArr['msgArr'][] = 'Published business storefront was not found.';
+            return $resArr;
         }
 
-        $page = $this->positiveInt($data['page'] ?? 1) ?? 1;
-        $pageSize = min(50, $this->positiveInt($data['page_size'] ?? 20) ?? 20);
-        $search = $this->filterText($data['search'] ?? '', 100);
-        $rows = $this->dao->getProducts($this->db, $slug, ['search' => $search], $pageSize, ($page - 1) * $pageSize);
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(50, $this->positiveInt($actionData['page_size'] ?? 20) ?? 20);
+        $search = $this->filterText($actionData['search'] ?? '', 100);
+        $rows = $this->dao->getProducts($this->db, $slug, $search, $pageSize, ($page - 1) * $pageSize);
         if ($rows['status'] !== 'SUCCESS') {
-            return $rows;
+            return $this->propagateFailure($rows, 'MarketplaceServices::getProducts');
         }
         $count = $this->dao->countProducts($this->db, $slug, $search);
         if ($count['status'] !== 'SUCCESS') {
-            return $count;
+            return $this->propagateFailure($count, 'MarketplaceServices::getProducts');
         }
 
         $showPrices = (bool) $business['data']['show_prices'];
-        $items = array_map(fn (array $row): array => $this->publicProduct($row, $showPrices), $rows['data']);
-        return $this->ok([
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
             'business_slug' => $slug,
-            'items' => $items,
+            'items' => array_map(fn (array $row): array => $this->publicProduct($row, $showPrices), $rows['data']),
             'pagination' => [
                 'page' => $page,
                 'page_size' => $pageSize,
                 'total' => (int) ($count['data']['total'] ?? 0),
             ],
-        ]);
+        ];
+        return $resArr;
     }
 
-    private function getProduct(array $data): array
+    private function getProduct(array $actionData): array
     {
-        $slug = $this->businessSlug($data['business_slug'] ?? null);
-        $productId = $this->positiveInt($data['product_id'] ?? null);
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $slug = $this->businessSlug($actionData['business_slug'] ?? null);
+        $productId = $this->positiveInt($actionData['product_id'] ?? null);
         if ($slug === null || $productId === null) {
-            return $this->failed('Valid business_slug and product_id are required.');
+            $resArr['msgArr'][] = 'Valid business_slug and product_id are required.';
+            return $resArr;
         }
 
         $result = $this->dao->getProductById($this->db, $slug, $productId);
         if ($result['status'] !== 'SUCCESS') {
-            return $result;
+            return $this->propagateFailure($result, 'MarketplaceServices::getProduct');
         }
         if ($result['data'] === []) {
-            return $this->failed('Published product was not found in this storefront.');
+            $resArr['msgArr'][] = 'Published product was not found in this storefront.';
+            return $resArr;
         }
 
         $product = $result['data'];
@@ -171,9 +218,9 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         if ((bool) $product['is_variant_product']) {
             $variantResult = $this->dao->getProductVariants($this->db, (int) $product['tenant_id'], $productId);
             if ($variantResult['status'] !== 'SUCCESS') {
-                return $variantResult;
+                return $this->propagateFailure($variantResult, 'MarketplaceServices::getProduct');
             }
-            $variants = array_map(function (array $variant) use ($showPrices): array {
+            $variants = array_map(static function (array $variant) use ($showPrices): array {
                 if (!$showPrices) {
                     unset($variant['selling_price']);
                 }
@@ -181,14 +228,116 @@ final readonly class MarketplaceServices implements IMarketplaceServices
             }, $variantResult['data']);
         }
 
-        return $this->ok([
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
             'product' => $this->publicProduct($product, $showPrices),
             'variants' => $variants,
-        ]);
+        ];
+        return $resArr;
+    }
+
+    private function getCategories(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $result = $this->dao->getPublicCategories($this->db);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'MarketplaceServices::getCategories');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['items' => $result['data']];
+        return $resArr;
+    }
+
+    private function getPromotions(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(50, $this->positiveInt($actionData['page_size'] ?? 20) ?? 20);
+        $businessSlug = $this->businessSlug($actionData['business_slug'] ?? '');
+        $tenantId = null;
+        if ($businessSlug !== null) {
+            $business = $this->dao->getBusinessBySlug($this->db, $businessSlug);
+            if ($business['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($business, 'MarketplaceServices::getPromotions');
+            }
+            if ($business['data'] === []) {
+                $resArr['msgArr'][] = 'Published business storefront was not found.';
+                return $resArr;
+            }
+            $tenantId = (int) $business['data']['tenant_id'];
+        }
+        $rows = $this->dao->getPublicPromotions($this->db, $tenantId, $pageSize, ($page - 1) * $pageSize);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'MarketplaceServices::getPromotions');
+        }
+        $count = $this->dao->countPublicPromotions($this->db, $tenantId);
+        if ($count['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($count, 'MarketplaceServices::getPromotions');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
+            'items' => $rows['data'],
+            'pagination' => [
+                'page' => $page,
+                'page_size' => $pageSize,
+                'total' => (int) ($count['data']['total'] ?? 0),
+            ],
+        ];
+        return $resArr;
+    }
+
+    private function getPromotion(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $promotionId = $this->positiveInt($actionData['promotion_id'] ?? null);
+        if ($promotionId === null) {
+            $resArr['msgArr'][] = 'A valid promotion_id is required.';
+            return $resArr;
+        }
+        $result = $this->dao->getPublicPromotionById($this->db, $promotionId);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'MarketplaceServices::getPromotion');
+        }
+        if ($result['data'] === []) {
+            $resArr['msgArr'][] = 'Published promotion was not found.';
+            return $resArr;
+        }
+        $media = $this->dao->getPublicPromotionMedia($this->db, (int) $result['data']['tenant_id'], $promotionId);
+        if ($media['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($media, 'MarketplaceServices::getPromotion');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['promotion' => $result['data'], 'media' => $media['data']];
+        return $resArr;
+    }
+
+    private function getHomeSummary(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $categories = $this->getCategories([]);
+        if ($categories['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($categories, 'MarketplaceServices::getHomeSummary');
+        }
+        $businesses = $this->getBusinesses(['page' => 1, 'page_size' => 8]);
+        if ($businesses['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($businesses, 'MarketplaceServices::getHomeSummary');
+        }
+        $promotions = $this->getPromotions(['page' => 1, 'page_size' => 8]);
+        if ($promotions['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($promotions, 'MarketplaceServices::getHomeSummary');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
+            'categories' => $categories['data']['items'],
+            'businesses' => $businesses['data']['items'],
+            'promotions' => $promotions['data']['items'],
+        ];
+        return $resArr;
     }
 
     private function publicBusiness(array $row, bool $includeAddress): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $business = [
             'id' => (int) $row['id'],
             'business_name' => $row['business_name'],
@@ -223,11 +372,14 @@ final readonly class MarketplaceServices implements IMarketplaceServices
                 'longitude' => $row['longitude'],
             ];
         }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = $business;
         return $business;
     }
 
     private function publicProduct(array $row, bool $showPrices): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $product = [
             'id' => (int) $row['id'],
             'product_code' => $row['product_code'],
@@ -249,11 +401,14 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         if ($showPrices) {
             $product['selling_price'] = $row['selling_price'];
         }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = $product;
         return $product;
     }
 
     private function businessSlug(mixed $value): ?string
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         if (!is_scalar($value)) {
             return null;
         }
@@ -263,25 +418,28 @@ final readonly class MarketplaceServices implements IMarketplaceServices
 
     private function positiveInt(mixed $value): ?int
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $number = filter_var($value, FILTER_VALIDATE_INT);
         return $number !== false && $number > 0 ? (int) $number : null;
     }
 
     private function filterText(mixed $value, int $maxLength): string
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         if (!is_scalar($value)) {
             return '';
         }
         return substr(trim((string) $value), 0, $maxLength);
     }
 
-    private function ok(array $data): array
+    private function propagateFailure(array $downstream, string $context): array
     {
-        return ['status' => 'SUCCESS', 'msgArr' => [], 'data' => $data];
-    }
-
-    private function failed(string $message): array
-    {
-        return ['status' => 'FAILED', 'msgArr' => [$message], 'data' => []];
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $downstream['msgArr'][] = $context . ' returned a non-success response.';
+        if (($downstream['status'] ?? '') === 'SUCCESS') {
+            $downstream['status'] = 'FAILED';
+            $downstream['data'] = [];
+        }
+        return $downstream;
     }
 }
