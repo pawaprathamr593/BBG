@@ -246,7 +246,7 @@ The following are deliberately not operationalized in this API set:
 
 ## 9. Implementation status and guarded dependencies
 
-The routes listed in Sections 2–7 are registered on `feature/auth-foundation` and have corresponding V1/Core Services and DAO implementations, including the additions below:
+The routes listed in Sections 2–7 are registered on `feature/auth-foundation`: **120 unique POST routes across 15 route groups**. They have corresponding V1/Core Services and DAO implementations, including the additions below:
 
 - Auth: profile update and permission snapshot.
 - Business: storefront read/update/publish/unpublish.
