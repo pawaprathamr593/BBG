@@ -13,6 +13,7 @@ use App\Modules\Api\V1\Controllers\CatalogueController;
 use App\Modules\Api\V1\Controllers\CustomerController;
 use App\Modules\Api\V1\Controllers\EnquiryController;
 use App\Modules\Api\V1\Controllers\PromotionController;
+use App\Modules\Api\V1\Controllers\EngagementController;
 use Yiisoft\Router\Route;
 
 /** @var array $params */
@@ -99,4 +100,10 @@ return [
     Route::post('/api/v1/promotions/publish')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/publish'),
     Route::post('/api/v1/promotions/unpublish')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/unpublish'),
     Route::post('/api/v1/promotions/engagement')->action([PromotionController::class, 'actionGetPromotion'])->name('api/v1/promotions/engagement'),
+
+    Route::post('/api/v1/engagement/likes/toggle')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/likes/toggle'),
+    Route::post('/api/v1/engagement/comments/list')->action([EngagementController::class, 'actionGetEngagement'])->name('api/v1/engagement/comments/list'),
+    Route::post('/api/v1/engagement/comments/create')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/comments/create'),
+    Route::post('/api/v1/engagement/reports/create')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/reports/create'),
+    Route::post('/api/v1/engagement/views/record')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/views/record'),
 ];
