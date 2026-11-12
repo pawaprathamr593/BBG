@@ -41,7 +41,7 @@ final class AuthController
         if (in_array($action, ['refresh', 'logout'], true)) {
             $actionData['_refreshToken'] = (string) ($cookies['bbg_refresh'] ?? '');
         }
-        if ($action === 'logoutAll') {
+        if (in_array($action, ['logoutAll', 'updateProfile'], true)) {
             $authorization = $request->getHeaderLine('Authorization');
             $actionData['_accessToken'] = str_starts_with($authorization, 'Bearer ')
                 ? trim(substr($authorization, 7))
