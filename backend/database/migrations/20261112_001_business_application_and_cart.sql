@@ -94,12 +94,15 @@ CREATE TABLE IF NOT EXISTS CARTS (
     currency VARCHAR(3) NOT NULL DEFAULT 'INR',
     last_activity_on DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     converted_on DATETIME NULL,
+    active_user_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN cart_status = 'ACTIVE' AND status = 'A' THEN user_id ELSE NULL END) STORED,
+    active_tenant_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN cart_status = 'ACTIVE' AND status = 'A' THEN tenant_id ELSE NULL END) STORED,
     status VARCHAR(1) NOT NULL DEFAULT 'A',
     created_by INT UNSIGNED NULL,
     created_on DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_by INT UNSIGNED NULL,
     updated_on DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
+    UNIQUE KEY uq_carts_one_active_per_customer_store (active_user_id, active_tenant_id),
     KEY idx_carts_customer_tenant_status (user_id, tenant_id, cart_status, status),
     KEY idx_carts_tenant_activity (tenant_id, last_activity_on)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -112,12 +115,15 @@ CREATE TABLE IF NOT EXISTS CART_ITEMS (
     variant_id INT UNSIGNED NULL,
     quantity DECIMAL(12,3) NOT NULL,
     unit_price_snapshot DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    variant_key INT UNSIGNED GENERATED ALWAYS AS (COALESCE(variant_id, 0)) STORED,
+    active_cart_id INT UNSIGNED GENERATED ALWAYS AS (CASE WHEN status = 'A' THEN cart_id ELSE NULL END) STORED,
     status VARCHAR(1) NOT NULL DEFAULT 'A',
     created_by INT UNSIGNED NULL,
     created_on DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_by INT UNSIGNED NULL,
     updated_on DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
+    UNIQUE KEY uq_cart_items_active_product_variant (active_cart_id, product_id, variant_key),
     KEY idx_cart_items_cart_status (cart_id, status),
     KEY idx_cart_items_tenant_product (tenant_id, product_id, variant_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
