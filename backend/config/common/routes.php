@@ -14,6 +14,7 @@ use App\Modules\Api\V1\Controllers\CustomerController;
 use App\Modules\Api\V1\Controllers\EnquiryController;
 use App\Modules\Api\V1\Controllers\PromotionController;
 use App\Modules\Api\V1\Controllers\EngagementController;
+use App\Modules\Api\V1\Controllers\SubscriptionController;
 use Yiisoft\Router\Route;
 
 /** @var array $params */
@@ -106,4 +107,11 @@ return [
     Route::post('/api/v1/engagement/comments/create')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/comments/create'),
     Route::post('/api/v1/engagement/reports/create')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/reports/create'),
     Route::post('/api/v1/engagement/views/record')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/views/record'),
+
+    Route::post('/api/v1/subscriptions/plans/list')->action([SubscriptionController::class, 'actionGetSubscription'])->name('api/v1/subscriptions/plans/list'),
+    Route::post('/api/v1/subscriptions/mine/list')->action([SubscriptionController::class, 'actionGetSubscription'])->name('api/v1/subscriptions/mine/list'),
+    Route::post('/api/v1/subscriptions/mine/detail')->action([SubscriptionController::class, 'actionGetSubscription'])->name('api/v1/subscriptions/mine/detail'),
+    Route::post('/api/v1/subscriptions/request')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/request'),
+    Route::post('/api/v1/subscriptions/renewal/request')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/renewal/request'),
+    Route::post('/api/v1/subscriptions/proofs/submit')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/proofs/submit'),
 ];
