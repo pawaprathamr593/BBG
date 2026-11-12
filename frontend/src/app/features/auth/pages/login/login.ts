@@ -27,7 +27,7 @@ export class Login {
       await this.auth.login(this.form.getRawValue());
       await this.router.navigateByUrl('/');
     } catch (error) {
-      this.error.set(error instanceof Error ? error.message : 'Unable to sign in. Please try again.');
+      this.error.set(this.auth.errorMessage(error));
     } finally { this.busy.set(false); }
   }
 }
