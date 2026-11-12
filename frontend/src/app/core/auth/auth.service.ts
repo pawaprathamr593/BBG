@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { API_BASE_URL } from '../config/api-base-url';
@@ -94,6 +94,14 @@ export class AuthService {
     this.user.set(data.user);
     this.isAuthenticated.set(true);
     return data.user;
+  }
+
+  errorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const body = error.error as Partial<ApiResponse<unknown>> | null;
+      if (Array.isArray(body?.msgArr) && body.msgArr.length) return body.msgArr.join(' ');
+    }
+    return error instanceof Error ? error.message : 'The request could not be completed.';
   }
 
   private clearLocalSession(): void {
