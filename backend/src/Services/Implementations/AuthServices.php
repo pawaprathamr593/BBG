@@ -36,6 +36,7 @@ final readonly class AuthServices implements IAuthServices
         return match ($actionData['action'] ?? '') {
             'getProfile' => $this->getUserProfile($actionData),
             'getPrincipal' => $this->resolvePrincipal((string) ($actionData['_accessToken'] ?? '')),
+            'getPermissions' => $this->getUserPermissions($actionData),
             default => $this->failed('Unsupported authentication read action.'),
         };
     }
@@ -57,6 +58,7 @@ final readonly class AuthServices implements IAuthServices
             'refresh' => $this->manageRefreshSession($actionData),
             'logout' => $this->manageLogoutSession($actionData),
             'logoutAll' => $this->manageLogoutAllSessions($actionData),
+            'updateProfile' => $this->manageUserProfile($actionData),
             default => $this->failed('Unsupported authentication management action.'),
         };
     }
@@ -362,6 +364,92 @@ final readonly class AuthServices implements IAuthServices
         $resArr['status'] = 'SUCCESS';
         $resArr['msgArr'][] = 'All user sessions have been revoked.';
         return $resArr;
+    }
+
+    private function getUserPermissions(array $actionData): array
+    {
+        $resArr = $this->initialResponse();
+        $principal = $this->resolvePrincipal((string) ($actionData['_accessToken'] ?? ''));
+        if ($principal['status'] !== 'SUCCESS') {
+            return $principal;
+        }
+        $tenantId = filter_var($actionData['tenant_id'] ?? 0, FILTER_VALIDATE_INT);
+        if ($tenantId === false || $tenantId < 0) {
+            return $this->failed('tenant_id must be a non-negative integer.');
+        }
+        $result = $this->authDao->getUserPermissions(
+            $this->connection,
+            (int) $principal['data']['user_id'],
+            (int) $tenantId,
+        );
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'AuthServices::getUserPermissions');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
+            'tenant_id' => (int) $tenantId > 0 ? (int) $tenantId : null,
+            'permissions' => $result['data'],
+        ];
+        return $resArr;
+    }
+
+    private function manageUserProfile(array $actionData): array
+    {
+        $resArr = $this->initialResponse();
+        $principal = $this->resolvePrincipal((string) ($actionData['_accessToken'] ?? ''));
+        if ($principal['status'] !== 'SUCCESS') {
+            return $principal;
+        }
+        $userId = (int) $principal['data']['user_id'];
+        $fullName = trim((string) ($actionData['full_name'] ?? ''));
+        $email = strtolower(trim((string) ($actionData['email'] ?? '')));
+        $mobile = trim((string) ($actionData['mobile'] ?? ''));
+        if ($fullName === '' || strlen($fullName) > 150 || ($email === '' && $mobile === '')
+            || strlen($email) > 190 || strlen($mobile) > 25
+        ) {
+            return $this->failed('A valid full_name and at least one of email or mobile are required.');
+        }
+        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            return $this->failed('A valid email address is required.');
+        }
+        if ($email !== '') {
+            $emailCheck = $this->authDao->isEmailAvailableForUser($this->connection, $email, $userId);
+            if ($emailCheck['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($emailCheck, 'AuthServices::manageUserProfile');
+            }
+            if ($emailCheck['data'] !== []) {
+                return $this->failed('The supplied email address is already in use.');
+            }
+        }
+        if ($mobile !== '') {
+            $mobileCheck = $this->authDao->isMobileAvailableForUser($this->connection, $mobile, $userId);
+            if ($mobileCheck['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($mobileCheck, 'AuthServices::manageUserProfile');
+            }
+            if ($mobileCheck['data'] !== []) {
+                return $this->failed('The supplied mobile number is already in use.');
+            }
+        }
+        try {
+            $updated = $this->authDao->updateUserProfile(
+                $this->connection, $userId, $fullName,
+                $email !== '' ? $email : null,
+                $mobile !== '' ? $mobile : null,
+            );
+            if ($updated['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($updated, 'AuthServices::manageUserProfile');
+            }
+            $profile = $this->authDao->getUserById($this->connection, $userId);
+            if ($profile['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($profile, 'AuthServices::manageUserProfile');
+            }
+            $resArr['status'] = 'SUCCESS';
+            $resArr['msgArr'][] = 'User profile updated successfully.';
+            $resArr['data'] = $this->publicUser($profile['data']);
+            return $resArr;
+        } catch (Throwable $exception) {
+            return $this->exception('manageUserProfile', $exception);
+        }
     }
 
     private function getUserProfile(array $actionData): array
