@@ -106,7 +106,7 @@ final readonly class CatalogueDao
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->one($db, "SELECT id FROM TENANT_PRODUCT_CATEGORIES
-            WHERE id = :id AND tenant_id = :tenant_id AND product_status = 'ACTIVE' AND status = 'A' LIMIT 1",
+            WHERE id = :id AND tenant_id = :tenant_id AND status = 'A' LIMIT 1",
             [':id' => $categoryId, ':tenant_id' => $tenantId], 'isTenantCategoryAvailable');
     }
 
@@ -153,7 +153,7 @@ final readonly class CatalogueDao
         return $this->one($db, "SELECT id, product_code, product_name, description, category_id,
             global_category_id, base_unit_id, brand_name, barcode, cost_price, selling_price, tax_rate,
             track_inventory, is_variant_product, publication_status, product_status
-            FROM PRODUCTS WHERE id = :id AND tenant_id = :tenant_id AND status = 'A' LIMIT 1",
+            FROM PRODUCTS WHERE id = :id AND tenant_id = :tenant_id AND product_status = 'ACTIVE' AND status = 'A' LIMIT 1",
             [':id' => $productId, ':tenant_id' => $tenantId], 'getTenantProduct');
     }
 
