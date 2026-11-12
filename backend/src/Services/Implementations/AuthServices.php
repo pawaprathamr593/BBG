@@ -560,13 +560,14 @@ final readonly class AuthServices implements IAuthServices
     private function failed(string $message): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        return ['status' => 'FAILED', 'msgArr' => [$message], 'data' => []];
+        $resArr['msgArr'][] = $message;
+        return $resArr;
     }
 
     private function initialResponse(): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        return ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $resArr;
     }
 
     private function publicUser(array $user): array
