@@ -379,6 +379,25 @@ final readonly class CatalogueServices implements ICatalogueServices
         if ($existing['status'] !== 'SUCCESS' || $existing['data'] === []) {
             return $this->propagateFailure($existing, 'CatalogueServices::manageTenantProduct');
         }
+        if ($publicationStatus === 'PUBLISHED' && ($existing['data']['publication_status'] ?? '') !== 'PUBLISHED') {
+            $limitResult = $this->dao->getActiveProductLimit($this->db, $tenantId);
+            if ($limitResult['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($limitResult, 'CatalogueServices::manageTenantProduct');
+            }
+            if ($limitResult['data'] === []) {
+                $resArr['msgArr'][] = 'An active subscription with PRODUCT_LIMIT entitlement is required to publish products.';
+                return $resArr;
+            }
+            $limitValue = strtoupper((string) ($limitResult['data']['entitlement_value'] ?? ''));
+            $count = $this->dao->countTenantProducts($this->db, $tenantId, '');
+            if ($count['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($count, 'CatalogueServices::manageTenantProduct');
+            }
+            if ($limitValue !== 'UNLIMITED' && (!is_numeric($limitValue) || (int) $count['data']['total'] > (int) $limitValue)) {
+                $resArr['msgArr'][] = 'The active subscription product limit is exceeded or is not configured correctly.';
+                return $resArr;
+            }
+        }
         return $this->dao->updateProduct(
             $this->db, $tenantId, $productId, $code, $name, $description, $categoryId, $globalCategoryId,
             $unitId, $brand, $barcode, $priceValues[0], $priceValues[1], $priceValues[2], 0, 0,
