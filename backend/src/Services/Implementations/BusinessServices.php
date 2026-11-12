@@ -416,6 +416,11 @@ final readonly class BusinessServices implements IBusinessServices
                     return $resArr;
                 }
                 $whatsapp = $whatsappInput;
+                if ($whatsapp !== null && !preg_match('/^\\+?[0-9]{8,15}$/', $whatsapp)) {
+                    $transaction->rollBack();
+                    $resArr['msgArr'][] = 'whatsapp_number must contain 8 to 15 digits with an optional leading plus sign.';
+                    return $resArr;
+                }
                 if ($whatsappEnabled === 1 && ($whatsapp === null || trim($whatsapp) === '')) {
                     $transaction->rollBack();
                     $resArr['msgArr'][] = 'A WhatsApp number is required when whatsapp_enabled is true.';
