@@ -163,9 +163,15 @@ final readonly class BusinessServices implements IBusinessServices
         }
         $userId = (int) $principal['data']['user_id'];
         $businessName = $this->requiredText($actionData['business_name'] ?? '', 180);
-        $businessSlug = strtolower($this->requiredText($actionData['business_slug'] ?? '', 200));
-        $tenantType = strtoupper($this->requiredText($actionData['tenant_type'] ?? '', 40));
-        if ($businessName === null || $businessSlug === null || $tenantType === null
+        $businessSlugInput = $this->requiredText($actionData['business_slug'] ?? '', 200);
+        $tenantTypeInput = $this->requiredText($actionData['tenant_type'] ?? '', 40);
+        if ($businessName === null || $businessSlugInput === null || $tenantTypeInput === null) {
+            $resArr['msgArr'][] = 'Business name, slug and tenant type are required.';
+            return $resArr;
+        }
+        $businessSlug = strtolower($businessSlugInput);
+        $tenantType = strtoupper($tenantTypeInput);
+        if (
             || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $businessSlug)
             || !in_array($tenantType, ['RETAIL', 'DARK_STORE', 'SMALL_BUSINESS'], true)
         ) {
