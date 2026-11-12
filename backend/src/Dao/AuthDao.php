@@ -58,8 +58,14 @@ final readonly class AuthDao
                  ':user_id' => $userId, ':id' => $userId],
             )->execute();
             if ($affected !== 1) {
-                $resArr['msgArr'][] = 'Active user profile was not found or no change was required.';
-                return $resArr;
+                $exists = $connection->createCommand(
+                    "SELECT id FROM USERS WHERE id = :user_id AND account_status = 'ACTIVE' AND status = 'A' LIMIT 1",
+                    [':user_id' => $userId],
+                )->queryOne();
+                if (!is_array($exists)) {
+                    $resArr['msgArr'][] = 'Active user profile was not found.';
+                    return $resArr;
+                }
             }
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = ['user_id' => $userId];
