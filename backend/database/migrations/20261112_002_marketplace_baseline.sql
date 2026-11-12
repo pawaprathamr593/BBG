@@ -277,3 +277,24 @@ CREATE TABLE IF NOT EXISTS `ORDER_STATUS_HISTORY` (
   `updated_on` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_order_status_history_order (tenant_id, order_id, changed_on)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `ORDER_FULFILMENTS` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `tenant_id` INT UNSIGNED NOT NULL,
+  `order_id` INT UNSIGNED NOT NULL,
+  `fulfilment_type` VARCHAR(20) NOT NULL,
+  `fulfilment_status` VARCHAR(25) NOT NULL,
+  `delivery_partner` VARCHAR(120) NULL,
+  `tracking_reference` VARCHAR(150) NULL,
+  `dispatched_on` DATETIME NULL,
+  `delivered_on` DATETIME NULL,
+  `recipient_name` VARCHAR(150) NULL,
+  `recipient_mobile` VARCHAR(25) NULL,
+  `delivery_address_snapshot` TEXT NULL,
+  `status` VARCHAR(1) NOT NULL DEFAULT 'A',
+  `created_by` INT UNSIGNED NULL,
+  `created_on` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_by` INT UNSIGNED NULL,
+  `updated_on` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_order_fulfilments_order (tenant_id, order_id, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

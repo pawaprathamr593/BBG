@@ -15,6 +15,7 @@ Creates the marketplace schema dependencies needed for public storefront and cus
 - `ORDERS`
 - `ORDER_ITEMS`
 - `ORDER_STATUS_HISTORY`
+- `ORDER_FULFILMENTS`
 
 The DDL is generated from the proposed column definitions in `BBG_Database_Design_Final_v2.0.md`. It is not a schema diff and does not alter existing tables. Existing auth/tenant tables are intentionally excluded because they have already been inspected and are live.
 
