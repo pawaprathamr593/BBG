@@ -12,6 +12,101 @@ final readonly class AuthDao
 {
     public function __construct(private LoggerInterface $logger) {}
 
+    public function isEmailAvailableForUser(ConnectionInterface $connection, string $email, int $userId): array
+    {
+        $resArr = $this->initialResponse();
+        try {
+            $row = $connection->createCommand(
+                "SELECT id FROM USERS WHERE LOWER(email) = :email AND id <> :user_id AND status = 'A' LIMIT 1",
+                [':email' => strtolower($email), ':user_id' => $userId],
+            )->queryOne();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = is_array($row) ? $row : [];
+        } catch (Throwable $exception) {
+            $this->logException('isEmailAvailableForUser', $exception);
+            $resArr = $this->exceptionResponse('Unable to validate email uniqueness.');
+        }
+        return $resArr;
+    }
+
+    public function isMobileAvailableForUser(ConnectionInterface $connection, string $mobile, int $userId): array
+    {
+        $resArr = $this->initialResponse();
+        try {
+            $row = $connection->createCommand(
+                "SELECT id FROM USERS WHERE mobile = :mobile AND id <> :user_id AND status = 'A' LIMIT 1",
+                [':mobile' => $mobile, ':user_id' => $userId],
+            )->queryOne();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = is_array($row) ? $row : [];
+        } catch (Throwable $exception) {
+            $this->logException('isMobileAvailableForUser', $exception);
+            $resArr = $this->exceptionResponse('Unable to validate mobile uniqueness.');
+        }
+        return $resArr;
+    }
+
+    public function updateUserProfile(ConnectionInterface $connection, int $userId, string $fullName, ?string $email, ?string $mobile): array
+    {
+        $resArr = $this->initialResponse();
+        try {
+            $affected = $connection->createCommand(
+                "UPDATE USERS SET full_name = :full_name, email = :email, mobile = :mobile,
+                    updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                 WHERE id = :id AND account_status = 'ACTIVE' AND status = 'A'",
+                [':full_name' => $fullName, ':email' => $email, ':mobile' => $mobile,
+                 ':user_id' => $userId, ':id' => $userId],
+            )->execute();
+            if ($affected !== 1) {
+                $resArr['msgArr'][] = 'Active user profile was not found or no change was required.';
+                return $resArr;
+            }
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['user_id' => $userId];
+        } catch (Throwable $exception) {
+            $this->logException('updateUserProfile', $exception);
+            $resArr = $this->exceptionResponse('Unable to update user profile.');
+        }
+        return $resArr;
+    }
+
+    public function getUserPermissions(ConnectionInterface $connection, int $userId, int $tenantId): array
+    {
+        $resArr = $this->initialResponse();
+        try {
+            $rows = $connection->createCommand(
+                "SELECT DISTINCT r.role_code, r.scope_type, p.permission_code, p.module_code
+                 FROM USER_ROLE_ASSIGNMENTS ura
+                 INNER JOIN ROLES r ON r.id = ura.role_id AND r.status = 'A'
+                 INNER JOIN ROLE_PERMISSIONS rp ON rp.role_id = r.id AND rp.status = 'A'
+                 INNER JOIN PERMISSIONS p ON p.id = rp.permission_id AND p.status = 'A'
+                 WHERE ura.user_id = :user_id AND ura.status = 'A'
+                    AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
+                    AND (
+                        (:tenant_filter = 0 AND ura.tenant_id IS NULL AND r.scope_type = 'PLATFORM')
+                        OR
+                        (:tenant_filter_match > 0 AND ura.tenant_id = :tenant_id
+                            AND r.scope_type = 'TENANT'
+                            AND EXISTS (
+                                SELECT 1 FROM TENANT_MEMBERSHIPS tm
+                                WHERE tm.user_id = ura.user_id AND tm.tenant_id = ura.tenant_id
+                                    AND tm.membership_status = 'ACTIVE' AND tm.status = 'A'
+                            )
+                        )
+                    )
+                 ORDER BY r.role_code ASC, p.module_code ASC, p.permission_code ASC",
+                [':user_id' => $userId, ':tenant_filter' => $tenantId,
+                 ':tenant_filter_match' => $tenantId, ':tenant_id' => $tenantId],
+            )->queryAll();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = is_array($rows) ? $rows : [];
+        } catch (Throwable $exception) {
+            $this->logException('getUserPermissions', $exception);
+            $resArr = $this->exceptionResponse('Unable to read user permissions.');
+        }
+        return $resArr;
+    }
+
     public function getUserByIdentifier(ConnectionInterface $connection, string $identifier): array
     {
         $resArr = $this->initialResponse();
