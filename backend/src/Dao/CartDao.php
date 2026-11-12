@@ -123,10 +123,25 @@ final readonly class CartDao {
     }
     private function one(ConnectionInterface $db,string $sql,array $params,string $op): array {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];try{$row=$db->createCommand($sql,$params)->queryOne();return $this->ok(is_array($row)?$row:[]);}catch(Throwable $e){return $this->error($op,$e);}}
-    private function ok(array $data): array{
-        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];return ['status'=>'SUCCESS','msgArr'=>[],'data'=>$data];}
-    private function failed(string $msg): array{
-        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];return ['status'=>'FAILED','msgArr'=>[$msg],'data'=>[]];}
-    private function error(string $op,Throwable $e): array{
-        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];$this->logger->error('CartDao::'.$op.' failed.',['exception'=>$e]);return ['status'=>'EXCEPTION','msgArr'=>['Cart data operation failed.'],'data'=>[]];}
+    private function ok(array $data): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = $data;
+        return $resArr;
+    }
+    private function failed(string $msg): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $resArr['msgArr'][] = $msg;
+        return $resArr;
+    }
+    private function error(string $op, Throwable $e): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $this->logger->error('CartDao::' . $op . ' failed.', ['exception' => $e]);
+        $resArr['status'] = 'EXCEPTION';
+        $resArr['msgArr'][] = 'Cart data operation failed.';
+        return $resArr;
+    }
 }
