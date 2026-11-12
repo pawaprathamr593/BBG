@@ -25,7 +25,7 @@ final readonly class CartServices implements ICartServices {
         if(($bad=$this->envelope($param,'manageCart'))!==null)return $bad;
         if(($param['actionType']??'')!=='manageCart')return $this->fail('Unsupported actionType for manageCart.');
         $d=$param['actionData'];$action=(string)($d['action']??'');
-        if(!in_array($action,['addItem','updateItem','removeItem','clearCart'],true))return $this->fail('Unsupported cart management action.');
+        if(!in_array($action,['addItem','updateItem','removeItem','clearCart','checkout'],true))return $this->fail('Unsupported cart management action.');
         $principal=$this->principal((string)($d['_accessToken']??''));if($principal['status']!=='SUCCESS')return $principal;
         $user=(int)$principal['data']['user_id'];$tenant=$this->tenantId($d['tenant_id']??null);if($tenant===null)return $this->fail('A valid tenant_id is required.');
         $tx=$this->db->beginTransaction();
@@ -35,6 +35,63 @@ final readonly class CartServices implements ICartServices {
             $cartId=(int)($cart['data']['id']??0);
             if($cartId===0&&$action!=='removeItem'&&$action!=='clearCart'){$new=$this->dao->createCart($this->db,$user,$tenant,(string)($store['data']['default_currency']??'INR'));if($new['status']!=='SUCCESS'){$tx->rollBack();return $new;}$cartId=(int)$new['data']['id'];}
             if($cartId===0){$tx->rollBack();return $this->fail('Active cart was not found.');}
+            if($action==='checkout'){
+                $shipping=$d['shipping_address']??null;
+                if(!is_array($shipping)||trim((string)($shipping['address_line_1']??''))===''||trim((string)($shipping['city']??''))===''||trim((string)($shipping['state']??''))===''||trim((string)($shipping['postal_code']??''))===''){
+                    $tx->rollBack();return $this->fail('Shipping address requires address_line_1, city, state and postal_code.');
+                }
+                $items=$this->dao->getItems($this->db,$cartId);
+                if($items['status']!=='SUCCESS'||$items['data']===[]){$tx->rollBack();return $items['status']==='SUCCESS'?$this->fail('Cart is empty.'):$items;}
+                $customerIdentity=$this->dao->getCustomerIdentity($this->db,$user);
+                if($customerIdentity['status']!=='SUCCESS'){$tx->rollBack();return $customerIdentity;}
+                if($customerIdentity['data']===[]){
+                    $profile=$principal['data'];
+                    $identity=$this->dao->createCustomerIdentity($this->db,$user,(string)($profile['full_name']??'Customer'),isset($profile['email'])?(string)$profile['email']:null,isset($profile['mobile'])?(string)$profile['mobile']:null);
+                    if($identity['status']!=='SUCCESS'){$tx->rollBack();return $identity;}
+                    $identityId=(int)$identity['data']['id'];
+                }else{$identityId=(int)$customerIdentity['data']['id'];}
+                $tenantCustomer=$this->dao->getTenantCustomer($this->db,$tenant,$identityId);
+                if($tenantCustomer['status']!=='SUCCESS'){$tx->rollBack();return $tenantCustomer;}
+                if($tenantCustomer['data']===[]){
+                    $profile=$principal['data'];
+                    $createdCustomer=$this->dao->createTenantCustomer($this->db,$user,$tenant,$identityId,(string)($profile['full_name']??'Customer'),isset($profile['email'])?(string)$profile['email']:null,isset($profile['mobile'])?(string)$profile['mobile']:null);
+                    if($createdCustomer['status']!=='SUCCESS'){$tx->rollBack();return $createdCustomer;}
+                    $tenantCustomerId=(int)$createdCustomer['data']['id'];
+                }else{$tenantCustomerId=(int)$tenantCustomer['data']['id'];}
+                $subtotal=0.0;$taxTotal=0.0;$orderLines=[];
+                foreach($items['data'] as $item){
+                    $variantId=$item['variant_id']===null?null:(int)$item['variant_id'];
+                    $product=$this->dao->getProduct($this->db,$tenant,(int)$item['product_id'],$variantId);
+                    if($product['status']!=='SUCCESS'||$product['data']===[]){$tx->rollBack();return $this->fail('A cart product is no longer available for ordering.');}
+                    $qty=(string)$item['quantity'];
+                    if(preg_match('/^\\d+(?:\\.\\d{3,})$/D',$qty)===1){$tx->rollBack();return $this->fail('Order quantities support at most two decimal places in the current order schema.');}
+                    $unitPrice=(float)$product['data']['current_price'];$rate=(float)$product['data']['tax_rate'];
+                    $base=round((float)$qty*$unitPrice,2);$tax=round($base*$rate/100,2);$line=round($base+$tax,2);
+                    $subtotal+=$base;$taxTotal+=$tax;
+                    $orderLines[]=['item'=>$item,'product'=>$product['data'],'quantity'=>$qty,'unit_price'=>number_format($unitPrice,2,'.',''),'tax_rate'=>number_format($rate,2,'.',''),'tax_amount'=>number_format($tax,2,'.',''),'line_total'=>number_format($line,2,'.','')];
+                }
+                $subtotal=round($subtotal,2);$taxTotal=round($taxTotal,2);$grand=round($subtotal+$taxTotal,2);
+                $orderedOn=gmdate('Y-m-d H:i:s');$orderNumber='BBG-'.$tenant.'-'.gmdate('ymdHis').'-'.strtoupper(bin2hex(random_bytes(3)));
+                $order=$this->dao->createOrder($this->db,$user,$tenant,$tenantCustomerId,$orderNumber,$orderedOn,number_format($subtotal,2,'.',''),number_format($taxTotal,2,'.',''),number_format($grand,2,'.',''),isset($d['notes'])?substr(trim((string)$d['notes']),0,1000):null);
+                if($order['status']!=='SUCCESS'){$tx->rollBack();return $order;}
+                $orderId=(int)$order['data']['id'];
+                foreach($orderLines as $line){
+                    $item=$line['item'];$product=$line['product'];
+                    $saved=$this->dao->createOrderItem($this->db,$user,$tenant,$orderId,(int)$item['product_id'],$item['variant_id']===null?null:(int)$item['variant_id'],(string)$product['product_name'],(string)$product['product_code'],(int)($product['current_unit_id']??$product['base_unit_id']),$line['quantity'],$line['unit_price'],$line['tax_rate'],$line['tax_amount'],$line['line_total']);
+                    if($saved['status']!=='SUCCESS'){$tx->rollBack();return $saved;}
+                }
+                $history=$this->dao->createOrderHistory($this->db,$user,$tenant,$orderId,'PLACED',$orderedOn);
+                if($history['status']!=='SUCCESS'){$tx->rollBack();return $history;}
+                $recipientName=trim((string)($shipping['recipient_name']??$principal['data']['full_name']??'Customer'));
+                $recipientMobile=isset($shipping['mobile'])?substr(trim((string)$shipping['mobile']),0,25):($principal['data']['mobile']??null);
+                $addressSnapshot=json_encode(['address_line_1'=>trim((string)$shipping['address_line_1']),'address_line_2'=>trim((string)($shipping['address_line_2']??'')),'city'=>trim((string)$shipping['city']),'state'=>trim((string)$shipping['state']),'postal_code'=>trim((string)$shipping['postal_code']),'country_code'=>strtoupper(substr((string)($shipping['country_code']??'IN'),0,2))],JSON_THROW_ON_ERROR);
+                $fulfilment=$this->dao->createFulfilment($this->db,$user,$tenant,$orderId,$recipientName,$recipientMobile,$addressSnapshot);
+                if($fulfilment['status']!=='SUCCESS'){$tx->rollBack();return $fulfilment;}
+                $converted=$this->dao->convertCart($this->db,$user,$cartId);
+                if($converted['status']!=='SUCCESS'){$tx->rollBack();return $converted;}
+                $tx->commit();
+                return $this->ok(['order_id'=>$orderId,'order_number'=>$orderNumber,'order_status'=>'PLACED','payment_status'=>'UNPAID','subtotal'=>number_format($subtotal,2,'.',''),'tax_amount'=>number_format($taxTotal,2,'.',''),'grand_total'=>number_format($grand,2,'.','')]);
+            }
             if($action==='addItem'){
                 $product=$this->positiveInt($d['product_id']??null);$variant=isset($d['variant_id'])&&$d['variant_id']!==''?$this->positiveInt($d['variant_id']):null;$qty=$this->quantity($d['quantity']??null);
                 if($product===null||((isset($d['variant_id'])&&$d['variant_id']!=='')&&$variant===null)||$qty===null){$tx->rollBack();return $this->fail('Valid product_id, optional variant_id and positive quantity are required.');}

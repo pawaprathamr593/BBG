@@ -24,6 +24,7 @@ The authenticated user ID comes only from the verified Bearer access token. The 
 | `POST /api/v1/cart/update` | `updateItem` | Update quantity; zero is rejected, removal is separate |
 | `POST /api/v1/cart/remove` | `removeItem` | Soft-delete one cart line |
 | `POST /api/v1/cart/clear` | `clearCart` | Soft-delete active lines |
+| `POST /api/v1/cart/checkout` | `checkout` | Revalidate items, create a tenant order and delivery snapshot, convert cart |
 | `POST /api/v1/cart/checkout` | `checkout` | Revalidate catalogue/prices and create order transactionally |
 
 ## Rules
@@ -37,4 +38,6 @@ The authenticated user ID comes only from the verified Bearer access token. The 
 - Checkout rechecks product publication and current prices, calculates subtotal/tax/discount/delivery server-side, snapshots item name/code/unit/price/tax into `ORDER_ITEMS`, writes order history, and converts the cart in one Core Service transaction.
 - Do not mark a payment as successful from a QR display or uploaded proof alone.
 - Cart is per tenant in Phase 1; no multi-vendor combined checkout or guest cart.
+- Checkout currently uses the provisional initial order status `PLACED`, payment status `UNPAID`, and fulfilment status `UNFULFILLED`. Gateway payment capture is not part of checkout.
+- The current `ORDER_ITEMS.quantity` design stores two decimal places; checkout rejects cart quantities with more than two decimal places rather than silently rounding them.
 - Response contract remains `status`, `msgArr`, `data`.

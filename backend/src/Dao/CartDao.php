@@ -52,6 +52,55 @@ final readonly class CartDao {
         try{$db->createCommand("UPDATE CARTS SET last_activity_on=CURRENT_TIMESTAMP,updated_by=:user WHERE id=:id AND status='A'",[':user'=>$userId,':id'=>$cartId])->execute();return $this->ok(['id'=>$cartId]);}
         catch(Throwable $e){return $this->error('touch',$e);}
     }
+
+    public function getCustomerIdentity(ConnectionInterface $db, int $userId): array {
+        return $this->one($db, "SELECT id FROM CUSTOMER_IDENTITIES WHERE user_id=:user AND status='A' LIMIT 1", [':user'=>$userId], 'getCustomerIdentity');
+    }
+    public function createCustomerIdentity(ConnectionInterface $db, int $userId, string $name, ?string $email, ?string $mobile): array {
+        try {
+            $db->createCommand("INSERT INTO CUSTOMER_IDENTITIES(user_id,full_name,email,mobile,identity_status,status,created_by,updated_by) VALUES(:user,:name,:email,:mobile,'ACTIVE','A',:user,:user)", [':user'=>$userId,':name'=>$name,':email'=>$email,':mobile'=>$mobile])->execute();
+            return $this->ok(['id'=>(int)$db->getLastInsertId()]);
+        } catch(Throwable $e) { return $this->error('createCustomerIdentity',$e); }
+    }
+    public function getTenantCustomer(ConnectionInterface $db, int $tenantId, int $identityId): array {
+        return $this->one($db, "SELECT id FROM TENANT_CUSTOMERS WHERE tenant_id=:tenant AND customer_identity_id=:identity AND status='A' LIMIT 1", [':tenant'=>$tenantId,':identity'=>$identityId], 'getTenantCustomer');
+    }
+    public function createTenantCustomer(ConnectionInterface $db, int $userId, int $tenantId, int $identityId, string $name, ?string $email, ?string $mobile): array {
+        try {
+            $db->createCommand("INSERT INTO TENANT_CUSTOMERS(tenant_id,customer_identity_id,customer_code,display_name,mobile,email,customer_type,credit_limit,opening_balance,customer_status,status,created_by,updated_by) VALUES(:tenant,:identity,:code,:name,:mobile,:email,'INDIVIDUAL',0,0,'ACTIVE','A',:user,:user)", [':tenant'=>$tenantId,':identity'=>$identityId,':code'=>'WEB-'.$userId,':name'=>$name,':mobile'=>$mobile,':email'=>$email,':user'=>$userId])->execute();
+            return $this->ok(['id'=>(int)$db->getLastInsertId()]);
+        } catch(Throwable $e) { return $this->error('createTenantCustomer',$e); }
+    }
+    public function createOrder(ConnectionInterface $db, int $userId, int $tenantId, int $customerId, string $number, string $orderedOn, string $subtotal, string $tax, string $grandTotal, ?string $notes): array {
+        try {
+            $db->createCommand("INSERT INTO ORDERS(tenant_id,order_number,tenant_customer_id,order_channel,order_status,payment_status,fulfilment_status,ordered_on,subtotal,discount_amount,tax_amount,delivery_fee,grand_total,amount_paid,notes,created_by,status,updated_by) VALUES(:tenant,:number,:customer,'MARKETPLACE','PLACED','UNPAID','UNFULFILLED',:ordered,:subtotal,0,:tax,0,:grand,0,:notes,:user,'A',:user)", [':tenant'=>$tenantId,':number'=>$number,':customer'=>$customerId,':ordered'=>$orderedOn,':subtotal'=>$subtotal,':tax'=>$tax,':grand'=>$grandTotal,':notes'=>$notes,':user'=>$userId])->execute();
+            return $this->ok(['id'=>(int)$db->getLastInsertId()]);
+        } catch(Throwable $e) { return $this->error('createOrder',$e); }
+    }
+    public function createOrderItem(ConnectionInterface $db, int $userId, int $tenantId, int $orderId, int $productId, ?int $variantId, string $name, string $code, int $unitId, string $quantity, string $unitPrice, string $taxRate, string $taxAmount, string $lineTotal): array {
+        try {
+            $db->createCommand("INSERT INTO ORDER_ITEMS(tenant_id,order_id,product_id,variant_id,product_name_snapshot,product_code_snapshot,unit_id,quantity,unit_price,discount_amount,tax_rate,tax_amount,line_total,status,created_by,updated_by) VALUES(:tenant,:order,:product,:variant,:name,:code,:unit,:qty,:price,0,:rate,:tax,:total,'A',:user,:user)", [':tenant'=>$tenantId,':order'=>$orderId,':product'=>$productId,':variant'=>$variantId,':name'=>$name,':code'=>$code,':unit'=>$unitId,':qty'=>$quantity,':price'=>$unitPrice,':rate'=>$taxRate,':tax'=>$taxAmount,':total'=>$lineTotal,':user'=>$userId])->execute();
+            return $this->ok([]);
+        } catch(Throwable $e) { return $this->error('createOrderItem',$e); }
+    }
+    public function createOrderHistory(ConnectionInterface $db, int $userId, int $tenantId, int $orderId, string $newStatus, string $changedOn): array {
+        try {
+            $db->createCommand("INSERT INTO ORDER_STATUS_HISTORY(tenant_id,order_id,old_status,new_status,changed_by,changed_on,status,created_by,updated_by) VALUES(:tenant,:order,NULL,:new,:user,:changed,'A',:user,:user)", [':tenant'=>$tenantId,':order'=>$orderId,':new'=>$newStatus,':user'=>$userId,':changed'=>$changedOn])->execute();
+            return $this->ok([]);
+        } catch(Throwable $e) { return $this->error('createOrderHistory',$e); }
+    }
+    public function createFulfilment(ConnectionInterface $db, int $userId, int $tenantId, int $orderId, string $recipientName, ?string $recipientMobile, string $addressSnapshot): array {
+        try {
+            $db->createCommand("INSERT INTO ORDER_FULFILMENTS(tenant_id,order_id,fulfilment_type,fulfilment_status,recipient_name,recipient_mobile,delivery_address_snapshot,status,created_by,updated_by) VALUES(:tenant,:order,'DELIVERY','PENDING',:name,:mobile,:address,'A',:user,:user)", [':tenant'=>$tenantId,':order'=>$orderId,':name'=>$recipientName,':mobile'=>$recipientMobile,':address'=>$addressSnapshot,':user'=>$userId])->execute();
+            return $this->ok([]);
+        } catch(Throwable $e) { return $this->error('createFulfilment',$e); }
+    }
+    public function convertCart(ConnectionInterface $db, int $userId, int $cartId): array {
+        try {
+            $db->createCommand("UPDATE CARTS SET cart_status='CONVERTED',converted_on=CURRENT_TIMESTAMP,updated_by=:user WHERE id=:id AND cart_status='ACTIVE' AND status='A'", [':user'=>$userId,':id'=>$cartId])->execute();
+            return $this->ok(['id'=>$cartId]);
+        } catch(Throwable $e) { return $this->error('convertCart',$e); }
+    }
     private function one(ConnectionInterface $db,string $sql,array $params,string $op): array {try{$row=$db->createCommand($sql,$params)->queryOne();return $this->ok(is_array($row)?$row:[]);}catch(Throwable $e){return $this->error($op,$e);}}
     private function ok(array $data): array{return ['status'=>'SUCCESS','msgArr'=>[],'data'=>$data];}
     private function failed(string $msg): array{return ['status'=>'FAILED','msgArr'=>[$msg],'data'=>[]];}
