@@ -62,11 +62,12 @@ final readonly class OrderServices implements IOrderServices {
         $user=(int)$principal['data']['user_id'];
         $tenant=filter_var($d['tenant_id']??null,FILTER_VALIDATE_INT);if($tenant===false||$tenant<1)return $this->fail('A valid tenant_id is required.');$tenant=(int)$tenant;
         $orderId=filter_var($d['order_id']??null,FILTER_VALIDATE_INT);if($orderId===false||$orderId<1)return $this->fail('A valid order_id is required.');
+        if(isset($d['note'])&&!is_scalar($d['note']))return $this->fail('Order status note must be text.');
         $note=isset($d['note'])?trim((string)$d['note']):null;if($note!==null&&strlen($note)>500)return $this->fail('Order status note must not exceed 500 characters.');
         $newStatus=$action==='confirmWhatsAppOrder'?'CONFIRMED':'CANCELLED';
         $transaction=$this->db->beginTransaction();
         try {
-            $permission=$this->dao->hasTenantOrderManagementPermission($this->db,$user,$tenant);
+            $permission=$this->dao->hasTenantOrderManagementPermission($this->db,$user,$tenant,true);
             if($permission['status']!=='SUCCESS'){$transaction->rollBack();return $permission;}
             if($permission['data']===[]){$transaction->rollBack();return $this->fail('You do not have permission to manage orders for this tenant.');}
             $order=$this->dao->getTenantWhatsAppOrder($this->db,$tenant,(int)$orderId,true);
