@@ -8,13 +8,21 @@ services:
     volumes:
       - ./backend:/var/www/html
     environment:
-      APP_ENV: ${APP_ENV:-dev}
-      APP_DEBUG: ${APP_DEBUG:-true}
+      APP_ENV: \${APP_ENV:-dev}
+      APP_DEBUG: \${APP_DEBUG:-true}
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_NAME: ${MYSQL_DATABASE:-bbg}
-      DB_USER: ${MYSQL_USER}
-      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: \${MYSQL_DATABASE:-bbg}
+      DB_USER: \${MYSQL_USER}
+      DB_PASSWORD: \${MYSQL_PASSWORD}
+      AUTH_ACCESS_TOKEN_SECRET: \${AUTH_ACCESS_TOKEN_SECRET:-}
+      AUTH_ACCESS_TOKEN_TTL: \${AUTH_ACCESS_TOKEN_TTL:-900}
+      AUTH_REFRESH_TOKEN_TTL: \${AUTH_REFRESH_TOKEN_TTL:-2592000}
+      AUTH_REFRESH_COOKIE_SECURE: \${AUTH_REFRESH_COOKIE_SECURE:-false}
+      AUTH_REFRESH_COOKIE_SAMESITE: \${AUTH_REFRESH_COOKIE_SAMESITE:-Lax}
+      AUTH_REFRESH_COOKIE_DOMAIN: \${AUTH_REFRESH_COOKIE_DOMAIN:-}
+      AUTH_TOKEN_ISSUER: \${AUTH_TOKEN_ISSUER:-bbg}
+      AUTH_TOKEN_AUDIENCE: \${AUTH_TOKEN_AUDIENCE:-bbg-web}
     networks:
       - bbg-network
     depends_on:
@@ -26,7 +34,7 @@ services:
     image: nginx:stable
     container_name: bbg-nginx
     ports:
-      - "${NGINX_PORT:-8080}:80"
+      - "\${NGINX_PORT:-8080}:80"
     volumes:
       - ./backend:/var/www/html:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -40,10 +48,10 @@ services:
     image: mysql:8.4
     container_name: bbg-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-bbg}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: \${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: \${MYSQL_DATABASE:-bbg}
+      MYSQL_USER: \${MYSQL_USER}
+      MYSQL_PASSWORD: \${MYSQL_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -60,7 +68,7 @@ services:
     image: phpmyadmin:latest
     container_name: bbg-phpmyadmin
     ports:
-      - "${PHPMYADMIN_PORT:-8081}:80"
+      - "\${PHPMYADMIN_PORT:-8081}:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
@@ -79,7 +87,7 @@ services:
     volumes:
       - ./frontend:/app
     ports:
-      - "${FRONTEND_PORT:-4200}:4200"
+      - "\${FRONTEND_PORT:-4200}:4200"
     command: sh -c "npm start -- --host 0.0.0.0 --port 4200"
     networks:
       - bbg-network

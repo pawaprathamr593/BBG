@@ -1,0 +1,117 @@
+# BBG Auth module — initial implementation
+
+## Implemented scope
+
+- Password-based account registration.
+- Password login using email or mobile.
+- Short-lived HS256 access tokens.
+- Random refresh tokens stored only as SHA-256 hashes in \`USER_SESSIONS\`.
+- Secure/HttpOnly refresh cookie support, configurable for local HTTP and production HTTPS.
+- Refresh-token rotation, old-token replacement tracking and token-family revocation on replay.
+- Current-session logout and all-session logout.
+- Authenticated profile read.
+- The seven-layer BBG architecture and internal \`$resArr\` contract.
+
+No business-application, tenant-selection, role-assignment or social-provider endpoints are implemented in this increment.
+
+## Routes
+
+All routes are POST and require the \`authParam\` module envelope.
+
+| Route | \`actionType\` | \`actionData.action\` |
+|---|---|---|
+| \`/api/v1/auth/register\` | \`manageAuth\` | \`register\` |
+| \`/api/v1/auth/login\` | \`manageAuth\` | \`login\` |
+| \`/api/v1/auth/refresh\` | \`manageAuth\` | \`refresh\` |
+| \`/api/v1/auth/logout\` | \`manageAuth\` | \`logout\` |
+| \`/api/v1/auth/logout-all\` | \`manageAuth\` | \`logoutAll\` |
+| \`/api/v1/auth/profile\` | \`getAuth\` | \`getProfile\` |
+
+Example registration body:
+
+\`\`\`json
+{
+  "authParam": {
+    "actionType": "manageAuth",
+    "actionData": {
+      "action": "register",
+      "full_name": "Example User",
+      "email": "user@example.com",
+      "mobile": "9876543210",
+      "password": "replace-with-a-strong-password"
+    }
+  }
+}
+\`\`\`
+
+Example login body:
+
+\`\`\`json
+{
+  "authParam": {
+    "actionType": "manageAuth",
+    "actionData": {
+      "action": "login",
+      "identifier": "user@example.com",
+      "password": "replace-with-a-strong-password"
+    }
+  }
+}
+\`\`\`
+
+For \`/refresh\` and \`/logout\`, send \`X-BBG-CSRF: 1\`; the browser sends the \`bbg_refresh\` HttpOnly cookie. Profile and logout-all require \`Authorization: Bearer <access-token>\`.
+
+The public HTTP response currently exposes \`$resArr\` unchanged because a separate public response envelope has not been approved. Refresh-token values are removed from JSON and sent only as cookies.
+
+## Environment configuration
+
+Set these in the root \`.env\` for Docker Compose (copy from \`.env.example\`) or inject them directly into the PHP process in production:
+
+- \`AUTH_ACCESS_TOKEN_SECRET\`: required; generate with \`openssl rand -hex 32\` or stronger. Never commit the generated value.
+- \`AUTH_ACCESS_TOKEN_TTL\`: default \`900\` seconds (15 minutes).
+- \`AUTH_REFRESH_TOKEN_TTL\`: default \`2592000\` seconds (30 days).
+- \`AUTH_REFRESH_COOKIE_SECURE\`: \`false\` for local HTTP only; must be \`true\` in production HTTPS.
+- \`AUTH_REFRESH_COOKIE_SAMESITE\`: defaults to \`Lax\`.
+- \`AUTH_REFRESH_COOKIE_DOMAIN\`: optional; leave empty for host-only cookies.
+- \`AUTH_TOKEN_ISSUER\` and \`AUTH_TOKEN_AUDIENCE\`: defaults \`bbg\` and \`bbg-web\`.
+
+TTL and cookie defaults are implementation defaults pending final security review. The access-token secret is mandatory; auth operations fail closed if it is absent, is a placeholder, or is shorter than 32 characters.
+
+## Database behaviour
+
+This implementation uses only the existing \`USERS\` and \`USER_SESSIONS\` tables and documented columns. It does not create or alter tables and does not run migrations. User rows are created with \`status='A'\` and \`account_status='ACTIVE'\`; \`email_verified_on\` and \`mobile_verified_on\` remain NULL. Account verification has not yet been implemented or decided. The initial registration validator enforces an 8-character minimum password pending a formal password policy.
+
+Refresh rotation inserts a replacement session and marks the old session revoked with \`replaced_by_session_id\` in one Core Services transaction. Reuse of a rotated token revokes the token family. DAO operations use parameterized commands and standard user reads filter \`status='A'\`.
+
+Registration checks duplicate email/mobile values across active and soft-deleted rows in application logic. The inspected live schema did not show unique email/mobile indexes, so concurrent duplicate registrations remain possible until a separately approved unique-index change is made. The observed lack of indexes on \`USER_SESSIONS.session_uuid\`, \`refresh_token_hash\` and \`token_family_id\` can affect session lookup and rotation performance. No index or schema changes are made here.
+
+## Explicit limitations / follow-up
+
+- Google and Facebook sign-in are not enabled. Provider SDK selection, app credentials, callback configuration and server-side provider verification must be completed before enabling them.
+- Instagram sign-in remains unimplemented pending verification of a supported identity product for the intended account type.
+- Registration currently permits an account with an email or mobile and does not enforce verification. Confirm the verification workflow before production.
+- Rate limiting, password reset/recovery, email/SMS verification, account linking, session-management UI and provider login remain follow-up work.
+- The \`X-BBG-CSRF: 1\` custom-header check assumes same-origin use or a restrictive CORS policy. A formal CSRF/origin allowlist policy is still required before production.
+- Profile read is implemented; profile update and password change are not part of this first increment.
+
+## Verification
+
+From \`backend/\` after installing dependencies:
+
+\`\`\`bash
+composer test -- --filter AuthTokenServiceTest
+composer test
+\`\`\`
+
+Also verify with a disposable local test account:
+
+1. Register with a unique email/mobile.
+2. Log in and confirm the response contains an access token but no refresh-token JSON field.
+3. Confirm the \`bbg_refresh\` cookie is HttpOnly and the stored \`refresh_token_hash\` differs from the cookie value.
+4. Call profile with the bearer token.
+5. Refresh once; confirm the old session row has \`revoked_on\` and \`replaced_by_session_id\` populated.
+6. Replay the old refresh cookie; confirm the token family is revoked.
+7. Log out and confirm the cookie is cleared and the session family is revoked.
+8. Log out all sessions and confirm prior protected requests are rejected.
+
+Do not use production credentials or production accounts for replay tests.
