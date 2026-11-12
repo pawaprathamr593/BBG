@@ -164,8 +164,11 @@ final readonly class AdminDao
             FROM TENANT_SUBSCRIPTIONS ts
             INNER JOIN TENANTS t ON t.id = ts.tenant_id AND t.status = 'A'
             INNER JOIN PLANS p ON p.id = ts.plan_id AND p.status = 'A'
-            LEFT JOIN SUBSCRIPTION_PAYMENT_PROOFS proof ON proof.subscription_id = ts.id
-                AND proof.tenant_id = ts.tenant_id AND proof.status = 'A'
+            LEFT JOIN SUBSCRIPTION_PAYMENT_PROOFS proof ON proof.id = (
+                SELECT MAX(proof_latest.id) FROM SUBSCRIPTION_PAYMENT_PROOFS proof_latest
+                WHERE proof_latest.subscription_id = ts.id AND proof_latest.tenant_id = ts.tenant_id
+                    AND proof_latest.status = 'A'
+            )
             WHERE ts.subscription_status = 'PENDING' AND ts.status = 'A'
             ORDER BY ts.created_on ASC, ts.id ASC LIMIT :limit OFFSET :offset",
             [':limit' => $limit, ':offset' => $offset], 'getPendingSubscriptions');
