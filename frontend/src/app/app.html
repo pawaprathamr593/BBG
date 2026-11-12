@@ -1,26 +1,20 @@
 <div class="app-shell">
   <header class="topbar">
-    <a class="brand" href="/" aria-label="BBG home" (click)="closeMenu()">
+    <a class="brand" routerLink="/" aria-label="BBG home" (click)="closeMenu()">
       <span class="brand-mark" aria-hidden="true">B</span>
-      <span class="brand-copy">
-        <strong>BBG</strong>
-        <small>Business platform</small>
-      </span>
+      <span class="brand-copy"><strong>BBG</strong><small>Business platform</small></span>
     </a>
 
-    <button
-      class="menu-toggle"
-      type="button"
-      [attr.aria-expanded]="menuOpen()"
-      aria-controls="primary-navigation"
-      aria-label="Toggle navigation"
-      (click)="toggleMenu()"
-    >
+    <button class="menu-toggle" type="button" [attr.aria-expanded]="menuOpen()"
+      aria-controls="primary-navigation" aria-label="Toggle navigation" (click)="toggleMenu()">
       <span></span><span></span><span></span>
     </button>
 
     <nav id="primary-navigation" class="primary-nav" [class.is-open]="menuOpen()" aria-label="Primary navigation">
-      <a class="nav-link is-active" href="/" aria-current="page" (click)="closeMenu()">Overview</a>
+      <a class="nav-link" routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }"
+        (click)="closeMenu()">Overview</a>
+      <a class="nav-link" routerLink="/login" routerLinkActive="is-active" (click)="closeMenu()">Sign in</a>
+      <a class="nav-link" routerLink="/register" routerLinkActive="is-active" (click)="closeMenu()">Create account</a>
     </nav>
 
     <div class="topbar-meta">
@@ -30,75 +24,10 @@
   </header>
 
   <main class="main-content">
-    <section class="welcome-section">
-      <div>
-        <p class="eyebrow">BUSINESS MANAGEMENT &amp; MARKETPLACE PLATFORM</p>
-        <h1>A clearer view of your business.</h1>
-        <p class="welcome-copy">
-          BBG brings business operations and marketplace experiences together in one
-          connected platform. Your workspace foundation is being prepared.
-        </p>
-      </div>
-      <div class="welcome-art" aria-hidden="true">
-        <div class="art-orbit orbit-one"></div>
-        <div class="art-orbit orbit-two"></div>
-        <div class="art-core"><span>B</span></div>
-        <div class="art-node node-one"></div>
-        <div class="art-node node-two"></div>
-        <div class="art-node node-three"></div>
-      </div>
-    </section>
-
-    <section class="status-section" aria-labelledby="foundation-title">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">GETTING STARTED</p>
-          <h2 id="foundation-title">Your platform foundation</h2>
-        </div>
-        <span class="status-pill"><span></span> Foundation stage</span>
-      </div>
-
-      <div class="foundation-grid">
-        <article class="foundation-card">
-          <span class="card-icon icon-backend" aria-hidden="true">01</span>
-          <div>
-            <h3>Backend foundation</h3>
-            <p>Yii 3 architecture and environment-aware database configuration.</p>
-            <span class="card-state">In progress</span>
-          </div>
-        </article>
-        <article class="foundation-card">
-          <span class="card-icon icon-frontend" aria-hidden="true">02</span>
-          <div>
-            <h3>Responsive frontend</h3>
-            <p>A mobile-first Angular application shell and shared design foundation.</p>
-            <span class="card-state">In progress</span>
-          </div>
-        </article>
-        <article class="foundation-card">
-          <span class="card-icon icon-deploy" aria-hidden="true">03</span>
-          <div>
-            <h3>Deployment readiness</h3>
-            <p>Separate local and production configuration for a future live domain.</p>
-            <span class="card-state">Prepared</span>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section class="bottom-note">
-      <div class="note-symbol" aria-hidden="true">i</div>
-      <div>
-        <strong>Workspace preview</strong>
-        <p>This screen is a foundation placeholder. Business workflows and live data will be added only after their requirements and API contracts are approved.</p>
-      </div>
-    </section>
-
+    <router-outlet />
     <footer class="app-footer">
       <span>© {{ currentYear }} BBG</span>
       <span>Built for connected business experiences</span>
     </footer>
   </main>
 </div>
-
-<router-outlet />
