@@ -183,11 +183,8 @@ final readonly class BusinessServices implements IBusinessServices
         }
         $businessSlug = strtolower($businessSlugInput);
         $tenantType = strtoupper($tenantTypeInput);
-        if (
-            || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $businessSlug)
-            || !in_array($tenantType, ['RETAIL', 'DARK_STORE', 'SMALL_BUSINESS'], true)
-        ) {
-            $resArr['msgArr'][] = 'Valid business_name, URL-safe business_slug and supported tenant_type are required.';
+        if ($businessSlug === '' || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $businessSlug)) {
+            $resArr['msgArr'][] = 'A URL-safe business_slug is required.';
             return $resArr;
         }
 
