@@ -1,0 +1,56 @@
+name: BBG backend validation
+
+on:
+  push:
+    branches:
+      - feature/auth-foundation
+  pull_request:
+    branches:
+      - main
+      - feature/auth-foundation
+
+jobs:
+  php-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - name: Lint backend PHP files
+        run: |
+          find backend/src backend/config -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -l backend/yii
+
+  mysql-migrations:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: bbg
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply additive Phase 1 migrations to clean MySQL 8.4
+        env:
+          MYSQL_PWD: root
+        run: |
+          mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261112_001_business_application_and_cart.sql
+          mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261112_002_marketplace_baseline.sql
+      - name: Verify migration tables and generated cart keys
+        env:
+          MYSQL_PWD: root
+        run: |
+          count=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='bbg' AND table_name IN ('BUSINESS_APPLICATIONS','BUSINESS_APPLICATION_DOCUMENTS','BUSINESS_APPLICATION_REVIEWS','CARTS','CART_ITEMS','BUSINESS_PROFILES','CATEGORIES','TENANT_PRODUCT_CATEGORIES','UNITS_OF_MEASURE','PRODUCTS','PRODUCT_VARIANTS','STOREFRONT_SETTINGS','CUSTOMER_IDENTITIES','TENANT_CUSTOMERS','CUSTOMER_ADDRESSES','ORDERS','ORDER_ITEMS','ORDER_STATUS_HISTORY','ORDER_FULFILMENTS')")
+          test "$count" -eq 19
+          generated=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='bbg' AND extra LIKE '%STORED GENERATED%' AND table_name IN ('CARTS','CART_ITEMS')")
+          test "$generated" -eq 4
