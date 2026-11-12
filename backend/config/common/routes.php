@@ -16,6 +16,7 @@ use App\Modules\Api\V1\Controllers\PromotionController;
 use App\Modules\Api\V1\Controllers\EngagementController;
 use App\Modules\Api\V1\Controllers\SubscriptionController;
 use App\Modules\Api\V1\Controllers\AdminController;
+use App\Modules\Api\V1\Controllers\PaymentController;
 use Yiisoft\Router\Route;
 
 /** @var array $params */
@@ -147,4 +148,9 @@ return [
     Route::post('/api/v1/admin/moderation/history')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/moderation/history'),
     Route::post('/api/v1/admin/moderation/action')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/moderation/action'),
     Route::post('/api/v1/admin/health/summary')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/health/summary'),
+
+    Route::post('/api/v1/payments/mine/list')->action([PaymentController::class, 'actionGetPayment'])->name('api/v1/payments/mine/list'),
+    Route::post('/api/v1/payments/mine/detail')->action([PaymentController::class, 'actionGetPayment'])->name('api/v1/payments/mine/detail'),
+    Route::post('/api/v1/payments/tenant/list')->action([PaymentController::class, 'actionGetPayment'])->name('api/v1/payments/tenant/list'),
+    Route::post('/api/v1/payments/tenant/detail')->action([PaymentController::class, 'actionGetPayment'])->name('api/v1/payments/tenant/detail'),
 ];
