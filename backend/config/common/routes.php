@@ -27,6 +27,7 @@ return [
     Route::post('/api/v1/cart/remove')->action([CartController::class, 'actionManageCart'])->name('api/v1/cart/remove'),
     Route::post('/api/v1/cart/clear')->action([CartController::class, 'actionManageCart'])->name('api/v1/cart/clear'),
     Route::post('/api/v1/cart/checkout')->action([CartController::class, 'actionManageCart'])->name('api/v1/cart/checkout'),
+    Route::post('/api/v1/cart/whatsapp-order')->action([CartController::class, 'actionManageCart'])->name('api/v1/cart/whatsapp-order'),
 
     Route::post('/api/v1/orders/list')->action([OrderController::class, 'actionGetOrders'])->name('api/v1/orders/list'),
     Route::post('/api/v1/orders/detail')->action([OrderController::class, 'actionGetOrders'])->name('api/v1/orders/detail'),
