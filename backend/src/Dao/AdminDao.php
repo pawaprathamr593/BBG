@@ -276,6 +276,30 @@ final readonly class AdminDao
             [':limit' => $limit, ':offset' => $offset], 'getActiveSubscriptions');
     }
 
+    public function countActiveSubscriptions(ConnectionInterface $db): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT COUNT(*) AS total FROM TENANT_SUBSCRIPTIONS
+            WHERE subscription_status = 'ACTIVE' AND status = 'A'
+                AND (starts_on IS NULL OR starts_on <= CURRENT_TIMESTAMP)
+                AND (ends_on IS NULL OR ends_on >= CURRENT_TIMESTAMP)",
+            [], 'countActiveSubscriptions');
+    }
+
+    public function countModerationQueue(ConnectionInterface $db): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT COUNT(*) AS total FROM CONTENT_REPORTS
+            WHERE report_status = 'OPEN' AND status = 'A'", [], 'countModerationQueue');
+    }
+
+    public function countModerationHistory(ConnectionInterface $db): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT COUNT(*) AS total FROM MODERATION_LOGS WHERE status = 'A'",
+            [], 'countModerationHistory');
+    }
+
     public function getCategories(ConnectionInterface $db, string $search, int $limit, int $offset): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
