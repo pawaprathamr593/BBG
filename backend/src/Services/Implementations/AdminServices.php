@@ -369,8 +369,14 @@ final readonly class AdminServices implements IAdminServices
         if ($rows['status'] !== 'SUCCESS') {
             return $this->propagateFailure($rows, 'AdminServices::getActiveSubscriptions');
         }
+        $count = $this->dao->countActiveSubscriptions($this->db);
+        if ($count['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($count, 'AdminServices::getActiveSubscriptions');
+        }
         $resArr['status'] = 'SUCCESS';
-        $resArr['data'] = ['items' => $rows['data'], 'pagination' => ['page' => $page, 'page_size' => $pageSize]];
+        $resArr['data'] = ['items' => $rows['data'], 'pagination' => [
+            'page' => $page, 'page_size' => $pageSize, 'total' => (int) ($count['data']['total'] ?? 0),
+        ]];
         return $resArr;
     }
 
@@ -600,8 +606,14 @@ final readonly class AdminServices implements IAdminServices
         if ($rows['status'] !== 'SUCCESS') {
             return $this->propagateFailure($rows, 'AdminServices::getModerationQueue');
         }
+        $count = $this->dao->countModerationQueue($this->db);
+        if ($count['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($count, 'AdminServices::getModerationQueue');
+        }
         $resArr['status'] = 'SUCCESS';
-        $resArr['data'] = ['items' => $rows['data'], 'pagination' => ['page' => $page, 'page_size' => $pageSize]];
+        $resArr['data'] = ['items' => $rows['data'], 'pagination' => [
+            'page' => $page, 'page_size' => $pageSize, 'total' => (int) ($count['data']['total'] ?? 0),
+        ]];
         return $resArr;
     }
 
@@ -618,8 +630,14 @@ final readonly class AdminServices implements IAdminServices
         if ($rows['status'] !== 'SUCCESS') {
             return $this->propagateFailure($rows, 'AdminServices::getModerationHistory');
         }
+        $count = $this->dao->countModerationHistory($this->db);
+        if ($count['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($count, 'AdminServices::getModerationHistory');
+        }
         $resArr['status'] = 'SUCCESS';
-        $resArr['data'] = ['items' => $rows['data'], 'pagination' => ['page' => $page, 'page_size' => $pageSize]];
+        $resArr['data'] = ['items' => $rows['data'], 'pagination' => [
+            'page' => $page, 'page_size' => $pageSize, 'total' => (int) ($count['data']['total'] ?? 0),
+        ]];
         return $resArr;
     }
 
