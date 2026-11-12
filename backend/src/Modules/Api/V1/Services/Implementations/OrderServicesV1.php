@@ -7,4 +7,5 @@ use App\Services\Interfaces\IOrderServices;
 final readonly class OrderServicesV1 implements IOrderServicesV1 {
     public function __construct(private IOrderServices $services) {}
     public function getOrders(array $input): array { $dto=new OrderInDto();$dto->orderParam=is_array($input['orderParam']??null)?$input['orderParam']:[];return $this->services->getOrders($dto->orderParam); }
+    public function manageOrders(array $input): array { $dto=new OrderInDto();$dto->orderParam=is_array($input['orderParam']??null)?$input['orderParam']:[];return $this->services->manageOrders($dto->orderParam); }
 }
