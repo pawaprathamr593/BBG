@@ -24,6 +24,7 @@ final readonly class AuthServices implements IAuthServices
 
     public function getAuth(array $authParam): array
     {
+        $resArr = $this->initialResponse();
         if (($validation = $this->validateEnvelope($authParam, 'getAuth')) !== null) {
             return $validation;
         }
@@ -34,12 +35,14 @@ final readonly class AuthServices implements IAuthServices
         $actionData = $authParam['actionData'];
         return match ($actionData['action'] ?? '') {
             'getProfile' => $this->getUserProfile($actionData),
+            'getPrincipal' => $this->resolvePrincipal((string) ($actionData['_accessToken'] ?? '')),
             default => $this->failed('Unsupported authentication read action.'),
         };
     }
 
     public function manageAuth(array $authParam): array
     {
+        $resArr = $this->initialResponse();
         if (($validation = $this->validateEnvelope($authParam, 'manageAuth')) !== null) {
             return $validation;
         }
@@ -385,6 +388,7 @@ final readonly class AuthServices implements IAuthServices
 
     private function resolvePrincipal(string $accessToken): array
     {
+        $resArr = $this->initialResponse();
         if ($accessToken === '') {
             return $this->failed('Bearer access token is required.');
         }
