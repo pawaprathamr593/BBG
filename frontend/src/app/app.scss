@@ -112,3 +112,7 @@
   .foundation-card, .nav-link, .menu-toggle { transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
   .foundation-card:hover { border-color: #cbd9e8; box-shadow: 0 8px 24px rgba(20,42,70,.07); }
 }
+
+.nav-user { color: var(--text-secondary); font-size: .82rem; font-weight: 650; }
+.nav-logout { padding: 9px 13px; color: var(--brand-strong); background: var(--brand-soft); border: 1px solid #d7e5f4; border-radius: 8px; font-size: .82rem; font-weight: 700; cursor: pointer; }
+.nav-logout:hover { background: #dceafb; }
