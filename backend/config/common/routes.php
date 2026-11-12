@@ -6,6 +6,7 @@ use App\Api;
 use App\Modules\Api\V1\Controllers\AuthController;
 use App\Modules\Api\V1\Controllers\CartController;
 use App\Modules\Api\V1\Controllers\OrderController;
+use App\Modules\Api\V1\Controllers\MarketplaceController;
 use Yiisoft\Router\Route;
 
 /** @var array $params */
@@ -29,4 +30,9 @@ return [
 
     Route::post('/api/v1/orders/list')->action([OrderController::class, 'actionGetOrders'])->name('api/v1/orders/list'),
     Route::post('/api/v1/orders/detail')->action([OrderController::class, 'actionGetOrders'])->name('api/v1/orders/detail'),
+
+    Route::post('/api/v1/marketplace/businesses/list')->action([MarketplaceController::class, 'actionListBusinesses'])->name('api/v1/marketplace/businesses/list'),
+    Route::post('/api/v1/marketplace/businesses/detail')->action([MarketplaceController::class, 'actionGetBusiness'])->name('api/v1/marketplace/businesses/detail'),
+    Route::post('/api/v1/marketplace/products/list')->action([MarketplaceController::class, 'actionListProducts'])->name('api/v1/marketplace/products/list'),
+    Route::post('/api/v1/marketplace/products/detail')->action([MarketplaceController::class, 'actionGetProduct'])->name('api/v1/marketplace/products/detail'),
 ];
