@@ -373,11 +373,13 @@ final readonly class AuthDao
 
     private function initialResponse(): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
     }
 
     private function exceptionResponse(string $message): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return ['status' => 'EXCEPTION', 'msgArr' => [$message], 'data' => []];
     }
 
