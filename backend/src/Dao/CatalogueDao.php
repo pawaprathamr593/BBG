@@ -263,6 +263,76 @@ final readonly class CatalogueDao
             [':tenant_id' => $tenantId, ':product_id' => $productId], 'getProductMedia');
     }
 
+    public function getTenantProductVariant(ConnectionInterface $db, int $tenantId, int $productId, int $variantId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT id FROM PRODUCT_VARIANTS
+            WHERE id = :variant_id AND product_id = :product_id
+                AND tenant_id = :tenant_id AND status = 'A' LIMIT 1",
+            [':variant_id' => $variantId, ':product_id' => $productId, ':tenant_id' => $tenantId],
+            'getTenantProductVariant');
+    }
+
+    public function clearPrimaryProductMedia(ConnectionInterface $db, int $tenantId, int $productId, int $userId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $db->createCommand("UPDATE PRODUCT_MEDIA SET is_primary = 0,
+                updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                WHERE tenant_id = :tenant_id AND product_id = :product_id AND status = 'A'",
+                [':user_id' => $userId, ':tenant_id' => $tenantId, ':product_id' => $productId])->execute();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['product_id' => $productId];
+        } catch (Throwable $exception) {
+            return $this->error('clearPrimaryProductMedia', $exception);
+        }
+        return $resArr;
+    }
+
+    public function insertProductMedia(
+        ConnectionInterface $db,
+        int $tenantId,
+        int $productId,
+        ?int $variantId,
+        string $mediaType,
+        string $mimeType,
+        string $filePath,
+        string $originalFileName,
+        int $fileSizeBytes,
+        ?string $altText,
+        ?string $caption,
+        ?string $thumbnailPath,
+        ?int $widthPx,
+        ?int $heightPx,
+        int $displayOrder,
+        int $isPrimary,
+        int $userId,
+    ): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $db->createCommand("INSERT INTO PRODUCT_MEDIA
+                (tenant_id, product_id, variant_id, media_type, mime_type, file_path,
+                 original_file_name, file_size_bytes, alt_text, caption, thumbnail_path,
+                 width_px, height_px, display_order, is_primary, media_status,
+                 status, created_by, updated_by)
+                VALUES (:tenant_id, :product_id, :variant_id, :media_type, :mime_type, :file_path,
+                 :original_name, :file_size, :alt_text, :caption, :thumbnail_path,
+                 :width_px, :height_px, :display_order, :is_primary, 'ACTIVE',
+                 'A', :user_id, :user_id)",
+                [':tenant_id' => $tenantId, ':product_id' => $productId, ':variant_id' => $variantId,
+                 ':media_type' => $mediaType, ':mime_type' => $mimeType, ':file_path' => $filePath,
+                 ':original_name' => $originalFileName, ':file_size' => $fileSizeBytes,
+                 ':alt_text' => $altText, ':caption' => $caption, ':thumbnail_path' => $thumbnailPath,
+                 ':width_px' => $widthPx, ':height_px' => $heightPx, ':display_order' => $displayOrder,
+                 ':is_primary' => $isPrimary, ':user_id' => $userId])->execute();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['id' => (int) $db->getLastInsertId()];
+        } catch (Throwable $exception) {
+            return $this->error('insertProductMedia', $exception);
+        }
+        return $resArr;
+    }
+
     public function softDeleteProductMedia(ConnectionInterface $db, int $tenantId, int $productId, int $mediaId, int $userId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
