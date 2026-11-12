@@ -348,8 +348,14 @@ final readonly class BusinessDao
                  ':show_prices' => $showPrices, ':accept_online_orders' => $acceptOnlineOrders,
                  ':whatsapp_enabled' => $whatsappEnabled, ':user_id' => $userId, ':tenant_id' => $tenantId])->execute();
             if ($affected !== 1) {
-                $resArr['msgArr'][] = 'Storefront settings were not found.';
-                return $resArr;
+                $exists = $db->createCommand(
+                    "SELECT id FROM STOREFRONT_SETTINGS WHERE tenant_id = :tenant_id AND status = 'A' LIMIT 1",
+                    [':tenant_id' => $tenantId],
+                )->queryOne();
+                if (!is_array($exists)) {
+                    $resArr['msgArr'][] = 'Storefront settings were not found.';
+                    return $resArr;
+                }
             }
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = ['tenant_id' => $tenantId];
@@ -368,8 +374,15 @@ final readonly class BusinessDao
                 WHERE tenant_id = :tenant_id AND approval_status = 'APPROVED' AND status = 'A'",
                 [':whatsapp_number' => $whatsappNumber, ':user_id' => $userId, ':tenant_id' => $tenantId])->execute();
             if ($affected !== 1) {
-                $resArr['msgArr'][] = 'Approved business profile was not found.';
-                return $resArr;
+                $exists = $db->createCommand(
+                    "SELECT id FROM BUSINESS_PROFILES WHERE tenant_id = :tenant_id
+                        AND approval_status = 'APPROVED' AND status = 'A' LIMIT 1",
+                    [':tenant_id' => $tenantId],
+                )->queryOne();
+                if (!is_array($exists)) {
+                    $resArr['msgArr'][] = 'Approved business profile was not found.';
+                    return $resArr;
+                }
             }
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = ['tenant_id' => $tenantId];
