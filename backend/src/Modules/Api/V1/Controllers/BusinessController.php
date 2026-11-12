@@ -44,12 +44,16 @@ final class BusinessController
             '/api/v1/business/application/get' => 'getMyBusinessApplication',
             '/api/v1/business/profile/get' => 'getMyBusinessProfile',
             '/api/v1/business/verification/get' => 'getBusinessVerification',
+            '/api/v1/business/storefront/get' => 'getMyStorefront',
         ];
         $manageActions = [
             '/api/v1/business/application/submit' => 'submitBusinessApplication',
             '/api/v1/business/application/update' => 'updateBusinessApplication',
             '/api/v1/business/application/resubmit' => 'resubmitBusinessApplication',
             '/api/v1/business/profile/update' => 'updateMyBusinessProfile',
+            '/api/v1/business/storefront/update' => 'updateMyStorefront',
+            '/api/v1/business/storefront/publish' => 'publishMyStorefront',
+            '/api/v1/business/storefront/unpublish' => 'unpublishMyStorefront',
         ];
         $action = $manage ? ($manageActions[$path] ?? '') : ($getActions[$path] ?? '');
         if ($action === '') {
