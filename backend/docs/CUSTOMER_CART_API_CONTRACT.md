@@ -13,7 +13,7 @@ This is the implementation contract for the cart slice. All endpoints use POST a
 }
 ```
 
-The authenticated user ID comes only from the verified Bearer access token. The client must not choose `user_id`. Tenant context must be verified against active membership; never trust a client-supplied `tenant_id` without membership validation.
+The authenticated user ID comes only from the verified Bearer access token. The client must not choose `user_id`. The requested tenant must resolve to an approved, published storefront that is active and accepts online orders; never trust a client-supplied `tenant_id` without this server-side check.
 
 ## Operations
 
@@ -24,8 +24,7 @@ The authenticated user ID comes only from the verified Bearer access token. The 
 | `POST /api/v1/cart/update` | `updateItem` | Update quantity; zero is rejected, removal is separate |
 | `POST /api/v1/cart/remove` | `removeItem` | Soft-delete one cart line |
 | `POST /api/v1/cart/clear` | `clearCart` | Soft-delete active lines |
-| `POST /api/v1/cart/checkout` | `checkout` | Revalidate items, create a tenant order and delivery snapshot, convert cart |
-| `POST /api/v1/cart/checkout` | `checkout` | Revalidate catalogue/prices and create order transactionally |
+| `POST /api/v1/cart/checkout` | `checkout` | Revalidate items, create a tenant order and delivery snapshot, convert cart transactionally |
 
 ## Rules
 
@@ -35,7 +34,7 @@ The authenticated user ID comes only from the verified Bearer access token. The 
 - The server obtains unit price/tax from the catalogue; submitted prices are ignored.
 - Add/update operations merge the same product/variant line.
 - Cart operations use parameterized SQL.
-- Checkout rechecks product publication and current prices, calculates subtotal/tax/discount/delivery server-side, snapshots item name/code/unit/price/tax into `ORDER_ITEMS`, writes order history, and converts the cart in one Core Service transaction.
+- Checkout rechecks product publication and current prices, calculates subtotal and tax server-side (discount and delivery fee are currently zero), snapshots item name/code/unit/price/tax into `ORDER_ITEMS`, writes order history, and converts the cart in one Core Service transaction.
 - Do not mark a payment as successful from a QR display or uploaded proof alone.
 - Cart is per tenant in Phase 1; no multi-vendor combined checkout or guest cart.
 - Checkout currently uses the provisional initial order status `PLACED`, payment status `UNPAID`, and fulfilment status `UNFULFILLED`. Gateway payment capture is not part of checkout.
