@@ -194,18 +194,17 @@ final readonly class OrderDao
         return $resArr;
     }
 
-    public function createTenantOrderHistory(ConnectionInterface $db, int $tenantId, int $orderId, int $userId, string $oldStatus, string $newStatus, ?string $note, string $changedOn): array
+    public function createTenantOrderHistory(ConnectionInterface $db, int $tenantId, int $orderId, int $userId, string $oldStatus, string $newStatus, ?string $note): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         try {
             $db->createCommand("INSERT INTO ORDER_STATUS_HISTORY
                 (tenant_id, order_id, old_status, new_status, changed_by, change_note, changed_on,
                  status, created_by, updated_by)
-                VALUES (:tenant_id, :order_id, :old_status, :new_status, :user_id, :note, :changed_on,
+                VALUES (:tenant_id, :order_id, :old_status, :new_status, :user_id, :note, CURRENT_TIMESTAMP,
                     'A', :user_id, :user_id)",
                 [':tenant_id' => $tenantId, ':order_id' => $orderId, ':old_status' => $oldStatus,
-                 ':new_status' => $newStatus, ':user_id' => $userId, ':note' => $note,
-                 ':changed_on' => $changedOn])->execute();
+                 ':new_status' => $newStatus, ':user_id' => $userId, ':note' => $note])->execute();
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = ['id' => (int) $db->getLastInsertId()];
         } catch (Throwable $exception) {
