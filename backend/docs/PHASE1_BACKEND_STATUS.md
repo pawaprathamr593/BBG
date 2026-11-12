@@ -9,6 +9,7 @@
 - Password registration/login, access-token issuance and verification, rotating refresh sessions, reuse detection, logout/logout-all and authenticated profile.
 - Customer cart: retrieve, add, update, remove, clear.
 - Customer checkout: server-side product/price revalidation, tax calculation, customer identity association, order/item snapshots, order status history, delivery-address snapshot and cart conversion in one Core Service transaction.
+- Customer order history: paginated own-order list and own-order detail with line items, status history and fulfilment snapshots.
 - Customer order history: paginated own-order list and own-order detail with line items, status history and fulfilment.
 - Additive Phase 1 schema scripts for business application history, carts, storefront/catalogue, customer records, orders and fulfilment.
 - Seven-layer Cart and Order module wiring; parameterized DAO queries; A/Z soft-delete on cart lines.
