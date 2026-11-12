@@ -79,13 +79,13 @@ final readonly class BusinessServices implements IBusinessServices
         try {
             switch ((string) ($actionData['action'] ?? '')) {
                 case 'submitBusinessApplication':
-                    $resArr = $this->manageBusinessApplication($actionData, false);
+                    $resArr = $this->manageBusinessApplication($actionData, 'submit');
                     break;
                 case 'updateBusinessApplication':
-                    $resArr = $this->manageBusinessApplication($actionData, false);
+                    $resArr = $this->manageBusinessApplication($actionData, 'update');
                     break;
                 case 'resubmitBusinessApplication':
-                    $resArr = $this->manageBusinessApplication($actionData, true);
+                    $resArr = $this->manageBusinessApplication($actionData, 'resubmit');
                     break;
                 case 'updateMyBusinessProfile':
                     $resArr = $this->manageBusinessProfile($actionData);
@@ -154,7 +154,7 @@ final readonly class BusinessServices implements IBusinessServices
         return $resArr;
     }
 
-    private function manageBusinessApplication(array $actionData, bool $resubmit): array
+    private function manageBusinessApplication(array $actionData, string $operation): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $principal = $this->principal($actionData);
@@ -175,6 +175,15 @@ final readonly class BusinessServices implements IBusinessServices
 
         $businessId = $this->positiveInt($actionData['business_id'] ?? 0) ?? 0;
         $tenantId = $this->positiveInt($actionData['tenant_id'] ?? 0) ?? 0;
+        $resubmit = $operation === 'resubmit';
+        if ($operation !== 'submit' && ($businessId === 0 || $tenantId === 0)) {
+            $resArr['msgArr'][] = 'business_id and tenant_id are required to update or resubmit an application.';
+            return $resArr;
+        }
+        if ($operation === 'submit' && ($businessId > 0 || $tenantId > 0)) {
+            $resArr['msgArr'][] = 'A new application must not include business_id or tenant_id.';
+            return $resArr;
+        }
         $categoryId = $this->positiveInt($actionData['primary_category_id'] ?? 0);
         $description = $this->optionalText($actionData['business_description'] ?? '', 5000);
         $phone = $this->optionalText($actionData['business_phone'] ?? '', 25) ?? '';
@@ -205,13 +214,14 @@ final readonly class BusinessServices implements IBusinessServices
                 return $resArr;
             }
 
-            if ($businessId > 0 && $tenantId > 0) {
+            if ($operation !== 'submit') {
                 $existing = $this->dao->getMyBusinessApplication($this->db, $userId, $tenantId);
                 if ($existing['status'] !== 'SUCCESS') {
                     return $this->propagateFailure($existing, 'BusinessServices::manageBusinessApplication');
                 }
+                $allowedStatus = $operation === 'resubmit' ? ['REJECTED'] : ['PENDING'];
                 if ($existing['data'] === [] || (int) $existing['data']['business_id'] !== $businessId
-                    || !in_array($existing['data']['approval_status'], ['PENDING', 'REJECTED'], true)
+                    || !in_array($existing['data']['approval_status'], $allowedStatus, true)
                 ) {
                     $resArr['msgArr'][] = 'Only the authenticated tenant owner can update a pending or rejected application.';
                     return $resArr;
@@ -239,8 +249,12 @@ final readonly class BusinessServices implements IBusinessServices
                 }
             }
 
-            if ($resubmit) {
-                $resArr['msgArr'][] = 'business_id and tenant_id are required to resubmit an existing application.';
+            $existingApplication = $this->dao->getMyBusinessApplication($this->db, $userId, 0);
+            if ($existingApplication['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($existingApplication, 'BusinessServices::manageBusinessApplication');
+            }
+            if ($existingApplication['data'] !== []) {
+                $resArr['msgArr'][] = 'An application already exists for this user. Update or resubmit the existing application.';
                 return $resArr;
             }
 
@@ -329,7 +343,7 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = 'A valid business_email is required.';
             return $resArr;
         }
-        return $this->dao->updateBusinessProfile(
+        $resArr = $this->dao->updateBusinessProfile(
             $this->db, $tenantId, $businessId, (int) $principal['data']['user_id'], $businessName,
             $this->optionalText($actionData['business_description'] ?? '', 5000) ?? '',
             $this->optionalText($actionData['business_phone'] ?? '', 25) ?? '',
@@ -341,6 +355,10 @@ final readonly class BusinessServices implements IBusinessServices
             $this->optionalText($actionData['state'] ?? '', 100) ?? '',
             $this->optionalText($actionData['postal_code'] ?? '', 15) ?? '',
         );
+        if ($resArr['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($resArr, 'BusinessServices::manageBusinessProfile');
+        }
+        return $resArr;
     }
 
     private function principal(array $actionData): array
