@@ -9,6 +9,7 @@ use App\Modules\Api\V1\Controllers\OrderController;
 use App\Modules\Api\V1\Controllers\MarketplaceController;
 use App\Modules\Api\V1\Controllers\TenantController;
 use App\Modules\Api\V1\Controllers\BusinessController;
+use App\Modules\Api\V1\Controllers\CatalogueController;
 use Yiisoft\Router\Route;
 
 /** @var array $params */
@@ -58,4 +59,17 @@ return [
     Route::post('/api/v1/business/profile/get')->action([BusinessController::class, 'actionGetBusiness'])->name('api/v1/business/profile/get'),
     Route::post('/api/v1/business/profile/update')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/profile/update'),
     Route::post('/api/v1/business/verification/get')->action([BusinessController::class, 'actionGetBusiness'])->name('api/v1/business/verification/get'),
+
+    Route::post('/api/v1/catalogue/units/list')->action([CatalogueController::class, 'actionGetCatalogue'])->name('api/v1/catalogue/units/list'),
+    Route::post('/api/v1/catalogue/categories/list')->action([CatalogueController::class, 'actionGetCatalogue'])->name('api/v1/catalogue/categories/list'),
+    Route::post('/api/v1/catalogue/categories/create')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/categories/create'),
+    Route::post('/api/v1/catalogue/categories/update')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/categories/update'),
+    Route::post('/api/v1/catalogue/categories/delete')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/categories/delete'),
+    Route::post('/api/v1/catalogue/products/list')->action([CatalogueController::class, 'actionGetCatalogue'])->name('api/v1/catalogue/products/list'),
+    Route::post('/api/v1/catalogue/products/detail')->action([CatalogueController::class, 'actionGetCatalogue'])->name('api/v1/catalogue/products/detail'),
+    Route::post('/api/v1/catalogue/products/create')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/create'),
+    Route::post('/api/v1/catalogue/products/update')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/update'),
+    Route::post('/api/v1/catalogue/products/delete')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/delete'),
+    Route::post('/api/v1/catalogue/products/media/list')->action([CatalogueController::class, 'actionGetCatalogue'])->name('api/v1/catalogue/products/media/list'),
+    Route::post('/api/v1/catalogue/products/media/delete')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/media/delete'),
 ];
