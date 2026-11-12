@@ -14,7 +14,7 @@ final readonly class CartServices implements ICartServices {
         if(($param['actionType']??'')!=='getCart'||($param['actionData']['action']??'')!=='getCart')return $this->fail('Unsupported cart read action.');
         $principal=$this->principal((string)($param['actionData']['_accessToken']??''));if($principal['status']!=='SUCCESS')return $principal;
         $tenant=$this->tenantId($param['actionData']['tenant_id']??null);if($tenant===null)return $this->fail('A valid tenant_id is required.');
-        $store=$this->dao->getApprovedStorefront($this->db,$tenant);if($store['status']!=='SUCCESS')return $store;if($store['data']===[])return $this->fail('Business storefront is not approved or is not accepting online orders.');
+        $store=$this->dao->getEnabledStorefront($this->db,$tenant);if($store['status']!=='SUCCESS')return $store;if($store['data']===[])return $this->fail('Business storefront is not approved or has no enabled ordering channel.');
         $cart=$this->dao->getActiveCart($this->db,(int)$principal['data']['user_id'],$tenant);if($cart['status']!=='SUCCESS')return $cart;
         if($cart['data']===[])return $this->ok(['cart'=>null,'items'=>[],'subtotal'=>'0.00']);
         $items=$this->dao->getItems($this->db,(int)$cart['data']['id']);if($items['status']!=='SUCCESS')return $items;
@@ -30,10 +30,11 @@ final readonly class CartServices implements ICartServices {
         $user=(int)$principal['data']['user_id'];$tenant=$this->tenantId($d['tenant_id']??null);if($tenant===null)return $this->fail('A valid tenant_id is required.');
         $tx=$this->db->beginTransaction();
         try {
-            $store=$this->dao->getApprovedStorefront($this->db,$tenant);if($store['status']!=='SUCCESS'||$store['data']===[]){$tx->rollBack();return $store['status']==='SUCCESS'?$this->fail('Business storefront is not approved or is not accepting online orders.'):$store;}
+            $store=$this->dao->getEnabledStorefront($this->db,$tenant);if($store['status']!=='SUCCESS'||$store['data']===[]){$tx->rollBack();return $store['status']==='SUCCESS'?$this->fail('Business storefront is not approved or has no enabled ordering channel.'):$store;}
+            if($action==='checkout'&&(int)($store['data']['accept_online_orders']??0)!==1){$tx->rollBack();return $this->fail('Online checkout is not enabled for this storefront.');}
             $cart=$this->dao->getActiveCart($this->db,$user,$tenant,true);if($cart['status']!=='SUCCESS'){$tx->rollBack();return $cart;}
             $cartId=(int)($cart['data']['id']??0);
-            if($cartId===0&&$action!=='removeItem'&&$action!=='clearCart'){$new=$this->dao->createCart($this->db,$user,$tenant,(string)($store['data']['default_currency']??'INR'));if($new['status']!=='SUCCESS'){$tx->rollBack();return $new;}$cartId=(int)$new['data']['id'];}
+            if($cartId===0&&$action==='addItem'){$new=$this->dao->createCart($this->db,$user,$tenant,(string)($store['data']['default_currency']??'INR'));if($new['status']!=='SUCCESS'){$tx->rollBack();return $new;}$cartId=(int)$new['data']['id'];}
             if($cartId===0){$tx->rollBack();return $this->fail('Active cart was not found.');}
             if($action==='checkout'){
                 $shipping=$d['shipping_address']??null;
