@@ -13,10 +13,6 @@ export class AuthService {
   readonly user = signal<AuthUser | null>(null);
   readonly isAuthenticated = signal(false);
 
-  login(payload: LoginRequest): Promise<AuthUser> {
-    return this.authenticate('login', payload);
-  }
-
   async register(payload: RegisterRequest): Promise<AuthUser> {
     const registration = await firstValueFrom(this.http.post<ApiResponse<unknown>>(
       `${this.apiBaseUrl}/api/v1/auth/register`,
