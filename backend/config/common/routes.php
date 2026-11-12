@@ -15,6 +15,7 @@ use App\Modules\Api\V1\Controllers\EnquiryController;
 use App\Modules\Api\V1\Controllers\PromotionController;
 use App\Modules\Api\V1\Controllers\EngagementController;
 use App\Modules\Api\V1\Controllers\SubscriptionController;
+use App\Modules\Api\V1\Controllers\AdminController;
 use Yiisoft\Router\Route;
 
 /** @var array $params */
@@ -114,4 +115,30 @@ return [
     Route::post('/api/v1/subscriptions/request')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/request'),
     Route::post('/api/v1/subscriptions/renewal/request')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/renewal/request'),
     Route::post('/api/v1/subscriptions/proofs/submit')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/proofs/submit'),
+
+    Route::post('/api/v1/admin/users/list')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/users/list'),
+    Route::post('/api/v1/admin/users/detail')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/users/detail'),
+    Route::post('/api/v1/admin/users/suspend')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/users/suspend'),
+    Route::post('/api/v1/admin/users/restore')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/users/restore'),
+    Route::post('/api/v1/admin/businesses/pending/list')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/businesses/pending/list'),
+    Route::post('/api/v1/admin/businesses/detail')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/businesses/detail'),
+    Route::post('/api/v1/admin/businesses/approve')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/businesses/approve'),
+    Route::post('/api/v1/admin/businesses/reject')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/businesses/reject'),
+    Route::post('/api/v1/admin/businesses/reopen')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/businesses/reopen'),
+    Route::post('/api/v1/admin/subscriptions/pending/list')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/subscriptions/pending/list'),
+    Route::post('/api/v1/admin/subscriptions/detail')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/subscriptions/detail'),
+    Route::post('/api/v1/admin/subscriptions/active/list')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/subscriptions/active/list'),
+    Route::post('/api/v1/admin/subscriptions/approve')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/subscriptions/approve'),
+    Route::post('/api/v1/admin/subscriptions/reject')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/subscriptions/reject'),
+    Route::post('/api/v1/admin/categories/list')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/categories/list'),
+    Route::post('/api/v1/admin/categories/stats')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/categories/stats'),
+    Route::post('/api/v1/admin/categories/create')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/categories/create'),
+    Route::post('/api/v1/admin/categories/update')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/categories/update'),
+    Route::post('/api/v1/admin/categories/delete')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/categories/delete'),
+    Route::post('/api/v1/admin/analytics/summary')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/analytics/summary'),
+    Route::post('/api/v1/admin/analytics/trends')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/analytics/trends'),
+    Route::post('/api/v1/admin/moderation/queue')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/moderation/queue'),
+    Route::post('/api/v1/admin/moderation/history')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/moderation/history'),
+    Route::post('/api/v1/admin/moderation/action')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/moderation/action'),
+    Route::post('/api/v1/admin/health/summary')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/health/summary'),
 ];
