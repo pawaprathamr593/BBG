@@ -2,7 +2,7 @@
 
 **Branch:** feature/auth-foundation  
 **Stack:** Yii 3 / PHP 8.4 / MySQL 8.4  
-**Status:** broad API implementation is registered; production readiness and integration verification remain incomplete.
+**Status:** 120 unique POST routes across 15 route groups are registered; production readiness and integration verification remain incomplete.
 
 ## Implemented API areas
 
