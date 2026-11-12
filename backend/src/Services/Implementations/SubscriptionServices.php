@@ -221,11 +221,13 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         $userId = (int) $context['data']['user_id'];
         $subscriptionId = $this->positiveInt($actionData['subscription_id'] ?? null);
         $proofPath = $this->requiredText($actionData['proof_file_path'] ?? '', 500);
+        $expectedPrefix = 'tenants/' . $tenantId . '/subscription-proofs/';
         if ($subscriptionId === null || $proofPath === null
+            || !str_starts_with($proofPath, $expectedPrefix)
             || str_starts_with($proofPath, '/') || str_contains($proofPath, '..')
             || preg_match('/^[a-z]+:\/\//i', $proofPath)
         ) {
-            $resArr['msgArr'][] = 'subscription_id and a safe server-issued relative proof_file_path are required.';
+            $resArr['msgArr'][] = 'subscription_id and a tenant-scoped server-issued relative proof_file_path are required.';
             return $resArr;
         }
         $subscription = $this->dao->getTenantSubscription($this->db, $tenantId, $subscriptionId);
