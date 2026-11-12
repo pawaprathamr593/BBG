@@ -65,6 +65,7 @@ final readonly class AuthServices implements IAuthServices
 
     private function manageRegistration(array $actionData): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $fullName = trim((string) ($actionData['full_name'] ?? ''));
         $email = trim(strtolower((string) ($actionData['email'] ?? '')));
         $mobile = trim((string) ($actionData['mobile'] ?? ''));
@@ -109,6 +110,7 @@ final readonly class AuthServices implements IAuthServices
 
     private function manageLogin(array $actionData): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $identifier = trim((string) ($actionData['identifier'] ?? $actionData['email'] ?? ''));
         $password = (string) ($actionData['password'] ?? '');
         if ($identifier === '' || $password === '') {
@@ -136,6 +138,7 @@ final readonly class AuthServices implements IAuthServices
 
     private function createSession(int $userId, array $publicUser, bool $updateLastLogin, array $actionData): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $now = $this->utcNow();
         $sessionUuid = $this->uuid();
         $tokenFamilyId = $this->uuid();
@@ -192,6 +195,7 @@ final readonly class AuthServices implements IAuthServices
 
     private function manageRefreshSession(array $actionData): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $refreshToken = (string) ($actionData['_refreshToken'] ?? '');
         if ($refreshToken === '') {
             return $this->failed('Refresh token cookie is missing.');
@@ -307,6 +311,7 @@ final readonly class AuthServices implements IAuthServices
 
     private function manageLogoutSession(array $actionData): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $refreshToken = (string) ($actionData['_refreshToken'] ?? '');
         if ($refreshToken === '') {
             $resArr = $this->initialResponse();
@@ -346,6 +351,7 @@ final readonly class AuthServices implements IAuthServices
 
     private function manageLogoutAllSessions(array $actionData): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $principal = $this->resolvePrincipal((string) ($actionData['_accessToken'] ?? ''));
         if ($principal['status'] !== 'SUCCESS') {
             return $principal;
@@ -460,6 +466,7 @@ final readonly class AuthServices implements IAuthServices
 
     private function getUserProfile(array $actionData): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $principal = $this->resolvePrincipal((string) ($actionData['_accessToken'] ?? ''));
         if ($principal['status'] !== 'SUCCESS') {
             return $principal;
@@ -530,6 +537,7 @@ final readonly class AuthServices implements IAuthServices
 
     private function propagateFailure(array $downstream, string $context): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $downstream['msgArr'][] = $context . ' failed because a downstream operation did not return SUCCESS.';
         if ($downstream['status'] === 'SUCCESS') {
             $downstream['status'] = 'FAILED';
@@ -540,6 +548,7 @@ final readonly class AuthServices implements IAuthServices
 
     private function exception(string $operation, Throwable $exception): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $this->logger->error('AuthServices::' . $operation . ' failed.', ['exception' => $exception]);
         return [
             'status' => 'EXCEPTION',
@@ -550,16 +559,19 @@ final readonly class AuthServices implements IAuthServices
 
     private function failed(string $message): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return ['status' => 'FAILED', 'msgArr' => [$message], 'data' => []];
     }
 
     private function initialResponse(): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
     }
 
     private function publicUser(array $user): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return [
             'user_id' => (int) $user['id'],
             'full_name' => (string) ($user['full_name'] ?? ''),
