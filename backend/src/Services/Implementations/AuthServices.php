@@ -402,8 +402,14 @@ final readonly class AuthServices implements IAuthServices
         }
         $userId = (int) $principal['data']['user_id'];
         $fullName = trim((string) ($actionData['full_name'] ?? ''));
-        $email = strtolower(trim((string) ($actionData['email'] ?? '')));
-        $mobile = trim((string) ($actionData['mobile'] ?? ''));
+        $emailInput = strtolower(trim((string) ($actionData['email'] ?? '')));
+        $mobileInput = trim((string) ($actionData['mobile'] ?? ''));
+        $currentUser = $this->authDao->getUserById($this->connection, $userId);
+        if ($currentUser['status'] !== 'SUCCESS' || $currentUser['data'] === []) {
+            return $this->propagateFailure($currentUser, 'AuthServices::manageUserProfile');
+        }
+        $email = $emailInput !== '' ? $emailInput : (string) ($currentUser['data']['email'] ?? '');
+        $mobile = $mobileInput !== '' ? $mobileInput : (string) ($currentUser['data']['mobile'] ?? '');
         if ($fullName === '' || strlen($fullName) > 150 || ($email === '' && $mobile === '')
             || strlen($email) > 190 || strlen($mobile) > 25
         ) {
@@ -412,7 +418,7 @@ final readonly class AuthServices implements IAuthServices
         if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             return $this->failed('A valid email address is required.');
         }
-        if ($email !== '') {
+        if ($email !== '' && $email !== (string) ($currentUser['data']['email'] ?? '')) {
             $emailCheck = $this->authDao->isEmailAvailableForUser($this->connection, $email, $userId);
             if ($emailCheck['status'] !== 'SUCCESS') {
                 return $this->propagateFailure($emailCheck, 'AuthServices::manageUserProfile');
@@ -421,7 +427,7 @@ final readonly class AuthServices implements IAuthServices
                 return $this->failed('The supplied email address is already in use.');
             }
         }
-        if ($mobile !== '') {
+        if ($mobile !== '' && $mobile !== (string) ($currentUser['data']['mobile'] ?? '')) {
             $mobileCheck = $this->authDao->isMobileAvailableForUser($this->connection, $mobile, $userId);
             if ($mobileCheck['status'] !== 'SUCCESS') {
                 return $this->propagateFailure($mobileCheck, 'AuthServices::manageUserProfile');
