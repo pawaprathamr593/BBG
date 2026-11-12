@@ -1,37 +1,43 @@
-# BBG database migrations
+# BBG database migrations and seed scripts
 
-## Phase 1 local development sequence
+## Existing local database
 
-1. Verify the selected database and compare the live schema with the proposed baseline. The existing nine auth/identity/tenant tables are not recreated or altered by these scripts.
-2. Back up the local database.
-3. Apply `20261112_001_business_application_and_cart.sql` for business application/document/review history and cart persistence.
-4. Apply `20261112_002_marketplace_baseline.sql` for the business storefront, catalogue, customer, and order tables required by the first marketplace slice.
-5. Verify table definitions, generated columns, indexes, and row counts before starting the API.
+Do not recreate, reset, drop, or truncate the existing BBG database. Verify the active database and compare its live schema with the approved database design before applying any schema script.
 
-Both migrations are additive and use `CREATE TABLE IF NOT EXISTS`; they do not alter or drop existing tables. If a target table already exists, the script leaves its existing structure untouched. This is not a schema reconciliation tool.
+The additive table scripts are:
 
-## Safety rules
+1. `20261112_001_business_application_and_cart.sql`
+2. `20261112_002_marketplace_baseline.sql`
 
-- Apply only to a verified local development database after backup.
-- Never run destructive migrations or reset the MySQL volume.
-- Existing tables and user data must be preserved.
-- No physical foreign keys are added, following the supplied `.agents/skills/db-design/SKILL.md`.
-- All new tables include the five required common columns: `status`, `created_by`, `created_on`, `updated_by`, `updated_on`.
-- Soft deletion uses `status='Z'`; ordinary application operations must not physically delete records.
-- Review the scripts and inspect the live schema before any production deployment.
+They use `CREATE TABLE IF NOT EXISTS`; they do not reconcile an already-existing table definition. Review the live schema first. No destructive migration is authorized.
 
-## Current implementation boundary
+## RBAC and entitlement seeds
 
-The cart API currently supports authenticated cart retrieval, add, update, remove, and clear. Checkout/order creation, business application HTTP workflows, product-management APIs, payment reconciliation, and admin approval APIs are not yet implemented. The schema is the foundation, not evidence that those modules are complete.
+Apply these additive, idempotent seeds after verifying the target database and backing it up:
 
+1. `../seeds/20261112_001_tenant_order_manager.sql` — tenant-scoped `TENANT_ORDER_MANAGER` role and `ORDERS_MANAGE` permission assignment for the configured test user/tenant pair. The seed checks the active membership precondition and does not assign the role if it is missing.
+2. `../seeds/20261112_002_api_rbac_baseline.sql` — `TENANT_OWNER` and `PLATFORM_ADMIN` roles, tenant/platform permissions, and role-permission links. It deliberately does **not** assign `PLATFORM_ADMIN` to any user. A trusted platform operator must be assigned separately through an authorized administrative process.
+3. `../seeds/20261112_003_plan_entitlements.sql` — the documented Gold `PRODUCT_LIMIT=50` and Platinum `PROMOTIONAL_POSTS=1` entitlements, when matching plan codes exist. Other plan limits and features are not guessed.
 
-## Tenant order-management RBAC seed
+The seeds do not alter table structures. Review each script before execution and verify the result queries afterwards.
 
-After verifying that user `2` has an active membership in tenant `1`, apply
-`../seeds/20261112_001_tenant_order_manager.sql` to create the tenant-scoped
-`TENANT_ORDER_MANAGER` role, the `ORDERS_MANAGE` permission, the role-permission
-link, and the assignment for that user/tenant pair. The seed is idempotent and
-does not alter the schema. It intentionally does not assign the role if the
-user, tenant, or active membership precondition is missing.
+## Locked data conventions
 
-The assignment is scoped to tenant `1`; it does not grant platform-wide access.
+- All tables use the five required common columns: `status`, `created_by`, `created_on`, `updated_by`, `updated_on`.
+- `status='A'` is active and `status='Z'` is soft-deleted.
+- Normal application operations must not physically delete records.
+- No physical foreign keys are introduced by these scripts.
+- Tenant-scoped reads and writes must be authorized in Core Services; a client-supplied `tenant_id` is never trusted by itself.
+
+## API implementation dependencies
+
+- Product creation requires an active subscription with a configured `PRODUCT_LIMIT` entitlement. Only the Gold value of 50 is seeded here; any other plan's value must be configured from an approved commercial plan definition.
+- Promotion publishing requires an active subscription with `PROMOTIONAL_POSTS`. The seed attaches it to an active plan whose `plan_code` is `PLATINUM`.
+- Subscription proof metadata accepts a safe relative `proof_file_path` expected to be issued by the future private file-storage/upload integration. No arbitrary public URL is accepted. The upload provider, file-size/type policy and retention rules are not yet selected, so this repository does not claim to implement binary proof upload.
+- Platform administration APIs remain default-deny until a trusted user is explicitly assigned the `PLATFORM_ADMIN` role.
+
+## Scope boundary
+
+The current API work covers authentication/profile/permissions, tenant context and tenant orders, business application/storefront, marketplace/cart/orders, catalogue, customer address book, enquiries, engagement, promotions, subscriptions and platform administration.
+
+The 16 database tables explicitly marked future scope in the database design (supplier, purchasing and inventory/costing) remain inactive. Do not add their APIs, screens, jobs or workflows without separate approval.
