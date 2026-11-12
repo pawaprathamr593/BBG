@@ -148,6 +148,7 @@ final readonly class MarketplaceDao
                 AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
              JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = p.tenant_id
                 AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
+             JOIN UNITS_OF_MEASURE u ON u.id = p.base_unit_id AND u.status = 'A'
              WHERE p.product_status = 'ACTIVE'
                 AND p.publication_status = 'PUBLISHED' AND p.status = 'A'
                 " . $searchSql,
@@ -194,10 +195,10 @@ final readonly class MarketplaceDao
                     pv.selling_price, pv.unit_id, u.unit_name, u.unit_symbol,
                     u.quantity_precision, u.is_fraction_allowed
              FROM PRODUCT_VARIANTS pv
-             LEFT JOIN UNITS_OF_MEASURE u ON u.id = COALESCE(pv.unit_id, (
-                SELECT p.base_unit_id FROM PRODUCTS p
-                WHERE p.id = pv.product_id AND p.tenant_id = pv.tenant_id LIMIT 1
-             )) AND u.status = 'A'
+             JOIN PRODUCTS p ON p.id = pv.product_id AND p.tenant_id = pv.tenant_id
+                AND p.status = 'A'
+             LEFT JOIN UNITS_OF_MEASURE u ON u.id = COALESCE(pv.unit_id, p.base_unit_id)
+                AND u.status = 'A'
              WHERE pv.tenant_id = :tenant_id AND pv.product_id = :product_id
                 AND pv.variant_status = 'ACTIVE' AND pv.status = 'A'
              ORDER BY pv.variant_name ASC, pv.id ASC",
