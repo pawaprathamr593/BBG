@@ -382,16 +382,6 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = 'Only an approved business can manage or publish its storefront.';
             return $resArr;
         }
-        if ($operation === 'publish') {
-            $subscription = $this->dao->hasActiveSubscription($this->db, $tenantId);
-            if ($subscription['status'] !== 'SUCCESS') {
-                return $this->propagateFailure($subscription, 'BusinessServices::manageMyStorefront');
-            }
-            if ($subscription['data'] === []) {
-                $resArr['msgArr'][] = 'An active tenant subscription is required to publish the storefront.';
-                return $resArr;
-            }
-        }
         if ($operation === 'unpublish') {
             $publish = false;
         } else {
