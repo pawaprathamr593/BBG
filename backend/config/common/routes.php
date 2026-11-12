@@ -10,6 +10,7 @@ use App\Modules\Api\V1\Controllers\MarketplaceController;
 use App\Modules\Api\V1\Controllers\TenantController;
 use App\Modules\Api\V1\Controllers\BusinessController;
 use App\Modules\Api\V1\Controllers\CatalogueController;
+use App\Modules\Api\V1\Controllers\CustomerController;
 use Yiisoft\Router\Route;
 
 /** @var array $params */
@@ -72,4 +73,11 @@ return [
     Route::post('/api/v1/catalogue/products/delete')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/delete'),
     Route::post('/api/v1/catalogue/products/media/list')->action([CatalogueController::class, 'actionGetCatalogue'])->name('api/v1/catalogue/products/media/list'),
     Route::post('/api/v1/catalogue/products/media/delete')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/media/delete'),
+
+    Route::post('/api/v1/customers/profile')->action([CustomerController::class, 'actionGetCustomer'])->name('api/v1/customers/profile'),
+    Route::post('/api/v1/customers/addresses/list')->action([CustomerController::class, 'actionGetCustomer'])->name('api/v1/customers/addresses/list'),
+    Route::post('/api/v1/customers/addresses/create')->action([CustomerController::class, 'actionManageCustomer'])->name('api/v1/customers/addresses/create'),
+    Route::post('/api/v1/customers/addresses/update')->action([CustomerController::class, 'actionManageCustomer'])->name('api/v1/customers/addresses/update'),
+    Route::post('/api/v1/customers/addresses/delete')->action([CustomerController::class, 'actionManageCustomer'])->name('api/v1/customers/addresses/delete'),
+    Route::post('/api/v1/customers/addresses/default')->action([CustomerController::class, 'actionManageCustomer'])->name('api/v1/customers/addresses/default'),
 ];
