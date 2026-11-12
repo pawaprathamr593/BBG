@@ -173,9 +173,9 @@ final readonly class CartServices implements ICartServices {
         if($history['status']!=='SUCCESS')return $history;
         $converted=$this->dao->convertCart($this->db,$user,$cartId);
         if($converted['status']!=='SUCCESS')return $converted;
-        $message="Hello, I would like to place order ".$number."\\n";
-        foreach($lines as $line)$message.=$line['product']['product_name']." x ".$line['quantity']." - ".$line['total']."\\n";
-        $message.="Total: ".number_format($grand,2,'.','')."\\nPlease confirm availability and next steps.";
+        $message="Hello, I would like to place order ".$number."\n";
+        foreach($lines as $line)$message.=$line['product']['product_name']." x ".$line['quantity']." - ".$line['total']."\n";
+        $message.="Total: ".number_format($grand,2,'.','')."\nPlease confirm availability and next steps.";
         return $this->ok(['order_id'=>$orderId,'order_number'=>$number,'order_channel'=>'WHATSAPP','order_status'=>'REQUESTED','payment_status'=>'UNPAID','subtotal'=>number_format($subtotal,2,'.',''),'tax_amount'=>number_format($taxTotal,2,'.',''),'grand_total'=>number_format($grand,2,'.',''),'whatsapp_url'=>'https://wa.me/'.$phone.'?text='.rawurlencode($message),'whatsapp_handoff'=>'NOT_CONFIRMED']);
     }
     private function principal(string $token): array {return $this->auth->getAuth(['actionType'=>'getAuth','actionData'=>['action'=>'getProfile','_accessToken'=>$token]]);}
