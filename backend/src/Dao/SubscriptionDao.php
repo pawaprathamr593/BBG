@@ -33,6 +33,16 @@ final readonly class SubscriptionDao
             [':id' => $planId], 'getPlan');
     }
 
+    public function hasActiveSubscription(ConnectionInterface $db, int $tenantId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT id FROM TENANT_SUBSCRIPTIONS
+            WHERE tenant_id = :tenant_id AND subscription_status = 'ACTIVE' AND status = 'A'
+                AND (starts_on IS NULL OR starts_on <= CURRENT_TIMESTAMP)
+                AND (ends_on IS NULL OR ends_on >= CURRENT_TIMESTAMP)
+            LIMIT 1", [':tenant_id' => $tenantId], 'hasActiveSubscription');
+    }
+
     public function hasPendingSubscription(ConnectionInterface $db, int $tenantId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
