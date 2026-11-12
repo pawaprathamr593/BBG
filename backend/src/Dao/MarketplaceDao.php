@@ -234,7 +234,7 @@ final readonly class MarketplaceDao
             "SELECT id, parent_category_id, category_code, category_name, category_type,
                     description, display_order
              FROM CATEGORIES
-             WHERE category_status = 'ACTIVE' AND status = 'A'
+             WHERE category_type = 'BUSINESS' AND category_status = 'ACTIVE' AND status = 'A'
              ORDER BY display_order ASC, category_name ASC, id ASC",
             [],
             'getPublicCategories',
