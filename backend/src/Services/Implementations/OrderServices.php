@@ -417,7 +417,7 @@ final readonly class OrderServices implements IOrderServices
             if ($updated['status'] !== 'SUCCESS') {
                 $transaction->rollBack();
                 $resArr = $updated;
-                $resArr['msgArr'][] = 'Failed in OrderServices::manageWhatsAppOrder while updating order status.';
+                $resArr['msgArr'][] = 'Failed in OrderServices::manageOrder while updating order status.';
                 return $resArr;
             }
 
@@ -429,7 +429,6 @@ final readonly class OrderServices implements IOrderServices
                 $oldStatus,
                 $newStatus,
                 $note,
-                gmdate('Y-m-d H:i:s'),
             );
             if ($history['status'] !== 'SUCCESS') {
                 $transaction->rollBack();
