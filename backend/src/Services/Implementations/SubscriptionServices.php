@@ -186,6 +186,16 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         if ($plan['status'] !== 'SUCCESS' || $plan['data'] === []) {
             return $this->propagateFailure($plan, 'SubscriptionServices::manageSubscriptionRequest');
         }
+        if (!$renewal) {
+            $active = $this->dao->hasActiveSubscription($this->db, $tenantId);
+            if ($active['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($active, 'SubscriptionServices::manageSubscriptionRequest');
+            }
+            if ($active['data'] !== []) {
+                $resArr['msgArr'][] = 'An active subscription already exists. Use the renewal request for that subscription.';
+                return $resArr;
+            }
+        }
         $pending = $this->dao->hasPendingSubscription($this->db, $tenantId);
         if ($pending['status'] !== 'SUCCESS') {
             return $this->propagateFailure($pending, 'SubscriptionServices::manageSubscriptionRequest');
