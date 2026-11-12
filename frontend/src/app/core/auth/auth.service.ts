@@ -17,14 +17,23 @@ export class AuthService {
     return this.authenticate('login', payload);
   }
 
-  register(payload: RegisterRequest): Promise<AuthUser> {
-    return this.authenticate('register', payload);
+  async register(payload: RegisterRequest): Promise<AuthUser> {
+    const registration = await firstValueFrom(this.http.post<ApiResponse<unknown>>(
+      `${this.apiBaseUrl}/api/v1/auth/register`,
+      { authParam: { actionType: 'manageAuth', actionData: { action: 'register', ...payload } } },
+      { withCredentials: true },
+    ));
+    if (registration.status !== 'SUCCESS') {
+      throw new Error(registration.msgArr?.join(' ') || 'Registration failed.');
+    }
+    const identifier = payload.email?.trim() || payload.mobile?.trim() || '';
+    return this.login({ identifier, password: payload.password });
   }
 
-  private async authenticate(action: 'login' | 'register', actionData: LoginRequest | RegisterRequest): Promise<AuthUser> {
+  async login(payload: LoginRequest): Promise<AuthUser> {
     const response = await firstValueFrom(this.http.post<ApiResponse<AuthResponseData>>(
-      `${this.apiBaseUrl}/api/v1/auth/${action === 'login' ? 'login' : 'register'}`,
-      { authParam: { actionType: 'manageAuth', actionData: { action, ...actionData } } },
+      `${this.apiBaseUrl}/api/v1/auth/login`,
+      { authParam: { actionType: 'manageAuth', actionData: { action: 'login', ...payload } } },
       { withCredentials: true },
     ));
     return this.acceptAuthResponse(response);
