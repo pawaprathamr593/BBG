@@ -7,7 +7,7 @@ use Yiisoft\Db\Connection\ConnectionInterface;
 final readonly class CartDao {
     public function __construct(private LoggerInterface $logger) {}
     public function getApprovedStorefront(ConnectionInterface $db, int $tenantId): array {
-        return $this->one($db, "SELECT bp.id FROM BUSINESS_PROFILES bp JOIN TENANTS t ON t.id=bp.tenant_id AND t.status='A' JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id=bp.tenant_id AND ss.status='A' WHERE bp.tenant_id=:tenant AND bp.approval_status='APPROVED' AND bp.publication_status='PUBLISHED' AND bp.status='A' AND t.tenant_status='ACTIVE' AND ss.storefront_status='ACTIVE' AND ss.accept_online_orders=1 LIMIT 1", [':tenant'=>$tenantId], 'getApprovedStorefront');
+        return $this->one($db, "SELECT bp.id, t.default_currency FROM BUSINESS_PROFILES bp JOIN TENANTS t ON t.id=bp.tenant_id AND t.status='A' JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id=bp.tenant_id AND ss.status='A' WHERE bp.tenant_id=:tenant AND bp.approval_status='APPROVED' AND bp.publication_status='PUBLISHED' AND bp.status='A' AND t.tenant_status='ACTIVE' AND ss.storefront_status='ACTIVE' AND ss.accept_online_orders=1 LIMIT 1", [':tenant'=>$tenantId], 'getApprovedStorefront');
     }
     public function getProduct(ConnectionInterface $db, int $tenantId, int $productId, ?int $variantId): array {
         $row = $this->one($db, "SELECT p.id,p.product_name,p.product_code,p.base_unit_id,p.selling_price,p.tax_rate,p.is_variant_product,COALESCE(pv.selling_price,p.selling_price) current_price,pv.id matched_variant_id,u.quantity_precision,u.is_fraction_allowed FROM PRODUCTS p JOIN BUSINESS_PROFILES bp ON bp.tenant_id=p.tenant_id AND bp.approval_status='APPROVED' AND bp.publication_status='PUBLISHED' AND bp.status='A' JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id=p.tenant_id AND ss.storefront_status='ACTIVE' AND ss.accept_online_orders=1 AND ss.status='A' LEFT JOIN PRODUCT_VARIANTS pv ON pv.id=:variant AND pv.product_id=p.id AND pv.tenant_id=p.tenant_id AND pv.variant_status='ACTIVE' AND pv.status='A' JOIN UNITS_OF_MEASURE u ON u.id=COALESCE(pv.unit_id,p.base_unit_id) AND u.status='A' WHERE p.id=:product AND p.tenant_id=:tenant AND p.product_status='ACTIVE' AND p.publication_status='PUBLISHED' AND p.status='A' LIMIT 1", [':variant'=>$variantId,':product'=>$productId,':tenant'=>$tenantId], 'getProduct');
@@ -19,8 +19,8 @@ final readonly class CartDao {
         if($lock)$sql.=' FOR UPDATE';
         return $this->one($db,$sql,[':user'=>$userId,':tenant'=>$tenantId],'getActiveCart');
     }
-    public function createCart(ConnectionInterface $db,int $userId,int $tenantId): array {
-        try{$db->createCommand("INSERT INTO CARTS(tenant_id,user_id,cart_status,currency,last_activity_on,status,created_by,updated_by) VALUES(:tenant,:user,'ACTIVE','INR',CURRENT_TIMESTAMP,'A',:user,:user)",[':tenant'=>$tenantId,':user'=>$userId])->execute();return $this->ok(['id'=>(int)$db->getLastInsertId()]);}
+    public function createCart(ConnectionInterface $db,int $userId,int $tenantId,string $currency): array {
+        try{$db->createCommand("INSERT INTO CARTS(tenant_id,user_id,cart_status,currency,last_activity_on,status,created_by,updated_by) VALUES(:tenant,:user,'ACTIVE',:currency,CURRENT_TIMESTAMP,'A',:user,:user)",[':tenant'=>$tenantId,':user'=>$userId,':currency'=>$currency])->execute();return $this->ok(['id'=>(int)$db->getLastInsertId()]);}
         catch(Throwable $e){return $this->error('createCart',$e);}
     }
     public function getItems(ConnectionInterface $db,int $cartId): array {

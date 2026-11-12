@@ -33,7 +33,7 @@ final readonly class CartServices implements ICartServices {
             $store=$this->dao->getApprovedStorefront($this->db,$tenant);if($store['status']!=='SUCCESS'||$store['data']===[]){$tx->rollBack();return $store['status']==='SUCCESS'?$this->fail('Business storefront is not approved or is not accepting online orders.'):$store;}
             $cart=$this->dao->getActiveCart($this->db,$user,$tenant,true);if($cart['status']!=='SUCCESS'){$tx->rollBack();return $cart;}
             $cartId=(int)($cart['data']['id']??0);
-            if($cartId===0&&$action!=='removeItem'&&$action!=='clearCart'){$new=$this->dao->createCart($this->db,$user,$tenant);if($new['status']!=='SUCCESS'){$tx->rollBack();return $new;}$cartId=(int)$new['data']['id'];}
+            if($cartId===0&&$action!=='removeItem'&&$action!=='clearCart'){$new=$this->dao->createCart($this->db,$user,$tenant,(string)($store['data']['default_currency']??'INR'));if($new['status']!=='SUCCESS'){$tx->rollBack();return $new;}$cartId=(int)$new['data']['id'];}
             if($cartId===0){$tx->rollBack();return $this->fail('Active cart was not found.');}
             if($action==='addItem'){
                 $product=$this->positiveInt($d['product_id']??null);$variant=isset($d['variant_id'])&&$d['variant_id']!==''?$this->positiveInt($d['variant_id']):null;$qty=$this->quantity($d['quantity']??null);
@@ -64,7 +64,7 @@ final readonly class CartServices implements ICartServices {
     private function envelope(array $p,string $name): ?array {return isset($p['actionType'],$p['actionData'])&&is_array($p['actionData'])?null:$this->fail('Invalid '.$name.' request envelope.');}
     private function tenantId(mixed $v): ?int {$n=$this->positiveInt($v);return $n;}
     private function positiveInt(mixed $v): ?int {$n=filter_var($v,FILTER_VALIDATE_INT);return $n!==false&&$n>0?(int)$n:null;}
-    private function quantity(mixed $v): ?string {return is_numeric($v)&&(float)$v>0&&(float)$v<=1000000?$this->fmt((float)$v):null;}
+    private function quantity(mixed $v): ?string {if(!is_scalar($v))return null;$raw=trim((string)$v);if(!preg_match('/^\\d+(?:\\.\\d{1,3})?$/D',$raw))return null;$number=(float)$raw;return $number>0&&$number<=1000000?$this->fmt($number):null;}
     private function fmt(float $v): string {return rtrim(rtrim(number_format($v,3,'.',''),'0'),'.')?:'0';}
     private function precisionOk(string $q,int $p,bool $fraction): bool {if(!$fraction&&floor((float)$q)!==(float)$q)return false;$parts=explode('.',$q);return strlen($parts[1]??'')<=min(3,max(0,$p));}
     private function ok(array $d): array{return ['status'=>'SUCCESS','msgArr'=>[],'data'=>$d];}
