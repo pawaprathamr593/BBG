@@ -414,19 +414,39 @@ final readonly class BusinessServices implements IBusinessServices
                     $resArr['msgArr'][] = 'show_prices, accept_online_orders and whatsapp_enabled must be boolean values.';
                     return $resArr;
                 }
-                $whatsapp = array_key_exists('whatsapp_number', $actionData)
+                $whatsappInput = array_key_exists('whatsapp_number', $actionData)
                     ? $this->optionalText($actionData['whatsapp_number'], 25)
                     : (string) ($settings['data']['whatsapp_number'] ?? '');
+                if (array_key_exists('whatsapp_number', $actionData)
+                    && is_scalar($actionData['whatsapp_number'])
+                    && strlen(trim((string) $actionData['whatsapp_number'])) > 25
+                ) {
+                    $transaction->rollBack();
+                    $resArr['msgArr'][] = 'whatsapp_number must not exceed 25 characters.';
+                    return $resArr;
+                }
+                $whatsapp = $whatsappInput;
                 if ($whatsappEnabled === 1 && ($whatsapp === null || trim($whatsapp) === '')) {
                     $transaction->rollBack();
                     $resArr['msgArr'][] = 'A WhatsApp number is required when whatsapp_enabled is true.';
                     return $resArr;
                 }
+                $titleInput = $actionData['storefront_title'] ?? $settings['data']['storefront_title'];
+                $descriptionInput = $actionData['storefront_description'] ?? $settings['data']['storefront_description'];
+                $themeInput = $actionData['theme_code'] ?? $settings['data']['theme_code'];
+                if ((is_scalar($titleInput) && strlen(trim((string) $titleInput)) > 180)
+                    || (is_scalar($descriptionInput) && strlen(trim((string) $descriptionInput)) > 500)
+                    || (is_scalar($themeInput) && strlen(trim((string) $themeInput)) > 50)
+                ) {
+                    $transaction->rollBack();
+                    $resArr['msgArr'][] = 'Storefront title, description or theme_code exceeds its allowed length.';
+                    return $resArr;
+                }
                 $updated = $this->dao->updateStorefrontSettings(
                     $this->db, $tenantId, $userId,
-                    $this->optionalText($actionData['storefront_title'] ?? $settings['data']['storefront_title'], 180),
-                    $this->optionalText($actionData['storefront_description'] ?? $settings['data']['storefront_description'], 500),
-                    $this->optionalText($actionData['theme_code'] ?? $settings['data']['theme_code'], 50),
+                    $this->optionalText($titleInput, 180),
+                    $this->optionalText($descriptionInput, 500),
+                    $this->optionalText($themeInput, 50),
                     $showPrices, $acceptOrders, $whatsappEnabled,
                 );
                 if ($updated['status'] !== 'SUCCESS') {
