@@ -273,14 +273,17 @@ final readonly class CatalogueDao
             'getTenantProductVariant');
     }
 
-    public function clearPrimaryProductMedia(ConnectionInterface $db, int $tenantId, int $productId, int $userId): array
+    public function clearPrimaryProductMedia(ConnectionInterface $db, int $tenantId, int $productId, ?int $variantId, int $userId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         try {
             $db->createCommand("UPDATE PRODUCT_MEDIA SET is_primary = 0,
                 updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
-                WHERE tenant_id = :tenant_id AND product_id = :product_id AND status = 'A'",
-                [':user_id' => $userId, ':tenant_id' => $tenantId, ':product_id' => $productId])->execute();
+                WHERE tenant_id = :tenant_id AND product_id = :product_id AND status = 'A'
+                    AND ((:variant_is_null = 1 AND variant_id IS NULL)
+                        OR (:variant_is_null = 0 AND variant_id = :variant_id))",
+                [':user_id' => $userId, ':tenant_id' => $tenantId, ':product_id' => $productId,
+                 ':variant_is_null' => $variantId === null ? 1 : 0, ':variant_id' => $variantId])->execute();
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = ['product_id' => $productId];
         } catch (Throwable $exception) {
