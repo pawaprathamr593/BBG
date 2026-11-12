@@ -1,8 +1,9 @@
 export interface AuthUser {
-  id: number;
+  user_id: number;
   full_name: string;
   email: string | null;
   mobile: string | null;
+  profile_image?: string | null;
 }
 
 export interface AuthResponseData {
