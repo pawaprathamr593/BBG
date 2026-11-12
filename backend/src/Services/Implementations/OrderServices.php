@@ -365,7 +365,11 @@ final readonly class OrderServices implements IOrderServices
             'confirmWhatsAppOrder' => 'CONFIRMED',
             'cancelWhatsAppOrder' => 'CANCELLED',
             default => strtoupper(trim((string) ($actionData['new_status'] ?? ''))),
-        };\n        if (!in_array($newStatus, array('CONFIRMED', 'CANCELLED'), true)) {\n            $resArr['msgArr'][] = 'new_status must be CONFIRMED or CANCELLED.';\n            return $resArr;\n        }
+        };
+        if (!in_array($newStatus, array('CONFIRMED', 'CANCELLED'), true)) {
+            $resArr['msgArr'][] = 'new_status must be CONFIRMED or CANCELLED.';
+            return $resArr;
+        }
         $transaction = $this->db->beginTransaction();
 
         try {
