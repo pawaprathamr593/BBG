@@ -162,15 +162,19 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         $tenantId = (int) $context['data']['tenant_id'];
         $userId = (int) $context['data']['user_id'];
         $planId = $this->positiveInt($actionData['plan_id'] ?? null);
-        if ($renewal && $planId === null) {
+        if ($renewal) {
             $subscriptionId = $this->positiveInt($actionData['subscription_id'] ?? null);
             if ($subscriptionId === null) {
-                $resArr['msgArr'][] = 'subscription_id or plan_id is required for renewal.';
+                $resArr['msgArr'][] = 'subscription_id is required for a renewal request.';
                 return $resArr;
             }
             $existingSubscription = $this->dao->getTenantSubscription($this->db, $tenantId, $subscriptionId);
             if ($existingSubscription['status'] !== 'SUCCESS' || $existingSubscription['data'] === []) {
                 return $this->propagateFailure($existingSubscription, 'SubscriptionServices::manageSubscriptionRequest');
+            }
+            if (!in_array($existingSubscription['data']['subscription_status'], ['ACTIVE', 'EXPIRED'], true)) {
+                $resArr['msgArr'][] = 'Only an active or expired subscription can be renewed.';
+                return $resArr;
             }
             $planId = (int) $existingSubscription['data']['plan_id'];
         }
