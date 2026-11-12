@@ -46,6 +46,7 @@ return [
     Route::post('/api/v1/orders/detail')->action([OrderController::class, 'actionGetOrders'])->name('api/v1/orders/detail'),
     Route::post('/api/v1/orders/tenant/list')->action([OrderController::class, 'actionGetOrders'])->name('api/v1/orders/tenant/list'),
     Route::post('/api/v1/orders/tenant/detail')->action([OrderController::class, 'actionGetOrders'])->name('api/v1/orders/tenant/detail'),
+    Route::post('/api/v1/orders/tenant/status')->action([OrderController::class, 'actionManageOrders'])->name('api/v1/orders/tenant/status'),
     Route::post('/api/v1/orders/tenant/confirm')->action([OrderController::class, 'actionManageOrders'])->name('api/v1/orders/tenant/confirm'),
     Route::post('/api/v1/orders/tenant/cancel')->action([OrderController::class, 'actionManageOrders'])->name('api/v1/orders/tenant/cancel'),
 
