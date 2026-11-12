@@ -190,7 +190,7 @@ final readonly class BusinessDao
                 AND ura.user_id = :user_id AND ura.status = 'A'
              INNER JOIN ROLES r ON r.id = ura.role_id AND r.role_code = 'TENANT_OWNER'
                 AND r.scope_type = 'TENANT' AND r.status = 'A'
-             WHERE bp.status = 'A' AND (:tenant_id = 0 OR bp.tenant_id = :tenant_id)
+             WHERE bp.status = 'A' AND (:tenant_id_filter = 0 OR bp.tenant_id = :tenant_id_match)
              ORDER BY bp.id DESC LIMIT 1",
             [':user_id' => $userId, ':tenant_id_filter' => $tenantId, ':tenant_id_match' => $tenantId],
             'getMyBusinessApplication',
