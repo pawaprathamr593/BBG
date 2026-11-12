@@ -1,40 +1,25 @@
-# BBG Phase 1 additive schema extension
+# BBG database migrations
 
-## Included in this migration
+## Phase 1 local development sequence
 
-- `BUSINESS_APPLICATIONS`: one application per tenant, editable/resubmittable after Platform Admin reopens a rejected application.
-- `BUSINESS_APPLICATION_DOCUMENTS`: append a new version for corrected documents; do not overwrite prior versions.
-- `BUSINESS_APPLICATION_REVIEWS`: append-only review history for approve/reject/additional-information/reopen decisions.
-- `CARTS` and `CART_ITEMS`: persistent authenticated-customer carts.
+1. Verify the selected database and compare the live schema with the proposed baseline. The existing nine auth/identity/tenant tables are not recreated or altered by these scripts.
+2. Back up the local database.
+3. Apply `20261112_001_business_application_and_cart.sql` for business application/document/review history and cart persistence.
+4. Apply `20261112_002_marketplace_baseline.sql` for the business storefront, catalogue, customer, and order tables required by the first marketplace slice.
+5. Verify table definitions, generated columns, indexes, and row counts before starting the API.
 
-## Cart boundary
+Both migrations are additive and use `CREATE TABLE IF NOT EXISTS`; they do not alter or drop existing tables. If a target table already exists, the script leaves its existing structure untouched. This is not a schema reconciliation tool.
 
-The first release uses **one cart per customer per business**. The customer can have separate carts for different storefronts. Checkout is scoped to one tenant and produces that tenant's order. Multi-business combined checkout and automatic order splitting are not part of this first slice.
+## Safety rules
 
-Only authenticated customers are supported initially. Guest cart/checkout remains pending product approval. Cart prices are display snapshots only; checkout must reload active product/variant prices and calculate totals on the server. Never trust client-supplied prices or totals.
+- Apply only to a verified local development database after backup.
+- Never run destructive migrations or reset the MySQL volume.
+- Existing tables and user data must be preserved.
+- No physical foreign keys are added, following the supplied `.agents/skills/db-design/SKILL.md`.
+- All new tables include the five required common columns: `status`, `created_by`, `created_on`, `updated_by`, `updated_on`.
+- Soft deletion uses `status='Z'`; ordinary application operations must not physically delete records.
+- Review the scripts and inspect the live schema before any production deployment.
 
-## Application workflow
+## Current implementation boundary
 
-- New business application and tenant start in pending state.
-- Applicant may add new document versions to the same application.
-- A rejection is not applicant-editable. Only Platform Admin can reopen it.
-- Each decision/reopen is appended to `BUSINESS_APPLICATION_REVIEWS`; never overwrite prior decisions.
-- Approval must update tenant/business activation through a Core Service transaction and explicit status policy.
-
-## Database conventions
-
-- MySQL 8.4 / InnoDB / utf8mb4.
-- All five common columns are present: `status`, `created_by`, `created_on`, `updated_by`, `updated_on`.
-- Soft deletion is `status='Z'`; normal application workflows do not physically delete records.
-- No physical foreign keys, following the supplied `.agents/skills/db-design/SKILL.md`. Logical relationships are represented by indexed IDs and validated in Core Services.
-- The migration is additive and uses `CREATE TABLE IF NOT EXISTS`. It does not modify existing tables.
-
-## Apply safely
-
-1. Confirm the active database name and inspect the current schema.
-2. Take a database backup.
-3. Apply this SQL only to the local development database.
-4. Verify all five tables and indexes exist.
-5. Do not apply to production until reviewed and separately approved.
-
-The script intentionally does not create the existing catalogue, customer, order, payment or tenancy tables described in Database Design v2.0. Those require the full Phase 1 baseline migration and a live-schema comparison first.
+The cart API currently supports authenticated cart retrieval, add, update, remove, and clear. Checkout/order creation, business application HTTP workflows, product-management APIs, payment reconciliation, and admin approval APIs are not yet implemented. The schema is the foundation, not evidence that those modules are complete.
