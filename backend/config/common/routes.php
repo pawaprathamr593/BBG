@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Api;
 use App\Modules\Api\V1\Controllers\AuthController;
 use App\Modules\Api\V1\Controllers\CartController;
+use App\Modules\Api\V1\Controllers\OrderController;
 use Yiisoft\Router\Route;
 
 /** @var array $params */
@@ -25,4 +26,7 @@ return [
     Route::post('/api/v1/cart/remove')->action([CartController::class, 'actionManageCart'])->name('api/v1/cart/remove'),
     Route::post('/api/v1/cart/clear')->action([CartController::class, 'actionManageCart'])->name('api/v1/cart/clear'),
     Route::post('/api/v1/cart/checkout')->action([CartController::class, 'actionManageCart'])->name('api/v1/cart/checkout'),
+
+    Route::post('/api/v1/orders/list')->action([OrderController::class, 'actionGetOrders'])->name('api/v1/orders/list'),
+    Route::post('/api/v1/orders/detail')->action([OrderController::class, 'actionGetOrders'])->name('api/v1/orders/detail'),
 ];
