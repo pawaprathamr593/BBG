@@ -124,7 +124,7 @@ final class AuthController
 
         if ($refreshToken !== null && $status === 'SUCCESS') {
             $response = $response->withAddedHeader('Set-Cookie', $this->refreshCookie($refreshToken, $tokenService));
-        } elseif ($action === 'logout' || ($action === 'refresh' && $status === 'FAILED')) {
+        } elseif (in_array($action, ['logout', 'logoutAll'], true) || ($action === 'refresh' && $status === 'FAILED')) {
             $response = $response->withAddedHeader('Set-Cookie', $this->clearRefreshCookie($tokenService));
         }
 
