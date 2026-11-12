@@ -403,16 +403,29 @@ final readonly class BusinessDao
                 WHERE tenant_id = :tenant_id AND approval_status = 'APPROVED' AND status = 'A'",
                 [':publication_status' => $publicationStatus, ':user_id' => $userId, ':tenant_id' => $tenantId])->execute();
             if ($profileAffected !== 1) {
-                $resArr['msgArr'][] = 'Only an approved business can publish its storefront.';
-                return $resArr;
+                $profileExists = $db->createCommand(
+                    "SELECT id FROM BUSINESS_PROFILES WHERE tenant_id = :tenant_id
+                        AND approval_status = 'APPROVED' AND status = 'A' LIMIT 1",
+                    [':tenant_id' => $tenantId],
+                )->queryOne();
+                if (!is_array($profileExists)) {
+                    $resArr['msgArr'][] = 'Only an approved business can publish its storefront.';
+                    return $resArr;
+                }
             }
             $storefrontAffected = $db->createCommand("UPDATE STOREFRONT_SETTINGS
                 SET storefront_status = :storefront_status, updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
                 WHERE tenant_id = :tenant_id AND status = 'A'",
                 [':storefront_status' => $storefrontStatus, ':user_id' => $userId, ':tenant_id' => $tenantId])->execute();
             if ($storefrontAffected !== 1) {
-                $resArr['msgArr'][] = 'Storefront settings were not found.';
-                return $resArr;
+                $storefrontExists = $db->createCommand(
+                    "SELECT id FROM STOREFRONT_SETTINGS WHERE tenant_id = :tenant_id AND status = 'A' LIMIT 1",
+                    [':tenant_id' => $tenantId],
+                )->queryOne();
+                if (!is_array($storefrontExists)) {
+                    $resArr['msgArr'][] = 'Storefront settings were not found.';
+                    return $resArr;
+                }
             }
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = ['tenant_id' => $tenantId, 'publication_status' => $publicationStatus, 'storefront_status' => $storefrontStatus];
