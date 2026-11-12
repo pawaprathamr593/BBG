@@ -354,8 +354,10 @@ final readonly class AdminDao
             WHERE primary_category_id = :business_category AND status = 'A'
             UNION ALL
             SELECT id FROM PRODUCTS WHERE global_category_id = :product_category AND status = 'A'
+            UNION ALL
+            SELECT id FROM CATEGORIES WHERE parent_category_id = :child_category AND status = 'A'
             LIMIT 1",
-            [':business_category' => $categoryId, ':product_category' => $categoryId], 'hasCategoryDependencies');
+            [':business_category' => $categoryId, ':product_category' => $categoryId, ':child_category' => $categoryId], 'hasCategoryDependencies');
     }
 
     public function softDeleteCategory(ConnectionInterface $db, int $categoryId, int $adminId): array
