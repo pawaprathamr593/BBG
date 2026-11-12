@@ -10,6 +10,7 @@ use Yiisoft\Db\Connection\ConnectionInterface;
 final readonly class CartServices implements ICartServices {
     public function __construct(private ConnectionInterface $db,private CartDao $dao,private IAuthServices $auth,private LoggerInterface $logger) {}
     public function getCart(array $param): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         if(($bad=$this->envelope($param,'getCart'))!==null)return $bad;
         if(($param['actionType']??'')!=='getCart'||($param['actionData']['action']??'')!=='getCart')return $this->fail('Unsupported cart read action.');
         $principal=$this->principal((string)($param['actionData']['_accessToken']??''));if($principal['status']!=='SUCCESS')return $principal;
@@ -22,6 +23,7 @@ final readonly class CartServices implements ICartServices {
         return $this->ok(['cart'=>$cart['data'],'items'=>$items['data'],'subtotal'=>number_format($sum,2,'.','')]);
     }
     public function manageCart(array $param): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         if(($bad=$this->envelope($param,'manageCart'))!==null)return $bad;
         if(($param['actionType']??'')!=='manageCart')return $this->fail('Unsupported actionType for manageCart.');
         $d=$param['actionData'];$action=(string)($d['action']??'');
@@ -128,6 +130,7 @@ final readonly class CartServices implements ICartServices {
         } catch(Throwable $e){if($tx->isActive())$tx->rollBack();$this->logger->error('CartServices::manageCart failed.',['exception'=>$e]);return ['status'=>'EXCEPTION','msgArr'=>['Cart operation failed unexpectedly.'],'data'=>[]];}
     }
     private function createWhatsAppOrder(array $d,array $profile,int $user,int $tenant,int $cartId,array $store): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $phone=preg_replace('/\\D+/','',(string)($store['whatsapp_number']??''));
         if($phone===''||strlen($phone)<8)return $this->fail('The business WhatsApp number is not configured correctly.');
         $items=$this->dao->getItems($this->db,$cartId);
@@ -178,13 +181,16 @@ final readonly class CartServices implements ICartServices {
         $message.="Total: ".number_format($grand,2,'.','')."\nPlease confirm availability and next steps.";
         return $this->ok(['order_id'=>$orderId,'order_number'=>$number,'order_channel'=>'WHATSAPP','order_status'=>'REQUESTED','payment_status'=>'UNPAID','subtotal'=>number_format($subtotal,2,'.',''),'tax_amount'=>number_format($taxTotal,2,'.',''),'grand_total'=>number_format($grand,2,'.',''),'whatsapp_url'=>'https://wa.me/'.$phone.'?text='.rawurlencode($message),'whatsapp_handoff'=>'NOT_CONFIRMED']);
     }
-    private function principal(string $token): array {return $this->auth->getAuth(['actionType'=>'getAuth','actionData'=>['action'=>'getProfile','_accessToken'=>$token]]);}
+    private function principal(string $token): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];return $this->auth->getAuth(['actionType'=>'getAuth','actionData'=>['action'=>'getProfile','_accessToken'=>$token]]);}
     private function envelope(array $p,string $name): ?array {return isset($p['actionType'],$p['actionData'])&&is_array($p['actionData'])?null:$this->fail('Invalid '.$name.' request envelope.');}
     private function tenantId(mixed $v): ?int {$n=$this->positiveInt($v);return $n;}
     private function positiveInt(mixed $v): ?int {$n=filter_var($v,FILTER_VALIDATE_INT);return $n!==false&&$n>0?(int)$n:null;}
     private function quantity(mixed $v): ?string {if(!is_scalar($v))return null;$raw=trim((string)$v);if(!preg_match('/^\\d+(?:\\.\\d{1,3})?$/D',$raw))return null;$number=(float)$raw;return $number>0&&$number<=1000000?$this->fmt($number):null;}
     private function fmt(float $v): string {return rtrim(rtrim(number_format($v,3,'.',''),'0'),'.')?:'0';}
     private function precisionOk(string $q,int $p,bool $fraction): bool {if(!$fraction&&floor((float)$q)!==(float)$q)return false;$parts=explode('.',$q);return strlen($parts[1]??'')<=min(3,max(0,$p));}
-    private function ok(array $d): array{return ['status'=>'SUCCESS','msgArr'=>[],'data'=>$d];}
-    private function fail(string $m): array{return ['status'=>'FAILED','msgArr'=>[$m],'data'=>[]];}
+    private function ok(array $d): array{
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];return ['status'=>'SUCCESS','msgArr'=>[],'data'=>$d];}
+    private function fail(string $m): array{
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];return ['status'=>'FAILED','msgArr'=>[$m],'data'=>[]];}
 }
