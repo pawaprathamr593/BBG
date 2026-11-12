@@ -12,6 +12,7 @@ use App\Modules\Api\V1\Controllers\BusinessController;
 use App\Modules\Api\V1\Controllers\CatalogueController;
 use App\Modules\Api\V1\Controllers\CustomerController;
 use App\Modules\Api\V1\Controllers\EnquiryController;
+use App\Modules\Api\V1\Controllers\PromotionController;
 use Yiisoft\Router\Route;
 
 /** @var array $params */
@@ -89,4 +90,13 @@ return [
     Route::post('/api/v1/enquiries/tenant/detail')->action([EnquiryController::class, 'actionGetEnquiry'])->name('api/v1/enquiries/tenant/detail'),
     Route::post('/api/v1/enquiries/tenant/respond')->action([EnquiryController::class, 'actionManageEnquiry'])->name('api/v1/enquiries/tenant/respond'),
     Route::post('/api/v1/enquiries/tenant/close')->action([EnquiryController::class, 'actionManageEnquiry'])->name('api/v1/enquiries/tenant/close'),
+
+    Route::post('/api/v1/promotions/mine/list')->action([PromotionController::class, 'actionGetPromotion'])->name('api/v1/promotions/mine/list'),
+    Route::post('/api/v1/promotions/mine/detail')->action([PromotionController::class, 'actionGetPromotion'])->name('api/v1/promotions/mine/detail'),
+    Route::post('/api/v1/promotions/create')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/create'),
+    Route::post('/api/v1/promotions/update')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/update'),
+    Route::post('/api/v1/promotions/delete')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/delete'),
+    Route::post('/api/v1/promotions/publish')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/publish'),
+    Route::post('/api/v1/promotions/unpublish')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/unpublish'),
+    Route::post('/api/v1/promotions/engagement')->action([PromotionController::class, 'actionGetPromotion'])->name('api/v1/promotions/engagement'),
 ];
