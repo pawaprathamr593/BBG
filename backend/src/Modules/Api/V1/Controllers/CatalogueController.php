@@ -53,6 +53,7 @@ final class CatalogueController
             '/api/v1/catalogue/products/create' => 'createTenantProduct',
             '/api/v1/catalogue/products/update' => 'updateTenantProduct',
             '/api/v1/catalogue/products/delete' => 'deleteTenantProduct',
+            '/api/v1/catalogue/products/media/link' => 'linkProductMedia',
             '/api/v1/catalogue/products/media/delete' => 'deleteProductMedia',
         ];
         $path = $request->getUri()->getPath();
