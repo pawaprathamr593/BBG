@@ -125,7 +125,7 @@ The Model layer remains reference-only for new development; Utils contains reusa
 | `POST /api/v1/business/verification/get` | `getBusinessVerification` | Read approval/publication state |
 | `POST /api/v1/business/storefront/get` | `getMyStorefront` | Read own storefront settings |
 | `POST /api/v1/business/storefront/update` | `updateMyStorefront` | Update storefront preferences and WhatsApp settings |
-| `POST /api/v1/business/storefront/publish` | `publishMyStorefront` | Publish an approved business with an active subscription |
+| `POST /api/v1/business/storefront/publish` | `publishMyStorefront` | Publish an approved business storefront |
 | `POST /api/v1/business/storefront/unpublish` | `unpublishMyStorefront` | Unpublish own storefront |
 
 ### Catalogue
