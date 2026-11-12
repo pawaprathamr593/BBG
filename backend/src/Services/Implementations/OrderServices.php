@@ -1,93 +1,450 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Services\Implementations;
+
 use App\Dao\OrderDao;
 use App\Services\Interfaces\IOrderServices;
 use App\Services\Interfaces\IAuthServices;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use Yiisoft\Db\Connection\ConnectionInterface;
-final readonly class OrderServices implements IOrderServices {
-    public function __construct(private ConnectionInterface $db,private OrderDao $dao,private IAuthServices $auth,private LoggerInterface $logger) {}
-    public function getOrders(array $param): array {
-        if(!isset($param['actionType'],$param['actionData'])||!is_array($param['actionData']))return $this->fail('Invalid order request envelope.');
-        if($param['actionType']!=='getOrders')return $this->fail('Unsupported actionType for getOrders.');
-        $d=$param['actionData'];$action=(string)($d['action']??'');
-        $principal=$this->principal((string)($d['_accessToken']??''));
-        if($principal['status']!=='SUCCESS')return $principal;
-        $user=(int)$principal['data']['user_id'];
-        $tenant=null;
-        if(isset($d['tenant_id'])&&$d['tenant_id']!==''){$tenant=filter_var($d['tenant_id'],FILTER_VALIDATE_INT);if($tenant===false||$tenant<1)return $this->fail('Invalid tenant_id.');$tenant=(int)$tenant;}
-        if($action==='listMyOrders'){
-            $page=max(1,(int)($d['page']??1));$size=min(50,max(1,(int)($d['page_size']??20)));$offset=($page-1)*$size;
-            $rows=$this->dao->getCustomerOrders($this->db,$user,$tenant,$size,$offset);if($rows['status']!=='SUCCESS')return $rows;
-            $count=$this->dao->countCustomerOrders($this->db,$user,$tenant);if($count['status']!=='SUCCESS')return $count;
-            return $this->ok(['items'=>$rows['data'],'pagination'=>['page'=>$page,'page_size'=>$size,'total'=>(int)($count['data']['total']??0)]]);
+
+final readonly class OrderServices implements IOrderServices
+{
+    public function __construct(
+        private ConnectionInterface $db,
+        private OrderDao $dao,
+        private IAuthServices $auth,
+        private LoggerInterface $logger,
+    ) {
+    }
+
+    /**
+     * Level 1 dispatcher for order reads.
+     */
+    public function getOrders(array $param): array
+    {
+        $resArr = array(
+            'status' => 'FAILED',
+            'msgArr' => array(),
+            'data' => array(),
+        );
+
+        if (!isset($param['actionType'])) {
+            $resArr['msgArr'][] = "Missing required key 'actionType' in getOrders input.";
+            return $resArr;
         }
-        if($action==='getMyOrder'){
-            $orderId=filter_var($d['order_id']??null,FILTER_VALIDATE_INT);if($orderId===false||$orderId<1)return $this->fail('A valid order_id is required.');
-            $order=$this->dao->getCustomerOrder($this->db,$user,(int)$orderId);if($order['status']!=='SUCCESS')return $order;if($order['data']===[])return $this->fail('Order was not found.');
-            $tenantId=(int)$order['data']['tenant_id'];
-            $items=$this->dao->getOrderItems($this->db,$tenantId,(int)$orderId);if($items['status']!=='SUCCESS')return $items;
-            $history=$this->dao->getOrderHistory($this->db,$tenantId,(int)$orderId);if($history['status']!=='SUCCESS')return $history;
-            $fulfilments=$this->dao->getOrderFulfilments($this->db,$tenantId,(int)$orderId);if($fulfilments['status']!=='SUCCESS')return $fulfilments;
-            return $this->ok(['order'=>$order['data'],'items'=>$items['data'],'status_history'=>$history['data'],'fulfilments'=>$fulfilments['data']]);
+
+        if (!isset($param['actionData']) || !is_array($param['actionData'])) {
+            $resArr['msgArr'][] = "Missing or invalid required key 'actionData' in getOrders input.";
+            return $resArr;
         }
-        if(in_array($action,['listTenantWhatsAppOrders','getTenantWhatsAppOrder'],true)){
-            if($tenant===null)return $this->fail('A valid tenant_id is required.');
-            $permission=$this->dao->hasTenantOrderManagementPermission($this->db,$user,$tenant);
-            if($permission['status']!=='SUCCESS')return $permission;
-            if($permission['data']===[])return $this->fail('You do not have permission to manage orders for this tenant.');
-            if($action==='listTenantWhatsAppOrders'){
-                $page=max(1,(int)($d['page']??1));$size=min(50,max(1,(int)($d['page_size']??20)));$offset=($page-1)*$size;
-                $rows=$this->dao->getTenantWhatsAppOrders($this->db,$tenant,$size,$offset);if($rows['status']!=='SUCCESS')return $rows;
-                $count=$this->dao->countTenantWhatsAppOrders($this->db,$tenant);if($count['status']!=='SUCCESS')return $count;
-                return $this->ok(['items'=>$rows['data'],'pagination'=>['page'=>$page,'page_size'=>$size,'total'=>(int)($count['data']['total']??0)]]);
+
+        switch ($param['actionType']) {
+            case 'getOrders':
+                $resArr = $this->getOrder($param['actionData']);
+                break;
+
+            default:
+                $resArr['msgArr'][] = 'Unsupported actionType for getOrders.';
+                break;
+        }
+
+        return $resArr;
+    }
+
+    /**
+     * Level 1 dispatcher for order management.
+     */
+    public function manageOrders(array $param): array
+    {
+        $resArr = array(
+            'status' => 'FAILED',
+            'msgArr' => array(),
+            'data' => array(),
+        );
+
+        if (!isset($param['actionType'])) {
+            $resArr['msgArr'][] = "Missing required key 'actionType' in manageOrders input.";
+            return $resArr;
+        }
+
+        if (!isset($param['actionData']) || !is_array($param['actionData'])) {
+            $resArr['msgArr'][] = "Missing or invalid required key 'actionData' in manageOrders input.";
+            return $resArr;
+        }
+
+        switch ($param['actionType']) {
+            case 'manageOrders':
+                $resArr = $this->manageWhatsAppOrder($param['actionData']);
+                break;
+
+            default:
+                $resArr['msgArr'][] = 'Unsupported actionType for manageOrders.';
+                break;
+        }
+
+        return $resArr;
+    }
+
+    /**
+     * Level 2 read worker. Existing action names and response payloads are preserved.
+     */
+    private function getOrder(array $actionData): array
+    {
+        $resArr = array(
+            'status' => 'FAILED',
+            'msgArr' => array(),
+            'data' => array(),
+        );
+
+        $action = (string) ($actionData['action'] ?? '');
+        $principal = $this->auth->getAuth(array(
+            'actionType' => 'getAuth',
+            'actionData' => array(
+                'action' => 'getProfile',
+                '_accessToken' => (string) ($actionData['_accessToken'] ?? ''),
+            ),
+        ));
+
+        if (($principal['status'] ?? 'EXCEPTION') !== 'SUCCESS') {
+            return $principal;
+        }
+
+        $userId = (int) ($principal['data']['user_id'] ?? 0);
+        if ($userId < 1) {
+            $resArr['msgArr'][] = 'Authenticated user could not be resolved.';
+            return $resArr;
+        }
+
+        $tenantId = null;
+        if (isset($actionData['tenant_id']) && $actionData['tenant_id'] !== '') {
+            $validatedTenantId = filter_var($actionData['tenant_id'], FILTER_VALIDATE_INT);
+            if ($validatedTenantId === false || $validatedTenantId < 1) {
+                $resArr['msgArr'][] = 'Invalid tenant_id.';
+                return $resArr;
             }
-            $orderId=filter_var($d['order_id']??null,FILTER_VALIDATE_INT);if($orderId===false||$orderId<1)return $this->fail('A valid order_id is required.');
-            $order=$this->dao->getTenantWhatsAppOrder($this->db,$tenant,(int)$orderId);if($order['status']!=='SUCCESS')return $order;if($order['data']===[])return $this->fail('WhatsApp order was not found for this tenant.');
-            $items=$this->dao->getOrderItems($this->db,$tenant,(int)$orderId);if($items['status']!=='SUCCESS')return $items;
-            $history=$this->dao->getOrderHistory($this->db,$tenant,(int)$orderId);if($history['status']!=='SUCCESS')return $history;
-            $fulfilments=$this->dao->getOrderFulfilments($this->db,$tenant,(int)$orderId);if($fulfilments['status']!=='SUCCESS')return $fulfilments;
-            return $this->ok(['order'=>$order['data'],'items'=>$items['data'],'status_history'=>$history['data'],'fulfilments'=>$fulfilments['data']]);
+            $tenantId = (int) $validatedTenantId;
         }
-        return $this->fail('Unsupported order read action.');
+
+        if ($action === 'listMyOrders') {
+            $page = max(1, (int) ($actionData['page'] ?? 1));
+            $pageSize = min(50, max(1, (int) ($actionData['page_size'] ?? 20)));
+            $offset = ($page - 1) * $pageSize;
+
+            $rows = $this->dao->getCustomerOrders($this->db, $userId, $tenantId, $pageSize, $offset);
+            if ($rows['status'] !== 'SUCCESS') {
+                $resArr = $rows;
+                $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while retrieving customer orders.';
+                return $resArr;
+            }
+
+            $count = $this->dao->countCustomerOrders($this->db, $userId, $tenantId);
+            if ($count['status'] !== 'SUCCESS') {
+                $resArr = $count;
+                $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while counting customer orders.';
+                return $resArr;
+            }
+
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = array(
+                'items' => $rows['data'],
+                'pagination' => array(
+                    'page' => $page,
+                    'page_size' => $pageSize,
+                    'total' => (int) ($count['data']['total'] ?? 0),
+                ),
+            );
+            return $resArr;
+        }
+
+        if ($action === 'getMyOrder') {
+            $orderId = filter_var($actionData['order_id'] ?? null, FILTER_VALIDATE_INT);
+            if ($orderId === false || $orderId < 1) {
+                $resArr['msgArr'][] = 'A valid order_id is required.';
+                return $resArr;
+            }
+
+            $order = $this->dao->getCustomerOrder($this->db, $userId, (int) $orderId);
+            if ($order['status'] !== 'SUCCESS') {
+                $resArr = $order;
+                $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while retrieving the customer order.';
+                return $resArr;
+            }
+            if ($order['data'] === array()) {
+                $resArr['msgArr'][] = 'Order was not found.';
+                return $resArr;
+            }
+
+            $orderTenantId = (int) $order['data']['tenant_id'];
+            $items = $this->dao->getOrderItems($this->db, $orderTenantId, (int) $orderId);
+            if ($items['status'] !== 'SUCCESS') {
+                $resArr = $items;
+                $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while retrieving order items.';
+                return $resArr;
+            }
+
+            $history = $this->dao->getOrderHistory($this->db, $orderTenantId, (int) $orderId);
+            if ($history['status'] !== 'SUCCESS') {
+                $resArr = $history;
+                $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while retrieving order history.';
+                return $resArr;
+            }
+
+            $fulfilments = $this->dao->getOrderFulfilments($this->db, $orderTenantId, (int) $orderId);
+            if ($fulfilments['status'] !== 'SUCCESS') {
+                $resArr = $fulfilments;
+                $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while retrieving order fulfilments.';
+                return $resArr;
+            }
+
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = array(
+                'order' => $order['data'],
+                'items' => $items['data'],
+                'status_history' => $history['data'],
+                'fulfilments' => $fulfilments['data'],
+            );
+            return $resArr;
+        }
+
+        if (in_array($action, array('listTenantWhatsAppOrders', 'getTenantWhatsAppOrder'), true)) {
+            if ($tenantId === null) {
+                $resArr['msgArr'][] = 'A valid tenant_id is required.';
+                return $resArr;
+            }
+
+            $permission = $this->dao->hasTenantOrderManagementPermission($this->db, $userId, $tenantId);
+            if ($permission['status'] !== 'SUCCESS') {
+                $resArr = $permission;
+                $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while checking tenant order permission.';
+                return $resArr;
+            }
+            if ($permission['data'] === array()) {
+                $resArr['msgArr'][] = 'You do not have permission to manage orders for this tenant.';
+                return $resArr;
+            }
+
+            if ($action === 'listTenantWhatsAppOrders') {
+                $page = max(1, (int) ($actionData['page'] ?? 1));
+                $pageSize = min(50, max(1, (int) ($actionData['page_size'] ?? 20)));
+                $offset = ($page - 1) * $pageSize;
+
+                $rows = $this->dao->getTenantWhatsAppOrders($this->db, $tenantId, $pageSize, $offset);
+                if ($rows['status'] !== 'SUCCESS') {
+                    $resArr = $rows;
+                    $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while retrieving tenant WhatsApp orders.';
+                    return $resArr;
+                }
+
+                $count = $this->dao->countTenantWhatsAppOrders($this->db, $tenantId);
+                if ($count['status'] !== 'SUCCESS') {
+                    $resArr = $count;
+                    $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while counting tenant WhatsApp orders.';
+                    return $resArr;
+                }
+
+                $resArr['status'] = 'SUCCESS';
+                $resArr['data'] = array(
+                    'items' => $rows['data'],
+                    'pagination' => array(
+                        'page' => $page,
+                        'page_size' => $pageSize,
+                        'total' => (int) ($count['data']['total'] ?? 0),
+                    ),
+                );
+                return $resArr;
+            }
+
+            $orderId = filter_var($actionData['order_id'] ?? null, FILTER_VALIDATE_INT);
+            if ($orderId === false || $orderId < 1) {
+                $resArr['msgArr'][] = 'A valid order_id is required.';
+                return $resArr;
+            }
+
+            $order = $this->dao->getTenantWhatsAppOrder($this->db, $tenantId, (int) $orderId);
+            if ($order['status'] !== 'SUCCESS') {
+                $resArr = $order;
+                $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while retrieving tenant WhatsApp order.';
+                return $resArr;
+            }
+            if ($order['data'] === array()) {
+                $resArr['msgArr'][] = 'WhatsApp order was not found for this tenant.';
+                return $resArr;
+            }
+
+            $items = $this->dao->getOrderItems($this->db, $tenantId, (int) $orderId);
+            if ($items['status'] !== 'SUCCESS') {
+                $resArr = $items;
+                $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while retrieving order items.';
+                return $resArr;
+            }
+
+            $history = $this->dao->getOrderHistory($this->db, $tenantId, (int) $orderId);
+            if ($history['status'] !== 'SUCCESS') {
+                $resArr = $history;
+                $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while retrieving order history.';
+                return $resArr;
+            }
+
+            $fulfilments = $this->dao->getOrderFulfilments($this->db, $tenantId, (int) $orderId);
+            if ($fulfilments['status'] !== 'SUCCESS') {
+                $resArr = $fulfilments;
+                $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while retrieving order fulfilments.';
+                return $resArr;
+            }
+
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = array(
+                'order' => $order['data'],
+                'items' => $items['data'],
+                'status_history' => $history['data'],
+                'fulfilments' => $fulfilments['data'],
+            );
+            return $resArr;
+        }
+
+        $resArr['msgArr'][] = 'Unsupported order read action.';
+        return $resArr;
     }
-    public function manageOrders(array $param): array {
-        if(!isset($param['actionType'],$param['actionData'])||!is_array($param['actionData']))return $this->fail('Invalid order management request envelope.');
-        if($param['actionType']!=='manageOrders')return $this->fail('Unsupported actionType for manageOrders.');
-        $d=$param['actionData'];$action=(string)($d['action']??'');
-        if(!in_array($action,['confirmWhatsAppOrder','cancelWhatsAppOrder'],true))return $this->fail('Unsupported order management action.');
-        $principal=$this->principal((string)($d['_accessToken']??''));if($principal['status']!=='SUCCESS')return $principal;
-        $user=(int)$principal['data']['user_id'];
-        $tenant=filter_var($d['tenant_id']??null,FILTER_VALIDATE_INT);if($tenant===false||$tenant<1)return $this->fail('A valid tenant_id is required.');$tenant=(int)$tenant;
-        $orderId=filter_var($d['order_id']??null,FILTER_VALIDATE_INT);if($orderId===false||$orderId<1)return $this->fail('A valid order_id is required.');
-        if(isset($d['note'])&&!is_scalar($d['note']))return $this->fail('Order status note must be text.');
-        $note=isset($d['note'])?trim((string)$d['note']):null;if($note!==null&&strlen($note)>500)return $this->fail('Order status note must not exceed 500 characters.');
-        $newStatus=$action==='confirmWhatsAppOrder'?'CONFIRMED':'CANCELLED';
-        $transaction=$this->db->beginTransaction();
+
+    /**
+     * Level 2 management worker. The transaction remains owned by Core Services.
+     */
+    private function manageWhatsAppOrder(array $actionData): array
+    {
+        $resArr = array(
+            'status' => 'FAILED',
+            'msgArr' => array(),
+            'data' => array(),
+        );
+
+        $action = (string) ($actionData['action'] ?? '');
+        if (!in_array($action, array('confirmWhatsAppOrder', 'cancelWhatsAppOrder'), true)) {
+            $resArr['msgArr'][] = 'Unsupported order management action.';
+            return $resArr;
+        }
+
+        $principal = $this->auth->getAuth(array(
+            'actionType' => 'getAuth',
+            'actionData' => array(
+                'action' => 'getProfile',
+                '_accessToken' => (string) ($actionData['_accessToken'] ?? ''),
+            ),
+        ));
+        if (($principal['status'] ?? 'EXCEPTION') !== 'SUCCESS') {
+            return $principal;
+        }
+
+        $userId = (int) ($principal['data']['user_id'] ?? 0);
+        $tenantId = filter_var($actionData['tenant_id'] ?? null, FILTER_VALIDATE_INT);
+        $orderId = filter_var($actionData['order_id'] ?? null, FILTER_VALIDATE_INT);
+
+        if ($userId < 1 || $tenantId === false || $tenantId < 1) {
+            $resArr['msgArr'][] = 'A valid tenant_id is required.';
+            return $resArr;
+        }
+        if ($orderId === false || $orderId < 1) {
+            $resArr['msgArr'][] = 'A valid order_id is required.';
+            return $resArr;
+        }
+        if (isset($actionData['note']) && !is_scalar($actionData['note'])) {
+            $resArr['msgArr'][] = 'Order status note must be text.';
+            return $resArr;
+        }
+
+        $note = isset($actionData['note']) ? trim((string) $actionData['note']) : null;
+        if ($note !== null && strlen($note) > 500) {
+            $resArr['msgArr'][] = 'Order status note must not exceed 500 characters.';
+            return $resArr;
+        }
+
+        $newStatus = $action === 'confirmWhatsAppOrder' ? 'CONFIRMED' : 'CANCELLED';
+        $transaction = $this->db->beginTransaction();
+
         try {
-            $permission=$this->dao->hasTenantOrderManagementPermission($this->db,$user,$tenant,true);
-            if($permission['status']!=='SUCCESS'){$transaction->rollBack();return $permission;}
-            if($permission['data']===[]){$transaction->rollBack();return $this->fail('You do not have permission to manage orders for this tenant.');}
-            $order=$this->dao->getTenantWhatsAppOrder($this->db,$tenant,(int)$orderId,true);
-            if($order['status']!=='SUCCESS'){$transaction->rollBack();return $order;}
-            if($order['data']===[]){$transaction->rollBack();return $this->fail('WhatsApp order was not found for this tenant.');}
-            $oldStatus=(string)$order['data']['order_status'];
-            if($oldStatus!=='REQUESTED'){$transaction->rollBack();return $this->fail('Only requested WhatsApp orders can be confirmed or cancelled.');}
-            $updated=$this->dao->updateWhatsAppOrderStatus($this->db,$tenant,(int)$orderId,$user,$oldStatus,$newStatus);
-            if($updated['status']!=='SUCCESS'){$transaction->rollBack();return $updated;}
-            $history=$this->dao->createTenantOrderHistory($this->db,$tenant,(int)$orderId,$user,$oldStatus,$newStatus,$note,gmdate('Y-m-d H:i:s'));
-            if($history['status']!=='SUCCESS'){$transaction->rollBack();return $history;}
+            $permission = $this->dao->hasTenantOrderManagementPermission($this->db, $userId, (int) $tenantId, true);
+            if ($permission['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                $resArr = $permission;
+                $resArr['msgArr'][] = 'Failed in OrderServices::manageWhatsAppOrder while checking tenant order permission.';
+                return $resArr;
+            }
+            if ($permission['data'] === array()) {
+                $transaction->rollBack();
+                $resArr['msgArr'][] = 'You do not have permission to manage orders for this tenant.';
+                return $resArr;
+            }
+
+            $order = $this->dao->getTenantWhatsAppOrder($this->db, (int) $tenantId, (int) $orderId, true);
+            if ($order['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                $resArr = $order;
+                $resArr['msgArr'][] = 'Failed in OrderServices::manageWhatsAppOrder while retrieving the order.';
+                return $resArr;
+            }
+            if ($order['data'] === array()) {
+                $transaction->rollBack();
+                $resArr['msgArr'][] = 'WhatsApp order was not found for this tenant.';
+                return $resArr;
+            }
+
+            $oldStatus = (string) $order['data']['order_status'];
+            if ($oldStatus !== 'REQUESTED') {
+                $transaction->rollBack();
+                $resArr['msgArr'][] = 'Only requested WhatsApp orders can be confirmed or cancelled.';
+                return $resArr;
+            }
+
+            $updated = $this->dao->updateWhatsAppOrderStatus(
+                $this->db,
+                (int) $tenantId,
+                (int) $orderId,
+                $userId,
+                $oldStatus,
+                $newStatus,
+            );
+            if ($updated['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                $resArr = $updated;
+                $resArr['msgArr'][] = 'Failed in OrderServices::manageWhatsAppOrder while updating order status.';
+                return $resArr;
+            }
+
+            $history = $this->dao->createTenantOrderHistory(
+                $this->db,
+                (int) $tenantId,
+                (int) $orderId,
+                $userId,
+                $oldStatus,
+                $newStatus,
+                $note,
+                gmdate('Y-m-d H:i:s'),
+            );
+            if ($history['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                $resArr = $history;
+                $resArr['msgArr'][] = 'Failed in OrderServices::manageWhatsAppOrder while creating order history.';
+                return $resArr;
+            }
+
             $transaction->commit();
-            return $this->ok(['order_id'=>(int)$orderId,'order_status'=>$newStatus]);
-        } catch(Throwable $e) {
-            if($transaction->isActive())$transaction->rollBack();
-            $this->logger->error('OrderServices::manageOrders failed.',['exception'=>$e]);
-            return ['status'=>'EXCEPTION','msgArr'=>['Order management operation failed unexpectedly.'],'data'=>[]];
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = array(
+                'order_id' => (int) $orderId,
+                'order_status' => $newStatus,
+            );
+            return $resArr;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) {
+                $transaction->rollBack();
+            }
+            $this->logger->error('OrderServices::manageWhatsAppOrder failed.', array('exception' => $exception));
+            $resArr['status'] = 'EXCEPTION';
+            $resArr['msgArr'][] = 'Order management operation failed unexpectedly.';
+            return $resArr;
         }
     }
-    private function principal(string $token): array {return $this->auth->getAuth(['actionType'=>'getAuth','actionData'=>['action'=>'getProfile','_accessToken'=>$token]]);}
-    private function ok(array $data): array{return ['status'=>'SUCCESS','msgArr'=>[],'data'=>$data];}
-    private function fail(string $message): array{return ['status'=>'FAILED','msgArr'=>[$message],'data'=>[]];}
 }
