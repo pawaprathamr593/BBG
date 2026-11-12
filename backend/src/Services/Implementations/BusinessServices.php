@@ -47,6 +47,9 @@ final readonly class BusinessServices implements IBusinessServices
                 case 'getBusinessVerification':
                     $resArr = $this->getBusinessVerification($actionData);
                     break;
+                case 'getMyStorefront':
+                    $resArr = $this->getMyStorefront($actionData);
+                    break;
                 default:
                     $resArr['msgArr'][] = 'Unsupported business read action.';
                     break;
@@ -89,6 +92,15 @@ final readonly class BusinessServices implements IBusinessServices
                     break;
                 case 'updateMyBusinessProfile':
                     $resArr = $this->manageBusinessProfile($actionData);
+                    break;
+                case 'updateMyStorefront':
+                    $resArr = $this->manageMyStorefront($actionData, 'update');
+                    break;
+                case 'publishMyStorefront':
+                    $resArr = $this->manageMyStorefront($actionData, 'publish');
+                    break;
+                case 'unpublishMyStorefront':
+                    $resArr = $this->manageMyStorefront($actionData, 'unpublish');
                     break;
                 default:
                     $resArr['msgArr'][] = 'Unsupported business management action.';
@@ -320,6 +332,139 @@ final readonly class BusinessServices implements IBusinessServices
         }
     }
 
+    private function getMyStorefront(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->principal($actionData);
+        if ($principal['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'BusinessServices::getMyStorefront');
+        }
+        $tenantId = $this->positiveInt($actionData['tenant_id'] ?? null);
+        if ($tenantId === null) {
+            $resArr['msgArr'][] = 'A valid tenant_id is required.';
+            return $resArr;
+        }
+        $business = $this->dao->getMyBusinessApplication($this->db, (int) $principal['data']['user_id'], $tenantId);
+        if ($business['status'] !== 'SUCCESS' || $business['data'] === []) {
+            return $this->propagateFailure($business, 'BusinessServices::getMyStorefront');
+        }
+        $settings = $this->dao->getStorefrontSettings($this->db, $tenantId);
+        if ($settings['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($settings, 'BusinessServices::getMyStorefront');
+        }
+        if ($settings['data'] === []) {
+            $resArr['msgArr'][] = 'Storefront settings were not found.';
+            return $resArr;
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['business' => $business['data'], 'storefront' => $settings['data']];
+        return $resArr;
+    }
+
+    private function manageMyStorefront(array $actionData, string $operation): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->principal($actionData);
+        if ($principal['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'BusinessServices::manageMyStorefront');
+        }
+        $userId = (int) $principal['data']['user_id'];
+        $tenantId = $this->positiveInt($actionData['tenant_id'] ?? null);
+        if ($tenantId === null) {
+            $resArr['msgArr'][] = 'A valid tenant_id is required.';
+            return $resArr;
+        }
+        $business = $this->dao->getMyBusinessApplication($this->db, $userId, $tenantId);
+        if ($business['status'] !== 'SUCCESS' || $business['data'] === []) {
+            return $this->propagateFailure($business, 'BusinessServices::manageMyStorefront');
+        }
+        if (($business['data']['approval_status'] ?? '') !== 'APPROVED') {
+            $resArr['msgArr'][] = 'Only an approved business can manage or publish its storefront.';
+            return $resArr;
+        }
+        if ($operation === 'publish') {
+            $subscription = $this->dao->hasActiveSubscription($this->db, $tenantId);
+            if ($subscription['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($subscription, 'BusinessServices::manageMyStorefront');
+            }
+            if ($subscription['data'] === []) {
+                $resArr['msgArr'][] = 'An active tenant subscription is required to publish the storefront.';
+                return $resArr;
+            }
+        }
+        if ($operation === 'unpublish') {
+            $publish = false;
+        } else {
+            $publish = $operation === 'publish';
+        }
+
+        $transaction = $this->db->beginTransaction();
+        try {
+            if ($operation === 'update') {
+                $settings = $this->dao->getStorefrontSettings($this->db, $tenantId);
+                if ($settings['status'] !== 'SUCCESS' || $settings['data'] === []) {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($settings, 'BusinessServices::manageMyStorefront');
+                }
+                $showPrices = $this->booleanValue($actionData['show_prices'] ?? $settings['data']['show_prices']);
+                $acceptOrders = $this->booleanValue($actionData['accept_online_orders'] ?? $settings['data']['accept_online_orders']);
+                $whatsappEnabled = $this->booleanValue($actionData['whatsapp_enabled'] ?? $settings['data']['whatsapp_enabled']);
+                if ($showPrices === null || $acceptOrders === null || $whatsappEnabled === null) {
+                    $transaction->rollBack();
+                    $resArr['msgArr'][] = 'show_prices, accept_online_orders and whatsapp_enabled must be boolean values.';
+                    return $resArr;
+                }
+                $whatsapp = array_key_exists('whatsapp_number', $actionData)
+                    ? $this->optionalText($actionData['whatsapp_number'], 25)
+                    : (string) ($settings['data']['whatsapp_number'] ?? '');
+                if ($whatsappEnabled === 1 && ($whatsapp === null || trim($whatsapp) === '')) {
+                    $transaction->rollBack();
+                    $resArr['msgArr'][] = 'A WhatsApp number is required when whatsapp_enabled is true.';
+                    return $resArr;
+                }
+                $updated = $this->dao->updateStorefrontSettings(
+                    $this->db, $tenantId, $userId,
+                    $this->optionalText($actionData['storefront_title'] ?? $settings['data']['storefront_title'], 180),
+                    $this->optionalText($actionData['storefront_description'] ?? $settings['data']['storefront_description'], 500),
+                    $this->optionalText($actionData['theme_code'] ?? $settings['data']['theme_code'], 50),
+                    $showPrices, $acceptOrders, $whatsappEnabled,
+                );
+                if ($updated['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($updated, 'BusinessServices::manageMyStorefront');
+                }
+                if (array_key_exists('whatsapp_number', $actionData)) {
+                    $whatsappUpdate = $this->dao->updateWhatsAppNumber($this->db, $tenantId, $userId, $whatsapp);
+                    if ($whatsappUpdate['status'] !== 'SUCCESS') {
+                        $transaction->rollBack();
+                        return $this->propagateFailure($whatsappUpdate, 'BusinessServices::manageMyStorefront');
+                    }
+                }
+                $transaction->commit();
+                $resArr['status'] = 'SUCCESS';
+                $resArr['data'] = ['tenant_id' => $tenantId];
+                return $resArr;
+            }
+
+            $result = $this->dao->setStorefrontPublication($this->db, $tenantId, $userId, $publish);
+            if ($result['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($result, 'BusinessServices::manageMyStorefront');
+            }
+            $transaction->commit();
+            return $result;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) {
+                $transaction->rollBack();
+            }
+            $this->logger->error('BusinessServices::manageMyStorefront failed.', ['exception' => $exception]);
+            $resArr['status'] = 'EXCEPTION';
+            $resArr['msgArr'][] = 'Storefront operation failed unexpectedly.';
+            $resArr['data'] = [];
+            return $resArr;
+        }
+    }
+
     private function manageBusinessProfile(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
@@ -378,6 +523,18 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = 'BusinessServices could not resolve the authenticated user.';
         }
         return $resArr;
+    }
+
+    private function booleanValue(mixed $value): ?int
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (is_bool($value)) {
+            return $value ? 1 : 0;
+        }
+        if ($value === 0 || $value === 1 || $value === '0' || $value === '1') {
+            return (int) $value;
+        }
+        return null;
     }
 
     private function requiredText(mixed $value, int $maxLength): ?string
