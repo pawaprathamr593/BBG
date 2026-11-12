@@ -350,6 +350,23 @@ final readonly class CatalogueServices implements ICatalogueServices
         $barcode = $this->filterText($actionData['barcode'] ?? '', 100);
         $globalCategoryId = $this->positiveInt($actionData['global_category_id'] ?? null);
         if ($operation === 'create') {
+            $limitResult = $this->dao->getActiveProductLimit($this->db, $tenantId);
+            if ($limitResult['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($limitResult, 'CatalogueServices::manageTenantProduct');
+            }
+            if ($limitResult['data'] === []) {
+                $resArr['msgArr'][] = 'An active subscription with PRODUCT_LIMIT entitlement is required to create products.';
+                return $resArr;
+            }
+            $limitValue = strtoupper((string) ($limitResult['data']['entitlement_value'] ?? ''));
+            $count = $this->dao->countTenantProducts($this->db, $tenantId, '');
+            if ($count['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($count, 'CatalogueServices::manageTenantProduct');
+            }
+            if ($limitValue !== 'UNLIMITED' && (!is_numeric($limitValue) || (int) $count['data']['total'] >= (int) $limitValue)) {
+                $resArr['msgArr'][] = 'The active subscription product limit has been reached or is not configured correctly.';
+                return $resArr;
+            }
             return $this->dao->insertProduct(
                 $this->db, $tenantId, $code, $name, $description, $categoryId, $globalCategoryId, $unitId,
                 $brand, $barcode, $priceValues[0], $priceValues[1], $priceValues[2], 0, 0, $userId,
