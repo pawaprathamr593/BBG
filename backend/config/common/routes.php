@@ -58,10 +58,6 @@ return [
     Route::post('/api/v1/marketplace/categories/list')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/categories/list'),
     Route::post('/api/v1/marketplace/promotions/list')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/promotions/list'),
     Route::post('/api/v1/marketplace/promotions/detail')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/promotions/detail'),
-    Route::post('/api/v1/marketplace/categories/list')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/categories/list'),
-    Route::post('/api/v1/marketplace/promotions/list')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/promotions/list'),
-    Route::post('/api/v1/marketplace/promotions/detail')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/promotions/detail'),
-    Route::post('/api/v1/marketplace/home')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/home'),
 
     Route::post('/api/v1/tenants/mine/list')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/mine/list'),
     Route::post('/api/v1/tenants/mine/detail')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/mine/detail'),
