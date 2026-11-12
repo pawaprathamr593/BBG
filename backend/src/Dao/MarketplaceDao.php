@@ -12,13 +12,20 @@ final readonly class MarketplaceDao
 {
     public function __construct(private LoggerInterface $logger) {}
 
-    public function getBusinesses(ConnectionInterface $db, array $filters, int $limit, int $offset): array
-    {
-        $where = $this->publicBusinessWhere($filters);
+    public function getBusinesses(
+        ConnectionInterface $db,
+        string $search = '',
+        string $city = '',
+        string $state = '',
+        ?int $categoryId = null,
+        int $limit = 20,
+        int $offset = 0,
+    ): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $filters = ['search' => $search, 'city' => $city, 'state' => $state, 'category_id' => $categoryId];
         $params = $this->publicBusinessParams($filters);
         $params[':limit'] = $limit;
         $params[':offset'] = $offset;
-
         return $this->many(
             $db,
             "SELECT bp.id, bp.tenant_id, bp.business_name, bp.business_slug,
@@ -33,7 +40,7 @@ final readonly class MarketplaceDao
              JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = bp.tenant_id
                 AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
              LEFT JOIN CATEGORIES c ON c.id = bp.primary_category_id AND c.status = 'A'
-             WHERE " . $where . "
+             WHERE " . $this->publicBusinessWhere($filters) . "
              ORDER BY bp.business_name ASC, bp.id ASC
              LIMIT :limit OFFSET :offset",
             $params,
@@ -41,8 +48,15 @@ final readonly class MarketplaceDao
         );
     }
 
-    public function countBusinesses(ConnectionInterface $db, array $filters): array
-    {
+    public function countBusinesses(
+        ConnectionInterface $db,
+        string $search = '',
+        string $city = '',
+        string $state = '',
+        ?int $categoryId = null,
+    ): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $filters = ['search' => $search, 'city' => $city, 'state' => $state, 'category_id' => $categoryId];
         return $this->one(
             $db,
             "SELECT COUNT(*) AS total
@@ -60,6 +74,7 @@ final readonly class MarketplaceDao
 
     public function getBusinessBySlug(ConnectionInterface $db, string $slug): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->one(
             $db,
             "SELECT bp.id, bp.tenant_id, bp.business_name, bp.business_slug,
@@ -87,13 +102,14 @@ final readonly class MarketplaceDao
         );
     }
 
-    public function getProducts(ConnectionInterface $db, string $slug, array $filters, int $limit, int $offset): array
+    public function getProducts(ConnectionInterface $db, string $slug, string $search = '', int $limit = 20, int $offset = 0): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $params = [':slug' => $slug, ':limit' => $limit, ':offset' => $offset];
         $searchSql = '';
-        if ($filters['search'] !== '') {
-            $params[':search_name'] = '%' . $filters['search'] . '%';
-            $params[':search_code'] = '%' . $filters['search'] . '%';
+        if ($search !== '') {
+            $params[':search_name'] = '%' . $search . '%';
+            $params[':search_code'] = '%' . $search . '%';
             $searchSql = ' AND (p.product_name LIKE :search_name OR p.product_code LIKE :search_code)';
         }
 
@@ -126,8 +142,9 @@ final readonly class MarketplaceDao
         );
     }
 
-    public function countProducts(ConnectionInterface $db, string $slug, string $search): array
+    public function countProducts(ConnectionInterface $db, string $slug, string $search = ''): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $params = [':slug' => $slug];
         $searchSql = '';
         if ($search !== '') {
@@ -159,6 +176,7 @@ final readonly class MarketplaceDao
 
     public function getProductById(ConnectionInterface $db, string $slug, int $productId): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->one(
             $db,
             "SELECT p.id, p.tenant_id, p.product_code, p.product_name, p.description,
@@ -189,6 +207,7 @@ final readonly class MarketplaceDao
 
     public function getProductVariants(ConnectionInterface $db, int $tenantId, int $productId): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->many(
             $db,
             "SELECT pv.id, pv.variant_code, pv.variant_name, pv.barcode,
@@ -207,8 +226,124 @@ final readonly class MarketplaceDao
         );
     }
 
+    public function getPublicCategories(ConnectionInterface $db): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->many(
+            $db,
+            "SELECT id, parent_category_id, category_code, category_name, category_type,
+                    description, display_order
+             FROM CATEGORIES
+             WHERE category_status = 'ACTIVE' AND status = 'A'
+             ORDER BY display_order ASC, category_name ASC, id ASC",
+            [],
+            'getPublicCategories',
+        );
+    }
+
+    public function getPublicPromotions(ConnectionInterface $db, ?int $tenantId = null, int $limit = 20, int $offset = 0): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $params = [':limit' => $limit, ':offset' => $offset];
+        $tenantFilter = '';
+        if ($tenantId !== null) {
+            $tenantFilter = ' AND pp.tenant_id = :tenant_id';
+            $params[':tenant_id'] = $tenantId;
+        }
+        return $this->many(
+            $db,
+            "SELECT pp.id, pp.tenant_id, pp.post_title, pp.post_content, pp.published_on,
+                    pp.valid_until, bp.business_name, bp.business_slug, bp.logo_path
+             FROM PROMOTIONAL_POSTS pp
+             JOIN BUSINESS_PROFILES bp ON bp.tenant_id = pp.tenant_id
+                AND bp.approval_status = 'APPROVED'
+                AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
+             JOIN TENANTS t ON t.id = pp.tenant_id
+                AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+             JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = pp.tenant_id
+                AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
+             WHERE pp.publication_status = 'PUBLISHED'
+                AND pp.published_on <= CURRENT_TIMESTAMP
+                AND (pp.valid_until IS NULL OR pp.valid_until >= CURRENT_TIMESTAMP)
+                AND pp.status = 'A' " . $tenantFilter . "
+             ORDER BY pp.published_on DESC, pp.id DESC
+             LIMIT :limit OFFSET :offset",
+            $params,
+            'getPublicPromotions',
+        );
+    }
+
+    public function countPublicPromotions(ConnectionInterface $db, ?int $tenantId = null): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $params = [];
+        $tenantFilter = '';
+        if ($tenantId !== null) {
+            $tenantFilter = ' AND pp.tenant_id = :tenant_id';
+            $params[':tenant_id'] = $tenantId;
+        }
+        return $this->one(
+            $db,
+            "SELECT COUNT(*) AS total
+             FROM PROMOTIONAL_POSTS pp
+             JOIN BUSINESS_PROFILES bp ON bp.tenant_id = pp.tenant_id
+                AND bp.approval_status = 'APPROVED'
+                AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
+             JOIN TENANTS t ON t.id = pp.tenant_id
+                AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+             JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = pp.tenant_id
+                AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
+             WHERE pp.publication_status = 'PUBLISHED'
+                AND pp.published_on <= CURRENT_TIMESTAMP
+                AND (pp.valid_until IS NULL OR pp.valid_until >= CURRENT_TIMESTAMP)
+                AND pp.status = 'A' " . $tenantFilter,
+            $params,
+            'countPublicPromotions',
+        );
+    }
+
+    public function getPublicPromotionById(ConnectionInterface $db, int $promotionId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one(
+            $db,
+            "SELECT pp.id, pp.tenant_id, pp.post_title, pp.post_content, pp.published_on,
+                    pp.valid_until, bp.business_name, bp.business_slug, bp.logo_path
+             FROM PROMOTIONAL_POSTS pp
+             JOIN BUSINESS_PROFILES bp ON bp.tenant_id = pp.tenant_id
+                AND bp.approval_status = 'APPROVED'
+                AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
+             JOIN TENANTS t ON t.id = pp.tenant_id
+                AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+             JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = pp.tenant_id
+                AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
+             WHERE pp.id = :id AND pp.publication_status = 'PUBLISHED'
+                AND pp.published_on <= CURRENT_TIMESTAMP
+                AND (pp.valid_until IS NULL OR pp.valid_until >= CURRENT_TIMESTAMP)
+                AND pp.status = 'A'
+             LIMIT 1",
+            [':id' => $promotionId],
+            'getPublicPromotionById',
+        );
+    }
+
+    public function getPublicPromotionMedia(ConnectionInterface $db, int $tenantId, int $promotionId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->many(
+            $db,
+            "SELECT id, file_path, media_type, display_order
+             FROM POST_MEDIA
+             WHERE tenant_id = :tenant_id AND post_id = :post_id AND status = 'A'
+             ORDER BY display_order ASC, id ASC",
+            [':tenant_id' => $tenantId, ':post_id' => $promotionId],
+            'getPublicPromotionMedia',
+        );
+    }
+
     private function publicBusinessWhere(array $filters): string
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $where = "bp.approval_status = 'APPROVED'
             AND bp.publication_status = 'PUBLISHED'
             AND bp.status = 'A'";
@@ -231,6 +366,7 @@ final readonly class MarketplaceDao
 
     private function publicBusinessParams(array $filters): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $params = [];
         if ($filters['search'] !== '') {
             $needle = '%' . $filters['search'] . '%';
@@ -252,32 +388,35 @@ final readonly class MarketplaceDao
 
     private function one(ConnectionInterface $db, string $sql, array $params, string $operation): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         try {
             $row = $db->createCommand($sql, $params)->queryOne();
-            return $this->ok(is_array($row) ? $row : []);
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = is_array($row) ? $row : [];
         } catch (Throwable $exception) {
             return $this->error($operation, $exception);
         }
+        return $resArr;
     }
 
     private function many(ConnectionInterface $db, string $sql, array $params, string $operation): array
     {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         try {
             $rows = $db->createCommand($sql, $params)->queryAll();
-            return $this->ok(is_array($rows) ? $rows : []);
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = is_array($rows) ? $rows : [];
         } catch (Throwable $exception) {
             return $this->error($operation, $exception);
         }
-    }
-
-    private function ok(array $data): array
-    {
-        return ['status' => 'SUCCESS', 'msgArr' => [], 'data' => $data];
+        return $resArr;
     }
 
     private function error(string $operation, Throwable $exception): array
     {
+        $resArr = ['status' => 'EXCEPTION', 'msgArr' => [], 'data' => []];
         $this->logger->error('MarketplaceDao::' . $operation . ' failed.', ['exception' => $exception]);
-        return ['status' => 'EXCEPTION', 'msgArr' => ['Marketplace data operation failed.'], 'data' => []];
+        $resArr['msgArr'][] = 'Marketplace data operation failed.';
+        return $resArr;
     }
 }
