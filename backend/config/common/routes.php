@@ -36,8 +36,12 @@ return [
     Route::post('/api/v1/orders/tenant/confirm')->action([OrderController::class, 'actionManageOrders'])->name('api/v1/orders/tenant/confirm'),
     Route::post('/api/v1/orders/tenant/cancel')->action([OrderController::class, 'actionManageOrders'])->name('api/v1/orders/tenant/cancel'),
 
-    Route::post('/api/v1/marketplace/businesses/list')->action([MarketplaceController::class, 'actionListBusinesses'])->name('api/v1/marketplace/businesses/list'),
-    Route::post('/api/v1/marketplace/businesses/detail')->action([MarketplaceController::class, 'actionGetBusiness'])->name('api/v1/marketplace/businesses/detail'),
-    Route::post('/api/v1/marketplace/products/list')->action([MarketplaceController::class, 'actionListProducts'])->name('api/v1/marketplace/products/list'),
-    Route::post('/api/v1/marketplace/products/detail')->action([MarketplaceController::class, 'actionGetProduct'])->name('api/v1/marketplace/products/detail'),
+    Route::post('/api/v1/marketplace/businesses/list')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/businesses/list'),
+    Route::post('/api/v1/marketplace/businesses/detail')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/businesses/detail'),
+    Route::post('/api/v1/marketplace/products/list')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/products/list'),
+    Route::post('/api/v1/marketplace/products/detail')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/products/detail'),
+    Route::post('/api/v1/marketplace/categories/list')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/categories/list'),
+    Route::post('/api/v1/marketplace/promotions/list')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/promotions/list'),
+    Route::post('/api/v1/marketplace/promotions/detail')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/promotions/detail'),
+    Route::post('/api/v1/marketplace/home')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/home'),
 ];
