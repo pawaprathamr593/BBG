@@ -528,6 +528,28 @@ final readonly class CatalogueServices implements ICatalogueServices
         return substr(trim((string) $value), 0, $maxLength);
     }
 
+    private function booleanValue(mixed $value): ?int
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (is_bool($value)) {
+            return $value ? 1 : 0;
+        }
+        if ($value === 0 || $value === 1 || $value === '0' || $value === '1') {
+            return (int) $value;
+        }
+        return null;
+    }
+
+    private function optionalText(mixed $value, int $maxLength): ?string
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (!is_scalar($value)) {
+            return null;
+        }
+        $text = trim((string) $value);
+        return $text === '' ? null : (strlen($text) <= $maxLength ? $text : null);
+    }
+
     private function positiveInt(mixed $value): ?int
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
