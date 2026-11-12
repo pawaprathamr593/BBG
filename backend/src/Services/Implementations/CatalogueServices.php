@@ -337,6 +337,14 @@ final readonly class CatalogueServices implements ICatalogueServices
             $resArr['msgArr'][] = 'publication_status must be DRAFT or PUBLISHED.';
             return $resArr;
         }
+        $codeCheck = $this->dao->isProductCodeAvailable($this->db, $tenantId, $code, $productId ?? 0);
+        if ($codeCheck['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($codeCheck, 'CatalogueServices::manageTenantProduct');
+        }
+        if ($codeCheck['data'] !== []) {
+            $resArr['msgArr'][] = 'product_code is already in use within this tenant.';
+            return $resArr;
+        }
         $description = $this->filterText($actionData['description'] ?? '', 5000);
         $brand = $this->filterText($actionData['brand_name'] ?? '', 120);
         $barcode = $this->filterText($actionData['barcode'] ?? '', 100);
