@@ -426,7 +426,11 @@ final readonly class BusinessServices implements IBusinessServices
                 $titleInput = $actionData['storefront_title'] ?? $settings['data']['storefront_title'];
                 $descriptionInput = $actionData['storefront_description'] ?? $settings['data']['storefront_description'];
                 $themeInput = $actionData['theme_code'] ?? $settings['data']['theme_code'];
-                if ((is_scalar($titleInput) && strlen(trim((string) $titleInput)) > 180)
+                if ((array_key_exists('storefront_title', $actionData) && !is_scalar($titleInput))
+                    || (array_key_exists('storefront_description', $actionData) && !is_scalar($descriptionInput))
+                    || (array_key_exists('theme_code', $actionData) && !is_scalar($themeInput))
+                    || (array_key_exists('whatsapp_number', $actionData) && !is_scalar($actionData['whatsapp_number']))
+                    || (is_scalar($titleInput) && strlen(trim((string) $titleInput)) > 180)
                     || (is_scalar($descriptionInput) && strlen(trim((string) $descriptionInput)) > 500)
                     || (is_scalar($themeInput) && strlen(trim((string) $themeInput)) > 50)
                 ) {
