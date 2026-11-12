@@ -1,0 +1,396 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\Implementations;
+
+use App\Dao\BusinessDao;
+use App\Services\Interfaces\IAuthServices;
+use App\Services\Interfaces\IBusinessServices;
+use Psr\Log\LoggerInterface;
+use Throwable;
+use Yiisoft\Db\Connection\ConnectionInterface;
+
+final readonly class BusinessServices implements IBusinessServices
+{
+    public function __construct(
+        private ConnectionInterface $db,
+        private BusinessDao $dao,
+        private IAuthServices $authServices,
+        private LoggerInterface $logger,
+    ) {}
+
+    public function getBusiness(array $businessParam): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (!isset($businessParam['actionType'])) {
+            $resArr['msgArr'][] = "Missing required key 'actionType'.";
+            return $resArr;
+        }
+        if (!isset($businessParam['actionData']) || !is_array($businessParam['actionData'])) {
+            $resArr['msgArr'][] = "Missing or invalid 'actionData'.";
+            return $resArr;
+        }
+        if ($businessParam['actionType'] !== 'getBusiness') {
+            $resArr['msgArr'][] = 'Unsupported actionType for getBusiness.';
+            return $resArr;
+        }
+        $actionData = $businessParam['actionData'];
+        try {
+            switch ((string) ($actionData['action'] ?? '')) {
+                case 'getMyBusinessApplication':
+                    $resArr = $this->getBusinessApplication($actionData);
+                    break;
+                case 'getMyBusinessProfile':
+                    $resArr = $this->getBusinessProfile($actionData);
+                    break;
+                case 'getBusinessVerification':
+                    $resArr = $this->getBusinessVerification($actionData);
+                    break;
+                default:
+                    $resArr['msgArr'][] = 'Unsupported business read action.';
+                    break;
+            }
+        } catch (Throwable $exception) {
+            $this->logger->error('BusinessServices::getBusiness failed.', ['exception' => $exception]);
+            $resArr['status'] = 'EXCEPTION';
+            $resArr['msgArr'][] = 'Business request failed unexpectedly.';
+            $resArr['data'] = [];
+        }
+        return $resArr;
+    }
+
+    public function manageBusiness(array $businessParam): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (!isset($businessParam['actionType'])) {
+            $resArr['msgArr'][] = "Missing required key 'actionType'.";
+            return $resArr;
+        }
+        if (!isset($businessParam['actionData']) || !is_array($businessParam['actionData'])) {
+            $resArr['msgArr'][] = "Missing or invalid 'actionData'.";
+            return $resArr;
+        }
+        if ($businessParam['actionType'] !== 'manageBusiness') {
+            $resArr['msgArr'][] = 'Unsupported actionType for manageBusiness.';
+            return $resArr;
+        }
+        $actionData = $businessParam['actionData'];
+        try {
+            switch ((string) ($actionData['action'] ?? '')) {
+                case 'submitBusinessApplication':
+                    $resArr = $this->manageBusinessApplication($actionData, false);
+                    break;
+                case 'updateBusinessApplication':
+                    $resArr = $this->manageBusinessApplication($actionData, false);
+                    break;
+                case 'resubmitBusinessApplication':
+                    $resArr = $this->manageBusinessApplication($actionData, true);
+                    break;
+                case 'updateMyBusinessProfile':
+                    $resArr = $this->manageBusinessProfile($actionData);
+                    break;
+                default:
+                    $resArr['msgArr'][] = 'Unsupported business management action.';
+                    break;
+            }
+        } catch (Throwable $exception) {
+            $this->logger->error('BusinessServices::manageBusiness failed.', ['exception' => $exception]);
+            $resArr['status'] = 'EXCEPTION';
+            $resArr['msgArr'][] = 'Business management failed unexpectedly.';
+            $resArr['data'] = [];
+        }
+        return $resArr;
+    }
+
+    private function getBusinessApplication(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->principal($actionData);
+        if ($principal['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'BusinessServices::getBusinessApplication');
+        }
+        $tenantId = $this->positiveInt($actionData['tenant_id'] ?? 0) ?? 0;
+        $result = $this->dao->getMyBusinessApplication($this->db, (int) $principal['data']['user_id'], $tenantId);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'BusinessServices::getBusinessApplication');
+        }
+        if ($result['data'] === []) {
+            $resArr['msgArr'][] = 'No business application is associated with the authenticated user.';
+            return $resArr;
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = $result['data'];
+        return $resArr;
+    }
+
+    private function getBusinessProfile(array $actionData): array
+    {
+        $resArr = $this->getBusinessApplication($actionData);
+        if ($resArr['status'] !== 'SUCCESS') {
+            return $resArr;
+        }
+        if (($resArr['data']['approval_status'] ?? '') !== 'APPROVED') {
+            $resArr['status'] = 'FAILED';
+            $resArr['msgArr'][] = 'Business profile is not approved.';
+            $resArr['data'] = [];
+        }
+        return $resArr;
+    }
+
+    private function getBusinessVerification(array $actionData): array
+    {
+        $resArr = $this->getBusinessApplication($actionData);
+        if ($resArr['status'] === 'SUCCESS') {
+            $resArr['data'] = [
+                'tenant_id' => $resArr['data']['tenant_id'],
+                'tenant_status' => $resArr['data']['tenant_status'],
+                'approval_status' => $resArr['data']['approval_status'],
+                'approved_on' => $resArr['data']['approved_on'],
+                'rejection_reason' => $resArr['data']['rejection_reason'],
+                'publication_status' => $resArr['data']['publication_status'],
+            ];
+        }
+        return $resArr;
+    }
+
+    private function manageBusinessApplication(array $actionData, bool $resubmit): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->principal($actionData);
+        if ($principal['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'BusinessServices::manageBusinessApplication');
+        }
+        $userId = (int) $principal['data']['user_id'];
+        $businessName = $this->requiredText($actionData['business_name'] ?? '', 180);
+        $businessSlug = strtolower($this->requiredText($actionData['business_slug'] ?? '', 200));
+        $tenantType = strtoupper($this->requiredText($actionData['tenant_type'] ?? '', 40));
+        if ($businessName === null || $businessSlug === null || $tenantType === null
+            || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $businessSlug)
+            || !in_array($tenantType, ['RETAIL', 'DARK_STORE', 'SMALL_BUSINESS'], true)
+        ) {
+            $resArr['msgArr'][] = 'Valid business_name, URL-safe business_slug and supported tenant_type are required.';
+            return $resArr;
+        }
+
+        $businessId = $this->positiveInt($actionData['business_id'] ?? 0) ?? 0;
+        $tenantId = $this->positiveInt($actionData['tenant_id'] ?? 0) ?? 0;
+        $categoryId = $this->positiveInt($actionData['primary_category_id'] ?? 0);
+        $description = $this->optionalText($actionData['business_description'] ?? '', 5000);
+        $phone = $this->optionalText($actionData['business_phone'] ?? '', 25) ?? '';
+        $whatsapp = $this->optionalText($actionData['whatsapp_number'] ?? '', 25) ?? '';
+        $email = $this->optionalText($actionData['business_email'] ?? '', 190) ?? '';
+        $address1 = $this->optionalText($actionData['address_line_1'] ?? '', 190) ?? '';
+        $address2 = $this->optionalText($actionData['address_line_2'] ?? '', 190) ?? '';
+        $city = $this->optionalText($actionData['city'] ?? '', 100) ?? '';
+        $state = $this->optionalText($actionData['state'] ?? '', 100) ?? '';
+        $postal = $this->optionalText($actionData['postal_code'] ?? '', 15) ?? '';
+        $country = strtoupper($this->optionalText($actionData['country_code'] ?? 'IN', 2) ?? 'IN');
+        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $resArr['msgArr'][] = 'A valid business_email is required.';
+            return $resArr;
+        }
+        if ($country === '' || strlen($country) !== 2) {
+            $resArr['msgArr'][] = 'country_code must contain two characters.';
+            return $resArr;
+        }
+
+        try {
+            $slugResult = $this->dao->isBusinessSlugAvailable($this->db, $businessSlug, $businessId);
+            if ($slugResult['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($slugResult, 'BusinessServices::manageBusinessApplication');
+            }
+            if ($slugResult['data'] !== []) {
+                $resArr['msgArr'][] = 'business_slug is already in use.';
+                return $resArr;
+            }
+
+            if ($businessId > 0 && $tenantId > 0) {
+                $existing = $this->dao->getMyBusinessApplication($this->db, $userId, $tenantId);
+                if ($existing['status'] !== 'SUCCESS') {
+                    return $this->propagateFailure($existing, 'BusinessServices::manageBusinessApplication');
+                }
+                if ($existing['data'] === [] || (int) $existing['data']['business_id'] !== $businessId
+                    || !in_array($existing['data']['approval_status'], ['PENDING', 'REJECTED'], true)
+                ) {
+                    $resArr['msgArr'][] = 'Only the authenticated tenant owner can update a pending or rejected application.';
+                    return $resArr;
+                }
+                $transaction = $this->db->beginTransaction();
+                try {
+                    $update = $this->dao->updateBusinessApplication(
+                        $this->db, $tenantId, $businessId, $userId, $businessName, $businessSlug,
+                        $description ?? '', $categoryId, $phone, $whatsapp, $email, $address1, $address2,
+                        $city, $state, $postal, $country, $resubmit,
+                    );
+                    if ($update['status'] !== 'SUCCESS') {
+                        $transaction->rollBack();
+                        return $this->propagateFailure($update, 'BusinessServices::manageBusinessApplication');
+                    }
+                    $transaction->commit();
+                    $resArr['status'] = 'SUCCESS';
+                    $resArr['data'] = ['business_id' => $businessId, 'tenant_id' => $tenantId];
+                    return $resArr;
+                } catch (Throwable $exception) {
+                    if ($transaction->isActive()) {
+                        $transaction->rollBack();
+                    }
+                    throw $exception;
+                }
+            }
+
+            if ($resubmit) {
+                $resArr['msgArr'][] = 'business_id and tenant_id are required to resubmit an existing application.';
+                return $resArr;
+            }
+
+            $transaction = $this->db->beginTransaction();
+            try {
+                $tenantCode = 'TEN-' . strtoupper(bin2hex(random_bytes(8)));
+                $tenant = $this->dao->insertTenant($this->db, $tenantCode, $businessName, $tenantType, $userId);
+                if ($tenant['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($tenant, 'BusinessServices::manageBusinessApplication');
+                }
+                $newTenantId = (int) $tenant['data']['id'];
+                $membership = $this->dao->insertMembership($this->db, $newTenantId, $userId);
+                if ($membership['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($membership, 'BusinessServices::manageBusinessApplication');
+                }
+                $role = $this->dao->ensureTenantOwnerRole($this->db);
+                if ($role['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($role, 'BusinessServices::manageBusinessApplication');
+                }
+                $assignment = $this->dao->insertOwnerAssignment($this->db, $newTenantId, $userId, (int) $role['data']['id']);
+                if ($assignment['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($assignment, 'BusinessServices::manageBusinessApplication');
+                }
+                $profile = $this->dao->insertBusinessProfile(
+                    $this->db, $newTenantId, $businessName, $businessSlug, $description ?? '', $categoryId,
+                    $phone, $whatsapp, $email, $address1, $address2, $city, $state, $postal, $country, $userId,
+                );
+                if ($profile['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($profile, 'BusinessServices::manageBusinessApplication');
+                }
+                $storefront = $this->dao->insertStorefrontSettings($this->db, $newTenantId, $userId);
+                if ($storefront['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($storefront, 'BusinessServices::manageBusinessApplication');
+                }
+                $transaction->commit();
+                $resArr['status'] = 'SUCCESS';
+                $resArr['data'] = ['business_id' => (int) $profile['data']['id'], 'tenant_id' => $newTenantId, 'approval_status' => 'PENDING'];
+                return $resArr;
+            } catch (Throwable $exception) {
+                if ($transaction->isActive()) {
+                    $transaction->rollBack();
+                }
+                throw $exception;
+            }
+        } catch (Throwable $exception) {
+            $this->logger->error('BusinessServices::manageBusinessApplication failed.', ['exception' => $exception]);
+            $resArr['status'] = 'EXCEPTION';
+            $resArr['msgArr'][] = 'Business application could not be saved.';
+            $resArr['data'] = [];
+            return $resArr;
+        }
+    }
+
+    private function manageBusinessProfile(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->principal($actionData);
+        if ($principal['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'BusinessServices::manageBusinessProfile');
+        }
+        $tenantId = $this->positiveInt($actionData['tenant_id'] ?? null);
+        $businessId = $this->positiveInt($actionData['business_id'] ?? null);
+        $businessName = $this->requiredText($actionData['business_name'] ?? '', 180);
+        if ($tenantId === null || $businessId === null || $businessName === null) {
+            $resArr['msgArr'][] = 'tenant_id, business_id and business_name are required.';
+            return $resArr;
+        }
+        $existing = $this->dao->getMyBusinessApplication($this->db, (int) $principal['data']['user_id'], $tenantId);
+        if ($existing['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($existing, 'BusinessServices::manageBusinessProfile');
+        }
+        if ($existing['data'] === [] || (int) $existing['data']['business_id'] !== $businessId
+            || $existing['data']['approval_status'] !== 'APPROVED'
+        ) {
+            $resArr['msgArr'][] = 'Only the approved business owner can update this profile.';
+            return $resArr;
+        }
+        $email = $this->optionalText($actionData['business_email'] ?? '', 190) ?? '';
+        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $resArr['msgArr'][] = 'A valid business_email is required.';
+            return $resArr;
+        }
+        return $this->dao->updateBusinessProfile(
+            $this->db, $tenantId, $businessId, (int) $principal['data']['user_id'], $businessName,
+            $this->optionalText($actionData['business_description'] ?? '', 5000) ?? '',
+            $this->optionalText($actionData['business_phone'] ?? '', 25) ?? '',
+            $this->optionalText($actionData['whatsapp_number'] ?? '', 25) ?? '',
+            $email,
+            $this->optionalText($actionData['address_line_1'] ?? '', 190) ?? '',
+            $this->optionalText($actionData['address_line_2'] ?? '', 190) ?? '',
+            $this->optionalText($actionData['city'] ?? '', 100) ?? '',
+            $this->optionalText($actionData['state'] ?? '', 100) ?? '',
+            $this->optionalText($actionData['postal_code'] ?? '', 15) ?? '',
+        );
+    }
+
+    private function principal(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $resArr = $this->authServices->getAuth([
+            'actionType' => 'getAuth',
+            'actionData' => ['action' => 'getPrincipal', '_accessToken' => (string) ($actionData['_accessToken'] ?? '')],
+        ]);
+        if ($resArr['status'] !== 'SUCCESS') {
+            $resArr['msgArr'][] = 'BusinessServices could not resolve the authenticated user.';
+        }
+        return $resArr;
+    }
+
+    private function requiredText(mixed $value, int $maxLength): ?string
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (!is_scalar($value)) {
+            return null;
+        }
+        $text = trim((string) $value);
+        return $text !== '' && strlen($text) <= $maxLength ? $text : null;
+    }
+
+    private function optionalText(mixed $value, int $maxLength): ?string
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (!is_scalar($value)) {
+            return null;
+        }
+        $text = trim((string) $value);
+        return strlen($text) <= $maxLength ? $text : null;
+    }
+
+    private function positiveInt(mixed $value): ?int
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $number = filter_var($value, FILTER_VALIDATE_INT);
+        return $number !== false && $number > 0 ? (int) $number : null;
+    }
+
+    private function propagateFailure(array $downstream, string $context): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $downstream['msgArr'][] = $context . ' returned a non-success response.';
+        if (($downstream['status'] ?? '') === 'SUCCESS') {
+            $downstream['status'] = 'FAILED';
+            $downstream['data'] = [];
+        }
+        return $downstream;
+    }
+}
