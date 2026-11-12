@@ -67,6 +67,10 @@ return [
     Route::post('/api/v1/business/profile/get')->action([BusinessController::class, 'actionGetBusiness'])->name('api/v1/business/profile/get'),
     Route::post('/api/v1/business/profile/update')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/profile/update'),
     Route::post('/api/v1/business/verification/get')->action([BusinessController::class, 'actionGetBusiness'])->name('api/v1/business/verification/get'),
+    Route::post('/api/v1/business/storefront/get')->action([BusinessController::class, 'actionGetBusiness'])->name('api/v1/business/storefront/get'),
+    Route::post('/api/v1/business/storefront/update')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/storefront/update'),
+    Route::post('/api/v1/business/storefront/publish')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/storefront/publish'),
+    Route::post('/api/v1/business/storefront/unpublish')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/storefront/unpublish'),
 
     Route::post('/api/v1/catalogue/units/list')->action([CatalogueController::class, 'actionGetCatalogue'])->name('api/v1/catalogue/units/list'),
     Route::post('/api/v1/catalogue/categories/list')->action([CatalogueController::class, 'actionGetCatalogue'])->name('api/v1/catalogue/categories/list'),
