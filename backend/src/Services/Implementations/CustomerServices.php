@@ -234,7 +234,7 @@ final readonly class CustomerServices implements ICustomerServices
         if ($profile['status'] !== 'SUCCESS') {
             return $this->propagateFailure($profile, 'CustomerServices::ensureCustomerIdentity');
         }
-        $userId = (int) ($profile['data']['id'] ?? 0);
+        $userId = (int) ($profile['data']['user_id'] ?? 0);
         if ($userId < 1) {
             $resArr['msgArr'][] = 'Authenticated user profile is unavailable.';
             return $resArr;
