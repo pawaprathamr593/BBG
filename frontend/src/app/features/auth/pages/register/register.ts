@@ -31,7 +31,7 @@ export class Register {
       await this.auth.register({ ...rest, ...(email.trim() ? { email: email.trim() } : {}), ...(mobile.trim() ? { mobile: mobile.trim() } : {}) });
       await this.router.navigateByUrl('/');
     } catch (error) {
-      this.error.set(error instanceof Error ? error.message : 'Unable to create your account. Please try again.');
+      this.error.set(this.auth.errorMessage(error));
     } finally { this.busy.set(false); }
   }
 }
