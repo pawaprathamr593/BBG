@@ -25,7 +25,7 @@ final readonly class CartServices implements ICartServices {
         if(($bad=$this->envelope($param,'manageCart'))!==null)return $bad;
         if(($param['actionType']??'')!=='manageCart')return $this->fail('Unsupported actionType for manageCart.');
         $d=$param['actionData'];$action=(string)($d['action']??'');
-        if(!in_array($action,['addItem','updateItem','removeItem','clearCart','checkout'],true))return $this->fail('Unsupported cart management action.');
+        if(!in_array($action,['addItem','updateItem','removeItem','clearCart','checkout','whatsappOrder'],true))return $this->fail('Unsupported cart management action.');
         $principal=$this->principal((string)($d['_accessToken']??''));if($principal['status']!=='SUCCESS')return $principal;
         $user=(int)$principal['data']['user_id'];$tenant=$this->tenantId($d['tenant_id']??null);if($tenant===null)return $this->fail('A valid tenant_id is required.');
         $tx=$this->db->beginTransaction();
@@ -36,6 +36,12 @@ final readonly class CartServices implements ICartServices {
             $cartId=(int)($cart['data']['id']??0);
             if($cartId===0&&$action==='addItem'){$new=$this->dao->createCart($this->db,$user,$tenant,(string)($store['data']['default_currency']??'INR'));if($new['status']!=='SUCCESS'){$tx->rollBack();return $new;}$cartId=(int)$new['data']['id'];}
             if($cartId===0){$tx->rollBack();return $this->fail('Active cart was not found.');}
+            if($action==='whatsappOrder'){
+                if((int)($store['data']['whatsapp_enabled']??0)!==1){$tx->rollBack();return $this->fail('WhatsApp ordering is not enabled for this storefront.');}
+                $result=$this->createWhatsAppOrder($d,$principal['data'],$user,$tenant,$cartId,$store['data']);
+                if($result['status']!=='SUCCESS'){$tx->rollBack();return $result;}
+                $tx->commit();return $result;
+            }
             if($action==='checkout'){
                 $shipping=$d['shipping_address']??null;
                 if(!is_array($shipping)||trim((string)($shipping['address_line_1']??''))===''||trim((string)($shipping['city']??''))===''||trim((string)($shipping['state']??''))===''||trim((string)($shipping['postal_code']??''))===''){
@@ -120,6 +126,57 @@ final readonly class CartServices implements ICartServices {
             $touch=$this->dao->touch($this->db,$user,$cartId);if($touch['status']!=='SUCCESS'){$tx->rollBack();return $touch;}
             $tx->commit();return $this->ok(['cart_id'=>$cartId]);
         } catch(Throwable $e){if($tx->isActive())$tx->rollBack();$this->logger->error('CartServices::manageCart failed.',['exception'=>$e]);return ['status'=>'EXCEPTION','msgArr'=>['Cart operation failed unexpectedly.'],'data'=>[]];}
+    }
+    private function createWhatsAppOrder(array $d,array $profile,int $user,int $tenant,int $cartId,array $store): array {
+        $phone=preg_replace('/\\D+/','',(string)($store['whatsapp_number']??''));
+        if($phone===''||strlen($phone)<8)return $this->fail('The business WhatsApp number is not configured correctly.');
+        $items=$this->dao->getItems($this->db,$cartId);
+        if($items['status']!=='SUCCESS'||$items['data']===[])return $items['status']==='SUCCESS'?$this->fail('Cart is empty.'):$items;
+        $identity=$this->dao->getCustomerIdentity($this->db,$user);
+        if($identity['status']!=='SUCCESS')return $identity;
+        if($identity['data']===[]){
+            $created=$this->dao->createCustomerIdentity($this->db,$user,(string)($profile['full_name']??'Customer'),isset($profile['email'])?(string)$profile['email']:null,isset($profile['mobile'])?(string)$profile['mobile']:null);
+            if($created['status']!=='SUCCESS')return $created;
+            $identityId=(int)$created['data']['id'];
+        }else{$identityId=(int)$identity['data']['id'];}
+        $customer=$this->dao->getTenantCustomer($this->db,$tenant,$identityId);
+        if($customer['status']!=='SUCCESS')return $customer;
+        if($customer['data']===[]){
+            $created=$this->dao->createTenantCustomer($this->db,$user,$tenant,$identityId,(string)($profile['full_name']??'Customer'),isset($profile['email'])?(string)$profile['email']:null,isset($profile['mobile'])?(string)$profile['mobile']:null);
+            if($created['status']!=='SUCCESS')return $created;
+            $customerId=(int)$created['data']['id'];
+        }else{$customerId=(int)$customer['data']['id'];}
+        $subtotal=0.0;$taxTotal=0.0;$lines=[];
+        foreach($items['data'] as $item){
+            $variantId=$item['variant_id']===null?null:(int)$item['variant_id'];
+            $product=$this->dao->getProduct($this->db,$tenant,(int)$item['product_id'],$variantId);
+            if($product['status']!=='SUCCESS'||$product['data']===[])return $this->fail('A cart product is no longer available for ordering.');
+            $qty=(string)$item['quantity'];if(str_contains($qty,'.'))$qty=rtrim(rtrim($qty,'0'),'.');
+            if(preg_match('/^\\d+\\.\\d{3,}$/D',$qty)===1)return $this->fail('Order quantities support at most two decimal places in the current order schema.');
+            $price=(float)$product['data']['current_price'];$rate=(float)$product['data']['tax_rate'];
+            $base=round((float)$qty*$price,2);$tax=round($base*$rate/100,2);$line=round($base+$tax,2);
+            $subtotal+=$base;$taxTotal+=$tax;
+            $lines[]=['item'=>$item,'product'=>$product['data'],'quantity'=>$qty,'price'=>number_format($price,2,'.',''),'rate'=>number_format($rate,2,'.',''),'tax'=>number_format($tax,2,'.',''),'total'=>number_format($line,2,'.','')];
+        }
+        $subtotal=round($subtotal,2);$taxTotal=round($taxTotal,2);$grand=round($subtotal+$taxTotal,2);
+        $orderedOn=gmdate('Y-m-d H:i:s');$number='BBG-'.$tenant.'-'.gmdate('ymdHis').'-'.strtoupper(bin2hex(random_bytes(3)));
+        $notes=isset($d['notes'])?substr(trim((string)$d['notes']),0,1000):null;
+        $order=$this->dao->createOrder($this->db,$user,$tenant,$customerId,$number,$orderedOn,number_format($subtotal,2,'.',''),number_format($taxTotal,2,'.',''),number_format($grand,2,'.',''),$notes,'WHATSAPP','REQUESTED');
+        if($order['status']!=='SUCCESS')return $order;
+        $orderId=(int)$order['data']['id'];
+        foreach($lines as $line){
+            $item=$line['item'];$product=$line['product'];
+            $saved=$this->dao->createOrderItem($this->db,$user,$tenant,$orderId,(int)$item['product_id'],$item['variant_id']===null?null:(int)$item['variant_id'],(string)$product['product_name'],(string)$product['product_code'],(int)($product['current_unit_id']??$product['base_unit_id']),$line['quantity'],$line['price'],$line['rate'],$line['tax'],$line['total']);
+            if($saved['status']!=='SUCCESS')return $saved;
+        }
+        $history=$this->dao->createOrderHistory($this->db,$user,$tenant,$orderId,'REQUESTED',$orderedOn);
+        if($history['status']!=='SUCCESS')return $history;
+        $converted=$this->dao->convertCart($this->db,$user,$cartId);
+        if($converted['status']!=='SUCCESS')return $converted;
+        $message="Hello, I would like to place order ".$number."\\n";
+        foreach($lines as $line)$message.=$line['product']['product_name']." x ".$line['quantity']." - ".$line['total']."\\n";
+        $message.="Total: ".number_format($grand,2,'.','')."\\nPlease confirm availability and next steps.";
+        return $this->ok(['order_id'=>$orderId,'order_number'=>$number,'order_channel'=>'WHATSAPP','order_status'=>'REQUESTED','payment_status'=>'UNPAID','subtotal'=>number_format($subtotal,2,'.',''),'tax_amount'=>number_format($taxTotal,2,'.',''),'grand_total'=>number_format($grand,2,'.',''),'whatsapp_url'=>'https://wa.me/'.$phone.'?text='.rawurlencode($message),'whatsapp_handoff'=>'NOT_CONFIRMED']);
     }
     private function principal(string $token): array {return $this->auth->getAuth(['actionType'=>'getAuth','actionData'=>['action'=>'getProfile','_accessToken'=>$token]]);}
     private function envelope(array $p,string $name): ?array {return isset($p['actionType'],$p['actionData'])&&is_array($p['actionData'])?null:$this->fail('Invalid '.$name.' request envelope.');}
