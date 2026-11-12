@@ -1,0 +1,816 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\Implementations;
+
+use App\Dao\AdminDao;
+use App\Services\Interfaces\IAdminServices;
+use App\Services\Interfaces\IAuthServices;
+use DateTimeImmutable;
+use Psr\Log\LoggerInterface;
+use Throwable;
+use Yiisoft\Db\Connection\ConnectionInterface;
+
+final readonly class AdminServices implements IAdminServices
+{
+    public function __construct(
+        private ConnectionInterface $db,
+        private AdminDao $dao,
+        private IAuthServices $authServices,
+        private LoggerInterface $logger,
+    ) {}
+
+    public function getAdmin(array $adminParam): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (!isset($adminParam['actionType']) || $adminParam['actionType'] !== 'getAdmin') {
+            $resArr['msgArr'][] = 'Invalid actionType for getAdmin.';
+            return $resArr;
+        }
+        if (!isset($adminParam['actionData']) || !is_array($adminParam['actionData'])) {
+            $resArr['msgArr'][] = "Missing or invalid 'actionData'.";
+            return $resArr;
+        }
+        $actionData = $adminParam['actionData'];
+        try {
+            switch ((string) ($actionData['action'] ?? '')) {
+                case 'listPlatformUsers':
+                    $resArr = $this->getPlatformUsers($actionData);
+                    break;
+                case 'getPlatformUser':
+                    $resArr = $this->getPlatformUser($actionData);
+                    break;
+                case 'listPendingBusinesses':
+                    $resArr = $this->getPendingBusinesses($actionData);
+                    break;
+                case 'getBusinessForReview':
+                    $resArr = $this->getBusinessForReview($actionData);
+                    break;
+                case 'listPendingSubscriptions':
+                    $resArr = $this->getPendingSubscriptions($actionData);
+                    break;
+                case 'getSubscriptionForReview':
+                    $resArr = $this->getSubscriptionForReview($actionData);
+                    break;
+                case 'listActiveSubscriptions':
+                    $resArr = $this->getActiveSubscriptions($actionData);
+                    break;
+                case 'listAdminCategories':
+                    $resArr = $this->getAdminCategories($actionData);
+                    break;
+                case 'getCategoryStatistics':
+                    $resArr = $this->getCategoryStatistics($actionData);
+                    break;
+                case 'getAdminAnalyticsSummary':
+                    $resArr = $this->getAdminAnalyticsSummary($actionData);
+                    break;
+                case 'getAdminAnalyticsTrends':
+                    $resArr = $this->getAdminAnalyticsTrends($actionData);
+                    break;
+                case 'listModerationQueue':
+                    $resArr = $this->getModerationQueue($actionData);
+                    break;
+                case 'listModerationHistory':
+                    $resArr = $this->getModerationHistory($actionData);
+                    break;
+                case 'getSafeSystemHealth':
+                    $resArr = $this->getSafeSystemHealth($actionData);
+                    break;
+                default:
+                    $resArr['msgArr'][] = 'Unsupported administration read action.';
+                    break;
+            }
+        } catch (Throwable $exception) {
+            $this->logger->error('AdminServices::getAdmin failed.', ['exception' => $exception]);
+            $resArr['status'] = 'EXCEPTION';
+            $resArr['msgArr'][] = 'Administration request failed unexpectedly.';
+            $resArr['data'] = [];
+        }
+        return $resArr;
+    }
+
+    public function manageAdmin(array $adminParam): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (!isset($adminParam['actionType']) || $adminParam['actionType'] !== 'manageAdmin') {
+            $resArr['msgArr'][] = 'Invalid actionType for manageAdmin.';
+            return $resArr;
+        }
+        if (!isset($adminParam['actionData']) || !is_array($adminParam['actionData'])) {
+            $resArr['msgArr'][] = "Missing or invalid 'actionData'.";
+            return $resArr;
+        }
+        $actionData = $adminParam['actionData'];
+        try {
+            switch ((string) ($actionData['action'] ?? '')) {
+                case 'suspendPlatformUser':
+                    $resArr = $this->managePlatformUser($actionData, 'SUSPENDED');
+                    break;
+                case 'restorePlatformUser':
+                    $resArr = $this->managePlatformUser($actionData, 'ACTIVE');
+                    break;
+                case 'approveBusiness':
+                    $resArr = $this->manageBusinessDecision($actionData, 'APPROVED');
+                    break;
+                case 'rejectBusiness':
+                    $resArr = $this->manageBusinessDecision($actionData, 'REJECTED');
+                    break;
+                case 'reopenBusinessReview':
+                    $resArr = $this->manageBusinessDecision($actionData, 'PENDING');
+                    break;
+                case 'approveSubscription':
+                    $resArr = $this->manageSubscriptionDecision($actionData, true);
+                    break;
+                case 'rejectSubscription':
+                    $resArr = $this->manageSubscriptionDecision($actionData, false);
+                    break;
+                case 'createCategory':
+                    $resArr = $this->manageCategory($actionData, 'create');
+                    break;
+                case 'updateCategory':
+                    $resArr = $this->manageCategory($actionData, 'update');
+                    break;
+                case 'deleteCategory':
+                    $resArr = $this->manageCategory($actionData, 'delete');
+                    break;
+                case 'applyModerationAction':
+                    $resArr = $this->manageModerationAction($actionData);
+                    break;
+                default:
+                    $resArr['msgArr'][] = 'Unsupported administration management action.';
+                    break;
+            }
+        } catch (Throwable $exception) {
+            $this->logger->error('AdminServices::manageAdmin failed.', ['exception' => $exception]);
+            $resArr['status'] = 'EXCEPTION';
+            $resArr['msgArr'][] = 'Administration management failed unexpectedly.';
+            $resArr['data'] = [];
+        }
+        return $resArr;
+    }
+
+    private function getPlatformUsers(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'PLATFORM_USERS_MANAGE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getPlatformUsers');
+        }
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(100, $this->positiveInt($actionData['page_size'] ?? 20) ?? 20);
+        $search = $this->filterText($actionData['search'] ?? '', 100);
+        $rows = $this->dao->getUsers($this->db, $search, $pageSize, ($page - 1) * $pageSize);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'AdminServices::getPlatformUsers');
+        }
+        $count = $this->dao->countUsers($this->db, $search);
+        if ($count['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($count, 'AdminServices::getPlatformUsers');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['items' => $rows['data'], 'pagination' => [
+            'page' => $page, 'page_size' => $pageSize, 'total' => (int) ($count['data']['total'] ?? 0),
+        ]];
+        return $resArr;
+    }
+
+    private function getPlatformUser(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'PLATFORM_USERS_MANAGE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getPlatformUser');
+        }
+        $userId = $this->positiveInt($actionData['user_id'] ?? null);
+        if ($userId === null) {
+            $resArr['msgArr'][] = 'A valid user_id is required.';
+            return $resArr;
+        }
+        $result = $this->dao->getUser($this->db, $userId);
+        if ($result['status'] !== 'SUCCESS' || $result['data'] === []) {
+            return $this->propagateFailure($result, 'AdminServices::getPlatformUser');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = $result['data'];
+        return $resArr;
+    }
+
+    private function managePlatformUser(array $actionData, string $newStatus): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'PLATFORM_USERS_MANAGE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::managePlatformUser');
+        }
+        $userId = $this->positiveInt($actionData['user_id'] ?? null);
+        $adminId = (int) $context['data']['user_id'];
+        if ($userId === null || $userId === $adminId) {
+            $resArr['msgArr'][] = 'A valid user_id other than the current administrator is required.';
+            return $resArr;
+        }
+        return $this->dao->setUserAccountStatus($this->db, $userId, $adminId, $newStatus);
+    }
+
+    private function getPendingBusinesses(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'BUSINESS_APPROVE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getPendingBusinesses');
+        }
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(100, $this->positiveInt($actionData['page_size'] ?? 20) ?? 20);
+        $rows = $this->dao->getPendingBusinesses($this->db, $pageSize, ($page - 1) * $pageSize);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'AdminServices::getPendingBusinesses');
+        }
+        $count = $this->dao->countPendingBusinesses($this->db);
+        if ($count['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($count, 'AdminServices::getPendingBusinesses');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['items' => $rows['data'], 'pagination' => [
+            'page' => $page, 'page_size' => $pageSize, 'total' => (int) ($count['data']['total'] ?? 0),
+        ]];
+        return $resArr;
+    }
+
+    private function getBusinessForReview(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'BUSINESS_APPROVE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getBusinessForReview');
+        }
+        $businessId = $this->positiveInt($actionData['business_id'] ?? null);
+        if ($businessId === null) {
+            $resArr['msgArr'][] = 'A valid business_id is required.';
+            return $resArr;
+        }
+        $result = $this->dao->getBusinessForReview($this->db, $businessId);
+        if ($result['status'] !== 'SUCCESS' || $result['data'] === []) {
+            return $this->propagateFailure($result, 'AdminServices::getBusinessForReview');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = $result['data'];
+        return $resArr;
+    }
+
+    private function manageBusinessDecision(array $actionData, string $newStatus): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'BUSINESS_APPROVE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::manageBusinessDecision');
+        }
+        $businessId = $this->positiveInt($actionData['business_id'] ?? null);
+        if ($businessId === null) {
+            $resArr['msgArr'][] = 'A valid business_id is required.';
+            return $resArr;
+        }
+        $business = $this->dao->getBusinessForReview($this->db, $businessId);
+        if ($business['status'] !== 'SUCCESS' || $business['data'] === []) {
+            return $this->propagateFailure($business, 'AdminServices::manageBusinessDecision');
+        }
+        $oldStatus = (string) $business['data']['approval_status'];
+        if ($newStatus === 'PENDING' && $oldStatus !== 'REJECTED') {
+            $resArr['msgArr'][] = 'Only rejected business applications can be reopened.';
+            return $resArr;
+        }
+        if ($newStatus !== 'PENDING' && $oldStatus !== 'PENDING') {
+            $resArr['msgArr'][] = 'Only pending business applications can be approved or rejected.';
+            return $resArr;
+        }
+        $reason = $this->nullableText($actionData['reason'] ?? null, 500);
+        if ($newStatus === 'REJECTED' && $reason === null) {
+            $resArr['msgArr'][] = 'A rejection reason is required.';
+            return $resArr;
+        }
+        $transaction = $this->db->beginTransaction();
+        try {
+            $result = $this->dao->setBusinessApproval(
+                $this->db, $businessId, (int) $business['data']['tenant_id'],
+                (int) $context['data']['user_id'], $newStatus, $reason,
+            );
+            if ($result['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($result, 'AdminServices::manageBusinessDecision');
+            }
+            $transaction->commit();
+            return $result;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) {
+                $transaction->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    private function getPendingSubscriptions(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'SUBSCRIPTIONS_APPROVE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getPendingSubscriptions');
+        }
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(100, $this->positiveInt($actionData['page_size'] ?? 20) ?? 20);
+        $rows = $this->dao->getPendingSubscriptions($this->db, $pageSize, ($page - 1) * $pageSize);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'AdminServices::getPendingSubscriptions');
+        }
+        $count = $this->dao->countPendingSubscriptions($this->db);
+        if ($count['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($count, 'AdminServices::getPendingSubscriptions');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['items' => $rows['data'], 'pagination' => [
+            'page' => $page, 'page_size' => $pageSize, 'total' => (int) ($count['data']['total'] ?? 0),
+        ]];
+        return $resArr;
+    }
+
+    private function getSubscriptionForReview(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'SUBSCRIPTIONS_APPROVE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getSubscriptionForReview');
+        }
+        $subscriptionId = $this->positiveInt($actionData['subscription_id'] ?? null);
+        if ($subscriptionId === null) {
+            $resArr['msgArr'][] = 'A valid subscription_id is required.';
+            return $resArr;
+        }
+        $subscription = $this->dao->getSubscriptionForReview($this->db, $subscriptionId);
+        if ($subscription['status'] !== 'SUCCESS' || $subscription['data'] === []) {
+            return $this->propagateFailure($subscription, 'AdminServices::getSubscriptionForReview');
+        }
+        $proofs = $this->dao->getSubscriptionProofs($this->db, (int) $subscription['data']['tenant_id'], $subscriptionId);
+        if ($proofs['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($proofs, 'AdminServices::getSubscriptionForReview');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['subscription' => $subscription['data'], 'proofs' => $proofs['data']];
+        return $resArr;
+    }
+
+    private function getActiveSubscriptions(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'SUBSCRIPTIONS_APPROVE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getActiveSubscriptions');
+        }
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(100, $this->positiveInt($actionData['page_size'] ?? 20) ?? 20);
+        $rows = $this->dao->getActiveSubscriptions($this->db, $pageSize, ($page - 1) * $pageSize);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'AdminServices::getActiveSubscriptions');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['items' => $rows['data'], 'pagination' => ['page' => $page, 'page_size' => $pageSize]];
+        return $resArr;
+    }
+
+    private function manageSubscriptionDecision(array $actionData, bool $approve): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'SUBSCRIPTIONS_APPROVE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::manageSubscriptionDecision');
+        }
+        $subscriptionId = $this->positiveInt($actionData['subscription_id'] ?? null);
+        if ($subscriptionId === null) {
+            $resArr['msgArr'][] = 'A valid subscription_id is required.';
+            return $resArr;
+        }
+        $subscription = $this->dao->getSubscriptionForReview($this->db, $subscriptionId);
+        if ($subscription['status'] !== 'SUCCESS' || $subscription['data'] === []) {
+            return $this->propagateFailure($subscription, 'AdminServices::manageSubscriptionDecision');
+        }
+        if (($subscription['data']['subscription_status'] ?? '') !== 'PENDING') {
+            $resArr['msgArr'][] = 'Only pending subscriptions can be approved or rejected.';
+            return $resArr;
+        }
+        $tenantId = (int) $subscription['data']['tenant_id'];
+        $adminId = (int) $context['data']['user_id'];
+        $transaction = $this->db->beginTransaction();
+        try {
+            if ($approve) {
+                $proofs = $this->dao->getSubscriptionProofs($this->db, $tenantId, $subscriptionId);
+                if ($proofs['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($proofs, 'AdminServices::manageSubscriptionDecision');
+                }
+                $hasPendingProof = false;
+                foreach ($proofs['data'] as $proof) {
+                    if (($proof['review_status'] ?? '') === 'PENDING') {
+                        $hasPendingProof = true;
+                        break;
+                    }
+                }
+                if (!$hasPendingProof) {
+                    $transaction->rollBack();
+                    $resArr['msgArr'][] = 'A pending payment proof must be reviewed before approving the subscription.';
+                    return $resArr;
+                }
+                $startsOn = $this->dateTimeText($actionData['starts_on'] ?? null);
+                $endsOn = $this->dateTimeText($actionData['ends_on'] ?? null);
+                if ($startsOn === null || $endsOn === null || strtotime($endsOn) <= strtotime($startsOn)) {
+                    $transaction->rollBack();
+                    $resArr['msgArr'][] = 'Valid starts_on and ends_on are required; ends_on must be later than starts_on.';
+                    return $resArr;
+                }
+                $result = $this->dao->approveSubscription($this->db, $subscriptionId, $tenantId, $adminId, $startsOn, $endsOn);
+            } else {
+                $reason = $this->requiredText($actionData['reason'] ?? '', 500);
+                if ($reason === null) {
+                    $transaction->rollBack();
+                    $resArr['msgArr'][] = 'A rejection reason is required.';
+                    return $resArr;
+                }
+                $result = $this->dao->rejectSubscription($this->db, $subscriptionId, $tenantId, $adminId, $reason);
+            }
+            if ($result['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($result, 'AdminServices::manageSubscriptionDecision');
+            }
+            $transaction->commit();
+            return $result;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) {
+                $transaction->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    private function getAdminCategories(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'CATEGORIES_MANAGE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getAdminCategories');
+        }
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(100, $this->positiveInt($actionData['page_size'] ?? 20) ?? 20);
+        $search = $this->filterText($actionData['search'] ?? '', 100);
+        $rows = $this->dao->getCategories($this->db, $search, $pageSize, ($page - 1) * $pageSize);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'AdminServices::getAdminCategories');
+        }
+        $count = $this->dao->countCategories($this->db, $search);
+        if ($count['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($count, 'AdminServices::getAdminCategories');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['items' => $rows['data'], 'pagination' => [
+            'page' => $page, 'page_size' => $pageSize, 'total' => (int) ($count['data']['total'] ?? 0),
+        ]];
+        return $resArr;
+    }
+
+    private function getCategoryStatistics(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'CATEGORIES_MANAGE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getCategoryStatistics');
+        }
+        $categoryId = $this->positiveInt($actionData['category_id'] ?? null);
+        if ($categoryId === null) {
+            $resArr['msgArr'][] = 'A valid category_id is required.';
+            return $resArr;
+        }
+        $result = $this->dao->getCategoryStatistics($this->db, $categoryId);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'AdminServices::getCategoryStatistics');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = $result['data'];
+        return $resArr;
+    }
+
+    private function manageCategory(array $actionData, string $operation): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'CATEGORIES_MANAGE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::manageCategory');
+        }
+        $adminId = (int) $context['data']['user_id'];
+        $categoryId = $this->positiveInt($actionData['category_id'] ?? null);
+        if ($operation !== 'create' && $categoryId === null) {
+            $resArr['msgArr'][] = 'A valid category_id is required.';
+            return $resArr;
+        }
+        if ($operation === 'delete') {
+            $dependencies = $this->dao->hasCategoryDependencies($this->db, $categoryId);
+            if ($dependencies['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($dependencies, 'AdminServices::manageCategory');
+            }
+            if ($dependencies['data'] !== []) {
+                $resArr['msgArr'][] = 'Category cannot be deleted while active businesses or products reference it.';
+                return $resArr;
+            }
+            return $this->dao->softDeleteCategory($this->db, $categoryId, $adminId);
+        }
+        $code = strtoupper($this->requiredText($actionData['category_code'] ?? '', 50) ?? '');
+        $name = $this->requiredText($actionData['category_name'] ?? '', 120);
+        $type = strtoupper($this->requiredText($actionData['category_type'] ?? '', 20) ?? '');
+        $description = $this->filterText($actionData['description'] ?? '', 500);
+        $parentId = $this->positiveInt($actionData['parent_category_id'] ?? null);
+        $displayOrder = $this->integerValue($actionData['display_order'] ?? 0);
+        if ($code === '' || $name === null || !in_array($type, ['BUSINESS', 'PRODUCT'], true)
+            || $displayOrder === null || $displayOrder < 0
+        ) {
+            $resArr['msgArr'][] = 'category_code, category_name, category_type (BUSINESS or PRODUCT) and non-negative display_order are required.';
+            return $resArr;
+        }
+        if ($parentId !== null && $categoryId !== null && $parentId === $categoryId) {
+            $resArr['msgArr'][] = 'A category cannot be its own parent.';
+            return $resArr;
+        }
+        $codeCheck = $this->dao->isCategoryCodeAvailable($this->db, $code, $categoryId ?? 0);
+        if ($codeCheck['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($codeCheck, 'AdminServices::manageCategory');
+        }
+        if ($codeCheck['data'] !== []) {
+            $resArr['msgArr'][] = 'category_code is already in use.';
+            return $resArr;
+        }
+        if ($operation === 'create') {
+            return $this->dao->insertCategory($this->db, $parentId, $code, $name, $type, $description, $displayOrder, $adminId);
+        }
+        return $this->dao->updateCategory($this->db, $categoryId, $parentId, $code, $name, $type, $description, $displayOrder, $adminId);
+    }
+
+    private function getAdminAnalyticsSummary(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'ANALYTICS_VIEW');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getAdminAnalyticsSummary');
+        }
+        $result = $this->dao->getAnalyticsSummary($this->db);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'AdminServices::getAdminAnalyticsSummary');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = $result['data'];
+        return $resArr;
+    }
+
+    private function getAdminAnalyticsTrends(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'ANALYTICS_VIEW');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getAdminAnalyticsTrends');
+        }
+        $startDate = $this->dateText($actionData['start_date'] ?? null);
+        $endDate = $this->dateText($actionData['end_date'] ?? null);
+        if ($startDate === null || $endDate === null || $endDate < $startDate
+            || (strtotime($endDate) - strtotime($startDate)) > (366 * 86400)
+        ) {
+            $resArr['msgArr'][] = 'Valid start_date and end_date within a 366-day range are required.';
+            return $resArr;
+        }
+        $result = $this->dao->getAnalyticsTrends($this->db, $startDate, $endDate);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'AdminServices::getAdminAnalyticsTrends');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['items' => $result['data']];
+        return $resArr;
+    }
+
+    private function getModerationQueue(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'MODERATION_MANAGE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getModerationQueue');
+        }
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(100, $this->positiveInt($actionData['page_size'] ?? 20) ?? 20);
+        $rows = $this->dao->getModerationQueue($this->db, $pageSize, ($page - 1) * $pageSize);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'AdminServices::getModerationQueue');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['items' => $rows['data'], 'pagination' => ['page' => $page, 'page_size' => $pageSize]];
+        return $resArr;
+    }
+
+    private function getModerationHistory(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'MODERATION_MANAGE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getModerationHistory');
+        }
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(100, $this->positiveInt($actionData['page_size'] ?? 20) ?? 20);
+        $rows = $this->dao->getModerationHistory($this->db, $pageSize, ($page - 1) * $pageSize);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'AdminServices::getModerationHistory');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['items' => $rows['data'], 'pagination' => ['page' => $page, 'page_size' => $pageSize]];
+        return $resArr;
+    }
+
+    private function manageModerationAction(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'MODERATION_MANAGE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::manageModerationAction');
+        }
+        $reportId = $this->positiveInt($actionData['report_id'] ?? null);
+        $actionType = strtoupper($this->filterText($actionData['action_type'] ?? '', 30));
+        $reason = $this->requiredText($actionData['reason'] ?? '', 500);
+        if ($reportId === null || $reason === null
+            || !in_array($actionType, ['UNPUBLISH_POST', 'UNPUBLISH_PRODUCT', 'DISMISS_REPORT'], true)
+        ) {
+            $resArr['msgArr'][] = 'report_id, reason and a supported action_type are required.';
+            return $resArr;
+        }
+        $report = $this->dao->getModerationReport($this->db, $reportId);
+        if ($report['status'] !== 'SUCCESS' || $report['data'] === []) {
+            return $this->propagateFailure($report, 'AdminServices::manageModerationAction');
+        }
+        if (($report['data']['report_status'] ?? '') !== 'OPEN') {
+            $resArr['msgArr'][] = 'Only open reports can be moderated.';
+            return $resArr;
+        }
+        $contentType = (string) $report['data']['content_type'];
+        if (($actionType === 'UNPUBLISH_POST' && $contentType !== 'POST')
+            || ($actionType === 'UNPUBLISH_PRODUCT' && $contentType !== 'PRODUCT')
+        ) {
+            $resArr['msgArr'][] = 'Moderation action does not match the reported content type.';
+            return $resArr;
+        }
+        $adminId = (int) $context['data']['user_id'];
+        $tenantId = $report['data']['tenant_id'] === null ? null : (int) $report['data']['tenant_id'];
+        $transaction = $this->db->beginTransaction();
+        try {
+            if ($actionType !== 'DISMISS_REPORT') {
+                $contentResult = $this->dao->updateReportedContent(
+                    $this->db, $contentType, (int) $report['data']['content_id'], $adminId, $actionType,
+                );
+                if ($contentResult['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($contentResult, 'AdminServices::manageModerationAction');
+                }
+            }
+            $reportStatus = $actionType === 'DISMISS_REPORT' ? 'DISMISSED' : 'RESOLVED';
+            $statusResult = $this->dao->updateReportStatus($this->db, $reportId, $adminId, $reportStatus);
+            if ($statusResult['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($statusResult, 'AdminServices::manageModerationAction');
+            }
+            $log = $this->dao->insertModerationLog(
+                $this->db, $tenantId, $adminId, $contentType, (int) $report['data']['content_id'], $actionType, $reason,
+            );
+            if ($log['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($log, 'AdminServices::manageModerationAction');
+            }
+            $transaction->commit();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['report_id' => $reportId, 'report_status' => $reportStatus, 'action_type' => $actionType];
+            return $resArr;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) {
+                $transaction->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    private function getSafeSystemHealth(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'SYSTEM_HEALTH_VIEW');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getSafeSystemHealth');
+        }
+        $result = $this->dao->healthCheck($this->db);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'AdminServices::getSafeSystemHealth');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
+            'database_status' => ((int) ($result['data']['database_ok'] ?? 0)) === 1 ? 'UP' : 'UNKNOWN',
+            'checked_on' => $result['data']['checked_on'] ?? null,
+            'php_version' => PHP_VERSION,
+        ];
+        return $resArr;
+    }
+
+    private function platformContext(array $actionData, string $permissionCode): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->authServices->getAuth([
+            'actionType' => 'getAuth',
+            'actionData' => ['action' => 'getPrincipal', '_accessToken' => (string) ($actionData['_accessToken'] ?? '')],
+        ]);
+        if ($principal['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'AdminServices::platformContext');
+        }
+        $permission = $this->dao->hasPlatformPermission($this->db, (int) $principal['data']['user_id'], $permissionCode);
+        if ($permission['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($permission, 'AdminServices::platformContext');
+        }
+        if ($permission['data'] === []) {
+            $resArr['msgArr'][] = 'Platform permission is required for this operation.';
+            return $resArr;
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['user_id' => (int) $principal['data']['user_id']];
+        return $resArr;
+    }
+
+    private function dateTimeText(mixed $value): ?string
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (!is_scalar($value) || trim((string) $value) === '') {
+            return null;
+        }
+        try {
+            return (new DateTimeImmutable((string) $value))->format('Y-m-d H:i:s');
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function dateText(mixed $value): ?string
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (!is_scalar($value)) {
+            return null;
+        }
+        $date = DateTimeImmutable::createFromFormat('!Y-m-d', (string) $value);
+        return $date !== false && $date->format('Y-m-d') === (string) $value ? (string) $value : null;
+    }
+
+    private function requiredText(mixed $value, int $maxLength): ?string
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (!is_scalar($value)) {
+            return null;
+        }
+        $text = trim((string) $value);
+        return $text !== '' && strlen($text) <= $maxLength ? $text : null;
+    }
+
+    private function nullableText(mixed $value, int $maxLength): ?string
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (!is_scalar($value)) {
+            return null;
+        }
+        $text = trim((string) $value);
+        return $text === '' ? null : (strlen($text) <= $maxLength ? $text : null);
+    }
+
+    private function filterText(mixed $value, int $maxLength): string
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (!is_scalar($value)) {
+            return '';
+        }
+        return substr(trim((string) $value), 0, $maxLength);
+    }
+
+    private function positiveInt(mixed $value): ?int
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $number = filter_var($value, FILTER_VALIDATE_INT);
+        return $number !== false && $number > 0 ? (int) $number : null;
+    }
+
+    private function integerValue(mixed $value): ?int
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        if (!is_scalar($value) || filter_var($value, FILTER_VALIDATE_INT) === false) {
+            return null;
+        }
+        return (int) $value;
+    }
+
+    private function propagateFailure(array $downstream, string $context): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $downstream['msgArr'][] = $context . ' returned a non-success response.';
+        if (($downstream['status'] ?? '') === 'SUCCESS') {
+            $downstream['status'] = 'FAILED';
+            $downstream['data'] = [];
+        }
+        return $downstream;
+    }
+}
