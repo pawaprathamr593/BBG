@@ -106,8 +106,11 @@ final readonly class CatalogueServices implements ICatalogueServices
                 case 'deleteTenantProduct':
                     $resArr = $this->manageTenantProduct($actionData, 'delete');
                     break;
+                case 'linkProductMedia':
+                    $resArr = $this->manageProductMedia($actionData, 'link');
+                    break;
                 case 'deleteProductMedia':
-                    $resArr = $this->manageProductMedia($actionData);
+                    $resArr = $this->manageProductMedia($actionData, 'delete');
                     break;
                 default:
                     $resArr['msgArr'][] = 'Unsupported catalogue management action.';
@@ -383,26 +386,96 @@ final readonly class CatalogueServices implements ICatalogueServices
         );
     }
 
-    private function manageProductMedia(array $actionData): array
+    private function manageProductMedia(array $actionData, string $operation): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $context = $this->tenantContext($actionData);
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'CatalogueServices::manageProductMedia');
         }
+        $tenantId = (int) $context['data']['tenant_id'];
+        $userId = (int) $context['data']['user_id'];
         $productId = $this->positiveInt($actionData['product_id'] ?? null);
-        $mediaId = $this->positiveInt($actionData['media_id'] ?? null);
-        if ($productId === null || $mediaId === null) {
-            $resArr['msgArr'][] = 'product_id and media_id are required.';
+        if ($productId === null) {
+            $resArr['msgArr'][] = 'A valid product_id is required.';
             return $resArr;
         }
-        $product = $this->dao->getTenantProduct($this->db, (int) $context['data']['tenant_id'], $productId);
+        $product = $this->dao->getTenantProduct($this->db, $tenantId, $productId);
         if ($product['status'] !== 'SUCCESS' || $product['data'] === []) {
             return $this->propagateFailure($product, 'CatalogueServices::manageProductMedia');
         }
-        return $this->dao->softDeleteProductMedia(
-            $this->db, (int) $context['data']['tenant_id'], $productId, $mediaId, (int) $context['data']['user_id'],
-        );
+        if ($operation === 'delete') {
+            $mediaId = $this->positiveInt($actionData['media_id'] ?? null);
+            if ($mediaId === null) {
+                $resArr['msgArr'][] = 'A valid media_id is required.';
+                return $resArr;
+            }
+            return $this->dao->softDeleteProductMedia($this->db, $tenantId, $productId, $mediaId, $userId);
+        }
+
+        $filePath = $this->requiredText($actionData['file_path'] ?? '', 500);
+        $originalName = $this->requiredText($actionData['original_file_name'] ?? '', 255);
+        $mimeType = strtolower($this->requiredText($actionData['mime_type'] ?? '', 100) ?? '');
+        $fileSize = $this->integerValue($actionData['file_size_bytes'] ?? null);
+        $mediaType = strtoupper($this->filterText($actionData['media_type'] ?? 'IMAGE', 20));
+        $displayOrder = $this->integerValue($actionData['display_order'] ?? 0);
+        $isPrimary = $this->booleanValue($actionData['is_primary'] ?? false);
+        $variantId = $this->positiveInt($actionData['variant_id'] ?? null);
+        $width = $this->positiveInt($actionData['width_px'] ?? null);
+        $height = $this->positiveInt($actionData['height_px'] ?? null);
+        $thumbnailPath = $this->optionalText($actionData['thumbnail_path'] ?? null, 500);
+        $altText = $this->optionalText($actionData['alt_text'] ?? null, 255);
+        $caption = $this->optionalText($actionData['caption'] ?? null, 500);
+        $expectedPrefix = 'tenants/' . $tenantId . '/products/';
+        if ($filePath === null || $originalName === null || $fileSize === null || $fileSize < 0
+            || $displayOrder === null || $displayOrder < 0 || $isPrimary === null
+            || $mediaType !== 'IMAGE' || !in_array($mimeType, ['image/jpeg', 'image/png', 'image/webp'], true)
+            || !str_starts_with($filePath, $expectedPrefix) || str_contains($filePath, '..')
+            || str_starts_with($filePath, '/') || preg_match('/^[a-z]+:\/\//i', $filePath)
+        ) {
+            $resArr['msgArr'][] = 'Valid stored image metadata and a tenant-scoped relative file_path are required.';
+            return $resArr;
+        }
+        if ($thumbnailPath !== null && (
+            !str_starts_with($thumbnailPath, $expectedPrefix) || str_contains($thumbnailPath, '..')
+            || str_starts_with($thumbnailPath, '/') || preg_match('/^[a-z]+:\/\//i', $thumbnailPath)
+        )) {
+            $resArr['msgArr'][] = 'thumbnail_path must be a tenant-scoped relative file path.';
+            return $resArr;
+        }
+        if ($variantId !== null) {
+            $variant = $this->dao->getTenantProductVariant($this->db, $tenantId, $productId, $variantId);
+            if ($variant['status'] !== 'SUCCESS' || $variant['data'] === []) {
+                return $this->propagateFailure($variant, 'CatalogueServices::manageProductMedia');
+            }
+        }
+
+        $transaction = $this->db->beginTransaction();
+        try {
+            if ($isPrimary === 1) {
+                $cleared = $this->dao->clearPrimaryProductMedia($this->db, $tenantId, $productId, $userId);
+                if ($cleared['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($cleared, 'CatalogueServices::manageProductMedia');
+                }
+            }
+            $result = $this->dao->insertProductMedia(
+                $this->db, $tenantId, $productId, $variantId, $mediaType, $mimeType,
+                $filePath, $originalName, $fileSize, $altText, $caption, $thumbnailPath,
+                $width, $height, $displayOrder, $isPrimary, $userId,
+            );
+            if ($result['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($result, 'CatalogueServices::manageProductMedia');
+            }
+            $transaction->commit();
+            return $result;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) {
+                $transaction->rollBack();
+            }
+            throw $exception;
+        }
     }
 
     private function tenantContext(array $actionData): array
