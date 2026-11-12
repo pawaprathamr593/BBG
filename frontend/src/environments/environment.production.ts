@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
   appName: 'BBG',
-  // Same-origin reverse proxy default. Replace at build time for a separate API host.
-  apiBaseUrl: '/api',
+  // Same-origin reverse proxy serves the API under /api/v1.
+  apiBaseUrl: '',
 } as const;
