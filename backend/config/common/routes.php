@@ -31,6 +31,10 @@ return [
 
     Route::post('/api/v1/orders/list')->action([OrderController::class, 'actionGetOrders'])->name('api/v1/orders/list'),
     Route::post('/api/v1/orders/detail')->action([OrderController::class, 'actionGetOrders'])->name('api/v1/orders/detail'),
+    Route::post('/api/v1/orders/tenant/list')->action([OrderController::class, 'actionGetOrders'])->name('api/v1/orders/tenant/list'),
+    Route::post('/api/v1/orders/tenant/detail')->action([OrderController::class, 'actionGetOrders'])->name('api/v1/orders/tenant/detail'),
+    Route::post('/api/v1/orders/tenant/confirm')->action([OrderController::class, 'actionManageOrders'])->name('api/v1/orders/tenant/confirm'),
+    Route::post('/api/v1/orders/tenant/cancel')->action([OrderController::class, 'actionManageOrders'])->name('api/v1/orders/tenant/cancel'),
 
     Route::post('/api/v1/marketplace/businesses/list')->action([MarketplaceController::class, 'actionListBusinesses'])->name('api/v1/marketplace/businesses/list'),
     Route::post('/api/v1/marketplace/businesses/detail')->action([MarketplaceController::class, 'actionGetBusiness'])->name('api/v1/marketplace/businesses/detail'),
