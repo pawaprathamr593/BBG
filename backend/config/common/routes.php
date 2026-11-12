@@ -8,6 +8,7 @@ use App\Modules\Api\V1\Controllers\CartController;
 use App\Modules\Api\V1\Controllers\OrderController;
 use App\Modules\Api\V1\Controllers\MarketplaceController;
 use App\Modules\Api\V1\Controllers\TenantController;
+use App\Modules\Api\V1\Controllers\BusinessController;
 use Yiisoft\Router\Route;
 
 /** @var array $params */
@@ -49,4 +50,12 @@ return [
     Route::post('/api/v1/tenants/mine/list')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/mine/list'),
     Route::post('/api/v1/tenants/mine/detail')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/mine/detail'),
     Route::post('/api/v1/tenants/members/list')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/members/list'),
+
+    Route::post('/api/v1/business/application/submit')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/application/submit'),
+    Route::post('/api/v1/business/application/get')->action([BusinessController::class, 'actionGetBusiness'])->name('api/v1/business/application/get'),
+    Route::post('/api/v1/business/application/update')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/application/update'),
+    Route::post('/api/v1/business/application/resubmit')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/application/resubmit'),
+    Route::post('/api/v1/business/profile/get')->action([BusinessController::class, 'actionGetBusiness'])->name('api/v1/business/profile/get'),
+    Route::post('/api/v1/business/profile/update')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/profile/update'),
+    Route::post('/api/v1/business/verification/get')->action([BusinessController::class, 'actionGetBusiness'])->name('api/v1/business/verification/get'),
 ];
