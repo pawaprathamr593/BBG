@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-dashboard',
-  template: `<section class="welcome-section">
+  template: `<div class="dashboard-view"><section class="welcome-section">
     <div><p class="eyebrow">BUSINESS MANAGEMENT &amp; MARKETPLACE PLATFORM</p><h1>A clearer view of your business.</h1><p class="welcome-copy">BBG brings business operations and marketplace experiences together in one connected platform. Your workspace foundation is being prepared.</p></div>
     <div class="welcome-art" aria-hidden="true"><div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div><div class="art-core"><span>B</span></div><div class="art-node node-one"></div><div class="art-node node-two"></div><div class="art-node node-three"></div></div>
   </section>
@@ -14,7 +14,7 @@ import { Component } from '@angular/core';
       <article class="foundation-card"><span class="card-icon icon-deploy">03</span><div><h3>Deployment readiness</h3><p>Separate local and production configuration for a future live domain.</p><span class="card-state">Prepared</span></div></article>
     </div>
   </section>
-  <section class="bottom-note"><div class="note-symbol">i</div><div><strong>Workspace preview</strong><p>This screen is a foundation placeholder. Business workflows and live data will be added only after their requirements and API contracts are approved.</p></div></section>`,
+  <section class="bottom-note"><div class="note-symbol">i</div><div><strong>Workspace preview</strong><p>This screen is a foundation placeholder. Business workflows and live data will be added only after their requirements and API contracts are approved.</p></div></section></div>`,
   styles: [':host{display:block}'],
 })
 export class Dashboard {}
