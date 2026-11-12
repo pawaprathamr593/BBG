@@ -1,11 +1,42 @@
 <?php
+
 declare(strict_types=1);
+
 namespace App\Modules\Api\V1\Services\Implementations;
+
 use App\Modules\Api\V1\Dto\In\CartInDto;
 use App\Modules\Api\V1\Services\Interfaces\ICartServicesV1;
 use App\Services\Interfaces\ICartServices;
-final readonly class CartServicesV1 implements ICartServicesV1 {
+use App\Utils\InDtoObjectFactory;
+use Throwable;
+
+final readonly class CartServicesV1 implements ICartServicesV1
+{
     public function __construct(private ICartServices $services) {}
-    public function getCart(array $input): array { $dto = new CartInDto(); $dto->cartParam = is_array($input['cartParam'] ?? null) ? $input['cartParam'] : []; return $this->services->getCart($dto->cartParam); }
-    public function manageCart(array $input): array { $dto = new CartInDto(); $dto->cartParam = is_array($input['cartParam'] ?? null) ? $input['cartParam'] : []; return $this->services->manageCart($dto->cartParam); }
+
+    public function getCart(array $input): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $cartInDto = InDtoObjectFactory::create(CartInDto::class, $input);
+            $resArr = $this->services->getCart($cartInDto->cartParam);
+        } catch (Throwable) {
+            $resArr['status'] = 'EXCEPTION';
+            $resArr['msgArr'][] = 'Cart input mapping failed.';
+        }
+        return $resArr;
+    }
+
+    public function manageCart(array $input): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $cartInDto = InDtoObjectFactory::create(CartInDto::class, $input);
+            $resArr = $this->services->manageCart($cartInDto->cartParam);
+        } catch (Throwable) {
+            $resArr['status'] = 'EXCEPTION';
+            $resArr['msgArr'][] = 'Cart input mapping failed.';
+        }
+        return $resArr;
+    }
 }
