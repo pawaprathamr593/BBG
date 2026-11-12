@@ -23,3 +23,15 @@ Both migrations are additive and use `CREATE TABLE IF NOT EXISTS`; they do not a
 ## Current implementation boundary
 
 The cart API currently supports authenticated cart retrieval, add, update, remove, and clear. Checkout/order creation, business application HTTP workflows, product-management APIs, payment reconciliation, and admin approval APIs are not yet implemented. The schema is the foundation, not evidence that those modules are complete.
+
+
+## Tenant order-management RBAC seed
+
+After verifying that user `2` has an active membership in tenant `1`, apply
+`../seeds/20261112_001_tenant_order_manager.sql` to create the tenant-scoped
+`TENANT_ORDER_MANAGER` role, the `ORDERS_MANAGE` permission, the role-permission
+link, and the assignment for that user/tenant pair. The seed is idempotent and
+does not alter the schema. It intentionally does not assign the role if the
+user, tenant, or active membership precondition is missing.
+
+The assignment is scoped to tenant `1`; it does not grant platform-wide access.
