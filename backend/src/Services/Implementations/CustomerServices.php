@@ -270,45 +270,59 @@ final readonly class CustomerServices implements ICustomerServices
     private function customerContext(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $identity = $this->ensureCustomerIdentity($actionData);
-        if ($identity['status'] !== 'SUCCESS') {
-            return $this->propagateFailure($identity, 'CustomerServices::customerContext');
-        }
-        $tenantId = $this->positiveInt($actionData['tenant_id'] ?? null);
-        if ($tenantId === null) {
-            $resArr['msgArr'][] = 'A valid tenant_id is required.';
-            return $resArr;
-        }
-        $tenant = $this->dao->getEligibleTenant($this->db, $tenantId);
-        if ($tenant['status'] !== 'SUCCESS' || $tenant['data'] === []) {
-            return $this->propagateFailure($tenant, 'CustomerServices::customerContext');
-        }
-        $userId = (int) $identity['data']['user_id'];
-        $identityId = (int) $identity['data']['id'];
-        $customer = $this->dao->getTenantCustomer($this->db, $tenantId, $identityId);
-        if ($customer['status'] !== 'SUCCESS') {
-            return $this->propagateFailure($customer, 'CustomerServices::customerContext');
-        }
-        if ($customer['data'] === []) {
-            $created = $this->dao->insertTenantCustomer(
-                $this->db, $tenantId, $identityId, $userId,
-                (string) $identity['data']['full_name'],
-                $this->nullableText($identity['data']['email'] ?? null),
-                $this->nullableText($identity['data']['mobile'] ?? null),
-            );
-            if ($created['status'] !== 'SUCCESS') {
-                return $this->propagateFailure($created, 'CustomerServices::customerContext');
+        $transaction = $this->db->beginTransaction();
+        try {
+            $identity = $this->ensureCustomerIdentity($actionData);
+            if ($identity['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($identity, 'CustomerServices::customerContext');
             }
-            $customerId = (int) $created['data']['id'];
-        } else {
-            $customerId = (int) $customer['data']['id'];
+            $tenantId = $this->positiveInt($actionData['tenant_id'] ?? null);
+            if ($tenantId === null) {
+                $transaction->rollBack();
+                $resArr['msgArr'][] = 'A valid tenant_id is required.';
+                return $resArr;
+            }
+            $tenant = $this->dao->getEligibleTenant($this->db, $tenantId);
+            if ($tenant['status'] !== 'SUCCESS' || $tenant['data'] === []) {
+                $transaction->rollBack();
+                return $this->propagateFailure($tenant, 'CustomerServices::customerContext');
+            }
+            $userId = (int) $identity['data']['user_id'];
+            $identityId = (int) $identity['data']['id'];
+            $customer = $this->dao->getTenantCustomer($this->db, $tenantId, $identityId);
+            if ($customer['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($customer, 'CustomerServices::customerContext');
+            }
+            if ($customer['data'] === []) {
+                $created = $this->dao->insertTenantCustomer(
+                    $this->db, $tenantId, $identityId, $userId,
+                    (string) ($identity['data']['full_name'] ?? ''),
+                    $this->nullableText($identity['data']['email'] ?? null),
+                    $this->nullableText($identity['data']['mobile'] ?? null),
+                );
+                if ($created['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($created, 'CustomerServices::customerContext');
+                }
+                $customerId = (int) $created['data']['id'];
+            } else {
+                $customerId = (int) $customer['data']['id'];
+            }
+            $transaction->commit();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = [
+                'user_id' => $userId, 'identity_id' => $identityId,
+                'tenant_id' => $tenantId, 'tenant_customer_id' => $customerId,
+            ];
+            return $resArr;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) {
+                $transaction->rollBack();
+            }
+            throw $exception;
         }
-        $resArr['status'] = 'SUCCESS';
-        $resArr['data'] = [
-            'user_id' => $userId, 'identity_id' => $identityId,
-            'tenant_id' => $tenantId, 'tenant_customer_id' => $customerId,
-        ];
-        return $resArr;
     }
 
     private function requiredText(mixed $value, int $maxLength): ?string
