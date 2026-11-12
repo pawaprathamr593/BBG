@@ -313,6 +313,112 @@ final readonly class BusinessDao
         return $resArr;
     }
 
+    public function getStorefrontSettings(ConnectionInterface $db, int $tenantId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT ss.id, ss.tenant_id, ss.storefront_title, ss.storefront_description,
+            ss.theme_code, ss.show_prices, ss.accept_online_orders, ss.whatsapp_enabled,
+            ss.storefront_status, bp.whatsapp_number, bp.publication_status, bp.approval_status
+            FROM STOREFRONT_SETTINGS ss
+            INNER JOIN BUSINESS_PROFILES bp ON bp.tenant_id = ss.tenant_id AND bp.status = 'A'
+            WHERE ss.tenant_id = :tenant_id AND ss.status = 'A' LIMIT 1",
+            [':tenant_id' => $tenantId], 'getStorefrontSettings');
+    }
+
+    public function updateStorefrontSettings(
+        ConnectionInterface $db,
+        int $tenantId,
+        int $userId,
+        ?string $title,
+        ?string $description,
+        ?string $themeCode,
+        int $showPrices,
+        int $acceptOnlineOrders,
+        int $whatsappEnabled,
+    ): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $affected = $db->createCommand("UPDATE STOREFRONT_SETTINGS
+                SET storefront_title = :title, storefront_description = :description,
+                    theme_code = :theme_code, show_prices = :show_prices,
+                    accept_online_orders = :accept_online_orders, whatsapp_enabled = :whatsapp_enabled,
+                    updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                WHERE tenant_id = :tenant_id AND status = 'A'",
+                [':title' => $title, ':description' => $description, ':theme_code' => $themeCode,
+                 ':show_prices' => $showPrices, ':accept_online_orders' => $acceptOnlineOrders,
+                 ':whatsapp_enabled' => $whatsappEnabled, ':user_id' => $userId, ':tenant_id' => $tenantId])->execute();
+            if ($affected !== 1) {
+                $resArr['msgArr'][] = 'Storefront settings were not found.';
+                return $resArr;
+            }
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['tenant_id' => $tenantId];
+        } catch (Throwable $exception) {
+            return $this->error('updateStorefrontSettings', $exception);
+        }
+        return $resArr;
+    }
+
+    public function updateWhatsAppNumber(ConnectionInterface $db, int $tenantId, int $userId, ?string $whatsappNumber): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $affected = $db->createCommand("UPDATE BUSINESS_PROFILES
+                SET whatsapp_number = :whatsapp_number, updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                WHERE tenant_id = :tenant_id AND approval_status = 'APPROVED' AND status = 'A'",
+                [':whatsapp_number' => $whatsappNumber, ':user_id' => $userId, ':tenant_id' => $tenantId])->execute();
+            if ($affected !== 1) {
+                $resArr['msgArr'][] = 'Approved business profile was not found.';
+                return $resArr;
+            }
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['tenant_id' => $tenantId];
+        } catch (Throwable $exception) {
+            return $this->error('updateWhatsAppNumber', $exception);
+        }
+        return $resArr;
+    }
+
+    public function hasActiveSubscription(ConnectionInterface $db, int $tenantId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT id FROM TENANT_SUBSCRIPTIONS
+            WHERE tenant_id = :tenant_id AND subscription_status = 'ACTIVE' AND status = 'A'
+                AND (starts_on IS NULL OR starts_on <= CURRENT_TIMESTAMP)
+                AND (ends_on IS NULL OR ends_on >= CURRENT_TIMESTAMP)
+            LIMIT 1", [':tenant_id' => $tenantId], 'hasActiveSubscription');
+    }
+
+    public function setStorefrontPublication(ConnectionInterface $db, int $tenantId, int $userId, bool $publish): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $publicationStatus = $publish ? 'PUBLISHED' : 'DRAFT';
+            $storefrontStatus = $publish ? 'ACTIVE' : 'INACTIVE';
+            $profileAffected = $db->createCommand("UPDATE BUSINESS_PROFILES
+                SET publication_status = :publication_status, updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                WHERE tenant_id = :tenant_id AND approval_status = 'APPROVED' AND status = 'A'",
+                [':publication_status' => $publicationStatus, ':user_id' => $userId, ':tenant_id' => $tenantId])->execute();
+            if ($profileAffected !== 1) {
+                $resArr['msgArr'][] = 'Only an approved business can publish its storefront.';
+                return $resArr;
+            }
+            $storefrontAffected = $db->createCommand("UPDATE STOREFRONT_SETTINGS
+                SET storefront_status = :storefront_status, updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                WHERE tenant_id = :tenant_id AND status = 'A'",
+                [':storefront_status' => $storefrontStatus, ':user_id' => $userId, ':tenant_id' => $tenantId])->execute();
+            if ($storefrontAffected !== 1) {
+                $resArr['msgArr'][] = 'Storefront settings were not found.';
+                return $resArr;
+            }
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['tenant_id' => $tenantId, 'publication_status' => $publicationStatus, 'storefront_status' => $storefrontStatus];
+        } catch (Throwable $exception) {
+            return $this->error('setStorefrontPublication', $exception);
+        }
+        return $resArr;
+    }
+
     private function one(ConnectionInterface $db, string $sql, array $params, string $operation): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
