@@ -182,7 +182,7 @@ final readonly class CartServices implements ICartServices {
         return $this->ok(['order_id'=>$orderId,'order_number'=>$number,'order_channel'=>'WHATSAPP','order_status'=>'REQUESTED','payment_status'=>'UNPAID','subtotal'=>number_format($subtotal,2,'.',''),'tax_amount'=>number_format($taxTotal,2,'.',''),'grand_total'=>number_format($grand,2,'.',''),'whatsapp_url'=>'https://wa.me/'.$phone.'?text='.rawurlencode($message),'whatsapp_handoff'=>'NOT_CONFIRMED']);
     }
     private function principal(string $token): array {
-        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];return $this->auth->getAuth(['actionType'=>'getAuth','actionData'=>['action'=>'getProfile','_accessToken'=>$token]]);}
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];return $this->auth->getAuth(['actionType'=>'getProfile','actionData'=>['action'=>'getProfile','_accessToken'=>$token]]);}
     private function envelope(array $p,string $name): ?array {return isset($p['actionType'],$p['actionData'])&&is_array($p['actionData'])?null:$this->fail('Invalid '.$name.' request envelope.');}
     private function tenantId(mixed $v): ?int {$n=$this->positiveInt($v);return $n;}
     private function positiveInt(mixed $v): ?int {$n=filter_var($v,FILTER_VALIDATE_INT);return $n!==false&&$n>0?(int)$n:null;}
