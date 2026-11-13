@@ -58,7 +58,7 @@ final class TenantController
         $authorization = $request->getHeaderLine('Authorization');
         $data['_accessToken'] = str_starts_with($authorization, 'Bearer ') ? trim(substr($authorization, 7)) : '';
         $data['action'] = $action;
-        $param['actionType'] = $manage ? 'manageTenant' : 'getTenant';
+        $param['actionType'] = $action;
         $param['actionData'] = $data;
         $input['tenantParam'] = $param;
 
