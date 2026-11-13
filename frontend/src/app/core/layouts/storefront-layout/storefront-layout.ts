@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MarketplaceBusinessDetail } from '../../../features/marketplace/models/marketplace.models';
@@ -15,6 +15,7 @@ import { ThemeService } from '../../theme/theme.service';
 export class StorefrontLayout implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly marketplace = inject(MarketplaceService);
   private readonly seo = inject(SeoService);
   protected readonly theme = inject(ThemeService);
@@ -25,7 +26,7 @@ export class StorefrontLayout implements OnInit {
   protected readonly slug = signal('');
 
   ngOnInit(): void {
-    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.slug.set(params.get('businessSlug') ?? '');
       void this.loadBusiness();
     });
