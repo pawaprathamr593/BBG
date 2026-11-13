@@ -47,6 +47,8 @@ Supported `actionData` filters:
 - `brand`, `city` and `state`: partial text matches.
 - `min_price` and `max_price`: applied only to storefronts that expose prices.
 - `online_only`: restricts results to storefronts accepting online orders.
+- `variants_only`: returns products configured with variants only.
+- `with_images`: returns products with at least one active image in `PRODUCT_MEDIA`.
 - `sort`: `newest`, `popular`, `nearby`, `price_low`, `price_high` or `name`.
 - `latitude` and `longitude`: required with `sort = 'nearby'`; distance is calculated from the owning business profile coordinates.
 
