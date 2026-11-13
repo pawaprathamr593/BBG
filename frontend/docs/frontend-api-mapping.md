@@ -403,22 +403,13 @@ Purchasing and inventory are future scope and must not be activated.
 
 | Feature | Frontend service | Request DTO | Response DTO | Current frontend status |
 |---|---|---|---|---|
-| Auth | `AuthService` exists | Auth request models exist | Auth response/user models exist | Partial implementation |
-| Profile/user | Planned `ProfileService` | Missing | Missing | Not implemented |
-| Marketplace | Planned `MarketplaceService` | Missing | Missing | Not implemented |
-| Business | Planned `EntrepreneurBusinessService` | Missing | Missing | Not implemented |
-| Tenant | Planned `TenantContextService` | Missing | Missing | Not implemented |
-| Catalogue | Planned `EntrepreneurProductService` | Missing | Missing | Not implemented |
-| Customer | Planned `CustomerService` | Missing | Missing | Not implemented |
-| Cart/orders | Planned cart/order services | Missing | Missing | Not implemented |
-| Payments | Planned `PaymentService` | Missing | Missing | Not implemented |
-| Enquiries | Planned consumer/tenant enquiry services | Missing | Missing | Not implemented |
-| Promotions | Planned public/entrepreneur promotion services | Missing | Missing | Not implemented |
-| Engagement | Planned `EngagementService` | Missing | Missing | Not implemented |
-| Subscriptions | Planned `SubscriptionService` | Missing | Missing | Not implemented |
-| Admin | Planned feature services | Missing | Missing | Not implemented |
-| Analytics/moderation/system | Planned feature services | Missing | Missing | Not implemented |
-| Dashboards | Planned role dashboard services | Missing | Missing | Not implemented |
+| Auth | `AuthService` | Auth request models for login/register; profile-update fields remain open | Auth response/user models | Login, registration, refresh, logout and permission bootstrap implemented; profile update exposed through workspace payload editor |
+| Marketplace | `MarketplaceService` | Marketplace request models | Marketplace response models | Implemented against checked-in marketplace source; runtime verification pending |
+| Consumer | `WorkspaceApiService` | Backend DTOs not finalized for customer/cart/order/enquiry/payment/engagement | Backend response data rendered without assumed fields | Authenticated workspace and registered route actions exposed; field-specific forms pending |
+| Entrepreneur | `WorkspaceApiService` | Business/catalogue/order/enquiry/promotion/subscription DTOs not finalized | Backend response data rendered without assumed fields | Authenticated workspace and registered route actions exposed; tenant selection and field-specific forms pending |
+| Platform Administrator | `WorkspaceApiService` | Admin mutation DTOs not finalized | Backend response data rendered without assumed fields | Authenticated workspace and registered admin/analytics/health route actions exposed; approved permission map pending |
+| Tenant context | `WorkspaceApiService` | Tenant selector/activation contract not approved | Tenant list/detail/member responses not normalized | Read actions exposed; no tenant switching or inferred tenant ID |
+| PWA/offline | Not implemented | N/A | N/A | Deferred; authenticated API responses must never be cached |
 
 ## 6. Required next contract checks
 
