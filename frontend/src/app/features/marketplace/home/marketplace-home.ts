@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, MarketplaceProduct, MarketplacePromotion } from '../../../core/marketplace/marketplace-api.service';
+import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, MarketplaceProduct, MarketplacePromotion, MarketplaceHomeStats } from '../../../core/marketplace/marketplace-api.service';
 
 @Component({
   selector: 'app-marketplace-home',
@@ -28,6 +28,18 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
             <a href="#businesses">Businesses</a>
             <i aria-hidden="true"></i>
             <a href="#promotions">Promotions</a>
+          </div>
+          <div class="hero-stats" aria-label="Live BBG marketplace statistics">
+            @if (homeStats(); as stats) {
+              <div class="hero-stat"><strong>{{ formatCount(stats.businesses_registered) }}</strong><span>Businesses registered</span></div>
+              <div class="hero-stat"><strong>{{ formatCount(stats.platform_users) }}</strong><span>Platform users</span></div>
+              <div class="hero-stat"><strong>{{ formatCount(stats.products_listed) }}</strong><span>Products listed</span></div>
+              <div class="hero-stat"><strong>{{ formatCount(stats.orders_completed) }}</strong><span>Orders completed</span></div>
+            } @else {
+              @for (label of statLabels; track label) {
+                <div class="hero-stat hero-stat-loading"><strong>—</strong><span>{{ label }}</span></div>
+              }
+            }
           </div>
         </div>
 
@@ -237,7 +249,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
   styles: [`
     :host { display:block; }
     .marketplace-home { padding-bottom: 24px; }
-    .hero { position:relative; isolation:isolate; display:grid; grid-template-columns:minmax(0,1.04fr) minmax(320px,.96fr); min-height:390px; overflow:hidden; color:#fff; background:linear-gradient(112deg,#123f2c 0%,#174d35 57%,#1d6243 100%); border-radius:0 0 22px 22px; }
+    .hero { position:relative; isolation:isolate; display:grid; grid-template-columns:minmax(0,1.04fr) minmax(320px,.96fr); min-height:500px; overflow:hidden; color:#fff; background:radial-gradient(ellipse at 18% 0%,rgba(91,160,112,.38),transparent 42%),linear-gradient(112deg,#0d3425 0%,#174d35 57%,#1d6243 100%); border-radius:0 0 28px 28px; box-shadow:0 22px 55px rgba(17,64,43,.12); }
     .hero-copy { position:relative; z-index:3; align-self:center; width:min(100%,720px); padding:52px 0 48px max(36px,calc((100vw - 1400px)/2)); padding-left:max(36px,calc((100vw - 1400px)/2)); }
     .eyebrow,.section-kicker { margin:0 0 15px; color:#c5d9ce; font-size:.68rem; font-weight:750; letter-spacing:.15em; }
     h1 { margin:0; font-size:clamp(2.7rem,5vw,4.6rem); font-weight:760; letter-spacing:-.065em; line-height:1.02; }
@@ -256,6 +268,11 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
     .hero-links a { color:inherit; text-decoration:none; }
     .hero-links a:hover { color:#f5d928; }
     .hero-links i { width:4px; height:4px; background:#f5d928; border-radius:50%; }
+    .hero-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; width:min(100%,720px); margin-top:25px; }
+    .hero-stat { display:flex; min-height:78px; flex-direction:column; justify-content:center; gap:5px; padding:11px 12px; background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.19); border-radius:12px; box-shadow:inset 0 1px rgba(255,255,255,.08); backdrop-filter:blur(8px); }
+    .hero-stat strong { color:#fff; font-size:clamp(1.2rem,2.1vw,1.8rem); font-weight:850; letter-spacing:-.045em; line-height:1; font-variant-numeric:tabular-nums; }
+    .hero-stat span { color:rgba(255,255,255,.78); font-size:.65rem; font-weight:650; line-height:1.3; }
+    .hero-stat-loading strong { color:rgba(255,255,255,.55); }
     .hero-visual { position:relative; min-height:390px; overflow:hidden; background:linear-gradient(145deg,#b8d8d0 0%,#dbe8d8 48%,#f1e9c8 100%); clip-path:polygon(18% 0,100% 0,100% 100%,0 100%); }
     .visual-glow { position:absolute; top:13%; right:12%; width:220px; height:220px; background:rgba(245,217,40,.38); border-radius:50%; filter:blur(2px); }
     .visual-sun { position:absolute; top:18%; right:22%; width:88px; height:88px; background:#f5d928; border-radius:50%; box-shadow:0 0 55px rgba(245,217,40,.55); }
@@ -355,6 +372,8 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
     .promotion-card p { display:-webkit-box; margin:0 0 10px; overflow:hidden; color:rgba(255,255,255,.82); font-size:.78rem; line-height:1.5; -webkit-line-clamp:3; -webkit-box-orient:vertical; }
     .promotion-card time,.promotion-state { color:rgba(255,255,255,.76); font-size:.72rem; }
     .promotion-state { margin:0; }
+    @media(max-width:900px) { .hero { grid-template-columns:minmax(0,1fr) minmax(260px,.72fr); } .hero-stats { grid-template-columns:repeat(2,minmax(0,1fr)); max-width:430px; } }
+    @media(max-width:650px) { .hero { grid-template-columns:1fr; min-height:0; } .hero-copy { padding:48px 22px 32px; } .hero-visual { min-height:220px; clip-path:none; } .hero-stripe { display:none; } .hero-stats { max-width:none; } .hero-stat { min-height:70px; } }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; } }
   `],
 })
@@ -371,6 +390,8 @@ export class MarketplaceHome implements OnInit {
   protected readonly recentBusinesses = signal<MarketplaceBusiness[]>([]);
   protected readonly recentProducts = signal<MarketplaceProduct[]>([]);
   protected readonly promotions = signal<MarketplacePromotion[]>([]);
+  protected readonly homeStats = signal<MarketplaceHomeStats | null>(null);
+  protected readonly statLabels = ['Businesses registered', 'Platform users', 'Products listed', 'Orders completed'];
 
   ngOnInit(): void {
     this.loadHome();
@@ -415,6 +436,10 @@ export class MarketplaceHome implements OnInit {
     return this.searchActive() ? 'Matching published storefronts' : 'Ranked using recorded profile views and enquiries';
   }
 
+  protected formatCount(value: number): string {
+    return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(value);
+  }
+
   protected formatPrice(value: number | string): string {
     const amount = Number(value);
     return Number.isFinite(amount)
@@ -442,12 +467,14 @@ export class MarketplaceHome implements OnInit {
       next: (response) => {
         if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
           this.loadError.set(response.msgArr?.join(' ') || 'Marketplace data is currently unavailable.');
+          this.homeStats.set(null);
           this.categories.set([]);
           this.businesses.set([]);
           this.recentBusinesses.set([]);
           this.recentProducts.set([]);
           this.promotions.set([]);
         } else {
+          this.homeStats.set(response.data.stats ?? null);
           this.categories.set(response.data.categories ?? []);
           this.businesses.set(response.data.popular_businesses ?? []);
           this.recentBusinesses.set(response.data.recent_businesses ?? []);
