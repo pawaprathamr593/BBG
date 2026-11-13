@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MarketplaceBusinessDetail, MarketplaceList, MarketplaceProduct } from '../../models/marketplace.models';
 import { MarketplaceService } from '../../services/marketplace.service';
 
