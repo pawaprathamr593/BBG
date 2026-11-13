@@ -12,8 +12,8 @@ if ($routes === false) {
 
 preg_match_all("~Route::post\\('(/api/v1/[^']+)'\\)~", $routes, $routeMatches);
 $routePaths = $routeMatches[1] ?? [];
-if (count($routePaths) !== 122 || count(array_unique($routePaths)) !== 122) {
-    fwrite(STDERR, 'Expected 122 unique POST API routes; found ' . count($routePaths) . ".\n");
+if (count($routePaths) !== 125 || count(array_unique($routePaths)) !== 125) {
+    fwrite(STDERR, 'Expected 125 unique POST API routes; found ' . count($routePaths) . ".\n");
     exit(1);
 }
 
@@ -87,4 +87,28 @@ if (
     exit(1);
 }
 
-echo "Static API contract checks passed: 122 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers and subscription proof S3 flow.\n";
+
+$marketplaceController = file_get_contents($root . '/src/Modules/Api/V1/Controllers/MarketplaceController.php');
+$marketplaceService = file_get_contents($root . '/src/Services/Implementations/MarketplaceServices.php');
+$engagementDao = file_get_contents($root . '/src/Dao/EngagementDao.php');
+$engagementService = file_get_contents($root . '/src/Services/Implementations/EngagementServices.php');
+$discoveryContracts = [
+    $marketplaceController !== false
+        && str_contains($marketplaceController, "'/api/v1/marketplace/businesses/popular' => 'listPopularBusinesses'")
+        && str_contains($marketplaceController, "'/api/v1/marketplace/businesses/recent' => 'listRecentBusinesses'")
+        && str_contains($marketplaceController, "'/api/v1/marketplace/products/recent' => 'listRecentProducts'"),
+    $marketplaceService !== false
+        && str_contains($marketplaceService, "case 'listPopularBusinesses':")
+        && str_contains($marketplaceService, "case 'listRecentBusinesses':")
+        && str_contains($marketplaceService, "case 'listRecentProducts':")
+        && str_contains($marketplaceService, "'popular_businesses' =>")
+        && str_contains($marketplaceService, "'recent_products' =>"),
+    $engagementDao !== false && str_contains($engagementDao, "'BUSINESS' =>"),
+    $engagementService !== false && str_contains($engagementService, "['BUSINESS', 'PRODUCT', 'POST']"),
+];
+if (in_array(false, $discoveryContracts, true)) {
+    fwrite(STDERR, "Public marketplace discovery API contract is incomplete.\\n");
+    exit(1);
+}
+
+echo "Static API contract checks passed: 125 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, marketplace discovery and subscription proof S3 flow.\\n";\n
