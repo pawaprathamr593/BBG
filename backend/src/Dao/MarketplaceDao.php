@@ -704,6 +704,16 @@ final readonly class MarketplaceDao
         if ($filters['online_only']) {
             $where .= ' AND ss.accept_online_orders = 1';
         }
+        if ($filters['variants_only']) {
+            $where .= ' AND p.is_variant_product = 1';
+        }
+        if ($filters['with_images']) {
+            $where .= " AND EXISTS (
+                SELECT 1 FROM PRODUCT_MEDIA pm
+                WHERE pm.tenant_id = p.tenant_id AND pm.product_id = p.id
+                    AND pm.media_type = 'IMAGE' AND pm.media_status = 'ACTIVE' AND pm.status = 'A'
+            )";
+        }
         return $where;
     }
 
