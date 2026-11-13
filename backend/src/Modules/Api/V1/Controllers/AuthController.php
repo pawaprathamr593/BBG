@@ -120,6 +120,9 @@ final class AuthController
         $instagramAppId = (string) (getenv('AUTH_INSTAGRAM_APP_ID') ?: '');
         $instagramAppSecret = (string) (getenv('AUTH_INSTAGRAM_APP_SECRET') ?: '');
         $appleClientId = (string) (getenv('AUTH_APPLE_CLIENT_ID') ?: '');
+        $appleTeamId = (string) (getenv('AUTH_APPLE_TEAM_ID') ?: '');
+        $appleKeyId = (string) (getenv('AUTH_APPLE_KEY_ID') ?: '');
+        $applePrivateKey = (string) (getenv('AUTH_APPLE_PRIVATE_KEY') ?: '');
 
         $payload = [
             'status' => 'SUCCESS',
@@ -129,7 +132,7 @@ final class AuthController
                     'GOOGLE' => ['enabled' => $googleClientId !== '', 'client_id' => $googleClientId],
                     'FACEBOOK' => ['enabled' => $facebookAppId !== '' && $facebookAppSecret !== '', 'app_id' => $facebookAppId],
                     'INSTAGRAM' => ['enabled' => $instagramAppId !== '' && $instagramAppSecret !== '', 'app_id' => $instagramAppId],
-                    'APPLE' => ['enabled' => $appleClientId !== '', 'client_id' => $appleClientId],
+                    'APPLE' => ['enabled' => $appleClientId !== '' && $appleTeamId !== '' && $appleKeyId !== '' && $applePrivateKey !== '', 'client_id' => $appleClientId],
                 ],
             ],
         ];
