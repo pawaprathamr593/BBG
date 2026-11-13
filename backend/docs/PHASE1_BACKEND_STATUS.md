@@ -2,7 +2,7 @@
 
 **Working branch:** fix/bbg-seven-layer-audit (based on feature/auth-foundation)  
 **Stack:** Yii 3 / PHP 8.4 / MySQL 8.4  
-**Status:** 121 unique POST routes across 15 route groups are registered (the 120 existing routes plus the product-media S3 upload URL route); production readiness and integration verification remain incomplete.
+**Status:** 122 unique POST routes across 15 route groups are registered (the 120 original routes plus product-media and subscription-proof S3 upload-URL routes); production readiness and integration verification remain incomplete.
 
 ## Implemented API areas
 
@@ -16,7 +16,7 @@
 - **Enquiries:** customer create/history/thread and tenant list/detail/respond/close.
 - **Engagement:** product/post likes, comments, reports and eligible view records.
 - **Promotions:** tenant promotion create/update/soft-delete/publish/unpublish and engagement summary.
-- **Subscriptions:** active plans, tenant subscription list/detail/request/renewal and proof metadata submission.
+- **Subscriptions:** active plans, tenant subscription list/detail/request/renewal, presigned S3 proof upload URLs and server-side proof object verification.
 - **Payments:** customer and tenant payment list/detail, including safe transaction/refund metadata reads. No payment collection or gateway mutation is implemented.
 - **Platform administration:** user list/detail/suspend/restore; business review/approve/reject/reopen; subscription review/approve/reject/active list; category CRUD/statistics; analytics summary/trends; moderation queue/action/history; safe health summary.
 - **Dashboards:** consumer and entrepreneur summary endpoints.
@@ -31,7 +31,7 @@ A passing workflow validates PHP syntax and clean-database migration compatibili
 
 ## Guarded / not implemented
 
-- Binary upload/storage for business verification documents remains unimplemented. Product image storage is integrated with AWS S3 through presigned URLs and tenant-scoped metadata verification. Subscription proof submission now verifies the referenced S3 object, MIME type, file signature and size before saving metadata; a subscription-proof presigned upload-URL endpoint is still pending approval and implementation, so the proof upload flow is not yet end-to-end.
+- Binary upload/storage for business verification documents remains unimplemented. Product images and subscription payment proofs use AWS S3 presigned PUT URLs with tenant-scoped keys; proof submission verifies object existence, actual MIME type, file signature, extension and size before saving metadata. Live S3 end-to-end verification still requires configured bucket credentials and IAM permissions.
 - Payment initiation, UPI QR generation, gateway webhooks, reconciliation, payment confirmation automation and refund workflows. The approved schema has no tenant UPI/QR configuration contract; QR display or proof submission must never mark an order paid.
 - Automated invoice generation and invoice numbering/tax policy.
 - Expense and cash-session/movement workflows.
@@ -55,7 +55,7 @@ The workspace candidates above are not automatically treated as future inventory
 ## Data and release constraints
 
 - Preserve the existing database; migrations are additive and must not be used as a database reset.
-- The five common columns are status, created_by, created_on, updated_by, updated_on; use status='A' for active and status='Z' for soft-deleted rows.
+- The 70 canonical tables use the five common columns status, created_by, created_on, updated_by, updated_on; the three migration-only BUSINESS_APPLICATION* tables are documented separately pending an approved workflow. use status='A' for active and status='Z' for soft-deleted rows.
 - No physical delete is used for application records.
 - Cart remains per customer per business; no guest cart or multi-vendor combined checkout.
 - Checkout creates an order with provisional status PLACED, payment UNPAID, fulfilment UNFULFILLED; delivery fee and discount remain zero in the current implementation.
