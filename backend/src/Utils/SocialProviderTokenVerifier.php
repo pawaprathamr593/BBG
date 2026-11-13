@@ -27,7 +27,7 @@ final class SocialProviderTokenVerifier
 
         return match ($provider) {
             'GOOGLE' => $this->verifyGoogle($credential, (string) ($context['nonce'] ?? '')),
-            'APPLE' => $this->verifyApple($credential, (string) ($context['nonce'] ?? ''), (string) ($context['full_name'] ?? '')),
+            'APPLE' => $this->verifyApple($credential, (string) ($context['nonce'] ?? ''), (string) ($context['full_name'] ?? ''), (string) ($context['redirect_uri'] ?? '')),
             'FACEBOOK' => $this->verifyFacebook($credential),
             'INSTAGRAM' => $this->verifyInstagram($credential, (string) ($context['redirect_uri'] ?? '')),
             default => throw new RuntimeException('This social sign-in provider is not supported.'),
@@ -62,16 +62,33 @@ final class SocialProviderTokenVerifier
         );
     }
 
-    private function verifyApple(string $token, string $nonce, string $fallbackName): array
+    private function verifyApple(string $authorizationCode, string $nonce, string $fallbackName, string $redirectUri): array
     {
         $clientId = $this->env('AUTH_APPLE_CLIENT_ID');
-        if ($clientId === '') {
-            throw new RuntimeException('Apple sign-in is not configured yet.');
+        $teamId = $this->env('AUTH_APPLE_TEAM_ID');
+        $keyId = $this->env('AUTH_APPLE_KEY_ID');
+        $privateKey = str_replace('\\n', "\n", $this->env('AUTH_APPLE_PRIVATE_KEY'));
+        if ($clientId === '' || $teamId === '' || $keyId === '' || $privateKey === '') {
+            throw new RuntimeException('Apple sign-in is not fully configured yet.');
         }
-        if ($nonce === '') {
-            throw new RuntimeException('Apple sign-in nonce is missing. Please try again.');
+        if ($nonce === '' || $redirectUri === '' || strlen($redirectUri) > 1000) {
+            throw new RuntimeException('Apple sign-in state is incomplete. Please try again.');
         }
-        $claims = $this->decodeSignedToken($token, 'https://appleid.apple.com/auth/keys');
+
+        $clientSecret = $this->createAppleClientSecret($clientId, $teamId, $keyId, $privateKey);
+        $tokenResponse = $this->postForm('https://appleid.apple.com/auth/token', [
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'code' => $authorizationCode,
+            'grant_type' => 'authorization_code',
+            'redirect_uri' => $redirectUri,
+        ]);
+        $identityToken = (string) ($tokenResponse['id_token'] ?? '');
+        if ($identityToken === '') {
+            throw new RuntimeException('Apple did not return a verifiable identity token.');
+        }
+
+        $claims = $this->decodeSignedToken($identityToken, 'https://appleid.apple.com/auth/keys');
         $this->assertJwtClaims($claims, ['https://appleid.apple.com'], $clientId);
         $tokenNonce = (string) ($claims->nonce ?? '');
         $hashedNonce = hash('sha256', $nonce);
@@ -88,11 +105,26 @@ final class SocialProviderTokenVerifier
         return $this->identity(
             'APPLE',
             $subject,
-            $emailVerified && filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null,
+            filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null,
             $emailVerified,
             $fallbackName,
             '',
         );
+    }
+
+    private function createAppleClientSecret(string $clientId, string $teamId, string $keyId, string $privateKey): string
+    {
+        try {
+            return JWT::encode([
+                'iss' => $teamId,
+                'iat' => time(),
+                'exp' => time() + 300,
+                'aud' => 'https://appleid.apple.com',
+                'sub' => $clientId,
+            ], $privateKey, 'ES256', $keyId);
+        } catch (Throwable) {
+            throw new RuntimeException('Apple server credentials could not be used to verify sign-in.');
+        }
     }
 
     private function verifyFacebook(string $accessToken): array
@@ -174,9 +206,10 @@ final class SocialProviderTokenVerifier
             ]),
         );
         $data = is_array($debug['data'] ?? null) ? $debug['data'] : [];
+        $expiresAt = (int) ($data['expires_at'] ?? 0);
         if (($data['is_valid'] ?? false) !== true
             || (string) ($data['app_id'] ?? '') !== $appId
-            || (int) ($data['expires_at'] ?? 0) <= time()
+            || ($expiresAt > 0 && $expiresAt <= time())
         ) {
             throw new RuntimeException('The provider access token is invalid, expired or issued to another application.');
         }
