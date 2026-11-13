@@ -25,7 +25,7 @@ final readonly class EnquiryServices implements IEnquiryServices
     public function getEnquiry(array $enquiryParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($enquiryParam['actionType']) || $enquiryParam['actionType'] !== 'getEnquiry') {
+        if (!isset($enquiryParam['actionType']) || !is_string($enquiryParam['actionType']) || $enquiryParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Invalid actionType for getEnquiry.';
             return $resArr;
         }
@@ -34,8 +34,9 @@ final readonly class EnquiryServices implements IEnquiryServices
             return $resArr;
         }
         $actionData = $enquiryParam['actionData'];
+        $actionData['action'] = (string) $enquiryParam['actionType'];
         try {
-            switch ((string) enquiryParam['actionType']) {
+            switch ((string) $enquiryParam['actionType']) {
                 case 'listMyEnquiries':
                     $resArr = $this->getMyEnquiries($actionData);
                     break;
@@ -64,7 +65,7 @@ final readonly class EnquiryServices implements IEnquiryServices
     public function manageEnquiry(array $enquiryParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($enquiryParam['actionType']) || $enquiryParam['actionType'] !== 'manageEnquiry') {
+        if (!isset($enquiryParam['actionType']) || !is_string($enquiryParam['actionType']) || $enquiryParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Invalid actionType for manageEnquiry.';
             return $resArr;
         }
@@ -73,8 +74,9 @@ final readonly class EnquiryServices implements IEnquiryServices
             return $resArr;
         }
         $actionData = $enquiryParam['actionData'];
+        $actionData['action'] = (string) $enquiryParam['actionType'];
         try {
-            switch ((string) enquiryParam['actionType']) {
+            switch ((string) $enquiryParam['actionType']) {
                 case 'createCustomerEnquiry':
                     $resArr = $this->manageCustomerEnquiry($actionData);
                     break;
