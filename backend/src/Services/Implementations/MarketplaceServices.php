@@ -37,7 +37,7 @@ final readonly class MarketplaceServices implements IMarketplaceServices
 
         $actionData = $marketplaceParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) marketplaceParam['actionType']) {
                 case 'listBusinesses':
                     $resArr = $this->getBusinesses($actionData);
                     break;
