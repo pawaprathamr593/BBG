@@ -38,7 +38,6 @@ final readonly class TenantServices implements ITenantServices
 
         $actionData = $tenantParam['actionData'];
         $actionData['action'] = (string) $tenantParam['actionType'];
-        $actionData['action'] = (string) $tenantParam['actionType'];
         try {
             switch ((string) $tenantParam['actionType']) {
                 case 'listMyTenants':
