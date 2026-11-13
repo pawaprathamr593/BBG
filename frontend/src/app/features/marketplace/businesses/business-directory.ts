@@ -75,7 +75,7 @@ import { MarketplaceApiService, MarketplaceBusiness } from '../../../core/market
 })
 export class BusinessDirectory implements OnInit {
   private readonly api = inject(MarketplaceApiService);
-  protected readonly query = '';
+  protected query = '';
   protected readonly businesses = signal<MarketplaceBusiness[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal('');
@@ -88,7 +88,7 @@ export class BusinessDirectory implements OnInit {
   ngOnInit(): void { this.load(); }
 
   protected search(): void { this.page.set(1); this.load(); }
-  protected clearSearch(): void { (this as { query: string }).query = ''; this.page.set(1); this.load(); }
+  protected clearSearch(): void { this.query = ''; this.page.set(1); this.load(); }
   protected changePage(value: number): void { this.page.set(value); this.load(); }
   protected location(business: MarketplaceBusiness): string {
     return [business.city, business.state].filter(Boolean).join(', ') || 'Location not provided';
