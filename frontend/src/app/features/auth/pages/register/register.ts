@@ -42,6 +42,10 @@ export class Register {
 
     try {
       const { full_name, email, mobile } = this.form.getRawValue();
+      if (provider === 'INSTAGRAM' && !email.trim() && !mobile.trim()) {
+        this.error.set('Enter an email address or mobile number before registering with Instagram.');
+        return;
+      }
       await this.auth.authenticateSocial(provider, 'register', {
         ...(full_name.trim() ? { full_name: full_name.trim() } : {}),
         ...(email.trim() ? { email: email.trim() } : {}),
