@@ -81,7 +81,7 @@ final class AdminController
         $authorization = $request->getHeaderLine('Authorization');
         $data['_accessToken'] = str_starts_with($authorization, 'Bearer ') ? trim(substr($authorization, 7)) : '';
         $data['action'] = $action;
-        $param['actionType'] = $manage ? 'manageAdmin' : 'getAdmin';
+        $param['actionType'] = $action;
         $param['actionData'] = $data;
         $input['adminParam'] = $param;
         try {
