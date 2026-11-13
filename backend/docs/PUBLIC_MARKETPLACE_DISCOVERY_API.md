@@ -1,7 +1,7 @@
 # BBG Public Marketplace Discovery API
 
 **Version:** 1.0  
-**Status:** Implemented on the `development` branch; runtime verification pending  
+**Status:** Implemented on `feature/public-marketplace-pages`; runtime verification pending  
 **Audience:** Angular public marketplace client
 
 All endpoints are POST-only and use the existing marketplace request envelope:
