@@ -56,11 +56,12 @@ import { MarketplaceApiService, MarketplaceBusiness } from '../../../core/market
   `,
   styles: [`
     :host{display:block}.page{min-height:65vh;padding:0 0 64px;background:var(--surface-page)}
-    .intro{padding:65px max(24px,calc((100vw - 1180px)/2)) 54px;color:#fff;background:linear-gradient(120deg,#123f2c,#1d6243)}
+    .intro{position:relative;isolation:isolate;overflow:hidden;padding:76px max(24px,calc((100vw - 1180px)/2)) 64px;color:#fff;background:radial-gradient(ellipse at 88% 12%,rgba(245,217,40,.22),transparent 27%),radial-gradient(ellipse at 8% 100%,rgba(107,174,126,.28),transparent 38%),linear-gradient(120deg,#0d3425,#174d35 58%,#246747);border-radius:0 0 26px 26px;box-shadow:0 18px 48px rgba(17,64,43,.12)}
+    .intro::before{position:absolute;z-index:-1;top:-150px;right:7%;width:360px;height:360px;border:1px solid rgba(255,255,255,.17);border-radius:50%;box-shadow:0 0 0 34px rgba(255,255,255,.035),0 0 0 72px rgba(255,255,255,.025);content:""}.intro::after{position:absolute;z-index:-1;right:19%;bottom:-105px;width:190px;height:190px;background:rgba(245,217,40,.13);border-radius:50%;filter:blur(2px);content:""}.intro>*{position:relative;z-index:1}
     .eyebrow{margin:0 0 12px;color:#789987;font-size:.68rem;font-weight:800;letter-spacing:.16em}.intro .eyebrow{color:#c5d9ce}
-    h1{margin:0;font-size:clamp(2.5rem,6vw,4.4rem);letter-spacing:-.065em;line-height:1.05}h1 span{color:#f5d928}
-    .lead{max-width:650px;margin:16px 0 24px;color:rgba(255,255,255,.82);line-height:1.65}
-    .search{display:flex;max-width:680px;gap:9px;padding:6px;background:#fff;border-radius:12px}
+    h1{max-width:850px;margin:0;font-size:clamp(2.8rem,6.5vw,5rem);font-weight:820;letter-spacing:-.075em;line-height:.99;text-wrap:balance}h1 span{color:#f5d928}
+    .lead{max-width:650px;margin:20px 0 27px;color:rgba(255,255,255,.86);font-size:1.02rem;line-height:1.7}
+    .search{position:relative;z-index:2;display:flex;max-width:680px;gap:9px;padding:7px;background:#fff;border:1px solid rgba(255,255,255,.45);border-radius:14px;box-shadow:0 15px 38px rgba(4,25,16,.2)}
     .search input{flex:1;min-width:0;padding:0 13px;color:#171d19;border:0;outline:0}.search button,.empty button,.state button{padding:12px 16px;color:#171d19;background:#f5d928;border:0;border-radius:8px;font-weight:750;cursor:pointer}
     .results{width:min(1180px,calc(100% - 40px));margin:38px auto 0}.heading{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:18px}
     .heading .eyebrow{margin-bottom:6px}.heading h2{margin:0;color:var(--text-primary);font-size:1.65rem;letter-spacing:-.04em}.heading>span{color:var(--text-secondary);font-size:.8rem}
