@@ -4,6 +4,18 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MarketplaceApiService, MarketplaceCategory, MarketplaceProduct } from '../../../core/marketplace/marketplace-api.service';
 
 type ProductSort = 'newest' | 'popular' | 'nearby' | 'price_low' | 'price_high' | 'name';
+type ProductFilterValues = {
+  categoryId: string;
+  brand: string;
+  city: string;
+  state: string;
+  minPrice: number | null;
+  maxPrice: number | null;
+  onlineOnly: boolean;
+  variantsOnly: boolean;
+  withImages: boolean;
+};
+type ProductFilterKey = keyof ProductFilterValues;
 
 @Component({
   selector: 'app-product-directory',
@@ -157,16 +169,28 @@ export class ProductDirectory implements OnInit {
   private readonly route = inject(ActivatedRoute);
 
   protected query = '';
-  protected categoryId = '';
-  protected brand = '';
-  protected city = '';
-  protected state = '';
-  protected minPrice: number | null = null;
-  protected maxPrice: number | null = null;
-  protected onlineOnly = false;
-  protected variantsOnly = false;
-  protected withImages = false;
   protected sort: ProductSort = 'newest';
+  protected readonly filtersOpen = signal(false);
+  protected draftFilters: ProductFilterValues = this.defaultFilters();
+  private readonly appliedFilters = signal<ProductFilterValues>(this.defaultFilters());
+  protected readonly activeFilterChips = computed(() => {
+    const filters = this.appliedFilters();
+    const chips: { key: ProductFilterKey; label: string }[] = [];
+    if (filters.categoryId) {
+      const category = this.categories().find((item) => String(item.id) === filters.categoryId);
+      chips.push({ key: 'categoryId', label: category?.category_name ?? 'Category selected' });
+    }
+    if (filters.brand.trim()) chips.push({ key: 'brand', label: 'Brand: ' + filters.brand.trim() });
+    if (filters.city.trim()) chips.push({ key: 'city', label: 'City: ' + filters.city.trim() });
+    if (filters.state.trim()) chips.push({ key: 'state', label: 'State: ' + filters.state.trim() });
+    if (filters.minPrice !== null) chips.push({ key: 'minPrice', label: 'Min: ' + this.formatPrice(filters.minPrice) });
+    if (filters.maxPrice !== null) chips.push({ key: 'maxPrice', label: 'Max: ' + this.formatPrice(filters.maxPrice) });
+    if (filters.onlineOnly) chips.push({ key: 'onlineOnly', label: 'Online orders' });
+    if (filters.variantsOnly) chips.push({ key: 'variantsOnly', label: 'Variants' });
+    if (filters.withImages) chips.push({ key: 'withImages', label: 'With images' });
+    return chips;
+  });
+  protected readonly activeFilterCount = computed(() => this.activeFilterChips().length);
   protected readonly categories = signal<MarketplaceCategory[]>([]);
   protected readonly products = signal<MarketplaceProduct[]>([]);
   protected readonly loading = signal(true);
@@ -181,7 +205,10 @@ export class ProductDirectory implements OnInit {
 
   ngOnInit(): void {
     const category = this.route.snapshot.queryParamMap.get('category_id');
-    if (category && /^\\d+$/.test(category)) this.categoryId = category;
+    if (category && /^\\d+$/.test(category)) {
+      this.appliedFilters.update((filters) => ({ ...filters, categoryId: category }));
+      this.draftFilters = { ...this.appliedFilters() };
+    }
     this.api.listPublicProductCategories().subscribe({
       next: (response) => {
         if (response.status === 'SUCCESS' && response.data && !Array.isArray(response.data)) {
