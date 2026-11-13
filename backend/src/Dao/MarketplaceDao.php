@@ -380,6 +380,127 @@ final readonly class MarketplaceDao
         );
     }
 
+    /**
+     * Global public product directory across approved, published storefronts.
+     * Popularity is based only on persisted product views and likes.
+     */
+    public function getMarketplaceProducts(ConnectionInterface $db, array $filters, string $sort, int $limit = 20, int $offset = 0): array
+    {
+        $params = $this->publicProductParams($filters);
+        $params[':limit'] = $limit;
+        $params[':offset'] = $offset;
+
+        $distanceSelect = 'NULL AS distance_km';
+        if ($sort === 'nearby') {
+            $distanceSelect = "(6371 * 2 * ASIN(SQRT(
+                POWER(SIN(RADIANS(bp.latitude - :lat1) / 2), 2) +
+                COS(RADIANS(:lat2)) * COS(RADIANS(bp.latitude)) *
+                POWER(SIN(RADIANS(bp.longitude - :lon1) / 2), 2)
+            ))) AS distance_km";
+            $params[':lat1'] = $filters['latitude'];
+            $params[':lat2'] = $filters['latitude'];
+            $params[':lon1'] = $filters['longitude'];
+        }
+
+        $orderBy = match ($sort) {
+            'popular' => 'popularity_count DESC, view_count DESC, like_count DESC, p.created_on DESC, p.id DESC',
+            'nearby' => 'distance_km ASC, p.created_on DESC, p.id DESC',
+            'price_low' => 'p.selling_price ASC, p.product_name ASC, p.id ASC',
+            'price_high' => 'p.selling_price DESC, p.product_name ASC, p.id ASC',
+            'name' => 'p.product_name ASC, p.id ASC',
+            default => 'p.created_on DESC, p.id DESC',
+        };
+
+        return $this->many(
+            $db,
+            "SELECT p.id, p.tenant_id, p.product_code, p.product_name, p.description,
+                    p.category_id, p.global_category_id,
+                    COALESCE(gc.category_name, pc.category_name) AS category_name,
+                    p.brand_name, p.barcode, p.selling_price, p.base_unit_id,
+                    u.unit_name, u.unit_symbol, u.quantity_precision, u.is_fraction_allowed,
+                    p.is_variant_product, p.created_on, ss.show_prices,
+                    bp.business_name, bp.business_slug, bp.logo_path AS business_logo_path,
+                    bp.city, bp.state, bp.latitude, bp.longitude,
+                    COALESCE(pv.view_count, 0) AS view_count,
+                    COALESCE(pl.like_count, 0) AS like_count,
+                    (COALESCE(pv.view_count, 0) + COALESCE(pl.like_count, 0)) AS popularity_count,
+                    " . $distanceSelect . ",
+                    (SELECT pm.file_path
+                     FROM PRODUCT_MEDIA pm
+                     WHERE pm.tenant_id = p.tenant_id AND pm.product_id = p.id
+                        AND pm.media_type = 'IMAGE' AND pm.media_status = 'ACTIVE' AND pm.status = 'A'
+                     ORDER BY pm.is_primary DESC, pm.display_order ASC, pm.id ASC
+                     LIMIT 1) AS primary_image_path
+             FROM PRODUCTS p
+             JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
+                AND bp.approval_status = 'APPROVED'
+                AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
+             JOIN TENANTS t ON t.id = p.tenant_id
+                AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+             JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = p.tenant_id
+                AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
+             JOIN UNITS_OF_MEASURE u ON u.id = p.base_unit_id AND u.status = 'A'
+             LEFT JOIN CATEGORIES gc ON gc.id = p.global_category_id
+                AND gc.category_type = 'PRODUCT' AND gc.category_status = 'ACTIVE' AND gc.status = 'A'
+             LEFT JOIN TENANT_PRODUCT_CATEGORIES pc ON pc.id = p.category_id
+                AND pc.tenant_id = p.tenant_id AND pc.status = 'A'
+             LEFT JOIN (
+                SELECT tenant_id, content_id, COUNT(*) AS view_count
+                FROM CONTENT_VIEWS
+                WHERE content_type = 'PRODUCT' AND status = 'A'
+                GROUP BY tenant_id, content_id
+             ) pv ON pv.tenant_id = p.tenant_id AND pv.content_id = p.id
+             LEFT JOIN (
+                SELECT tenant_id, content_id, COUNT(*) AS like_count
+                FROM CONTENT_LIKES
+                WHERE content_type = 'PRODUCT' AND status = 'A'
+                GROUP BY tenant_id, content_id
+             ) pl ON pl.tenant_id = p.tenant_id AND pl.content_id = p.id
+             WHERE p.product_status = 'ACTIVE'
+                AND p.publication_status = 'PUBLISHED' AND p.status = 'A'
+                AND " . $this->publicProductWhere($filters) . "
+             ORDER BY " . $orderBy . "
+             LIMIT :limit OFFSET :offset",
+            $params,
+            'getMarketplaceProducts',
+        );
+    }
+
+    public function countMarketplaceProducts(ConnectionInterface $db, array $filters): array
+    {
+        return $this->one(
+            $db,
+            "SELECT COUNT(DISTINCT p.id) AS total
+             FROM PRODUCTS p
+             JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
+                AND bp.approval_status = 'APPROVED'
+                AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
+             JOIN TENANTS t ON t.id = p.tenant_id
+                AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+             JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = p.tenant_id
+                AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
+             WHERE p.product_status = 'ACTIVE'
+                AND p.publication_status = 'PUBLISHED' AND p.status = 'A'
+                AND " . $this->publicProductWhere($filters),
+            $this->publicProductParams($filters),
+            'countMarketplaceProducts',
+        );
+    }
+
+    public function getPublicProductCategories(ConnectionInterface $db): array
+    {
+        return $this->many(
+            $db,
+            "SELECT id, parent_category_id, category_code, category_name, category_type,
+                    description, display_order
+             FROM CATEGORIES
+             WHERE category_type = 'PRODUCT' AND category_status = 'ACTIVE' AND status = 'A'
+             ORDER BY display_order ASC, category_name ASC, id ASC",
+            [],
+            'getPublicProductCategories',
+        );
+    }
+
     public function getProductById(ConnectionInterface $db, string $slug, int $productId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
@@ -545,6 +666,72 @@ final readonly class MarketplaceDao
             [':tenant_id' => $tenantId, ':post_id' => $promotionId],
             'getPublicPromotionMedia',
         );
+    }
+
+    private function publicProductWhere(array $filters): string
+    {
+        $where = "bp.approval_status = 'APPROVED'
+            AND bp.publication_status = 'PUBLISHED'
+            AND bp.status = 'A'";
+        if ($filters['search'] !== '') {
+            $where .= " AND (p.product_name LIKE :search_name
+                OR p.product_code LIKE :search_code
+                OR p.description LIKE :search_description
+                OR p.brand_name LIKE :search_brand)";
+        }
+        if ($filters['category_id'] !== null) {
+            $where .= ' AND p.global_category_id = :category_id';
+        }
+        if ($filters['brand'] !== '') {
+            $where .= ' AND p.brand_name LIKE :brand';
+        }
+        if ($filters['city'] !== '') {
+            $where .= ' AND bp.city LIKE :city';
+        }
+        if ($filters['state'] !== '') {
+            $where .= ' AND bp.state LIKE :state';
+        }
+        if ($filters['min_price'] !== null) {
+            $where .= ' AND ss.show_prices = 1 AND p.selling_price >= :min_price';
+        }
+        if ($filters['max_price'] !== null) {
+            $where .= ' AND ss.show_prices = 1 AND p.selling_price <= :max_price';
+        }
+        if ($filters['online_only']) {
+            $where .= ' AND ss.accept_online_orders = 1';
+        }
+        return $where;
+    }
+
+    private function publicProductParams(array $filters): array
+    {
+        $params = [];
+        if ($filters['search'] !== '') {
+            $needle = '%' . $filters['search'] . '%';
+            $params[':search_name'] = $needle;
+            $params[':search_code'] = $needle;
+            $params[':search_description'] = $needle;
+            $params[':search_brand'] = $needle;
+        }
+        if ($filters['category_id'] !== null) {
+            $params[':category_id'] = $filters['category_id'];
+        }
+        if ($filters['brand'] !== '') {
+            $params[':brand'] = '%' . $filters['brand'] . '%';
+        }
+        if ($filters['city'] !== '') {
+            $params[':city'] = '%' . $filters['city'] . '%';
+        }
+        if ($filters['state'] !== '') {
+            $params[':state'] = '%' . $filters['state'] . '%';
+        }
+        if ($filters['min_price'] !== null) {
+            $params[':min_price'] = $filters['min_price'];
+        }
+        if ($filters['max_price'] !== null) {
+            $params[':max_price'] = $filters['max_price'];
+        }
+        return $params;
     }
 
     private function publicBusinessWhere(array $filters): string
