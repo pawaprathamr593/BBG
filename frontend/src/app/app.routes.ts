@@ -21,7 +21,7 @@ export const routes: Routes = [
   {
     path: 'products/:identifier',
     loadComponent: () => import('./features/marketplace/details/marketplace-item-placeholder').then((m) => m.MarketplaceItemPlaceholder),
-    data: { itemType: 'Product', directoryLink: '/' },
+    data: { itemType: 'Product', directoryLink: '/products' },
     title: 'Product Details | BBG',
   },
   {
