@@ -14,7 +14,9 @@ import { MarketplaceService } from '../../services/marketplace.service';
 export class PromotionDetail implements OnInit {
   private readonly marketplace = inject(MarketplaceService);
   private readonly seo = inject(SeoService);
-  private readonly promotionId = Number(inject(ActivatedRoute).snapshot.paramMap.get('promotionId'));
+  private readonly route = inject(ActivatedRoute);
+  private readonly promotionId = Number(this.route.snapshot.paramMap.get('promotionId'));
+  protected readonly storefrontSlug = this.route.parent?.snapshot.paramMap.get('businessSlug') ?? '';
   protected readonly detail = signal<MarketplacePromotionDetail | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal('');
@@ -34,10 +36,13 @@ export class PromotionDetail implements OnInit {
       this.detail.set(detail);
       const promotion = detail.promotion;
       const description = promotion.post_content.slice(0, 300);
+      const canonicalPath = this.storefrontSlug
+        ? `/businesses/${encodeURIComponent(this.storefrontSlug)}/promotions/${promotion.id}`
+        : `/promotions/${promotion.id}`;
       this.seo.update(
         `${promotion.post_title} | ${promotion.business_name} | BBG`,
         description,
-        `/promotions/${promotion.id}`,
+        canonicalPath,
         {
           '@context': 'https://schema.org',
           '@type': 'Article',
@@ -45,7 +50,7 @@ export class PromotionDetail implements OnInit {
           description,
           datePublished: promotion.published_on,
           author: { '@type': 'Organization', name: promotion.business_name },
-          url: `/promotions/${promotion.id}`,
+          url: canonicalPath,
         },
       );
     } catch (error) {
