@@ -10,7 +10,7 @@
 - **Tenant context:** own tenant list/detail and tenant-member list, with server-side membership/permission checks.
 - **Business:** application submit/read/update/resubmit, business profile read/update, verification state and storefront settings read/update/publish/unpublish.
 - **Marketplace:** public business directory/storefront/products, home summary, public categories and public promotions.
-- **Catalogue:** tenant categories and product CRUD, product limits through subscription entitlements, product media metadata list/link/delete.
+- **Catalogue:** tenant categories and product CRUD, product limits through subscription entitlements, product media metadata list/link/delete, AWS S3 presigned product-image upload and download URLs with server-side object verification.
 - **Customer:** customer identity/profile and tenant-scoped address list/create/update/delete/default.
 - **Cart and orders:** cart read/add/update/remove/clear, transactional checkout and WhatsApp handoff; customer order history/detail; tenant-wide order queue/detail and guarded status changes.
 - **Enquiries:** customer create/history/thread and tenant list/detail/respond/close.
@@ -31,7 +31,7 @@ A passing workflow validates PHP syntax and clean-database migration compatibili
 
 ## Guarded / not implemented
 
-- Binary upload/storage endpoints for business documents, product media and subscription proofs. The metadata/link endpoints accept safe tenant-scoped relative file references; the storage provider, MIME/size policy, retention and access policy remain unselected.
+- Binary upload/storage for business verification documents and subscription payment proofs remains unimplemented; product image storage is integrated with AWS S3 through presigned URLs and tenant-scoped metadata verification.
 - Payment initiation, UPI QR generation, gateway webhooks, reconciliation, payment confirmation automation and refund workflows. The approved schema has no tenant UPI/QR configuration contract; QR display or proof submission must never mark an order paid.
 - Automated invoice generation and invoice numbering/tax policy.
 - Expense and cash-session/movement workflows.
@@ -73,3 +73,12 @@ The workspace candidates above are not automatically treated as future inventory
 4. Run API smoke tests for authentication, tenant isolation, customer flows, business approval, catalogue, orders, enquiries, subscriptions, engagement and admin.
 5. Run security tests for cross-tenant access, privilege escalation, stale tokens, IDOR, replay and rate limiting.
 6. Review the guarded storage, payment, OAuth and workspace contracts before implementing those dependencies.
+
+
+## AWS S3 product media integration
+
+- Product images are uploaded directly from Angular to AWS S3 using short-lived presigned PUT URLs. The API never accepts client-selected bucket keys; it generates tenant/product-scoped object keys.
+- The existing media-link operation confirms the S3 object with HeadObject and validates its MIME type and actual size before persisting PRODUCT_MEDIA metadata.
+- Media reads return short-lived presigned GET URLs. Media deletion soft-deletes the metadata and attempts S3 object cleanup.
+- Configure AWS_S3_BUCKET, AWS_DEFAULT_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in the root local .env (or use a workload IAM role). AWS credentials must never be committed. AWS_S3_URL_TTL_MINUTES defaults to 10; AWS_S3_MAX_UPLOAD_BYTES defaults to 10 MiB.
+- The AWS SDK for PHP is declared as a Composer dependency. Run composer update/install in the backend environment to install it before using the media endpoints.
