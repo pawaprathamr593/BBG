@@ -91,6 +91,10 @@ export class Workspace implements OnInit {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
   }
 
+  protected isPrimitive(value: unknown): boolean {
+    return value === null || ['string', 'number', 'boolean'].includes(typeof value);
+  }
+
   protected resultEntries(value: unknown): [string, unknown][] {
     return this.isRecord(value) ? Object.entries(value as Record<string, unknown>) : [];
   }
