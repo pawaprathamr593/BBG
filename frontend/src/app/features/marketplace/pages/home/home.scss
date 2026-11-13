@@ -45,7 +45,8 @@
 .business-card p { display: -webkit-box; overflow: hidden; margin: 0; color: var(--bbg-muted); font-size: .81rem; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .location-label { display: block; margin-top: 16px; color: var(--bbg-muted); font-size: .75rem; }
 .promotion-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
-.promotion-card { padding: 22px; background: #fff; border: 1px solid var(--bbg-border); border-radius: 14px; }
+ .promotion-card { display: block; padding: 22px; color: inherit; background: #fff; border: 1px solid var(--bbg-border); border-radius: 14px; text-decoration: none; transition: border-color 160ms ease, box-shadow 160ms ease; }
+.promotion-card:hover { border-color: #c5d4e3; box-shadow: 0 8px 22px rgba(23,37,54,.06); }
 .promotion-meta { display: flex; justify-content: space-between; gap: 10px; color: var(--bbg-muted); font-size: .73rem; }
 .promotion-meta span { color: var(--bbg-primary-strong); font-weight: 700; }
 .promotion-card h3 { margin: 16px 0 8px; color: var(--bbg-ink); font-size: 1.05rem; }
