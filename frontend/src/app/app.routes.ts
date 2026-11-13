@@ -1,7 +1,8 @@
 import { Routes } from '@angular/router';
-import { guestGuard } from './core/auth/auth.guards';
+import { authenticatedGuard, guestGuard } from './core/auth/auth.guards';
 import { AuthLayout } from './core/layouts/auth-layout/auth-layout';
 import { PublicLayout } from './core/layouts/public-layout/public-layout';
+import { adminWorkspace, consumerWorkspace, entrepreneurWorkspace } from './features/workspaces/workspace.config';
 
 export const routes: Routes = [
   {
@@ -56,6 +57,27 @@ export const routes: Routes = [
         title: 'Create account | BBG',
       },
     ],
+  },
+  {
+    path: 'consumer',
+    canActivate: [authenticatedGuard],
+    loadComponent: () => import('./features/workspaces/workspace').then((m) => m.Workspace),
+    data: { workspace: consumerWorkspace },
+    title: 'Consumer workspace | BBG',
+  },
+  {
+    path: 'entrepreneur',
+    canActivate: [authenticatedGuard],
+    loadComponent: () => import('./features/workspaces/workspace').then((m) => m.Workspace),
+    data: { workspace: entrepreneurWorkspace },
+    title: 'Business workspace | BBG',
+  },
+  {
+    path: 'admin',
+    canActivate: [authenticatedGuard],
+    loadComponent: () => import('./features/workspaces/workspace').then((m) => m.Workspace),
+    data: { workspace: adminWorkspace },
+    title: 'Platform administration | BBG',
   },
   {
     path: 'access-denied',
