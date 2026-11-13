@@ -19,6 +19,7 @@ final readonly class CatalogueServices implements ICatalogueServices
         private CatalogueDao $dao,
         private TenantDao $tenantDao,
         private IAuthServices $authServices,
+        private AwsS3Storage $s3Storage,
         private LoggerInterface $logger,
     ) {}
 
@@ -33,14 +34,9 @@ final readonly class CatalogueServices implements ICatalogueServices
             $resArr['msgArr'][] = "Missing or invalid 'actionData'.";
             return $resArr;
         }
-        if ($catalogueParam['actionType'] !== 'getCatalogue') {
-            $resArr['msgArr'][] = 'Unsupported actionType for getCatalogue.';
-            return $resArr;
-        }
-
         $actionData = $catalogueParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) $catalogueParam['actionType']) {
                 case 'listUnitsOfMeasure':
                     $resArr = $this->getUnitsOfMeasure($actionData);
                     break;
@@ -80,14 +76,9 @@ final readonly class CatalogueServices implements ICatalogueServices
             $resArr['msgArr'][] = "Missing or invalid 'actionData'.";
             return $resArr;
         }
-        if ($catalogueParam['actionType'] !== 'manageCatalogue') {
-            $resArr['msgArr'][] = 'Unsupported actionType for manageCatalogue.';
-            return $resArr;
-        }
-
         $actionData = $catalogueParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) $catalogueParam['actionType']) {
                 case 'createTenantProductCategory':
                     $resArr = $this->manageTenantProductCategory($actionData, 'create');
                     break;
@@ -105,6 +96,9 @@ final readonly class CatalogueServices implements ICatalogueServices
                     break;
                 case 'deleteTenantProduct':
                     $resArr = $this->manageTenantProduct($actionData, 'delete');
+                    break;
+                case 'generateProductMediaUploadUrl':
+                    $resArr = $this->generateProductMediaUploadUrl($actionData);
                     break;
                 case 'linkProductMedia':
                     $resArr = $this->manageProductMedia($actionData, 'link');
@@ -212,19 +206,29 @@ final readonly class CatalogueServices implements ICatalogueServices
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'CatalogueServices::getProductMedia');
         }
+        $tenantId = (int) $context['data']['tenant_id'];
         $productId = $this->positiveInt($actionData['product_id'] ?? null);
         if ($productId === null) {
             $resArr['msgArr'][] = 'A valid product_id is required.';
             return $resArr;
         }
-        $product = $this->dao->getTenantProduct($this->db, (int) $context['data']['tenant_id'], $productId);
+        $product = $this->dao->getTenantProduct($this->db, $tenantId, $productId);
         if ($product['status'] !== 'SUCCESS' || $product['data'] === []) {
             return $this->propagateFailure($product, 'CatalogueServices::getProductMedia');
         }
-        $media = $this->dao->getProductMedia($this->db, (int) $context['data']['tenant_id'], $productId);
+        $media = $this->dao->getProductMedia($this->db, $tenantId, $productId);
         if ($media['status'] !== 'SUCCESS') {
             return $this->propagateFailure($media, 'CatalogueServices::getProductMedia');
         }
+
+        foreach ($media['data'] as &$item) {
+            $item['url'] = $this->s3Storage->createDownloadUrl((string) $item['file_path']);
+            $item['thumbnail_url'] = !empty($item['thumbnail_path'])
+                ? $this->s3Storage->createDownloadUrl((string) $item['thumbnail_path'])
+                : null;
+        }
+        unset($item);
+
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = ['items' => $media['data']];
         return $resArr;
@@ -405,6 +409,55 @@ final readonly class CatalogueServices implements ICatalogueServices
         );
     }
 
+    private function generateProductMediaUploadUrl(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->tenantContext($actionData);
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'CatalogueServices::generateProductMediaUploadUrl');
+        }
+
+        $tenantId = (int) $context['data']['tenant_id'];
+        $productId = $this->positiveInt($actionData['product_id'] ?? null);
+        $fileName = $this->requiredText($actionData['original_file_name'] ?? '', 255);
+        $mimeType = strtolower($this->requiredText($actionData['mime_type'] ?? '', 100) ?? '');
+        $fileSize = $this->integerValue($actionData['file_size_bytes'] ?? null);
+        $variantId = $this->positiveInt($actionData['variant_id'] ?? null);
+        $mimeExtensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+
+        if ($productId === null || $fileName === null || !isset($mimeExtensions[$mimeType])
+            || $fileSize === null || $fileSize < 1 || $fileSize > $this->s3Storage->getMaxUploadBytes()) {
+            $resArr['msgArr'][] = 'A valid product_id, image file name, supported image MIME type and permitted file_size_bytes are required.';
+            return $resArr;
+        }
+
+        $product = $this->dao->getTenantProduct($this->db, $tenantId, $productId);
+        if ($product['status'] !== 'SUCCESS' || $product['data'] === []) {
+            return $this->propagateFailure($product, 'CatalogueServices::generateProductMediaUploadUrl');
+        }
+        if ($variantId !== null) {
+            $variant = $this->dao->getTenantProductVariant($this->db, $tenantId, $productId, $variantId);
+            if ($variant['status'] !== 'SUCCESS' || $variant['data'] === []) {
+                return $this->propagateFailure($variant, 'CatalogueServices::generateProductMediaUploadUrl');
+            }
+        }
+
+        $key = 'tenants/' . $tenantId . '/products/' . $productId . '/'
+            . ($variantId === null ? '' : 'variants/' . $variantId . '/')
+            . bin2hex(random_bytes(16)) . '.' . $mimeExtensions[$mimeType];
+        $presigned = $this->s3Storage->createUploadUrl($key, $mimeType);
+
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
+            'upload_url' => $presigned['url'],
+            'object_key' => $key,
+            'method' => 'PUT',
+            'headers' => ['Content-Type' => $mimeType],
+            'expires_in' => $presigned['expires_in'],
+        ];
+        return $resArr;
+    }
+
     private function manageProductMedia(array $actionData, string $operation): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
@@ -429,7 +482,28 @@ final readonly class CatalogueServices implements ICatalogueServices
                 $resArr['msgArr'][] = 'A valid media_id is required.';
                 return $resArr;
             }
-            return $this->dao->softDeleteProductMedia($this->db, $tenantId, $productId, $mediaId, $userId);
+            $record = $this->dao->getProductMediaRecord($this->db, $tenantId, $productId, $mediaId);
+            if ($record['status'] !== 'SUCCESS' || $record['data'] === []) {
+                return $this->propagateFailure($record, 'CatalogueServices::manageProductMedia');
+            }
+            $deleted = $this->dao->softDeleteProductMedia($this->db, $tenantId, $productId, $mediaId, $userId);
+            if ($deleted['status'] !== 'SUCCESS') {
+                return $deleted;
+            }
+            try {
+                $this->s3Storage->deleteObject((string) $record['data']['file_path']);
+                if (!empty($record['data']['thumbnail_path'])) {
+                    $this->s3Storage->deleteObject((string) $record['data']['thumbnail_path']);
+                }
+            } catch (Throwable $exception) {
+                $this->logger->warning('Product media was soft-deleted but S3 cleanup failed.', [
+                    'tenant_id' => $tenantId,
+                    'product_id' => $productId,
+                    'media_id' => $mediaId,
+                    'exception' => $exception,
+                ]);
+            }
+            return $deleted;
         }
 
         $filePath = $this->requiredText($actionData['file_path'] ?? '', 500);
@@ -460,6 +534,16 @@ final readonly class CatalogueServices implements ICatalogueServices
             || str_starts_with($thumbnailPath, '/') || preg_match('/^[a-z]+:\/\//i', $thumbnailPath)
         )) {
             $resArr['msgArr'][] = 'thumbnail_path must be a tenant-scoped relative file path.';
+            return $resArr;
+        }
+
+        $storedObject = $this->s3Storage->headObject($filePath);
+        $actualMimeType = strtolower((string) ($storedObject['ContentType'] ?? ''));
+        $actualFileSize = (int) ($storedObject['ContentLength'] ?? 0);
+        if ($actualMimeType !== $mimeType || $actualFileSize !== $fileSize
+            || $actualFileSize < 1 || $actualFileSize > $this->s3Storage->getMaxUploadBytes()) {
+            $this->s3Storage->deleteObject($filePath);
+            $resArr['msgArr'][] = 'Uploaded S3 object does not match the declared image MIME type or file size.';
             return $resArr;
         }
         if ($variantId !== null) {
