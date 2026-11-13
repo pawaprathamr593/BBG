@@ -16,7 +16,7 @@
           </article>
         }
       </div>
-      <nav class="pagination" aria-label="Promotion pages"><button type="button" [disabled]="page() <= 1" (click)="changePage(page() - 1)">Previous</button><span>Page {{ data.pagination.page }} of {{ Math.ceil(data.pagination.total / data.pagination.page_size) || 1 }}</span><button type="button" [disabled]="data.pagination.page * data.pagination.page_size >= data.pagination.total" (click)="changePage(page() + 1)">Next</button></nav>
+      <nav class="pagination" aria-label="Promotion pages"><button type="button" [disabled]="page() <= 1" (click)="changePage(page() - 1)">Previous</button><span>Page {{ data.pagination.page }} of {{ totalPages(data.pagination.total, data.pagination.page_size) }}</span><button type="button" [disabled]="data.pagination.page * data.pagination.page_size >= data.pagination.total" (click)="changePage(page() + 1)">Next</button></nav>
     } @else {
       <section class="state-panel"><span aria-hidden="true">✦</span><h2>No promotions yet</h2><p>When businesses publish updates, they will appear here.</p></section>
     }
