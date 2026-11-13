@@ -404,7 +404,7 @@ final readonly class MarketplaceDao
 
         $orderBy = match ($sort) {
             'popular' => 'popularity_count DESC, view_count DESC, like_count DESC, p.created_on DESC, p.id DESC',
-            'nearby' => 'distance_km ASC, p.created_on DESC, p.id DESC',
+            'nearby' => 'distance_km IS NULL ASC, distance_km ASC, p.created_on DESC, p.id DESC',
             'price_low' => 'p.selling_price ASC, p.product_name ASC, p.id ASC',
             'price_high' => 'p.selling_price DESC, p.product_name ASC, p.id ASC',
             'name' => 'p.product_name ASC, p.id ASC',
