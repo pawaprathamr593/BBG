@@ -42,7 +42,7 @@ final class SocialProviderTokenVerifier
         }
         $claims = $this->decodeSignedToken($token, 'https://www.googleapis.com/oauth2/v3/certs');
         $this->assertJwtClaims($claims, ['https://accounts.google.com', 'accounts.google.com'], $clientId);
-        if ($nonce !== '' && !hash_equals($nonce, (string) ($claims->nonce ?? ''))) {
+        if ($nonce === '' || !hash_equals($nonce, (string) ($claims->nonce ?? ''))) {
             throw new RuntimeException('Google sign-in could not be verified. Please try again.');
         }
         $subject = (string) ($claims->sub ?? '');
