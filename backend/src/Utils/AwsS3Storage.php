@@ -78,6 +78,20 @@ final class AwsS3Storage
         }
     }
 
+    public function getObjectPrefix(string $key, int $bytes = 32): string
+    {
+        try {
+            $result = $this->client()->getObject([
+                'Bucket' => $this->bucket,
+                'Key' => $key,
+                'Range' => 'bytes=0-' . max(0, $bytes - 1),
+            ]);
+            return (string) $result['Body'];
+        } catch (AwsException $exception) {
+            throw new RuntimeException('Unable to inspect uploaded S3 object.', 0, $exception);
+        }
+    }
+
     public function deleteObject(string $key): void
     {
         try {
