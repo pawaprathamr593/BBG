@@ -36,7 +36,7 @@ final readonly class PromotionServices implements IPromotionServices
         }
         $actionData = $promotionParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) promotionParam['actionType']) {
                 case 'listMyPromotions':
                     $resArr = $this->getMyPromotions($actionData);
                     break;
@@ -72,7 +72,7 @@ final readonly class PromotionServices implements IPromotionServices
         }
         $actionData = $promotionParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) promotionParam['actionType']) {
                 case 'createPromotion':
                     $resArr = $this->manageMyPromotion($actionData, 'create');
                     break;
