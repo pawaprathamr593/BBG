@@ -109,7 +109,7 @@ final readonly class OrderServices implements IOrderServices
 
         $action = (string) ($actionData['action'] ?? '');
         $principal = $this->auth->getAuth(array(
-            'actionType' => 'getAuth',
+            'actionType' => 'getProfile',
             'actionData' => array(
                 'action' => 'getProfile',
                 '_accessToken' => (string) ($actionData['_accessToken'] ?? ''),
@@ -335,7 +335,7 @@ final readonly class OrderServices implements IOrderServices
         }
 
         $principal = $this->auth->getAuth(array(
-            'actionType' => 'getAuth',
+            'actionType' => 'getProfile',
             'actionData' => array(
                 'action' => 'getProfile',
                 '_accessToken' => (string) ($actionData['_accessToken'] ?? ''),
