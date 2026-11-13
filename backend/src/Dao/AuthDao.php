@@ -198,6 +198,56 @@ final readonly class AuthDao
         return $resArr;
     }
 
+    /**
+     * Assign the global Consumer role to a registered BBG account.
+     * The operation is idempotent and never creates a tenant-scoped assignment.
+     */
+    public function assignConsumerRole(ConnectionInterface $connection, int $userId): array
+    {
+        $resArr = $this->initialResponse();
+        try {
+            $role = $connection->createCommand(
+                "SELECT id FROM ROLES
+                 WHERE role_code = 'CONSUMER' AND scope_type = 'GLOBAL' AND status = 'A'
+                 LIMIT 1",
+            )->queryOne();
+            if (!is_array($role)) {
+                $resArr['msgArr'][] = 'The global CONSUMER role is not configured. Apply the Consumer role seed before registration.';
+                return $resArr;
+            }
+
+            $roleId = (int) $role['id'];
+            $existing = $connection->createCommand(
+                "SELECT id FROM USER_ROLE_ASSIGNMENTS
+                 WHERE user_id = :user_id AND role_id = :role_id
+                    AND tenant_id IS NULL AND status = 'A'
+                    AND (expires_on IS NULL OR expires_on > CURRENT_TIMESTAMP)
+                 LIMIT 1",
+                [':user_id' => $userId, ':role_id' => $roleId],
+            )->queryOne();
+
+            if (!is_array($existing)) {
+                $connection->createCommand(
+                    "INSERT INTO USER_ROLE_ASSIGNMENTS
+                        (user_id, role_id, tenant_id, assigned_by, assigned_on, expires_on,
+                         status, created_by, updated_by)
+                     VALUES
+                        (:user_id, :role_id, NULL, NULL, CURRENT_TIMESTAMP, NULL,
+                         'A', :created_by, :updated_by)",
+                    [':user_id' => $userId, ':role_id' => $roleId,
+                     ':created_by' => $userId, ':updated_by' => $userId],
+                )->execute();
+            }
+
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['user_id' => $userId, 'role_code' => 'CONSUMER', 'scope_type' => 'GLOBAL'];
+        } catch (Throwable $exception) {
+            $this->logException('assignConsumerRole', $exception);
+            $resArr = $this->exceptionResponse('Unable to assign the Consumer role.');
+        }
+        return $resArr;
+    }
+
     public function updateLastLogin(ConnectionInterface $connection, int $userId, string $lastLoginOn): array
     {
         $resArr = $this->initialResponse();
