@@ -401,7 +401,7 @@ final readonly class AuthDao
         $resArr = $this->initialResponse();
         try {
             $row = $connection->createCommand(
-                "SELECT id, user_id, provider, provider_subject, provider_email
+                "SELECT id, user_id, provider, provider_subject, provider_email, status
                  FROM USER_IDENTITIES
                  WHERE provider = :provider AND provider_subject = :provider_subject
                  LIMIT 1",
