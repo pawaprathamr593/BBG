@@ -1,0 +1,25 @@
+import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
+
+@Component({
+  selector: 'app-marketplace-about',
+  imports: [RouterLink],
+  template: `
+    <main class="page">
+      <section class="hero"><p class="eyebrow">ABOUT BBG</p><h1>Build. Grow. <span>Connect.</span></h1><p class="lead">A business management and marketplace platform designed to bring businesses, entrepreneurs and customers closer together.</p><a routerLink="/businesses" class="primary-link">Explore businesses <span aria-hidden="true">→</span></a><div class="orb orb-one"></div><div class="orb orb-two"></div></section>
+      <section class="story"><div><p class="eyebrow">OUR PURPOSE</p><h2>One place to discover and connect</h2></div><div class="story-copy"><p>BBG brings business discovery and marketplace experiences together. Visitors can explore business profiles, browse categories and keep up with public promotions.</p><p>For entrepreneurs, BBG provides a place to build a business presence and reach a wider community. The platform is designed to make discovery clearer and connections easier.</p></div></section>
+      <section class="values"><div class="value"><span>01</span><h3>Discover</h3><p>Explore businesses and offerings across marketplace categories.</p></div><div class="value"><span>02</span><h3>Grow</h3><p>Give businesses a digital presence and a way to share promotions.</p></div><div class="value"><span>03</span><h3>Connect</h3><p>Make it easier for people and businesses to find each other.</p></div></section>
+      <section class="closing"><div><p class="eyebrow">START EXPLORING</p><h2>Find your next business connection.</h2><p>Discover the BBG marketplace and see what's available.</p></div><a routerLink="/categories">Browse categories <span aria-hidden="true">→</span></a></section>
+    </main>
+  `,
+  styles: [`
+    :host{display:block}.page{padding-bottom:64px;background:var(--surface-page)}.hero{position:relative;isolation:isolate;overflow:hidden;padding:80px max(24px,calc((100vw - 1180px)/2)) 86px;color:#fff;background:linear-gradient(115deg,#123f2c,#1d6243)}
+    .eyebrow{margin:0 0 13px;color:#c5d9ce;font-size:.68rem;font-weight:800;letter-spacing:.16em}h1{max-width:800px;margin:0;font-size:clamp(2.8rem,7vw,5rem);letter-spacing:-.07em;line-height:1.02}h1 span{color:#f5d928}.lead{max-width:670px;margin:20px 0 27px;color:rgba(255,255,255,.83);font-size:1.05rem;line-height:1.7}
+    .primary-link,.closing>a{display:inline-flex;align-items:center;gap:18px;padding:13px 18px;color:#171d19;background:#f5d928;border-radius:9px;font-size:.82rem;font-weight:800;text-decoration:none}.orb{position:absolute;z-index:-1;border:1px solid rgba(255,255,255,.13);border-radius:50%}.orb-one{top:-160px;right:8%;width:480px;height:480px}.orb-two{top:-80px;right:1%;width:320px;height:320px}
+    .story{display:grid;grid-template-columns:.8fr 1.2fr;gap:70px;width:min(1180px,calc(100% - 40px));margin:66px auto 0}.story .eyebrow{color:#648071}.story h2,.closing h2{margin:0;color:var(--text-primary);font-size:clamp(1.7rem,3vw,2.5rem);letter-spacing:-.05em;line-height:1.12}.story-copy p{margin:0 0 15px;color:var(--text-secondary);font-size:.94rem;line-height:1.8}
+    .values{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:min(1180px,calc(100% - 40px));margin:58px auto 0}.value{padding:25px;background:var(--surface-card);border:1px solid var(--border);border-radius:14px}.value>span{color:#a28c0a;font-size:.72rem;font-weight:850}.value h3{margin:16px 0 7px;color:var(--text-primary);font-size:1.1rem}.value p{margin:0;color:var(--text-secondary);font-size:.83rem;line-height:1.6}
+    .closing{display:flex;align-items:center;justify-content:space-between;gap:24px;width:min(1180px,calc(100% - 40px));margin:58px auto 0;padding:30px;background:var(--surface-subtle);border:1px solid var(--border);border-radius:15px}.closing .eyebrow{margin-bottom:8px;color:#648071}.closing h2{font-size:1.5rem}.closing p:not(.eyebrow){margin:8px 0 0;color:var(--text-secondary);font-size:.83rem}
+    @media(max-width:760px){.hero{padding:56px 22px 62px}.story{grid-template-columns:1fr;gap:20px;margin-top:42px}.values{grid-template-columns:1fr;margin-top:38px}.closing{align-items:flex-start;flex-direction:column;margin-top:38px;padding:23px}}
+  `],
+})
+export class MarketplaceAbout {}
