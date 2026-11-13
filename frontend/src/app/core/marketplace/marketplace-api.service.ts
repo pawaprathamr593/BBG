@@ -92,6 +92,20 @@ export interface MarketplaceHomeData {
 
 export interface MarketplaceBusinessListData {
   items: MarketplaceBusiness[];
+  ranking_basis?: string[];
+  sort_basis?: string;
+  timestamp_note?: string;
+  pagination: {
+    page: number;
+    page_size: number;
+    total: number;
+  };
+}
+
+export interface MarketplaceProductListData {
+  items: MarketplaceProduct[];
+  sort_basis: string;
+  timestamp_note: string;
   pagination: {
     page: number;
     page_size: number;
@@ -132,10 +146,25 @@ export class MarketplaceApiService {
     );
   }
 
-  listRecentProducts(page = 1, pageSize = 8): Observable<MarketplaceApiResponse<{ items: MarketplaceProduct[] }>> {
-    return this.http.post<MarketplaceApiResponse<{ items: MarketplaceProduct[] }>>(
+  listRecentProducts(page = 1, pageSize = 8): Observable<MarketplaceApiResponse<MarketplaceProductListData>> {
+    return this.http.post<MarketplaceApiResponse<MarketplaceProductListData>>(
       `${this.apiBaseUrl}/api/v1/marketplace/products/recent`,
       { marketplaceParam: { actionData: { page, page_size: pageSize } } },
+    );
+  }
+
+  recordBusinessView(businessId: number, visitorKey: string): Observable<MarketplaceApiResponse<{ recorded: boolean }>> {
+    return this.http.post<MarketplaceApiResponse<{ recorded: boolean }>>(
+      `${this.apiBaseUrl}/api/v1/engagement/views/record`,
+      {
+        engagementParam: {
+          actionData: {
+            content_type: 'BUSINESS',
+            content_id: businessId,
+            visitor_key: visitorKey,
+          },
+        },
+      },
     );
   }
 
