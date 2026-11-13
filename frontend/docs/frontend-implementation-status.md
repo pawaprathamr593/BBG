@@ -109,6 +109,11 @@ Two distinct directions were evaluated conceptually against BBG's dual marketpla
 - Added Marketplace DTOs and MarketplaceService using the exact marketplaceParam envelope and registered POST routes. The request fields and response shapes were checked against MarketplaceController, MarketplaceServicesV1, MarketplaceServices and MarketplaceDao.
 - Implemented public marketplace home, category browse, searchable/paginated business directory with URL-synchronized filters/page state, business storefront with product listing, product detail, promotions feed and promotion detail.
 - Added service/permission unit tests and removed obsolete starter dashboard-only global styling.
+- Added authenticated Consumer, Entrepreneur and Platform Administrator workspace routes using one shared responsive workspace component and separate module configurations.
+- Added workspace API adapter for registered dashboard, customer, cart, order, enquiry, engagement, business, tenant, catalogue/media, promotion, subscription, payment and administration routes.
+- Added server-response rendering, explicit loading/error/success states, and a JSON payload editor for write operations. The editor does not guess DTO fields; mutation calls require a non-empty JSON object supplied according to the backend DTO.
+- Added workspace API tests for the dashboard envelope, cart payload pass-through and backend failure handling.
+- Exposed authenticated workspace entry links without inferring a role. Backend authorization remains authoritative.
 - Kept all changes on feature/frontend-development; no backend or database files were modified.
 
 ### Remaining source and contract caveats
@@ -116,7 +121,7 @@ Two distinct directions were evaluated conceptually against BBG's dual marketpla
 - backend_architecture.md is still absent; the supplied BBG_Backend_Architecture_v1.0.md and checked-in implementation remain the source references.
 - The backend permission record structure and tenant/platform scope discriminator are now confirmed from the auth controller/service/DAO. Actual permission code values and the approved route-to-permission catalogue still need owner confirmation before protected role routes are activated.
 - Tenant selection/context UI remains disabled. Tenant-scoped permission lookup is available through the service method, but no active tenant ID is inferred or selected by the frontend.
-- The frontend architecture document is marked proposed/awaiting approval. Consumer, Entrepreneur and Platform Administrator feature pages remain pending.
+- The frontend architecture document is marked proposed/awaiting approval. Consumer, Entrepreneur and Platform Administrator workspace shells are now implemented. Final role-to-permission mapping and tenant activation remain blocked on owner-approved permission codes and tenant-selection semantics.
 - The marketplace API is wired to backend source contracts, but end-to-end runtime behavior and media URL delivery still require local backend verification.
 
 ### Validation
@@ -134,11 +139,22 @@ Angular build, unit tests, browser tests and production build have NOT been exec
 | Scoped permission service/guard | Implemented; protected route catalogue pending approval |
 | Public marketplace DTOs/API service | Implemented against checked-in backend source |
 | Public marketplace pages | Home, directory, storefront, product detail, promotions and promotion detail implemented |
-| Consumer experience | Not started |
-| Entrepreneur experience | Not started |
-| Platform Administrator experience | Not started |
-| Tenant workspace candidate modules | Disabled / not implemented |
+| Consumer experience | Workspace shell + dashboard/profile/address/cart/order/enquiry/payment/engagement route actions wired; field-specific forms and DTOs pending |
+| Entrepreneur experience | Workspace shell + dashboard/business/tenant/catalogue/media/order/enquiry/promotion/subscription/payment route actions wired; tenant selector and field-specific forms pending |
+| Platform Administrator experience | Workspace shell + users/business/subscription/category/analytics/moderation/health route actions wired; permission catalogue approval pending |
+| Tenant workspace candidate modules | Tenant list/detail/member read routes exposed; tenant switching and conditional ERP modules remain disabled |
 | PWA | Not started |
 | Unit/component tests | Added for marketplace API and permission scope; not run |
 | Playwright E2E | Not started |
 | Production validation | Not run |
+
+
+### 8. Workspace delivery notes
+
+The three authenticated workspaces are now reachable at `/consumer`, `/entrepreneur` and `/admin`. Each uses the shared responsive workspace shell and its own feature configuration. The shell exposes only route-backed actions and sends requests through the existing ApiService/HTTP interceptor.
+
+**Important contract boundary:** backend route registration and controller dispatch have been verified for the configured actions, but that is not equivalent to full end-to-end feature completion. Where the exact request DTO is not confirmed, the interface requires a user-supplied JSON object rather than inventing field names. Server responses are rendered as returned; no synthetic dashboard metrics, orders, products, payment states or admin records are generated.
+
+**Not delivered because no supporting route/approved contract was found:** inventory management, purchasing/procurement, notifications, direct messaging, tenant switching/activation, offline writes, payment gateway integration, and conditional tenant ERP modules such as sales, invoices, expenses and cash management. These must not be represented as live features until their backend contracts and scope are approved.
+
+**Security note:** workspace routes require an authenticated session. The current backend permission code catalogue and final route-to-permission mapping have not been approved, so the frontend does not guess a role from the URL or profile. Every API operation must continue to be authorized by the backend; the route shell itself is not a substitute for server authorization.
