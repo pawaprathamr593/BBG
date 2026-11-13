@@ -28,12 +28,13 @@ final readonly class AuthServices implements IAuthServices
         if (($validation = $this->validateEnvelope($authParam, 'getAuth')) !== null) {
             return $validation;
         }
-        if ($authParam['actionType'] !== 'getAuth') {
+        if (!is_string($authParam['actionType'] ?? null) || $authParam['actionType'] === '') {
             return $this->failed('Unsupported actionType for getAuth.');
         }
 
         $actionData = $authParam['actionData'];
-        return match ($actionData['action'] ?? '') {
+        $actionData['action'] = (string) $authParam['actionType'];
+        return match ($authParam['actionType']) {
             'getProfile' => $this->getUserProfile($actionData),
             'getPrincipal' => $this->resolvePrincipal((string) ($actionData['_accessToken'] ?? '')),
             'getPermissions' => $this->getUserPermissions($actionData),
@@ -47,12 +48,12 @@ final readonly class AuthServices implements IAuthServices
         if (($validation = $this->validateEnvelope($authParam, 'manageAuth')) !== null) {
             return $validation;
         }
-        if ($authParam['actionType'] !== 'manageAuth') {
+        if (!is_string($authParam['actionType'] ?? null) || $authParam['actionType'] === '') {
             return $this->failed('Unsupported actionType for manageAuth.');
         }
 
         $actionData = $authParam['actionData'];
-        return match ($actionData['action'] ?? '') {
+        return match ($authParam['actionType']) {
             'register' => $this->manageRegistration($actionData),
             'login' => $this->manageLogin($actionData),
             'refresh' => $this->manageRefreshSession($actionData),
