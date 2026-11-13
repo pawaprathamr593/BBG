@@ -534,8 +534,25 @@ final readonly class CatalogueServices implements ICatalogueServices
             !str_starts_with($thumbnailPath, $expectedPrefix) || str_contains($thumbnailPath, '..')
             || str_starts_with($thumbnailPath, '/') || preg_match('/^[a-z]+:\/\//i', $thumbnailPath)
         )) {
-            $resArr['msgArr'][] = 'thumbnail_path must be a tenant-scoped relative file path.';
+            $resArr['msgArr'][] = 'thumbnail_path must be a product-scoped relative S3 object key.';
             return $resArr;
+        }
+        if ($thumbnailPath !== null) {
+            $thumbnailObject = $this->s3Storage->headObject($thumbnailPath);
+            $thumbnailMime = strtolower((string) ($thumbnailObject['ContentType'] ?? ''));
+            $thumbnailSize = (int) ($thumbnailObject['ContentLength'] ?? 0);
+            $thumbnailSignature = $this->s3Storage->getObjectPrefix($thumbnailPath);
+            $thumbnailValid = match ($thumbnailMime) {
+                'image/jpeg' => str_starts_with($thumbnailSignature, "\xFF\xD8\xFF"),
+                'image/png' => str_starts_with($thumbnailSignature, "\x89PNG\r\n\x1A\n"),
+                'image/webp' => str_starts_with($thumbnailSignature, 'RIFF')
+                    && substr($thumbnailSignature, 8, 4) === 'WEBP',
+                default => false,
+            };
+            if (!$thumbnailValid || $thumbnailSize < 1 || $thumbnailSize > $this->s3Storage->getMaxUploadBytes()) {
+                $resArr['msgArr'][] = 'thumbnail_path must reference a verified image object within the upload size limit.';
+                return $resArr;
+            }
         }
 
         $storedObject = $this->s3Storage->headObject($filePath);
