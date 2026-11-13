@@ -37,7 +37,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         }
         $actionData = $subscriptionParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) subscriptionParam['actionType']) {
                 case 'listActivePlans':
                     $resArr = $this->getActivePlans($actionData);
                     break;
@@ -73,7 +73,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         }
         $actionData = $subscriptionParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) subscriptionParam['actionType']) {
                 case 'requestSubscription':
                     $resArr = $this->manageSubscriptionRequest($actionData, false);
                     break;
