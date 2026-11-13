@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, MarketplacePromotion } from '../../../core/marketplace/marketplace-api.service';
+import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, MarketplaceProduct, MarketplacePromotion } from '../../../core/marketplace/marketplace-api.service';
 
 @Component({
   selector: 'app-marketplace-home',
@@ -21,9 +21,6 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12h14M12.5 5.5 19 12l-6.5 6.5"></path></svg>
             </button>
           </form>
-          @if (searchNotice()) {
-            <p class="search-notice" role="status">{{ searchNotice() }}</p>
-          }
           <div class="hero-links" aria-label="Quick links">
             <span>Start exploring</span>
             <a href="#categories">Categories</a>
@@ -87,9 +84,9 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
         <div class="section-heading">
           <div>
             <p class="section-kicker">MEET THE COMMUNITY</p>
-            <h2 id="businesses-title">Discover businesses</h2>
+            <h2 id="businesses-title">{{ businessesHeading() }}</h2>
           </div>
-          <span class="section-note">Explore businesses on BBG</span>
+          <span class="section-note">{{ businessesNote() }}</span>
         </div>
         @if (searchLoading()) {
           <p class="state-message" role="status">Searching published businesses…</p>
@@ -108,6 +105,12 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
                 @if (business.business_description) {
                   <p class="business-description">{{ business.business_description }}</p>
                 }
+                @if (!searchActive() && business.popularity) {
+                  <div class="business-metrics" aria-label="Business engagement">
+                    <span>{{ business.popularity.views }} views</span>
+                    <span>{{ business.popularity.enquiries }} enquiries</span>
+                  </div>
+                }
                 <div class="business-card-footer">
                   @if (business.accept_online_orders) { <span>Online orders</span> }
                   @if (business.whatsapp_enabled) { <span>WhatsApp</span> }
@@ -120,6 +123,76 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
             <div class="category-empty-icon" aria-hidden="true">⌕</div>
             <div><h3>No published businesses found</h3><p>Try another search, or check back as more businesses publish their storefronts.</p></div>
           </div>
+        }
+      </section>
+
+      <section class="content-section" id="recent-businesses" aria-labelledby="recent-businesses-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">NEW TO THE MARKETPLACE</p>
+            <h2 id="recent-businesses-title">Recently published businesses</h2>
+          </div>
+          <span class="section-note">Newest published storefronts</span>
+        </div>
+        @if (loading()) {
+          <p class="state-message" role="status">Loading recently published businesses…</p>
+        } @else if (recentBusinesses().length) {
+          <div class="business-grid">
+            @for (business of recentBusinesses(); track business.id) {
+              <article class="business-card">
+                <div class="business-card-top">
+                  <span class="business-avatar" aria-hidden="true">{{ business.business_name.slice(0, 1).toUpperCase() }}</span>
+                  @if (business.category_name) { <span class="business-category">{{ business.category_name }}</span> }
+                </div>
+                <h3>{{ business.business_name }}</h3>
+                <p class="business-location">{{ locationLabel(business) }}</p>
+                @if (business.business_description) {
+                  <p class="business-description">{{ business.business_description }}</p>
+                }
+                @if (business.created_on) {
+                  <time class="item-date" [attr.datetime]="business.created_on">Added {{ formatDate(business.created_on) }}</time>
+                }
+              </article>
+            }
+          </div>
+          <p class="data-note">Only approved, published storefronts are shown. Ordering currently uses profile creation time because the business schema does not yet store a separate publication timestamp.</p>
+        } @else {
+          <p class="state-message">No recently published businesses are available yet.</p>
+        }
+      </section>
+
+      <section class="content-section" id="recent-products" aria-labelledby="recent-products-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">FRESH FINDS</p>
+            <h2 id="recent-products-title">Recently published products</h2>
+          </div>
+          <span class="section-note">Products from published BBG storefronts</span>
+        </div>
+        @if (loading()) {
+          <p class="state-message" role="status">Loading recently published products…</p>
+        } @else if (recentProducts().length) {
+          <div class="product-grid">
+            @for (product of recentProducts(); track product.id) {
+              <article class="product-card">
+                <div class="product-card-mark" aria-hidden="true">BBG</div>
+                @if (product.category_name) { <span class="business-category">{{ product.category_name }}</span> }
+                <h3>{{ product.product_name }}</h3>
+                @if (product.brand_name) { <p class="product-brand">{{ product.brand_name }}</p> }
+                @if (product.description) { <p class="product-description">{{ product.description }}</p> }
+                @if (product.selling_price !== undefined) {
+                  <p class="product-price">{{ formatPrice(product.selling_price) }} <span>/ {{ product.unit.symbol }}</span></p>
+                } @else {
+                  <p class="product-price product-price-hidden">Contact business for price</p>
+                }
+                <p class="product-business">From {{ product.business.business_name }}</p>
+                <time class="item-date" [attr.datetime]="product.created_on">Added {{ formatDate(product.created_on) }}</time>
+              </article>
+            }
+          </div>
+          <p class="data-note">Only active products from approved, published storefronts are shown. Ordering currently uses product creation time because the product schema does not yet store a separate publication timestamp.</p>
+        } @else {
+          <p class="state-message">No recently published products are available yet.</p>
         }
       </section>
 
@@ -250,6 +323,21 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
     .business-description { display:-webkit-box; min-height:3.9em; margin:12px 0; overflow:hidden; color:var(--text-secondary); font-size:.8rem; line-height:1.5; -webkit-line-clamp:3; -webkit-box-orient:vertical; }
     .business-card-footer { display:flex; flex-wrap:wrap; gap:7px; margin-top:13px; }
     .business-card-footer span { padding:5px 8px; color:#315d47; background:#edf4ef; border-radius:6px; font-size:.68rem; font-weight:700; }
+    .business-metrics { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+    .business-metrics span { padding:5px 8px; color:var(--text-secondary); background:var(--surface-subtle); border:1px solid var(--border); border-radius:6px; font-size:.68rem; font-weight:700; }
+    .product-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:15px; }
+    .product-card { min-width:0; padding:19px; background:var(--surface-card); border:1px solid var(--border); border-radius:15px; }
+    .product-card-mark { display:grid; width:44px; height:44px; margin-bottom:14px; place-items:center; color:#174d35; background:#e8f1eb; border-radius:12px; font-size:.7rem; font-weight:850; letter-spacing:.06em; }
+    .product-card h3 { margin:12px 0 5px; color:var(--text-primary); font-size:1rem; }
+    .product-brand,.product-business,.item-date { color:var(--text-secondary); font-size:.72rem; }
+    .product-brand { margin:0 0 8px; }
+    .product-description { display:-webkit-box; min-height:3.3em; margin:9px 0; overflow:hidden; color:var(--text-secondary); font-size:.78rem; line-height:1.5; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+    .product-price { margin:13px 0 7px; color:var(--text-primary); font-size:1.05rem; font-weight:800; }
+    .product-price span { color:var(--text-secondary); font-size:.75rem; font-weight:500; }
+    .product-price-hidden { font-size:.82rem; font-weight:650; }
+    .product-business { margin:8px 0 4px; }
+    .item-date { display:block; margin-top:10px; }
+    .data-note { margin:12px 0 0; color:var(--text-secondary); font-size:.72rem; line-height:1.5; }
     .promotion-banner { align-items:flex-start; flex-direction:column; }
     .promotion-copy { width:100%; }
     .promotion-grid { position:relative; z-index:1; display:grid; width:100%; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
@@ -269,8 +357,11 @@ export class MarketplaceHome implements OnInit {
   protected readonly loadError = signal('');
   protected readonly searchLoading = signal(false);
   protected readonly searchError = signal('');
+  protected readonly searchActive = signal(false);
   protected readonly categories = signal<MarketplaceCategory[]>([]);
   protected readonly businesses = signal<MarketplaceBusiness[]>([]);
+  protected readonly recentBusinesses = signal<MarketplaceBusiness[]>([]);
+  protected readonly recentProducts = signal<MarketplaceProduct[]>([]);
   protected readonly promotions = signal<MarketplacePromotion[]>([]);
 
   ngOnInit(): void {
@@ -290,6 +381,7 @@ export class MarketplaceHome implements OnInit {
 
     this.searchLoading.set(true);
     this.searchError.set('');
+    this.searchActive.set(true);
     this.marketplaceApi.listBusinesses(query).subscribe({
       next: (response) => {
         if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
@@ -307,6 +399,21 @@ export class MarketplaceHome implements OnInit {
     });
   }
 
+  protected businessesHeading(): string {
+    return this.searchActive() ? 'Business search results' : 'Most popular businesses';
+  }
+
+  protected businessesNote(): string {
+    return this.searchActive() ? 'Matching published storefronts' : 'Ranked using recorded profile views and enquiries';
+  }
+
+  protected formatPrice(value: number | string): string {
+    const amount = Number(value);
+    return Number.isFinite(amount)
+      ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount)
+      : String(value);
+  }
+
   protected locationLabel(business: MarketplaceBusiness): string {
     return [business.city, business.state].filter(Boolean).join(', ') || 'Location not provided';
   }
@@ -322,16 +429,21 @@ export class MarketplaceHome implements OnInit {
     this.loading.set(true);
     this.loadError.set('');
     this.searchError.set('');
+    this.searchActive.set(false);
     this.marketplaceApi.getHomeSummary().subscribe({
       next: (response) => {
         if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
           this.loadError.set(response.msgArr?.join(' ') || 'Marketplace data is currently unavailable.');
           this.categories.set([]);
           this.businesses.set([]);
+          this.recentBusinesses.set([]);
+          this.recentProducts.set([]);
           this.promotions.set([]);
         } else {
           this.categories.set(response.data.categories ?? []);
-          this.businesses.set(response.data.businesses ?? []);
+          this.businesses.set(response.data.popular_businesses ?? []);
+          this.recentBusinesses.set(response.data.recent_businesses ?? []);
+          this.recentProducts.set(response.data.recent_products ?? []);
           this.promotions.set(response.data.promotions ?? []);
         }
         this.loading.set(false);
