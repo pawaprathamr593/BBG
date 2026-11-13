@@ -237,20 +237,28 @@ final readonly class AuthServices implements IAuthServices
                 if ($intent !== 'register') {
                     return $this->failed('No BBG account is linked to this provider. Choose create account to register.');
                 }
-                if ($verified['email'] !== null) {
-                    $emailCheck = $this->authDao->getUserByIdentifierForUniqueness($this->connection, $verified['email']);
-                    if ($emailCheck['status'] !== 'SUCCESS') {
-                        return $this->propagateFailure($emailCheck, 'AuthServices::manageSocialLogin');
+                $email = $verified['email'] ?? strtolower(trim((string) ($actionData['email'] ?? '')));
+                $mobile = trim((string) ($actionData['mobile'] ?? ''));
+                if (($email === '' && $mobile === '') || strlen($email) > 190 || strlen($mobile) > 25) {
+                    return $this->failed('Complete registration by providing an email address or mobile number.');
+                }
+                if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                    return $this->failed('Enter a valid email address to complete social registration.');
+                }
+                foreach (array_filter([$email, $mobile]) as $identifier) {
+                    $contactCheck = $this->authDao->getUserByIdentifierForUniqueness($this->connection, $identifier);
+                    if ($contactCheck['status'] !== 'SUCCESS') {
+                        return $this->propagateFailure($contactCheck, 'AuthServices::manageSocialLogin');
                     }
-                    if ($emailCheck['data'] !== []) {
-                        return $this->failed('A BBG account already uses this email. Sign in to that account and link this provider from account settings.');
+                    if ($contactCheck['data'] !== []) {
+                        return $this->failed('A BBG account already uses this email or mobile. Sign in to that account and link this provider from account settings.');
                     }
                 }
 
                 $fullName = trim($verified['full_name']);
                 if ($fullName === '') {
-                    $fullName = $verified['email'] !== null
-                        ? (string) strstr($verified['email'], '@', true)
+                    $fullName = $email !== ''
+                        ? (string) strstr($email, '@', true)
                         : ucfirst(strtolower($verified['provider'])) . ' member';
                 }
                 $transaction = $this->connection->beginTransaction();
@@ -258,9 +266,10 @@ final readonly class AuthServices implements IAuthServices
                     $created = $this->authDao->insertSocialUser(
                         $this->connection,
                         substr($fullName, 0, 150),
-                        $verified['email'],
+                        $email !== '' ? $email : null,
+                        $mobile !== '' ? $mobile : null,
                         $verified['profile_image'],
-                        $verified['email_verified'],
+                        $verified['email_verified'] && $verified['email'] !== null,
                     );
                     if ($created['status'] !== 'SUCCESS') {
                         $transaction->rollBack();
