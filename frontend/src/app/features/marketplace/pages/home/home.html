@@ -4,16 +4,21 @@
       <p class="eyebrow">THE BBG MARKETPLACE</p>
       <h1>Find the businesses that move you forward.</h1>
       <p>Discover local businesses, explore what they offer and connect directly with the people behind them.</p>
+      <form class="hero-search" role="search" (submit)="submitSearch($event)">
+        <label class="visually-hidden" for="marketplace-search">Search businesses, products or services</label>
+        <span aria-hidden="true">⌕</span>
+        <input id="marketplace-search" type="search" placeholder="Search businesses, products or services" [value]="searchTerm()" (input)="onSearchInput($event)" />
+        <button type="submit">Search <span aria-hidden="true">→</span></button>
+      </form>
       <div class="hero-actions">
-        <a class="button button-light" routerLink="/businesses">Explore businesses <span aria-hidden="true">→</span></a>
+        <a class="button button-light" routerLink="/businesses">Explore businesses</a>
         <a class="hero-secondary" routerLink="/promotions">See what's new</a>
       </div>
     </div>
     <div class="hero-art" aria-hidden="true">
       <div class="art-card art-card-one"><span>Discover</span><strong>Local makers</strong></div>
       <div class="art-card art-card-two"><span>Connect</span><strong>With businesses</strong></div>
-      <div class="art-orbit"></div>
-      <div class="art-dot"></div>
+      <div class="art-orbit"></div><div class="art-dot"></div>
     </div>
   </section>
 
@@ -41,7 +46,6 @@
         </div>
       </section>
     }
-
     @if (data.businesses.length) {
       <section class="content-section">
         <div class="section-heading"><div><p class="eyebrow">MEET THE COMMUNITY</p><h2>Businesses to discover</h2><p class="section-description">A selection of published businesses from across the BBG marketplace.</p></div><a class="text-link" routerLink="/businesses">Browse directory <span aria-hidden="true">→</span></a></div>
@@ -51,8 +55,7 @@
               <div class="business-card-top"><span class="business-avatar">{{ business.business_name.slice(0, 1) }}</span><span class="card-arrow" aria-hidden="true">↗</span></div>
               <div class="business-card-body">
                 @if (business.category_name) { <span class="category-label">{{ business.category_name }}</span> }
-                <h3>{{ business.business_name }}</h3>
-                <p>{{ business.business_description || 'Discover this business and explore its storefront.' }}</p>
+                <h3>{{ business.business_name }}</h3><p>{{ business.business_description || 'Discover this business and explore its storefront.' }}</p>
                 @if (business.city || business.state) { <span class="location-label"><span aria-hidden="true">⌖</span> {{ business.city }}{{ business.city && business.state ? ', ' : '' }}{{ business.state }}</span> }
               </div>
             </a>
@@ -60,7 +63,6 @@
         </div>
       </section>
     }
-
     @if (data.promotions.length) {
       <section class="content-section promotion-section">
         <div class="section-heading"><div><p class="eyebrow">FROM THE COMMUNITY</p><h2>Latest promotions</h2><p class="section-description">Updates shared by published businesses.</p></div><a class="text-link" routerLink="/promotions">View all promotions <span aria-hidden="true">→</span></a></div>
@@ -68,17 +70,20 @@
           @for (promotion of data.promotions; track promotion.id) {
             <a class="promotion-card" [routerLink]="['/promotions', promotion.id]">
               <div class="promotion-meta"><span>{{ promotion.business_name }}</span><time>{{ promotion.published_on | date:'mediumDate' }}</time></div>
-              <h3>{{ promotion.post_title }}</h3>
-              <p>{{ promotion.post_content }}</p>
+              <h3>{{ promotion.post_title }}</h3><p>{{ promotion.post_content }}</p>
               @if (promotion.valid_until) { <span class="validity">Valid until {{ promotion.valid_until | date:'mediumDate' }}</span> }
             </a>
           }
         </div>
       </section>
     }
-
     @if (!data.categories.length && !data.businesses.length && !data.promotions.length) {
       <section class="empty-state"><span aria-hidden="true">✦</span><h2>Your marketplace is getting ready</h2><p>There are no published businesses or promotions to show just yet. Please check back soon.</p></section>
     }
   }
+
+  <section class="owner-cta">
+    <div><p class="eyebrow">FOR BUSINESS OWNERS</p><h2>Make your business easier to discover.</h2><p>Create your BBG account and take the next step towards building your business presence online.</p></div>
+    <a class="button button-light" routerLink="/register">Get started with BBG <span aria-hidden="true">→</span></a>
+  </section>
 </div>
