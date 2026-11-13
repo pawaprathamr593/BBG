@@ -68,7 +68,7 @@ export class CustomerCartService {
   }
 
   clearCart(tenantId: number): Promise<Record<string, never>> {
-    return this.request('/api/v1/cart/clear', 'clearCart', { tenant_id: tenantId });
+    return this.request('/api/v1/cart/clear', 'clearCart', { tenant_id: tenantId }, true);
   }
 
   checkout(tenantId: number, shippingAddress: ShippingAddressPayload, notes = ''): Promise<CartCheckoutResult> {
@@ -79,16 +79,16 @@ export class CustomerCartService {
     });
   }
 
-  private async request<T>(path: string, actionType: string, actionData: object): Promise<T> {
+  private async request<T>(path: string, actionType: string, actionData: object, allowEmptyArray = false): Promise<T> {
     const response = await firstValueFrom(this.api.post<T>(path, {
       cartParam: { actionType, actionData },
     }));
     if (response.status !== 'SUCCESS') {
       throw new ApiError(response.msgArr?.join(' ') || 'The cart request could not be completed.');
     }
-    if (!response.data || Array.isArray(response.data)) {
+    if (!response.data || (Array.isArray(response.data) && !allowEmptyArray)) {
       throw new ApiError('The cart response did not contain the expected data.');
     }
-    return response.data;
+    return (Array.isArray(response.data) ? {} : response.data) as T;
   }
 }
