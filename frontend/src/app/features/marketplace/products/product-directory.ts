@@ -140,7 +140,7 @@ type ProductFilterKey = keyof ProductFilterValues;
     </main>
   `,
   styles: [`
-    :host{display:block}.page{min-height:65vh;padding:0 0 64px;background:var(--surface-page)}
+    :host{display:block}.page{min-height:65vh;padding:0 0 120px;background:var(--surface-page)}
     .intro{position:relative;isolation:isolate;overflow:hidden;padding:76px max(24px,calc((100vw - 1180px)/2)) 64px;color:#fff;background:radial-gradient(ellipse at 88% 12%,rgba(245,217,40,.22),transparent 27%),radial-gradient(ellipse at 8% 100%,rgba(107,174,126,.28),transparent 38%),linear-gradient(120deg,#0d3425,#174d35 58%,#246747);border-radius:0 0 26px 26px;box-shadow:0 18px 48px rgba(17,64,43,.12)}
     .intro:before{position:absolute;z-index:-1;top:-150px;right:7%;width:360px;height:360px;border:1px solid rgba(255,255,255,.17);border-radius:50%;box-shadow:0 0 0 34px rgba(255,255,255,.035),0 0 0 72px rgba(255,255,255,.025);content:""}.intro:after{position:absolute;z-index:-1;right:19%;bottom:-105px;width:190px;height:190px;background:rgba(245,217,40,.13);border-radius:50%;filter:blur(2px);content:""}.intro>*{position:relative;z-index:1}
     .eyebrow{margin:0 0 12px;color:#789987;font-size:.68rem;font-weight:800;letter-spacing:.16em}.intro .eyebrow{color:#c5d9ce}
