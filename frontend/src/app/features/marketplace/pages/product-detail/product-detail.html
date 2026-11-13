@@ -1,6 +1,6 @@
 <div class="product-detail-page">
   @if (loading()) { <div class="loading-panel" aria-live="polite" aria-busy="true">Loading product details…</div> }
-  @else if (error()) { <section class="state-panel" role="alert"><h1>Product unavailable</h1><p>{{ error() }}</p><a routerLink="/businesses">Browse businesses</a></section> }
+  @else if (error()) { <section class="state-panel" role="alert"><h1>Product unavailable</h1><p>{{ error() }}</p><a [routerLink]="['/businesses', slug]">Return to storefront</a></section> }
   @else if (detail(); as data) {
     <a class="back-link" [routerLink]="['/businesses', slug]">← {{ business()?.business?.business_name || 'Business storefront' }}</a>
     <article class="product-panel">
@@ -10,13 +10,13 @@
         <h1>{{ data.product.product_name }}</h1>
         @if (data.product.brand_name) { <p class="brand-name">{{ data.product.brand_name }}</p> }
         <p class="description">{{ data.product.description || 'Contact the business for more information about this product.' }}</p>
-        @if (data.product.selling_price !== undefined) { <strong class="price">{{ business()?.storefront?.currency || '' }} {{ data.product.selling_price }}</strong> }
-        @else { <span class="price-on-request">Price on request</span> }
+        @if (business()?.storefront?.show_prices && data.product.selling_price !== undefined) { <strong class="price">{{ business()?.storefront?.currency || '' }} {{ data.product.selling_price }}</strong> }
+        @else { <span class="price-on-request">Contact the business for pricing</span> }
         <div class="product-meta"><span>Unit: {{ data.product.unit.name }} ({{ data.product.unit.symbol }})</span>@if (data.product.is_variant_product) { <span>Available in variants</span> }</div>
       </div>
     </article>
     @if (data.variants.length) {
-      <section class="variants"><h2>Available variants</h2><div class="variant-grid">@for (variant of data.variants; track variant.id) { <div class="variant-card"><strong>{{ variant.variant_name }}</strong><span>{{ variant.variant_code }}</span>@if (variant.selling_price !== undefined) { <b>{{ business()?.storefront?.currency || '' }} {{ variant.selling_price }}</b> }</div> }</div></section>
+      <section class="variants"><h2>Available variants</h2><div class="variant-grid">@for (variant of data.variants; track variant.id) { <div class="variant-card"><strong>{{ variant.variant_name }}</strong><span>{{ variant.variant_code }}</span>@if (business()?.storefront?.show_prices && variant.selling_price !== undefined) { <b>{{ business()?.storefront?.currency || '' }} {{ variant.selling_price }}</b> }</div> }</div></section>
     }
   }
 </div>
