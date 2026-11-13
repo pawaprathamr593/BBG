@@ -5,6 +5,7 @@ on:
     branches:
       - feature/auth-foundation
       - fix/bbg-seven-layer-audit
+      - development
   pull_request:
     branches:
       - main
@@ -49,11 +50,28 @@ jobs:
         run: |
           mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261112_001_business_application_and_cart.sql
           mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261112_002_marketplace_baseline.sql
+          mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261113_001_public_marketplace_engagement.sql
       - name: Verify migration tables and generated cart keys
         env:
           MYSQL_PWD: root
         run: |
-          count=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='bbg' AND table_name IN ('BUSINESS_APPLICATIONS','BUSINESS_APPLICATION_DOCUMENTS','BUSINESS_APPLICATION_REVIEWS','CARTS','CART_ITEMS','BUSINESS_PROFILES','CATEGORIES','TENANT_PRODUCT_CATEGORIES','UNITS_OF_MEASURE','PRODUCTS','PRODUCT_VARIANTS','STOREFRONT_SETTINGS','CUSTOMER_IDENTITIES','TENANT_CUSTOMERS','CUSTOMER_ADDRESSES','ORDERS','ORDER_ITEMS','ORDER_STATUS_HISTORY','ORDER_FULFILMENTS')")
-          test "$count" -eq 19
+          count=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='bbg' AND table_name IN ('BUSINESS_APPLICATIONS','BUSINESS_APPLICATION_DOCUMENTS','BUSINESS_APPLICATION_REVIEWS','CARTS','CART_ITEMS','BUSINESS_PROFILES','CATEGORIES','TENANT_PRODUCT_CATEGORIES','UNITS_OF_MEASURE','PRODUCTS','PRODUCT_VARIANTS','STOREFRONT_SETTINGS','CUSTOMER_IDENTITIES','TENANT_CUSTOMERS','CUSTOMER_ADDRESSES','ORDERS','ORDER_ITEMS','ORDER_STATUS_HISTORY','ORDER_FULFILMENTS','CONTENT_VIEWS','CUSTOMER_ENQUIRIES')")
+          test "$count" -eq 21
           generated=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='bbg' AND extra LIKE '%STORED GENERATED%' AND table_name IN ('CARTS','CART_ITEMS')")
           test "$generated" -eq 4
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Build Angular frontend
+        working-directory: frontend
+        run: npm run build
