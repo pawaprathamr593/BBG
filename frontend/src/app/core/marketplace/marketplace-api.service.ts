@@ -205,6 +205,21 @@ export class MarketplaceApiService {
     );
   }
 
+  recordProductView(productId: number, visitorKey: string): Observable<MarketplaceApiResponse<{ recorded: boolean }>> {
+    return this.http.post<MarketplaceApiResponse<{ recorded: boolean }>>(
+      `${this.apiBaseUrl}/api/v1/engagement/views/record`,
+      {
+        engagementParam: {
+          actionData: {
+            content_type: 'PRODUCT',
+            content_id: productId,
+            visitor_key: visitorKey,
+          },
+        },
+      },
+    );
+  }
+
   recordBusinessView(businessId: number, visitorKey: string): Observable<MarketplaceApiResponse<{ recorded: boolean }>> {
     return this.http.post<MarketplaceApiResponse<{ recorded: boolean }>>(
       `${this.apiBaseUrl}/api/v1/engagement/views/record`,
