@@ -100,18 +100,28 @@ Two distinct directions were evaluated conceptually against BBG's dual marketpla
 
 ## 7. Current completion snapshot
 
+### Changes committed during this implementation increment
+
+- Added `frontend/src/app/core/http/api.models.ts`, `api-error.ts` and `api.service.ts`.
+- Refactored the existing authentication service to use the centralized POST client while preserving the checked-in auth request envelope and cookie/CSRF behavior.
+- Fixed the auth interceptor's production-mode URL matching: an empty production API base URL previously matched every request and could attach the BBG bearer token to unrelated absolute URLs. The interceptor now limits token attachment to BBG API paths.
+- Added initial BBG color, spacing, radius, shadow and motion tokens in `src/styles.scss`, retaining aliases for the existing starter UI.
+- Added the route/API matrix, implementation audit and design direction documents under `frontend/docs/`.
+
+These changes are committed to `feature/frontend-development`. Angular build/tests have not been executed in this environment; compile/runtime verification remains required.
+
 | Deliverable | Status |
 |---|---|
 | Repository/branch audit | Complete |
 | Frontend stack audit | Complete |
 | Backend route catalogue extraction | Complete |
-| API-to-screen mapping | Initial mapping prepared; service/runtime verification pending |
-| Design direction | Selected |
-| Design system implementation | Not started |
+| API-to-screen mapping | Committed in `docs/frontend-api-mapping.md`; service/runtime verification pending |
+| Design direction | Selected and documented in `docs/design-system.md` |
+| Design system implementation | Initial centralized SCSS tokens implemented; component system pending |
 | Angular role layouts/routes | Not started |
-| Feature API DTOs/services | Not started |
+| Feature API DTOs/services | Shared `ApiService`, typed envelope and error normalization added; feature DTOs/services pending |
 | Consumer/Entrepreneur/Admin pages | Not started |
 | PWA | Not started |
 | Unit/component tests | Existing starter only; feature coverage not started |
 | Playwright E2E | Not started |
-| Production validation | Not started |
+| Production validation | Not run; remote repository changes have not been built locally |
