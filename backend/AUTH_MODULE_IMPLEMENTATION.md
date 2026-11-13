@@ -115,3 +115,40 @@ Also verify with a disposable local test account:
 8. Log out all sessions and confirm prior protected requests are rejected.
 
 Do not use production credentials or production accounts for replay tests.
+
+
+## Social authentication implementation
+
+Social authentication uses provider-issued credentials that are verified server-side before BBG creates its own session. Provider access tokens and ID tokens are never stored in the database. BBG stores only the provider name, immutable provider subject, optional provider email, and linked user ID in `USER_IDENTITIES`.
+
+Supported providers in the implementation are Google, Facebook, Apple, and Instagram Login for Instagram professional (Business/Creator) accounts. Consumer/personal Instagram accounts are not supported by Meta's Instagram Login API. The backend rejects a provider credential unless it can verify the token against the configured provider application.
+
+### Social identity rules
+
+- Existing identities authenticate by the unique `(provider, provider_subject)` pair.
+- First-time account creation occurs only when the user explicitly chooses the registration flow.
+- A provider email matching an existing BBG account does not silently link accounts. The user must sign in to that BBG account and use the authenticated provider-link flow.
+- Social-only accounts may have a NULL email, mobile, and password hash; users can add contact details later through the BBG profile flow.
+- Provider tokens are verified server-side and are not persisted.
+- The refresh token remains in the existing HttpOnly `bbg_refresh` cookie; the access token remains in Angular memory.
+
+### Social authentication configuration
+
+Configure these variables in the ignored root `.env` for Docker Compose, or in the backend secret manager:
+
+- `AUTH_SOCIAL_ALLOWED_ORIGINS`: comma-separated exact frontend origins. Set the production HTTPS origin; do not use wildcards.
+- `AUTH_GOOGLE_CLIENT_ID`: Google OAuth web client ID.
+- `AUTH_FACEBOOK_APP_ID` and `AUTH_FACEBOOK_APP_SECRET`: Meta app credentials for Facebook Login.
+- `AUTH_INSTAGRAM_APP_ID` and `AUTH_INSTAGRAM_APP_SECRET`: Meta app credentials with Instagram Login configured for professional accounts.
+- `AUTH_APPLE_CLIENT_ID`: Sign in with Apple Services ID / client ID.
+- `AUTH_META_GRAPH_API_VERSION`: Graph API version used for Meta token validation (currently configured as `v27.0`).
+
+The public client IDs are safe to expose to the Angular application; app secrets must remain backend-only. Provider application setup, redirect URI/domain registration, permissions, app review and production verification are external setup requirements. Empty credentials keep the corresponding provider disabled. Never commit real credentials.
+
+### Social routes
+
+- `POST /api/v1/auth/social/login`: verifies provider credential, then signs in or creates an account according to `intent=login|register`.
+- `POST /api/v1/auth/social/link`: links a verified provider identity to the currently authenticated BBG account. Requires a bearer access token and same-origin request checks.
+- `GET /api/v1/auth/social/config`: returns public provider client IDs and enabled flags only.
+
+Apply `backend/database/migrations/20261113_002_social_identity_mapping.sql` after reviewing the live database and taking a backup. The migration is additive and is not executed automatically.
