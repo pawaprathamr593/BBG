@@ -209,7 +209,7 @@ final readonly class AuthDao
             $role = $connection->createCommand(
                 "SELECT id FROM ROLES
                  WHERE role_code = 'CONSUMER' AND scope_type = 'GLOBAL' AND status = 'A'
-                 LIMIT 1",
+                 ORDER BY id ASC LIMIT 1",
             )->queryOne();
             if (!is_array($role)) {
                 $resArr['msgArr'][] = 'The global CONSUMER role is not configured. Apply the Consumer role seed before registration.';
