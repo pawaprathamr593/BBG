@@ -1,8 +1,8 @@
 # BBG backend implementation status — Phase 1
 
-**Branch:** feature/auth-foundation  
+**Working branch:** fix/bbg-seven-layer-audit (based on feature/auth-foundation)  
 **Stack:** Yii 3 / PHP 8.4 / MySQL 8.4  
-**Status:** 120 unique POST routes across 15 route groups are registered; production readiness and integration verification remain incomplete.
+**Status:** 121 unique POST routes across 15 route groups are registered (the 120 existing routes plus the product-media S3 upload URL route); production readiness and integration verification remain incomplete.
 
 ## Implemented API areas
 
