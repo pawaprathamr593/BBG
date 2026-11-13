@@ -12,8 +12,8 @@ if ($routes === false) {
 
 preg_match_all("~Route::post\\('(/api/v1/[^']+)'\\)~", $routes, $routeMatches);
 $routePaths = $routeMatches[1] ?? [];
-if (count($routePaths) !== 127 || count(array_unique($routePaths)) !== 127) {
-    fwrite(STDERR, 'Expected 127 unique POST API routes; found ' . count($routePaths) . ".\n");
+if (count($routePaths) !== 128 || count(array_unique($routePaths)) !== 128) {
+    fwrite(STDERR, 'Expected 128 unique POST API routes; found ' . count($routePaths) . ".\n");
     exit(1);
 }
 
@@ -96,15 +96,21 @@ $discoveryContracts = [
     $marketplaceController !== false
         && str_contains($marketplaceController, "'/api/v1/marketplace/businesses/popular' => 'listPopularBusinesses'")
         && str_contains($marketplaceController, "'/api/v1/marketplace/businesses/recent' => 'listRecentBusinesses'")
-        && str_contains($marketplaceController, "'/api/v1/marketplace/products/recent' => 'listRecentProducts'"),
+        && str_contains($marketplaceController, "'/api/v1/marketplace/products/recent' => 'listRecentProducts'")
+        && str_contains($marketplaceController, "'/api/v1/marketplace/products/categories' => 'listPublicProductCategories'"),
     $marketplaceService !== false
         && str_contains($marketplaceService, "case 'listPopularBusinesses':")
         && str_contains($marketplaceService, "case 'listRecentBusinesses':")
         && str_contains($marketplaceService, "case 'listRecentProducts':")
+        && str_contains($marketplaceService, "case 'listPublicProductCategories':")
+        && str_contains($marketplaceService, 'getMarketplaceProducts')
         && str_contains($marketplaceService, "'popular_businesses' =>")
         && str_contains($marketplaceService, "'recent_products' =>"),
     $engagementDao !== false && str_contains($engagementDao, "'BUSINESS' =>"),
     $engagementService !== false && str_contains($engagementService, "['BUSINESS', 'PRODUCT', 'POST']"),
+    is_file($root . '/src/Dao/MarketplaceDao.php')
+        && str_contains(file_get_contents($root . '/src/Dao/MarketplaceDao.php'), 'getMarketplaceProducts')
+        && str_contains(file_get_contents($root . '/src/Dao/MarketplaceDao.php'), 'getPublicProductCategories'),
 ];
 if (in_array(false, $discoveryContracts, true)) {
     fwrite(STDERR, "Public marketplace discovery API contract is incomplete.\\n");
@@ -127,4 +133,4 @@ if (in_array(false, $socialAuthContracts, true)) {
     exit(1);
 }
 
-echo "Static API contract checks passed: 127 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, social authentication, marketplace discovery and subscription proof S3 flow.\\n";
+echo "Static API contract checks passed: 128 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, social authentication, marketplace discovery and subscription proof S3 flow.\\n";
