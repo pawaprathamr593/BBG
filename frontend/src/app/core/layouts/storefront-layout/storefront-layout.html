@@ -11,6 +11,7 @@
         <nav class="storefront-nav" aria-label="Storefront navigation">
           <a [routerLink]="['/businesses', slug()]" [routerLinkActiveOptions]="{exact:true}" routerLinkActive="active">Home</a>
           <a [routerLink]="['/businesses', slug(), 'products']" routerLinkActive="active">Products</a>
+          @if (data.storefront.accept_online_orders) { <a [routerLink]="['/businesses', slug(), 'cart']" routerLinkActive="active">Cart</a> }
           <a [routerLink]="['/businesses', slug(), 'promotions']" routerLinkActive="active">Offers</a>
           <a [routerLink]="['/businesses', slug(), 'about']" routerLinkActive="active">About</a>
           <a [routerLink]="['/businesses', slug(), 'contact']" routerLinkActive="active">Contact</a>
