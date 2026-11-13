@@ -1,21 +1,28 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../../../core/auth/auth.service';
 import { SeoService } from '../../../../core/seo/seo.service';
 import { MarketplaceBusinessDetail, MarketplaceList, MarketplaceProduct, MarketplacePromotion } from '../../models/marketplace.models';
 import { MarketplaceService } from '../../services/marketplace.service';
+import { StorefrontEnquiryService } from '../../services/storefront-enquiry.service';
 
 type StorefrontSectionKey = 'about' | 'products' | 'promotions' | 'contact';
 
 @Component({
   selector: 'app-storefront-section',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink],
   templateUrl: './storefront-section.html',
   styleUrl: './storefront-section.scss',
 })
 export class StorefrontSection implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly marketplace = inject(MarketplaceService);
+  private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
+  protected readonly auth = inject(AuthService);
+  private readonly enquiryService = inject(StorefrontEnquiryService);
   private readonly seo = inject(SeoService);
   protected readonly section = this.route.snapshot.data['storefrontSection'] as StorefrontSectionKey;
   protected readonly slug = this.route.parent?.snapshot.paramMap.get('businessSlug') ?? '';
@@ -24,6 +31,13 @@ export class StorefrontSection implements OnInit {
   protected readonly promotions = signal<MarketplaceList<MarketplacePromotion> | null>(null);
   protected readonly loading = signal(true);
   protected readonly error = signal('');
+  protected readonly enquirySubmitting = signal(false);
+  protected readonly enquiryError = signal('');
+  protected readonly enquirySuccess = signal('');
+  protected readonly enquiryForm = this.fb.nonNullable.group({
+    subject: ['', [Validators.maxLength(180)]],
+    message: ['', [Validators.required, Validators.maxLength(5000)]],
+  });
 
   protected readonly headings: Record<StorefrontSectionKey, { eyebrow: string; title: string; description: string }> = {
     about: { eyebrow: 'OUR STORY', title: 'About the business', description: 'Learn more about the people and business behind this storefront.' },
@@ -33,6 +47,30 @@ export class StorefrontSection implements OnInit {
   };
 
   ngOnInit(): void { void this.load(); }
+
+  protected async submitEnquiry(tenantId: number): Promise<void> {
+    if (!this.auth.isAuthenticated()) {
+      await this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+    if (this.enquiryForm.invalid || this.enquirySubmitting()) {
+      this.enquiryForm.markAllAsTouched();
+      return;
+    }
+    const { subject, message } = this.enquiryForm.getRawValue();
+    this.enquirySubmitting.set(true);
+    this.enquiryError.set('');
+    this.enquirySuccess.set('');
+    try {
+      const result = await this.enquiryService.create(tenantId, subject, message);
+      this.enquirySuccess.set(`Your enquiry ${result.enquiry_number} was sent successfully.`);
+      this.enquiryForm.reset({ subject: '', message: '' });
+    } catch (cause) {
+      this.enquiryError.set(cause instanceof Error ? cause.message : 'Unable to send your enquiry. Please try again.');
+    } finally {
+      this.enquirySubmitting.set(false);
+    }
+  }
 
   private async load(): Promise<void> {
     if (!this.slug) {
