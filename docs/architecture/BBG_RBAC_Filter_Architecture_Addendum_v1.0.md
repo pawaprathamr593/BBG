@@ -162,3 +162,19 @@ This UI update does not change the RBAC model or server-side data scope:
 ## 7. Implementation boundary
 
 This addendum updates the design baseline only. Before implementation, inspect the current Angular shell, global z-index conventions, responsive breakpoints, shared button styles, and existing floating widgets. Integrate with existing tokens and components rather than introducing conflicting global styles. No DB migration is needed for this UI clarification.
+
+
+## 8. Implementation status — first vertical slice
+
+The following first-slice implementation is now present on `feature/public-marketplace-pages`:
+
+- A reusable Angular `FilterDrawer` component provides the floating Filters action, right-side desktop/tablet drawer, full-screen mobile panel, safe-area spacing, independently scrolling body, sticky actions, Escape/backdrop close, focus handling, and background-scroll locking.
+- The public Products directory uses the floating trigger at the lower-right of the viewport. Search and sort remain in the normal toolbar.
+- Product advanced filters are edited as draft values and applied together. Closing without applying discards the draft; Reset clears only the draft; applied filter chips can be removed individually.
+- Password registration and new social registration assign the global `CONSUMER` role inside the same database transaction as account creation.
+- The additive seed `backend/database/seeds/20261113_004_global_consumer_role.sql` creates the global role and backfills all active existing accounts idempotently.
+- The database migration README documents the seed. CI now has a minimal MySQL fixture check for seed syntax, active-account backfill, and idempotence.
+
+**Important scope boundary:** this slice creates and assigns the Consumer role. It does not yet seed Consumer-specific permission codes or add Consumer permission checks to personal order/address/enquiry endpoints. Those must be implemented with endpoint-by-endpoint ownership tests; the role assignment alone is not an authorization control.
+
+**Database deployment step:** apply the new Consumer seed only after verifying the target database schema and taking the required backup. Do not apply it to an unverified database. The application registration path expects the active `CONSUMER` role row to exist; deploy the seed before enabling the new registration code.
