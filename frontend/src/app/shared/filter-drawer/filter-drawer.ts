@@ -6,6 +6,7 @@ import {
   HostListener,
   Input,
   OnChanges,
+  OnDestroy,
   Output,
   SimpleChanges,
   ViewChild,
@@ -87,7 +88,7 @@ import {
     @media(prefers-reduced-motion:reduce){.filter-fab,.filter-drawer{transition:none;animation:none}}
   `],
 })
-export class FilterDrawer implements OnChanges, AfterViewChecked {
+export class FilterDrawer implements OnChanges, AfterViewChecked, OnDestroy {
   @Input() open = false;
   @Input() activeCount = 0;
   @Output() openChange = new EventEmitter<boolean>();
@@ -109,6 +110,12 @@ export class FilterDrawer implements OnChanges, AfterViewChecked {
         document.body.style.overflow = this.previousBodyOverflow;
         this.trigger?.nativeElement.focus();
       }
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.open) {
+      document.body.style.overflow = this.previousBodyOverflow;
     }
   }
 
