@@ -8,7 +8,7 @@ The additive table scripts are:
 
 1. `20261112_001_business_application_and_cart.sql`
 2. `20261112_002_marketplace_baseline.sql`
-3. `20261113_001_public_marketplace_engagement.sql` — creates `CONTENT_VIEWS` and `CUSTOMER_ENQUIRIES` when absent for public business-view tracking and enquiry-based discovery ranking.
+3. `20261113_001_public_marketplace_engagement.sql` — creates `CONTENT_VIEWS` and `CUSTOMER_ENQUIRIES` when absent for public business-view tracking and enquiry-based discovery ranking.\n4. `20261113_002_social_identity_mapping.sql` — creates `USER_IDENTITIES` when absent for verified Google, Facebook, Apple and Instagram professional-account identities.
 
 They use `CREATE TABLE IF NOT EXISTS`; they do not reconcile an already-existing table definition. Review the live schema first. No destructive migration is authorized.
 
@@ -37,7 +37,7 @@ The seeds do not alter table structures. Review each script before execution and
 - Subscription proofs use `POST /api/v1/subscriptions/proofs/upload-url` to obtain a tenant-scoped S3 presigned PUT URL. `POST /api/v1/subscriptions/proofs/submit` verifies the object exists and checks its actual MIME type, file signature, extension and size before saving proof metadata. The proof flow is implemented in code but requires live bucket credentials/IAM and end-to-end verification. No arbitrary public URL is accepted.
 - Platform administration APIs remain default-deny until a trusted user is explicitly assigned the `PLATFORM_ADMIN` role.
 
-## Scope boundary
+## Social identity mapping\n\nThe `USER_IDENTITIES` table stores provider names, immutable provider subjects and optional provider emails only. It must not store provider access tokens or ID tokens. The authentication service verifies provider credentials server-side before creating a BBG session. The additive migration is not executed automatically; verify the live table definition and back up the database before applying it.\n\n## Scope boundary
 
 The current API work covers authentication/profile/permissions, tenant context and tenant orders, business application/storefront, marketplace/cart/orders, catalogue, customer address book, enquiries, engagement, promotions, subscriptions and platform administration.
 
