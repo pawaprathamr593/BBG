@@ -23,6 +23,8 @@ jobs:
         run: |
           find backend/src backend/config -type f -name '*.php' -print0 | xargs -0 -n1 php -l
           php -l backend/yii
+      - name: Verify API route and actionType contracts
+        run: php backend/tests/static_api_contract_check.php
 
   mysql-migrations:
     runs-on: ubuntu-latest
