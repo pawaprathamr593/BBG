@@ -284,7 +284,7 @@ export class AuthService {
     if (!authorizationCode || result.authorization?.state !== state) throw new Error('Apple sign-in could not be verified. Please try again.');
     const fullName = [result.user?.name?.firstName, result.user?.name?.lastName].filter(Boolean).join(' ');
     const redirectUri = `${window.location.origin}/auth/social/callback`;
-    return this.completeSocialCredential('APPLE', authorizationCode, intent, { nonce, full_name: fullName || contact.full_name || '', redirect_uri: redirectUri, ...contact });
+    return this.completeSocialCredential('APPLE', authorizationCode, intent, { ...contact, nonce, full_name: fullName || contact.full_name || '', redirect_uri: redirectUri });
   }
 
   private startInstagramLogin(appId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string }): void {
