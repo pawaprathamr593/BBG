@@ -392,7 +392,7 @@ final readonly class MarketplaceDao
 
         $distanceSelect = 'NULL AS distance_km';
         if ($sort === 'nearby') {
-            $distanceSelect = "(6371 * 2 * ASIN(SQRT(
+            $distanceSelect = "(6371 * 2 * ASIN(LEAST(1, SQRT(
                 POWER(SIN(RADIANS(bp.latitude - :lat1) / 2), 2) +
                 COS(RADIANS(:lat2)) * COS(RADIANS(bp.latitude)) *
                 POWER(SIN(RADIANS(bp.longitude - :lon1) / 2), 2)
