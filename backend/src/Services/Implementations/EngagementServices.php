@@ -33,7 +33,7 @@ final readonly class EngagementServices implements IEngagementServices
         }
         $actionData = $engagementParam['actionData'];
         try {
-            if (($actionData['action'] ?? '') === 'listContentComments') {
+            if (($engagementParam['actionType'] ?? '') === 'listContentComments') {
                 $resArr = $this->getContentComments($actionData);
             } else {
                 $resArr['msgArr'][] = 'Unsupported engagement read action.';
@@ -60,7 +60,7 @@ final readonly class EngagementServices implements IEngagementServices
         }
         $actionData = $engagementParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) engagementParam['actionType']) {
                 case 'toggleContentLike':
                     $resArr = $this->manageLike($actionData);
                     break;
