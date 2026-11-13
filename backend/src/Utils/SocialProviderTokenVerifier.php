@@ -185,7 +185,8 @@ final class SocialProviderTokenVerifier
             throw new RuntimeException('Instagram did not return an access token.');
         }
 
-        $debug = $this->verifyMetaAccessToken($accessToken, $appId, $appSecret);
+        // The authorization code was exchanged with the Instagram-specific app credentials.
+        // Confirm the resulting short-lived token by calling Instagram's own /me endpoint.
         $profile = $this->getJson(
             'https://graph.instagram.com/me?' . http_build_query([
                 'fields' => 'user_id,username',
@@ -193,7 +194,7 @@ final class SocialProviderTokenVerifier
             ]),
         );
         $subject = (string) ($profile['user_id'] ?? $profile['id'] ?? '');
-        if ($subject === '' || (isset($debug['user_id']) && $subject !== (string) $debug['user_id'])) {
+        if ($subject === '') {
             throw new RuntimeException('Instagram account verification failed.');
         }
 
