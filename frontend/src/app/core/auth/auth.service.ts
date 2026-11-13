@@ -3,11 +3,13 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../http/api.service';
 import { ApiError } from '../http/api-error';
 import { ApiEnvelope } from '../http/api.models';
+import { PermissionContext, PermissionService } from '../permissions/permission.service';
 import { AuthResponseData, AuthUser, LoginRequest, RegisterRequest } from './auth.models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly api = inject(ApiService);
+  private readonly permissionService = inject(PermissionService);
   private readonly accessTokenState = signal<string | null>(null);
   readonly accessToken = this.accessTokenState.asReadonly();
   readonly user = signal<AuthUser | null>(null);
@@ -31,7 +33,9 @@ export class AuthService {
       { authParam: { actionType: 'manageAuth', actionData: { action: 'login', ...payload } } },
       { withCredentials: true },
     ));
-    return this.acceptAuthResponse(response);
+    const user = this.acceptAuthResponse(response);
+    await this.loadPermissions(0).catch(() => this.permissionService.clear());
+    return user;
   }
 
   async refreshSession(): Promise<boolean> {
@@ -42,6 +46,7 @@ export class AuthService {
         { withCredentials: true, headers: { 'X-BBG-CSRF': '1' } },
       ));
       this.acceptAuthResponse(response);
+      await this.loadPermissions(0).catch(() => this.permissionService.clear());
       return true;
     } catch {
       this.clearLocalSession();
@@ -52,6 +57,23 @@ export class AuthService {
   async restoreSession(): Promise<boolean> {
     if (this.accessTokenState()) return true;
     return this.refreshSession();
+  }
+
+  async loadPermissions(tenantId = 0): Promise<PermissionContext> {
+    const token = this.accessTokenState();
+    if (!token) throw new ApiError('Sign in before loading permissions.');
+
+    const response = await firstValueFrom(this.api.post<PermissionContext>(
+      '/api/v1/auth/permissions',
+      { authParam: { actionType: 'getAuth', actionData: { tenant_id: tenantId } } },
+      { headers: { Authorization: `Bearer ${token}` } },
+    ));
+    this.assertSuccess(response, 'Unable to load permissions.');
+    if (!response.data || Array.isArray(response.data)) {
+      throw new ApiError('The permissions response did not contain a context record.');
+    }
+    this.permissionService.replaceFromVerifiedResponse(response.data);
+    return response.data;
   }
 
   async loadProfile(): Promise<AuthUser> {
@@ -108,5 +130,6 @@ export class AuthService {
     this.accessTokenState.set(null);
     this.user.set(null);
     this.isAuthenticated.set(false);
+    this.permissionService.clear();
   }
 }
