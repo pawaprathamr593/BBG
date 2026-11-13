@@ -96,7 +96,11 @@ export class AuthService {
     return config;
   }
 
-  async authenticateSocial(provider: SocialProvider, intent: SocialAuthIntent): Promise<AuthUser> {
+  async authenticateSocial(
+    provider: SocialProvider,
+    intent: SocialAuthIntent,
+    contact: { email?: string; mobile?: string } = {},
+  ): Promise<AuthUser> {
     const config = this.socialConfigState() ?? await this.loadSocialConfig();
     const providerConfig = config.providers?.[provider];
     if (!providerConfig?.enabled) {
@@ -105,26 +109,30 @@ export class AuthService {
 
     switch (provider) {
       case 'GOOGLE':
-        return this.authenticateGoogle(providerConfig.client_id ?? '', intent);
+        return this.authenticateGoogle(providerConfig.client_id ?? '', intent, contact);
       case 'FACEBOOK':
-        return this.authenticateFacebook(providerConfig.app_id ?? '', intent);
+        return this.authenticateFacebook(providerConfig.app_id ?? '', intent, contact);
       case 'APPLE':
-        return this.authenticateApple(providerConfig.client_id ?? '', intent);
+        return this.authenticateApple(providerConfig.client_id ?? '', intent, contact);
       case 'INSTAGRAM':
-        return new Promise<AuthUser>(() => this.startInstagramLogin(providerConfig.app_id ?? '', intent));
+        return new Promise<AuthUser>(() => this.startInstagramLogin(providerConfig.app_id ?? '', intent, contact));
     }
   }
 
   async completeInstagramLogin(code: string, returnedState: string): Promise<AuthUser> {
     const expectedState = sessionStorage.getItem('bbg_instagram_state') ?? '';
     const intent = (sessionStorage.getItem('bbg_instagram_intent') ?? 'login') as SocialAuthIntent;
+    const email = sessionStorage.getItem('bbg_instagram_email') ?? '';
+    const mobile = sessionStorage.getItem('bbg_instagram_mobile') ?? '';
     sessionStorage.removeItem('bbg_instagram_state');
     sessionStorage.removeItem('bbg_instagram_intent');
+    sessionStorage.removeItem('bbg_instagram_email');
+    sessionStorage.removeItem('bbg_instagram_mobile');
     if (!expectedState || !returnedState || expectedState !== returnedState) {
       throw new Error('Instagram sign-in could not be verified. Please start again.');
     }
     const redirectUri = `${window.location.origin}/auth/social/callback`;
-    return this.completeSocialCredential('INSTAGRAM', code, intent, { redirect_uri: redirectUri });
+    return this.completeSocialCredential('INSTAGRAM', code, intent, { redirect_uri: redirectUri, email, mobile });
   }
 
   async linkSocialProvider(
@@ -196,7 +204,7 @@ export class AuthService {
     }
   }
 
-  private async authenticateGoogle(clientId: string, intent: SocialAuthIntent): Promise<AuthUser> {
+  private async authenticateGoogle(clientId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string }): Promise<AuthUser> {
     await this.loadScript('https://accounts.google.com/gsi/client');
     const google = window.google?.accounts?.id;
     if (!google) throw new Error('Google sign-in could not be initialized. Please try again.');
@@ -214,7 +222,7 @@ export class AuthService {
           completed = true;
           window.clearTimeout(timeout);
           try {
-            resolve(await this.completeSocialCredential('GOOGLE', credentialResponse.credential, intent, { nonce }));
+            resolve(await this.completeSocialCredential('GOOGLE', credentialResponse.credential, intent, { nonce, ...contact }));
           } catch (error) {
             reject(error);
           }
@@ -229,7 +237,7 @@ export class AuthService {
     });
   }
 
-  private async authenticateFacebook(appId: string, intent: SocialAuthIntent): Promise<AuthUser> {
+  private async authenticateFacebook(appId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string }): Promise<AuthUser> {
     await this.loadScript('https://connect.facebook.net/en_US/sdk.js');
     const facebook = window.FB;
     if (!facebook) throw new Error('Facebook sign-in could not be initialized. Please try again.');
@@ -243,7 +251,7 @@ export class AuthService {
           return;
         }
         try {
-          resolve(await this.completeSocialCredential('FACEBOOK', token, intent));
+          resolve(await this.completeSocialCredential('FACEBOOK', token, intent, contact));
         } catch (error) {
           reject(error);
         }
@@ -251,7 +259,7 @@ export class AuthService {
     });
   }
 
-  private async authenticateApple(clientId: string, intent: SocialAuthIntent): Promise<AuthUser> {
+  private async authenticateApple(clientId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string }): Promise<AuthUser> {
     await this.loadScript('https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js');
     const apple = window.AppleID;
     if (!apple) throw new Error('Apple sign-in could not be initialized. Please try again.');
@@ -269,14 +277,16 @@ export class AuthService {
     const idToken = result.authorization?.id_token;
     if (!idToken || result.authorization?.state !== state) throw new Error('Apple sign-in could not be verified. Please try again.');
     const fullName = [result.user?.name?.firstName, result.user?.name?.lastName].filter(Boolean).join(' ');
-    return this.completeSocialCredential('APPLE', idToken, intent, { nonce, full_name: fullName });
+    return this.completeSocialCredential('APPLE', idToken, intent, { nonce, full_name: fullName, ...contact });
   }
 
-  private startInstagramLogin(appId: string, intent: SocialAuthIntent): void {
+  private startInstagramLogin(appId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string }): void {
     const state = this.createNonce();
     const redirectUri = `${window.location.origin}/auth/social/callback`;
     sessionStorage.setItem('bbg_instagram_state', state);
     sessionStorage.setItem('bbg_instagram_intent', intent);
+    sessionStorage.setItem('bbg_instagram_email', contact.email?.trim() ?? '');
+    sessionStorage.setItem('bbg_instagram_mobile', contact.mobile?.trim() ?? '');
     const url = new URL('https://www.instagram.com/oauth/authorize');
     url.search = new URLSearchParams({
       client_id: appId,
