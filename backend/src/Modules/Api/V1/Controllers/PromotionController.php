@@ -63,6 +63,7 @@ final class PromotionController
         $data = is_array($param['actionData'] ?? null) ? $param['actionData'] : [];
         $authorization = $request->getHeaderLine('Authorization');
         $data['_accessToken'] = str_starts_with($authorization, 'Bearer ') ? trim(substr($authorization, 7)) : '';
+        $data['action'] = $action;
         $param['actionType'] = $manage ? 'managePromotion' : 'getPromotion';
         $param['actionData'] = $data;
         $input['promotionParam'] = $param;
