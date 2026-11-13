@@ -107,6 +107,7 @@ final class AuthController
                 $streamFactory,
             );
         }
+        $authParam['actionType'] = $action;
         $actionData['action'] = $action;
         $authorization = $request->getHeaderLine('Authorization');
         $actionData['_accessToken'] = str_starts_with($authorization, 'Bearer ')
