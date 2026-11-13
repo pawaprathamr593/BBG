@@ -54,6 +54,9 @@ final readonly class MarketplaceServices implements IMarketplaceServices
                 case 'listPublicCategories':
                     $resArr = $this->getCategories($actionData);
                     break;
+                case 'listPublicProductCategories':
+                    $resArr = $this->getProductCategories($actionData);
+                    break;
                 case 'listPublicPromotions':
                     $resArr = $this->getPromotions($actionData);
                     break;
@@ -162,12 +165,12 @@ final readonly class MarketplaceServices implements IMarketplaceServices
 
     private function getProducts(array $actionData): array
     {
+        if ($this->businessSlug($actionData['business_slug'] ?? null) === null) {
+            return $this->getMarketplaceProducts($actionData);
+        }
+
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $slug = $this->businessSlug($actionData['business_slug'] ?? null);
-        if ($slug === null) {
-            $resArr['msgArr'][] = 'A valid business_slug is required.';
-            return $resArr;
-        }
         $business = $this->dao->getBusinessBySlug($this->db, $slug);
         if ($business['status'] !== 'SUCCESS') {
             return $this->propagateFailure($business, 'MarketplaceServices::getProducts');
@@ -201,6 +204,133 @@ final readonly class MarketplaceServices implements IMarketplaceServices
             ],
         ];
         return $resArr;
+    }
+
+    private function getMarketplaceProducts(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(50, $this->positiveInt($actionData['page_size'] ?? 20) ?? 20);
+        $categoryId = null;
+        if (isset($actionData['category_id']) && $actionData['category_id'] !== '') {
+            $categoryId = $this->positiveInt($actionData['category_id']);
+            if ($categoryId === null) {
+                $resArr['msgArr'][] = 'A valid product category_id is required.';
+                return $resArr;
+            }
+        }
+
+        $minPrice = $this->optionalPrice($actionData['min_price'] ?? null);
+        $maxPrice = $this->optionalPrice($actionData['max_price'] ?? null);
+        if (($actionData['min_price'] ?? '') !== '' && $minPrice === null) {
+            $resArr['msgArr'][] = 'A valid min_price is required.';
+            return $resArr;
+        }
+        if (($actionData['max_price'] ?? '') !== '' && $maxPrice === null) {
+            $resArr['msgArr'][] = 'A valid max_price is required.';
+            return $resArr;
+        }
+        if ($minPrice !== null && $maxPrice !== null && $minPrice > $maxPrice) {
+            $resArr['msgArr'][] = 'min_price cannot be greater than max_price.';
+            return $resArr;
+        }
+
+        $sort = $this->filterText($actionData['sort'] ?? 'newest', 20);
+        $allowedSorts = ['newest', 'popular', 'nearby', 'price_low', 'price_high', 'name'];
+        if (!in_array($sort, $allowedSorts, true)) {
+            $resArr['msgArr'][] = 'Unsupported product sort option.';
+            return $resArr;
+        }
+
+        $latitude = null;
+        $longitude = null;
+        if ($sort === 'nearby') {
+            $latitude = is_numeric($actionData['latitude'] ?? null) ? (float) $actionData['latitude'] : null;
+            $longitude = is_numeric($actionData['longitude'] ?? null) ? (float) $actionData['longitude'] : null;
+            if ($latitude === null || $longitude === null || $latitude < -90 || $latitude > 90 || $longitude < -180 || $longitude > 180) {
+                $resArr['msgArr'][] = 'Valid latitude and longitude are required for nearby sorting.';
+                return $resArr;
+            }
+        }
+
+        $filters = [
+            'search' => $this->filterText($actionData['search'] ?? '', 100),
+            'category_id' => $categoryId,
+            'brand' => $this->filterText($actionData['brand'] ?? '', 100),
+            'city' => $this->filterText($actionData['city'] ?? '', 100),
+            'state' => $this->filterText($actionData['state'] ?? '', 100),
+            'min_price' => $minPrice,
+            'max_price' => $maxPrice,
+            'online_only' => filter_var($actionData['online_only'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+        ];
+
+        $rows = $this->dao->getMarketplaceProducts($this->db, $filters, $sort, $pageSize, ($page - 1) * $pageSize);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'MarketplaceServices::getMarketplaceProducts');
+        }
+        $count = $this->dao->countMarketplaceProducts($this->db, $filters);
+        if ($count['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($count, 'MarketplaceServices::getMarketplaceProducts');
+        }
+
+        $items = array_map(function (array $row): array {
+            $item = $this->publicProduct($row, (bool) $row['show_prices']);
+            $item['created_on'] = $row['created_on'];
+            $item['primary_image_path'] = $row['primary_image_path'];
+            $item['popularity'] = [
+                'views' => (int) $row['view_count'],
+                'likes' => (int) $row['like_count'],
+                'engagements' => (int) $row['popularity_count'],
+            ];
+            if ($row['distance_km'] !== null) {
+                $item['distance_km'] = round((float) $row['distance_km'], 2);
+            }
+            $item['business'] = [
+                'business_name' => $row['business_name'],
+                'business_slug' => $row['business_slug'],
+                'logo_path' => $row['business_logo_path'],
+                'city' => $row['city'],
+                'state' => $row['state'],
+            ];
+            return $item;
+        }, $rows['data']);
+
+        $sortBasis = match ($sort) {
+            'popular' => 'persisted_product_views_plus_likes',
+            'nearby' => 'business_profile_coordinates_haversine_distance_km',
+            'price_low' => 'selling_price_ascending',
+            'price_high' => 'selling_price_descending',
+            'name' => 'product_name_ascending',
+            default => 'created_on_descending',
+        };
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
+            'items' => $items,
+            'sort' => $sort,
+            'sort_basis' => $sortBasis,
+            'timestamp_note' => 'Newly added products are ordered by PRODUCTS.created_on; the current schema has no separate published_on timestamp.',
+            'pagination' => [
+                'page' => $page,
+                'page_size' => $pageSize,
+                'total' => (int) ($count['data']['total'] ?? 0),
+            ],
+        ];
+        return $resArr;
+    }
+
+    private function getProductCategories(array $actionData): array
+    {
+        $result = $this->dao->getPublicProductCategories($this->db);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'MarketplaceServices::getProductCategories');
+        }
+        return [
+            'status' => 'SUCCESS',
+            'msgArr' => [],
+            'data' => ['items' => $result['data']],
+        ];
     }
 
     private function getProduct(array $actionData): array
@@ -539,6 +669,7 @@ final readonly class MarketplaceServices implements IMarketplaceServices
             'product_name' => $row['product_name'],
             'description' => $row['description'],
             'category_id' => $row['category_id'] === null ? null : (int) $row['category_id'],
+            'global_category_id' => ($row['global_category_id'] ?? null) === null ? null : (int) $row['global_category_id'],
             'category_name' => $row['category_name'],
             'brand_name' => $row['brand_name'],
             'barcode' => $row['barcode'],
@@ -567,6 +698,18 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         }
         $slug = trim((string) $value);
         return $slug !== '' && strlen($slug) <= 200 ? $slug : null;
+    }
+
+    private function optionalPrice(mixed $value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (!is_numeric($value)) {
+            return null;
+        }
+        $price = (float) $value;
+        return is_finite($price) && $price >= 0 ? $price : null;
     }
 
     private function positiveInt(mixed $value): ?int
