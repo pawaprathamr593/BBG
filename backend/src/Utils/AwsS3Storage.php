@@ -53,11 +53,11 @@ final class AwsS3Storage
     public function createDownloadUrl(string $key): string
     {
         try {
-            $command = $this->client->getCommand('GetObject', [
+            $command = $this->client()->getCommand('GetObject', [
                 'Bucket' => $this->bucket,
                 'Key' => $key,
             ]);
-            return (string) $this->client->createPresignedRequest(
+            return (string) $this->client()->createPresignedRequest(
                 $command,
                 '+' . $this->urlTtlMinutes . ' minutes',
             )->getUri();
