@@ -25,7 +25,7 @@ final readonly class DashboardServices implements IDashboardServices
     public function getDashboard(array $dashboardParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($dashboardParam['actionType']) || $dashboardParam['actionType'] !== 'getDashboard') {
+        if (!isset($dashboardParam['actionType']) || !is_string($dashboardParam['actionType']) || $dashboardParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Invalid actionType for getDashboard.';
             return $resArr;
         }
@@ -34,8 +34,9 @@ final readonly class DashboardServices implements IDashboardServices
             return $resArr;
         }
         $actionData = $dashboardParam['actionData'];
+        $actionData['action'] = (string) $dashboardParam['actionType'];
         try {
-            switch ((string) dashboardParam['actionType']) {
+            switch ((string) $dashboardParam['actionType']) {
                 case 'getConsumerDashboard':
                     $resArr = $this->getConsumerDashboard($actionData);
                     break;
