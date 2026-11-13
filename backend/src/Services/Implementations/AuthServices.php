@@ -70,7 +70,6 @@ final readonly class AuthServices implements IAuthServices
 
     private function manageRegistration(array $actionData): array
     {
-        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $fullName = trim((string) ($actionData['full_name'] ?? ''));
         $email = trim(strtolower((string) ($actionData['email'] ?? '')));
         $mobile = trim((string) ($actionData['mobile'] ?? ''));
@@ -96,18 +95,38 @@ final readonly class AuthServices implements IAuthServices
                 }
             }
 
-            $resArr = $this->authDao->insertUser(
-                $this->connection,
-                $fullName,
-                $email !== '' ? $email : null,
-                $mobile !== '' ? $mobile : null,
-                password_hash($password, PASSWORD_DEFAULT),
-            );
-            if ($resArr['status'] !== 'SUCCESS') {
-                return $this->propagateFailure($resArr, 'AuthServices::manageRegistration');
+            $transaction = $this->connection->beginTransaction();
+            try {
+                $created = $this->authDao->insertUser(
+                    $this->connection,
+                    $fullName,
+                    $email !== '' ? $email : null,
+                    $mobile !== '' ? $mobile : null,
+                    password_hash($password, PASSWORD_DEFAULT),
+                );
+                if ($created['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($created, 'AuthServices::manageRegistration');
+                }
+
+                $userId = (int) $created['data']['id'];
+                $roleAssignment = $this->authDao->assignConsumerRole($this->connection, $userId);
+                if ($roleAssignment['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($roleAssignment, 'AuthServices::manageRegistration');
+                }
+
+                $transaction->commit();
+                $created['msgArr'][] = 'Account created successfully.';
+                $created['data']['role_code'] = 'CONSUMER';
+                $created['data']['role_scope'] = 'GLOBAL';
+                return $created;
+            } catch (Throwable $exception) {
+                if ($transaction->isActive()) {
+                    $transaction->rollBack();
+                }
+                throw $exception;
             }
-            $resArr['msgArr'][] = 'Account created successfully.';
-            return $resArr;
         } catch (Throwable $exception) {
             return $this->exception('manageRegistration', $exception);
         }
@@ -282,6 +301,11 @@ final readonly class AuthServices implements IAuthServices
                         return $this->propagateFailure($created, 'AuthServices::manageSocialLogin');
                     }
                     $userId = (int) $created['data']['id'];
+                    $roleAssignment = $this->authDao->assignConsumerRole($this->connection, $userId);
+                    if ($roleAssignment['status'] !== 'SUCCESS') {
+                        $transaction->rollBack();
+                        return $this->propagateFailure($roleAssignment, 'AuthServices::manageSocialLogin');
+                    }
                     $linked = $this->authDao->insertUserIdentity(
                         $this->connection,
                         $userId,
