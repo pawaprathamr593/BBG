@@ -1,0 +1,21 @@
+:host { display: block; }
+.promotions-page { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding-top: 48px; }
+.eyebrow { margin: 0 0 9px; color: var(--bbg-primary); font-size: .7rem; font-weight: 800; letter-spacing: .14em; }
+.page-heading h1 { margin: 0; color: var(--bbg-ink); font-size: clamp(2rem,4vw,2.8rem); letter-spacing: -.055em; }
+.page-heading p:last-child { margin: 12px 0 0; color: var(--bbg-muted); font-size: .95rem; }
+.promotion-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; margin-top: 34px; }
+.promotion-card { min-height: 220px; padding: 24px; background: #fff; border: 1px solid var(--bbg-border); border-radius: 14px; }
+.card-kicker { display: flex; justify-content: space-between; gap: 12px; color: var(--bbg-muted); font-size: .74rem; }
+.card-kicker span { color: var(--bbg-primary-strong); font-weight: 750; }
+.promotion-card h2 { margin: 22px 0 10px; color: var(--bbg-ink); font-size: 1.2rem; letter-spacing: -.03em; }
+.promotion-card p { margin: 0; color: var(--bbg-muted); font-size: .87rem; line-height: 1.7; white-space: pre-line; }
+.valid-until { margin-top: 20px; color: #8c5f20; font-size: .75rem; }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 28px; }
+.pagination button, .primary-button { min-height: 42px; padding: 0 14px; color: var(--bbg-primary-strong); background: #fff; border: 1px solid var(--bbg-border); border-radius: 8px; font-weight: 650; cursor: pointer; }
+.pagination button:disabled { opacity: .45; cursor: not-allowed; }
+.pagination span { color: var(--bbg-muted); font-size: .8rem; }
+.state-panel { margin-top: 34px; padding: 42px 20px; text-align: center; background: #fff; border: 1px solid var(--bbg-border); border-radius: 14px; }
+.state-panel h2 { color: var(--bbg-ink); font-size: 1.1rem; }.state-panel p { color: var(--bbg-muted); font-size: .85rem; }
+.primary-button { color: #fff; background: var(--bbg-primary); border: 0; }
+.skeleton { min-height: 220px; background: #eef1f5; border-radius: 14px; }
+@media (max-width: 680px) { .promotions-page { width: calc(100% - 28px); padding-top: 32px; }.promotion-grid { grid-template-columns: 1fr; }.promotion-card { padding: 20px; }.card-kicker { flex-direction: column; } }
