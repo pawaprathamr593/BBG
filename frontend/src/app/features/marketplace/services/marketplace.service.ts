@@ -4,10 +4,12 @@ import { ApiService } from '../../../core/http/api.service';
 import { ApiError } from '../../../core/http/api-error';
 import { ApiEnvelope } from '../../../core/http/api.models';
 import {
+  MarketplaceBusiness,
   MarketplaceBusinessDetail,
   MarketplaceCategory,
   MarketplaceHomeSummary,
   MarketplaceList,
+  MarketplaceProduct,
   MarketplaceProductDetail,
   MarketplacePromotion,
   MarketplacePromotionDetail,
@@ -44,8 +46,8 @@ export class MarketplaceService {
     return result.items;
   }
 
-  async listBusinesses(query: BusinessDirectoryQuery = {}): Promise<MarketplaceList<import('../models/marketplace.models').MarketplaceBusiness>> {
-    return this.request<MarketplaceList<import('../models/marketplace.models').MarketplaceBusiness>>(
+  async listBusinesses(query: BusinessDirectoryQuery = {}): Promise<MarketplaceList<MarketplaceBusiness>> {
+    return this.request<MarketplaceList<MarketplaceBusiness>>(
       '/api/v1/marketplace/businesses/list',
       'listBusinesses',
       query,
@@ -60,8 +62,8 @@ export class MarketplaceService {
     );
   }
 
-  async listProducts(businessSlug: string, page = 1, pageSize = 20, search = ''): Promise<unknown> {
-    return this.request<unknown>(
+  async listProducts(businessSlug: string, page = 1, pageSize = 20, search = ''): Promise<MarketplaceList<MarketplaceProduct>> {
+    return this.request<MarketplaceList<MarketplaceProduct>>(
       '/api/v1/marketplace/products/list',
       'listProducts',
       { business_slug: businessSlug, page, page_size: pageSize, search },
