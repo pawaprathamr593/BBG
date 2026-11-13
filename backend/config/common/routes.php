@@ -59,6 +59,7 @@ return [
     Route::post('/api/v1/marketplace/products/recent')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/products/recent'),
     Route::post('/api/v1/marketplace/businesses/detail')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/businesses/detail'),
     Route::post('/api/v1/marketplace/products/list')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/products/list'),
+    Route::post('/api/v1/marketplace/products/categories')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/products/categories'),
     Route::post('/api/v1/marketplace/products/detail')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/products/detail'),
     Route::post('/api/v1/marketplace/home')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/home'),
     Route::post('/api/v1/marketplace/categories/list')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/categories/list'),
