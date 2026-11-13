@@ -10,9 +10,10 @@
         </a>
         <nav class="storefront-nav" aria-label="Storefront navigation">
           <a [routerLink]="['/businesses', slug()]" [routerLinkActiveOptions]="{exact:true}" routerLinkActive="active">Home</a>
-          <a [routerLink]="['/businesses', slug()]" fragment="products">Products</a>
-          <a [routerLink]="['/businesses', slug()]" fragment="about">About</a>
-          <a [routerLink]="['/businesses', slug()]" fragment="contact">Contact</a>
+          <a [routerLink]="['/businesses', slug(), 'products']" routerLinkActive="active">Products</a>
+          <a [routerLink]="['/businesses', slug(), 'promotions']" routerLinkActive="active">Offers</a>
+          <a [routerLink]="['/businesses', slug(), 'about']" routerLinkActive="active">About</a>
+          <a [routerLink]="['/businesses', slug(), 'contact']" routerLinkActive="active">Contact</a>
         </nav>
         <div class="storefront-actions">
           <button type="button" class="theme-toggle" (click)="theme.toggle()" [attr.aria-label]="'Switch to ' + (theme.resolvedTheme() === 'dark' ? 'light' : 'dark') + ' theme'">
