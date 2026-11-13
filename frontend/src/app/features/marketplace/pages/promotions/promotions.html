@@ -8,12 +8,13 @@
     @if (data.items.length) {
       <div class="promotion-grid">
         @for (promotion of data.items; track promotion.id) {
-          <article class="promotion-card">
+          <a class="promotion-card" [routerLink]="['/promotions', promotion.id]">
             <div class="card-kicker"><span>{{ promotion.business_name }}</span><time>{{ promotion.published_on | date:'mediumDate' }}</time></div>
             <h2>{{ promotion.post_title }}</h2>
             <p>{{ promotion.post_content }}</p>
             @if (promotion.valid_until) { <div class="valid-until">Available until {{ promotion.valid_until | date:'mediumDate' }}</div> }
-          </article>
+            <span class="read-more">Read update →</span>
+          </a>
         }
       </div>
       <nav class="pagination" aria-label="Promotion pages"><button type="button" [disabled]="page() <= 1" (click)="changePage(page() - 1)">Previous</button><span>Page {{ data.pagination.page }} of {{ totalPages(data.pagination.total, data.pagination.page_size) }}</span><button type="button" [disabled]="data.pagination.page * data.pagination.page_size >= data.pagination.total" (click)="changePage(page() + 1)">Next</button></nav>
