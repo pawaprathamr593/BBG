@@ -3,7 +3,7 @@
 **Working branch:** `fix/bbg-seven-layer-audit` (based on `feature/auth-foundation`)  
 **Framework:** Yii 3 / PHP 8.4 / MySQL 8.4  
 **Client:** Angular 22  
-**Status:** Implementation catalogue derived from the approved BBG backend/database/frontend architecture and Phase 1 backend status.  
+**Status:** Implementation catalogue aligned to the locked BBG backend architecture baseline and database design; frontend architecture items remain subject to their documented scope decisions and pending approvals.  
 **HTTP method:** POST for all API actions, preserving the locked `.agents` convention.
 
 ## 1. Layer contract
