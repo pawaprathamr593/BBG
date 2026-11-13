@@ -37,7 +37,7 @@ final readonly class BusinessServices implements IBusinessServices
         }
         $actionData = $businessParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) businessParam['actionType']) {
                 case 'getMyBusinessApplication':
                     $resArr = $this->getBusinessApplication($actionData);
                     break;
@@ -80,7 +80,7 @@ final readonly class BusinessServices implements IBusinessServices
         }
         $actionData = $businessParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) businessParam['actionType']) {
                 case 'submitBusinessApplication':
                     $resArr = $this->manageBusinessApplication($actionData, 'submit');
                     break;
