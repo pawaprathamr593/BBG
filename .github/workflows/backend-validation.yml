@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/auth-foundation
+      - fix/bbg-seven-layer-audit
   pull_request:
     branches:
       - main
