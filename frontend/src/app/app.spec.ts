@@ -12,15 +12,14 @@ describe('App', () => {
     }).compileComponents();
   });
 
-  it('should create the app shell', () => {
+  it('should create the root router host', () => {
     const fixture = TestBed.createComponent(App);
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should render the BBG brand', async () => {
+  it('should render a router outlet', () => {
     const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.brand strong')?.textContent).toContain('BBG');
+    expect(compiled.querySelector('router-outlet')).not.toBeNull();
   });
 });
