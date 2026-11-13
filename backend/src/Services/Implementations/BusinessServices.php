@@ -31,13 +31,14 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = "Missing or invalid 'actionData'.";
             return $resArr;
         }
-        if ($businessParam['actionType'] !== 'getBusiness') {
+        if (!is_string($businessParam['actionType'] ?? null) || $businessParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Unsupported actionType for getBusiness.';
             return $resArr;
         }
         $actionData = $businessParam['actionData'];
+        $actionData['action'] = (string) $businessParam['actionType'];
         try {
-            switch ((string) businessParam['actionType']) {
+            switch ((string) $businessParam['actionType']) {
                 case 'getMyBusinessApplication':
                     $resArr = $this->getBusinessApplication($actionData);
                     break;
@@ -74,13 +75,14 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = "Missing or invalid 'actionData'.";
             return $resArr;
         }
-        if ($businessParam['actionType'] !== 'manageBusiness') {
+        if (!is_string($businessParam['actionType'] ?? null) || $businessParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Unsupported actionType for manageBusiness.';
             return $resArr;
         }
         $actionData = $businessParam['actionData'];
+        $actionData['action'] = (string) $businessParam['actionType'];
         try {
-            switch ((string) businessParam['actionType']) {
+            switch ((string) $businessParam['actionType']) {
                 case 'submitBusinessApplication':
                     $resArr = $this->manageBusinessApplication($actionData, 'submit');
                     break;
