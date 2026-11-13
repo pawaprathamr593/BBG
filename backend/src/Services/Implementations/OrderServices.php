@@ -43,8 +43,13 @@ final readonly class OrderServices implements IOrderServices
         }
 
         switch ($param['actionType']) {
-            case 'getOrders':
-                $resArr = $this->getOrder($param['actionData']);
+            case 'listMyOrders':
+            case 'getMyOrder':
+            case 'listTenantOrders':
+            case 'getTenantOrder':
+                $actionData = $param['actionData'];
+                $actionData['action'] = (string) $param['actionType'];
+                $resArr = $this->getOrder($actionData);
                 break;
 
             default:
@@ -77,8 +82,10 @@ final readonly class OrderServices implements IOrderServices
         }
 
         switch ($param['actionType']) {
-            case 'manageOrders':
-                $resArr = $this->manageOrder($param['actionData']);
+            case 'changeTenantOrderStatus':
+                $actionData = $param['actionData'];
+                $actionData['action'] = (string) $param['actionType'];
+                $resArr = $this->manageOrder($actionData);
                 break;
 
             default:
