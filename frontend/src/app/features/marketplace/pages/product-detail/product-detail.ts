@@ -52,7 +52,7 @@ export class ProductDetail implements OnInit {
     const product = this.detail()?.product;
     const variant = this.detail()?.variants.find((item) => item.id === this.selectedVariantId());
     const fractionAllowed = variant?.is_fraction_allowed ?? product?.unit.is_fraction_allowed;
-    const precision = Number(variant?.quantity_precision ?? product?.unit.quantity_precision ?? 0);
+    const precision = Math.min(2, Number(variant?.quantity_precision ?? product?.unit.quantity_precision ?? 0));
     return fractionAllowed && precision > 0 ? String(1 / (10 ** precision)) : '1';
   }
 
