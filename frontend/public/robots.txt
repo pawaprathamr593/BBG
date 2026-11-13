@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /consumer
+Disallow: /entrepreneur
+Disallow: /admin
+Disallow: /login
+Disallow: /register
+Disallow: /access-denied
