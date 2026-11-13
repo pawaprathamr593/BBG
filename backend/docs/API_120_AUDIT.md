@@ -8,28 +8,28 @@
 
 ## 1. Executive summary
 
-The route inventory contains **120 original POST endpoints across 15 modules**. The current branch registers 121 POST routes because the product-media S3 upload-URL route was added after the original 120.
+The route inventory contains **120 original POST endpoints across 15 modules**. The current branch registers 122 POST routes: the original 120 plus the product-media and subscription-proof S3 upload-URL routes.
 
 This was a **static source audit**, not a live API penetration test. The audit traced the route/controller/DTO/versioned-service/core-service/DAO paths, inspected SQL construction and tenant checks, compared DAO table usage with the supplied database design, and checked the current CI workflow result.
 
 | Area | Result |
 |---|---|
 | Original endpoint count | 120 |
-| Current registered POST routes | 121 (120 original + 1 S3 upload URL) |
+| Current registered POST routes | 122 (120 original + 2 S3 upload URLs) |
 | Route groups | 15 |
 | Seven-layer structure | Present in the repository |
 | InDto / Versioned Services | Generally follow the expected factory/delegation pattern |
-| Core action dispatch | **14 of 15 modules still use a second dispatch from `actionData.action`; Catalogue is the exception** |
-| Route-to-worker binding | **12 modules do not bind the URL path to the worker action** |
+| Core action dispatch | **Remediated:** all module Level 1 dispatchers now use route-derived `actionType`; Catalogue was already compliant |
+| Route-to-worker binding | **Remediated:** controllers derive operation values from matched routes and overwrite body action selectors |
 | DAO SQL | Parameter binding is generally used; three wildcard SELECTs remain in AdminDao |
 | Tenant/permission checks | Implemented in the reviewed private-operation flows; see module review |
 | Product image S3 | Presigned upload + object verification implemented |
-| Subscription proof S3 | Not implemented or verified |
-| Database design alignment | Cart and business-application migration additions are not represented in Database Design Final v2.0 |
-| CI | Latest backend validation workflow completed successfully |
+| Subscription proof S3 | Presigned upload URL and server-side object verification implemented; live S3 test pending |
+| Database design alignment | **Documented in v2.1 amendment:** CARTS/CART_ITEMS adopted as tables 69–70; three BUSINESS_APPLICATION* tables documented as migration-only/dormant |
+| CI | Earlier remediation commits passed; latest code commit validation must be checked separately |
 | End-to-end/security tests | Not demonstrated by the current workflow |
 
-**Overall assessment: NOT READY FOR PRODUCTION API SIGN-OFF.** The main blockers are the action-dispatch/route-binding inconsistency, subscription-proof file verification, and unresolved database-design drift. The current CI pass is useful but proves PHP syntax and clean-database migration compatibility only.
+**Overall assessment: P1 source-level corrections implemented; NOT READY FOR PRODUCTION API SIGN-OFF.** CI syntax/migration validation and live endpoint/S3 integration tests remain required. The source audit is not a penetration test.
 
 ## 2. Audit criteria
 
@@ -455,3 +455,28 @@ The route count remains 121 registered POST routes: the original 120 plus the ex
 GitHub Actions runs were triggered for the remediation commits. The latest run must complete successfully before the branch is treated as CI-validated. CI syntax/migration checks do not replace API integration, cross-tenant authorization, upload-flow or concurrency tests.
 
 **Production sign-off remains withheld.** The open items in API-AUD-001, API-AUD-003 and API-AUD-004 must be resolved, followed by endpoint-level tests.
+
+
+---
+
+## 5. P1 remediation update — 13 November 2026
+
+The original findings above describe the audited baseline. The following corrections have since been committed to `fix/bbg-seven-layer-audit`.
+
+| Finding | Remediation | Current status |
+|---|---|---|
+| API-AUD-001 — Core Services dispatch | All module Level 1 dispatchers now switch/match on the route-derived `actionType`. The validated action is copied into `actionData.action` only for compatibility with existing Level 2 worker logic. | **Source correction implemented** |
+| API-AUD-002 — route-to-worker binding | Auth, Cart, Order, Marketplace, Tenant, Business, Catalogue, Customer, Enquiry, Promotion, Engagement, Subscription, Admin, Payment and Dashboard controllers bind the matched route operation to `actionType`. Unknown paths/actions are rejected by controller or dispatcher. | **Source correction implemented** |
+| API-AUD-003 — subscription proof S3 | Added `POST /api/v1/subscriptions/proofs/upload-url`. It issues a tenant-scoped, random S3 object key and presigned PUT URL for JPEG, PNG, WebP or PDF. Proof submission verifies S3 existence, actual Content-Type, file signature, extension and actual size before inserting proof metadata. | **Source correction implemented; live S3 verification pending** |
+| API-AUD-004 — schema drift | Added `backend/docs/BBG_DATABASE_DESIGN_V2.1_AMENDMENT.md`: `CARTS` and `CART_ITEMS` are canonical tables 69–70; `BUSINESS_APPLICATIONS`, `BUSINESS_APPLICATION_DOCUMENTS` and `BUSINESS_APPLICATION_REVIEWS` are explicitly documented as migration-only/dormant pending a separately approved workflow. | **Documentation reconciliation implemented; live schema not inspected** |
+
+### Validation boundaries
+
+- Existing public API URLs and request/response envelopes were preserved. The new subscription proof upload-URL route is the one approved additive API route.
+- The route count is now 122 (120 original routes plus product-media and subscription-proof upload-URL routes).
+- `backend/docs/API_ACTION_TYPE_CATALOGUE.md` records the route-derived action catalogue and internal-only `getPrincipal` action.
+- `backend/docs/API_V1_SUBSCRIPTION_PROOFS.md` records the upload sequence and request/response contract.
+- GitHub Actions syntax and migration checks do not prove API authorization, cross-tenant isolation, real S3 permissions, or full upload/submit behavior.
+- No live S3 bucket or production database was accessed. No production merge or deployment was performed.
+
+**Release recommendation:** Keep the branch out of production until the latest workflow passes and endpoint-level tests cover every route action, cross-tenant access, proof upload/submit failure cases, and S3 configuration.
