@@ -44,7 +44,7 @@
             <div class="action-workspace">
               <div class="action-heading"><div><span class="method-label">POST</span><h3>{{ action.label }}</h3><code>{{ action.path }}</code></div>
                 @if (action.tenantScoped) { <span class="scope-label">{{ selectedTenantId() ? 'Selected business context' : 'Select a business first' }}</span> }
-                <button class="button button-primary" type="button" [disabled]="loading() || (action.tenantScoped && !selectedTenantId())" (click)="run()">@if(loading()){ Working… }@else{ {{ action.requiresPayload?'Submit request':'Load data' }} }</button>
+                <button class="button button-primary" type="button" [disabled]="loading() || tenantLoading() || (action.tenantScoped && !selectedTenantId())" (click)="run()">@if(loading()){ Working… }@else{ {{ action.requiresPayload?'Submit request':'Load data' }} }</button>
               </div>
               @if(action.requiresPayload){
                 <div class="payload-editor"><label for="workspace-payload">Request payload (JSON)</label><p>Enter only operation-specific fields defined by the backend contract. For tenant-scoped actions, the selected business ID is attached automatically; BBG still verifies membership and permission on the server.</p><textarea id="workspace-payload" rows="8" spellcheck="false" [ngModel]="payload()" (ngModelChange)="payload.set($event)" aria-describedby="payload-help"></textarea><small id="payload-help">Use a JSON object. The request will be sent to the registered route using its module envelope.</small></div>
