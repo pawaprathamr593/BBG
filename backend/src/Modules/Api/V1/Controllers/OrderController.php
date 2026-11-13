@@ -84,7 +84,7 @@ final class OrderController
             ? trim(substr($authorization, 7))
             : '';
         $data['action'] = $action;
-        $param['actionType'] = $actionType;
+        $param['actionType'] = $action;
         $param['actionData'] = $data;
         $input['orderParam'] = $param;
         return $input;
