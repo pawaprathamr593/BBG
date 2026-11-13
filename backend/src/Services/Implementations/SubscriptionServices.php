@@ -8,6 +8,7 @@ use App\Dao\SubscriptionDao;
 use App\Dao\TenantDao;
 use App\Services\Interfaces\IAuthServices;
 use App\Services\Interfaces\ISubscriptionServices;
+use App\Utils\AwsS3Storage;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use Yiisoft\Db\Connection\ConnectionInterface;
@@ -19,6 +20,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         private SubscriptionDao $dao,
         private TenantDao $tenantDao,
         private IAuthServices $authServices,
+        private AwsS3Storage $s3Storage,
         private LoggerInterface $logger,
     ) {}
 
@@ -77,6 +79,9 @@ final readonly class SubscriptionServices implements ISubscriptionServices
                     break;
                 case 'requestSubscriptionRenewal':
                     $resArr = $this->manageSubscriptionRequest($actionData, true);
+                    break;
+                case 'generateSubscriptionProofUploadUrl':
+                    $resArr = $this->generateSubscriptionProofUploadUrl($actionData);
                     break;
                 case 'submitSubscriptionProof':
                     $resArr = $this->manageSubscriptionProof($actionData);
@@ -210,6 +215,57 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         );
     }
 
+    private function generateSubscriptionProofUploadUrl(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->tenantContext($actionData);
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'SubscriptionServices::generateSubscriptionProofUploadUrl');
+        }
+
+        $tenantId = (int) $context['data']['tenant_id'];
+        $subscriptionId = $this->positiveInt($actionData['subscription_id'] ?? null);
+        $fileName = $this->requiredText($actionData['original_file_name'] ?? '', 255);
+        $mimeType = strtolower($this->requiredText($actionData['mime_type'] ?? '', 100) ?? '');
+        $fileSize = $this->positiveInt($actionData['file_size_bytes'] ?? null);
+        $mimeExtensions = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'application/pdf' => 'pdf',
+        ];
+
+        if ($subscriptionId === null || $fileName === null || !isset($mimeExtensions[$mimeType])
+            || $fileSize === null || $fileSize > $this->s3Storage->getMaxUploadBytes()
+        ) {
+            $resArr['msgArr'][] = 'A valid subscription_id, file name, supported proof MIME type and permitted file_size_bytes are required.';
+            return $resArr;
+        }
+
+        $subscription = $this->dao->getTenantSubscription($this->db, $tenantId, $subscriptionId);
+        if ($subscription['status'] !== 'SUCCESS' || $subscription['data'] === []) {
+            return $this->propagateFailure($subscription, 'SubscriptionServices::generateSubscriptionProofUploadUrl');
+        }
+        if (!in_array($subscription['data']['subscription_status'], ['PENDING', 'REJECTED'], true)) {
+            $resArr['msgArr'][] = 'Payment proof can only be uploaded for pending or rejected subscription requests.';
+            return $resArr;
+        }
+
+        $key = 'tenants/' . $tenantId . '/subscription-proofs/'
+            . bin2hex(random_bytes(16)) . '.' . $mimeExtensions[$mimeType];
+        $presigned = $this->s3Storage->createUploadUrl($key, $mimeType);
+
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
+            'upload_url' => $presigned['url'],
+            'object_key' => $key,
+            'method' => 'PUT',
+            'headers' => ['Content-Type' => $mimeType],
+            'expires_in' => $presigned['expires_in'],
+        ];
+        return $resArr;
+    }
+
     private function manageSubscriptionProof(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
@@ -228,6 +284,31 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             || preg_match('/^[a-z]+:\/\//i', $proofPath)
         ) {
             $resArr['msgArr'][] = 'subscription_id and a tenant-scoped server-issued relative proof_file_path are required.';
+            return $resArr;
+        }
+        try {
+            $storedObject = $this->s3Storage->headObject($proofPath);
+            $actualMimeType = strtolower((string) ($storedObject['ContentType'] ?? ''));
+            $actualFileSize = (int) ($storedObject['ContentLength'] ?? 0);
+            $signature = $this->s3Storage->getObjectPrefix($proofPath);
+            $signatureValid = match ($actualMimeType) {
+                'image/jpeg' => str_starts_with($signature, "\xFF\xD8\xFF"),
+                'image/png' => str_starts_with($signature, "\x89PNG\r\n\x1A\n"),
+                'image/webp' => str_starts_with($signature, 'RIFF') && substr($signature, 8, 4) === 'WEBP',
+                'application/pdf' => str_starts_with($signature, '%PDF-'),
+                default => false,
+            };
+            if (!$signatureValid || $actualFileSize < 1 || $actualFileSize > $this->s3Storage->getMaxUploadBytes()) {
+                $resArr['msgArr'][] = 'Uploaded subscription proof failed file type, content signature or file size verification.';
+                return $resArr;
+            }
+        } catch (Throwable $exception) {
+            $this->logger->warning('Subscription proof S3 object verification failed.', [
+                'tenant_id' => $tenantId,
+                'subscription_id' => $subscriptionId,
+                'exception' => $exception,
+            ]);
+            $resArr['msgArr'][] = 'Subscription proof object could not be verified in storage.';
             return $resArr;
         }
         $subscription = $this->dao->getTenantSubscription($this->db, $tenantId, $subscriptionId);
