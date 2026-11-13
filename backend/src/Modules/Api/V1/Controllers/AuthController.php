@@ -43,6 +43,7 @@ final class AuthController
                 $streamFactory,
             );
         }
+        $authParam['actionType'] = $action;
         $actionData['action'] = $action;
 
         if (in_array($action, ['refresh', 'logout'], true) && $request->getHeaderLine('X-BBG-CSRF') !== '1') {
