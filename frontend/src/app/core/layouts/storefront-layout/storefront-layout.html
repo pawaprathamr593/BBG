@@ -1,0 +1,49 @@
+<div class="storefront-shell">
+  <a class="skip-link" href="#storefront-content">Skip to storefront content</a>
+  @if (detail(); as data) {
+    <header class="storefront-header">
+      <div class="storefront-header-inner">
+        <a class="storefront-brand" [routerLink]="['/businesses', slug]" aria-label="Storefront home">
+          @if (data.business.logo_path) { <img [src]="data.business.logo_path" [alt]="brandName + ' logo'" /> }
+          @else { <span class="storefront-brand-mark">{{ brandInitial }}</span> }
+          <span><strong>{{ brandName }}</strong><small>{{ data.business.category_name || 'Business storefront' }}</small></span>
+        </a>
+        <nav class="storefront-nav" aria-label="Storefront navigation">
+          <a [routerLink]="['/businesses', slug]" [routerLinkActiveOptions]="{exact:true}" routerLinkActive="active">Home</a>
+          <a [routerLink]="['/businesses', slug]" fragment="products">Products</a>
+          <a [routerLink]="['/businesses', slug]" fragment="about">About</a>
+          <a [routerLink]="['/businesses', slug]" fragment="contact">Contact</a>
+        </nav>
+        <div class="storefront-actions">
+          <button type="button" class="theme-toggle" (click)="theme.toggle()" [attr.aria-label]="'Switch to ' + (theme.resolvedTheme() === 'dark' ? 'light' : 'dark') + ' theme'">
+            {{ theme.resolvedTheme() === 'dark' ? '☀' : '☾' }}
+          </button>
+          <a class="storefront-account" [href]="loginUrl">Customer sign in</a>
+        </div>
+      </div>
+    </header>
+  }
+  <main id="storefront-content" class="storefront-main">
+    @if (loading()) { <div class="storefront-loading" role="status">Loading this business website…</div> }
+    @else if (error()) {
+      <section class="storefront-unavailable" role="alert">
+        <span class="unavailable-mark">!</span><h1>Storefront unavailable</h1><p>{{ error() }}</p>
+        <a routerLink="/businesses">Explore other businesses</a>
+      </section>
+    } @else {
+      <router-outlet />
+    }
+  </main>
+  @if (detail(); as data) {
+    <footer class="storefront-footer">
+      <div class="storefront-footer-inner">
+        <div><strong>{{ brandName }}</strong><p>{{ data.business.city }}{{ data.business.city && data.business.state ? ', ' : '' }}{{ data.business.state }}</p></div>
+        <div class="footer-links">
+          @if (data.business.business_phone) { <a [href]="'tel:' + data.business.business_phone">Call business</a> }
+          @if (data.business.business_email) { <a [href]="'mailto:' + data.business.business_email">Email business</a> }
+        </div>
+        <small>Storefront powered by <a routerLink="/">BBG</a> · © {{ year }}</small>
+      </div>
+    </footer>
+  }
+</div>
