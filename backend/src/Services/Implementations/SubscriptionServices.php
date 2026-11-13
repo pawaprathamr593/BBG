@@ -27,7 +27,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
     public function getSubscription(array $subscriptionParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($subscriptionParam['actionType']) || $subscriptionParam['actionType'] !== 'getSubscription') {
+        if (!isset($subscriptionParam['actionType']) || !is_string($subscriptionParam['actionType']) || $subscriptionParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Invalid actionType for getSubscription.';
             return $resArr;
         }
@@ -36,8 +36,9 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             return $resArr;
         }
         $actionData = $subscriptionParam['actionData'];
+        $actionData['action'] = (string) $subscriptionParam['actionType'];
         try {
-            switch ((string) subscriptionParam['actionType']) {
+            switch ((string) $subscriptionParam['actionType']) {
                 case 'listActivePlans':
                     $resArr = $this->getActivePlans($actionData);
                     break;
@@ -63,7 +64,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
     public function manageSubscription(array $subscriptionParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($subscriptionParam['actionType']) || $subscriptionParam['actionType'] !== 'manageSubscription') {
+        if (!isset($subscriptionParam['actionType']) || !is_string($subscriptionParam['actionType']) || $subscriptionParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Invalid actionType for manageSubscription.';
             return $resArr;
         }
@@ -72,8 +73,9 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             return $resArr;
         }
         $actionData = $subscriptionParam['actionData'];
+        $actionData['action'] = (string) $subscriptionParam['actionType'];
         try {
-            switch ((string) subscriptionParam['actionType']) {
+            switch ((string) $subscriptionParam['actionType']) {
                 case 'requestSubscription':
                     $resArr = $this->manageSubscriptionRequest($actionData, false);
                     break;
