@@ -26,10 +26,7 @@ final readonly class MarketplaceDao
                  FROM BUSINESS_PROFILES bp
                  INNER JOIN TENANTS t ON t.id = bp.tenant_id
                     AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
-                 INNER JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = bp.tenant_id
-                    AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
-                 WHERE bp.approval_status = 'APPROVED'
-                    AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A') AS businesses_registered,
+                 WHERE bp.status = 'A') AS businesses_registered,
                 (SELECT COUNT(*) FROM USERS u
                  WHERE u.account_status = 'ACTIVE' AND u.status = 'A') AS platform_users,
                 (SELECT COUNT(DISTINCT p.id)
