@@ -21,7 +21,11 @@ export class Register {
   readonly passwordVisible = signal(false);
 
   constructor() {
-    void this.auth.loadSocialConfig().catch(() => {
+    void this.auth.loadSocialConfig().then((config) => {
+      if (!Object.values(config.providers).some((provider) => provider.enabled)) {
+        this.providerNotice.set('Social sign-in is ready for setup. Add provider credentials to the root .env to enable these options.');
+      }
+    }).catch(() => {
       this.providerNotice.set('Social sign-in is temporarily unavailable. Use your email or mobile number instead.');
     });
   }
