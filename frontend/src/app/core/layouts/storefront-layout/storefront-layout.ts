@@ -13,7 +13,7 @@ export class StorefrontLayout implements OnInit {
   private readonly destroyRef=inject(DestroyRef);
   private readonly marketplace=inject(MarketplaceService);
   private readonly seo=inject(SeoService);
-  protected readonly theme=inject(ThemeService);
+  private readonly themeService=inject(ThemeService);
   protected readonly auth=inject(AuthService);
   protected readonly detail=signal<MarketplaceBusinessDetail|null>(null);
   protected readonly loading=signal(true);
@@ -39,6 +39,8 @@ export class StorefrontLayout implements OnInit {
     }catch(cause){if(slug===this.slug())this.error.set(cause instanceof Error?cause.message:'This storefront is not available right now.');}
     finally{if(slug===this.slug())this.loading.set(false);}
   }
+  protected get isDarkTheme():boolean{return this.themeService.resolvedTheme()==='dark';}
+  protected toggleTheme():void{this.themeService.toggle();}
   protected get brandName():string{const data=this.detail();return data?.storefront.title||data?.business.business_name||'Business storefront';}
   protected get brandInitial():string{return this.brandName.slice(0,1).toUpperCase();}
   protected get loginReturnUrl():string{return this.router.url;}
