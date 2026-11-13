@@ -30,6 +30,7 @@ export const routes: Routes = [
     loadComponent: () => import('./features/marketplace/products/product-directory').then((m) => m.ProductDirectory),
     title: 'Explore Products | BBG',
   },
+  { path: 'categories', pathMatch: 'full', redirectTo: 'products' },
   {
     path: 'promotions',
     loadComponent: () => import('./features/marketplace/promotions/promotion-feed').then((m) => m.PromotionFeed),
