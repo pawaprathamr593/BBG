@@ -24,7 +24,7 @@ final readonly class AdminServices implements IAdminServices
     public function getAdmin(array $adminParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($adminParam['actionType']) || $adminParam['actionType'] !== 'getAdmin') {
+        if (!isset($adminParam['actionType']) || !is_string($adminParam['actionType']) || $adminParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Invalid actionType for getAdmin.';
             return $resArr;
         }
@@ -33,8 +33,9 @@ final readonly class AdminServices implements IAdminServices
             return $resArr;
         }
         $actionData = $adminParam['actionData'];
+        $actionData['action'] = (string) $adminParam['actionType'];
         try {
-            switch ((string) adminParam['actionType']) {
+            switch ((string) $adminParam['actionType']) {
                 case 'listPlatformUsers':
                     $resArr = $this->getPlatformUsers($actionData);
                     break;
@@ -93,7 +94,7 @@ final readonly class AdminServices implements IAdminServices
     public function manageAdmin(array $adminParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($adminParam['actionType']) || $adminParam['actionType'] !== 'manageAdmin') {
+        if (!isset($adminParam['actionType']) || !is_string($adminParam['actionType']) || $adminParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Invalid actionType for manageAdmin.';
             return $resArr;
         }
@@ -102,8 +103,9 @@ final readonly class AdminServices implements IAdminServices
             return $resArr;
         }
         $actionData = $adminParam['actionData'];
+        $actionData['action'] = (string) $adminParam['actionType'];
         try {
-            switch ((string) adminParam['actionType']) {
+            switch ((string) $adminParam['actionType']) {
                 case 'suspendPlatformUser':
                     $resArr = $this->managePlatformUser($actionData, 'SUSPENDED');
                     break;
