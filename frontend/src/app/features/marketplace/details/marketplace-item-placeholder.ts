@@ -1,5 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { MarketplaceApiService } from '../../../core/marketplace/marketplace-api.service';
 
 @Component({
   selector: 'app-marketplace-item-placeholder',
@@ -27,9 +28,34 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
     a{display:inline-flex;margin-top:7px;padding:11px 16px;color:#fff;background:#174d35;border-radius:9px;font-size:.82rem;font-weight:750;text-decoration:none}
   `],
 })
-export class MarketplaceItemPlaceholder {
+export class MarketplaceItemPlaceholder implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly marketplaceApi = inject(MarketplaceApiService);
   protected readonly itemType = String(this.route.snapshot.data['itemType'] ?? 'Marketplace item');
   protected readonly directoryLink = String(this.route.snapshot.data['directoryLink'] ?? '/');
   protected readonly identifier = this.route.snapshot.paramMap.get('identifier') ?? '';
+  ngOnInit(): void {
+    if (this.itemType !== 'Product') return;
+    const productId = Number(this.identifier);
+    if (!Number.isSafeInteger(productId) || productId <= 0) return;
+    this.marketplaceApi.recordProductView(productId, this.visitorKey()).subscribe({
+      error: () => undefined,
+    });
+  }
+
+  private visitorKey(): string {
+    const storageKey = 'bbg-marketplace-visitor-key';
+    try {
+      const existing = localStorage.getItem(storageKey);
+      if (existing) return existing;
+      const generated = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem(storageKey, generated);
+      return generated;
+    } catch {
+      return `visitor-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+  }
+
 }
