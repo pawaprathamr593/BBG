@@ -1,0 +1,41 @@
+<div class="public-shell">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" routerLink="/" aria-label="BBG marketplace home" (click)="closeMenu()">
+        <span class="brand-mark" aria-hidden="true">B</span>
+        <span class="brand-copy"><strong>BBG</strong><small>Business, better connected</small></span>
+      </a>
+
+      <button class="menu-toggle" type="button" [attr.aria-expanded]="menuOpen()"
+        aria-controls="public-navigation" aria-label="Toggle navigation" (click)="toggleMenu()">
+        <span></span><span></span><span></span>
+      </button>
+
+      <nav id="public-navigation" class="primary-nav" [class.is-open]="menuOpen()" aria-label="Main navigation">
+        <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMenu()">Home</a>
+        <a routerLink="/businesses" routerLinkActive="is-active" (click)="closeMenu()">Explore businesses</a>
+        <a routerLink="/promotions" routerLinkActive="is-active" (click)="closeMenu()">Promotions</a>
+        @if (auth.isAuthenticated()) {
+          <span class="nav-user" aria-label="Signed in user">{{ auth.user()?.full_name }}</span>
+          <button class="nav-action" type="button" (click)="signOut()">Sign out</button>
+        } @else {
+          <a class="nav-sign-in" routerLink="/login" (click)="closeMenu()">Sign in</a>
+          <a class="nav-join" routerLink="/register" (click)="closeMenu()">Join BBG</a>
+        }
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content" class="site-main">
+    <router-outlet />
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <a class="footer-brand" routerLink="/">BBG</a>
+      <p>Discover businesses. Build connections. Grow together.</p>
+      <span>© {{ currentYear }} BBG</span>
+    </div>
+  </footer>
+</div>
