@@ -36,7 +36,7 @@ final class DashboardController
         $authorization = $request->getHeaderLine('Authorization');
         $data['_accessToken'] = str_starts_with($authorization, 'Bearer ') ? trim(substr($authorization, 7)) : '';
         $data['action'] = $action;
-        $param['actionType'] = 'getDashboard';
+        $param['actionType'] = $action;
         $param['actionData'] = $data;
         $input['dashboardParam'] = $param;
         try {
