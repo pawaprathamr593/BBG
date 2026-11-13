@@ -165,12 +165,12 @@ final readonly class MarketplaceServices implements IMarketplaceServices
 
     private function getProducts(array $actionData): array
     {
-        if ($this->businessSlug($actionData['business_slug'] ?? null) === null) {
+        $slug = $this->businessSlug($actionData['business_slug'] ?? null);
+        if ($slug === null) {
             return $this->getMarketplaceProducts($actionData);
         }
 
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $slug = $this->businessSlug($actionData['business_slug'] ?? null);
         $business = $this->dao->getBusinessBySlug($this->db, $slug);
         if ($business['status'] !== 'SUCCESS') {
             return $this->propagateFailure($business, 'MarketplaceServices::getProducts');
