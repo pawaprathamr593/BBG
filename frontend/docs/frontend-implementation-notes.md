@@ -1,45 +1,49 @@
 # BBG Frontend Implementation Notes
 
-## Scope implemented
+## Scope implemented on this branch
 
-- The public marketplace remains the discovery entry point, with homepage business search, category discovery, published business cards, latest promotions and a business-owner registration call to action.
-- Business storefront routes render through a dedicated storefront layout rather than inheriting the BBG public navigation and footer.
-- Storefront shell includes business identity, logo, category, navigation, product/about/contact anchors, contact actions, customer sign-in and registration links, and BBG attribution.
-- Storefront product pages remain nested under the business URL and use the existing marketplace product-detail endpoint.
-- Authentication accepts an internal `returnUrl` and rejects protocol-relative or authentication-loop destinations.
-- Light/dark theme preference supports light, dark and system modes; the preference is stored locally where browser storage is available. Theme controls are present in public, storefront, authentication and workspace layouts.
-- Route metadata, canonical URLs, Open Graph metadata, private-route noindex directives and JSON-LD are managed centrally. Storefront metadata uses public business details; product pages use the existing product response.
-- PWA manifest, icon, offline fallback and a public-shell service worker are included.
-- Responsive styling, keyboard skip links, focus visibility and reduced-motion handling are retained or applied to the updated layouts.
+- The BBG public marketplace remains the discovery entry point, with homepage business search, category discovery, published business cards, promotions and a business-owner registration call to action.
+- Business storefronts use a separate layout with business branding, their own header/navigation/footer, and dedicated Home, About, Products, Promotions and Contact routes.
+- Storefronts reuse the existing public business, product and promotion records. No duplicate catalogue or business records are created.
+- Storefront contact pages support direct phone, email and enabled WhatsApp links. Signed-in customers can submit enquiries using the existing POST /api/v1/enquiries/create contract. The customer must sign in before submitting; the originating storefront URL is retained.
+- Product pages support variant selection, quantity input and authenticated add-to-cart using the existing cart API. Variant selection is required for variant products.
+- Each business has a separate customer cart. The cart page supports quantity updates, item removal, clearing and checkout with the backend-required shipping-address fields. Checkout confirmation explicitly shows the order as UNPAID; no payment is collected or implied.
+- Storefront customer sign-in/registration returns to the originating storefront. Signed-in storefront customers can open their account and sign out.
+- Authentication route guards restore the rotating refresh-token session before deciding access.
+- Entrepreneur workspace loads the user's active tenant memberships and provides a business selector. Tenant-scoped actions receive the selected tenant_id automatically, while the backend remains responsible for membership, permission and resource checks.
+- Permission context retains platform permissions while replacing the active tenant permission snapshot. The platform-admin route is protected by verified PLATFORM scope; navigation does not expose admin links to users without that verified scope.
+- Light/dark/system theme preference is supported across public, authentication, storefront and workspace layouts.
+- Route metadata, canonical URLs, Open Graph metadata, private-route noindex directives and JSON-LD are managed centrally. Storefront pages use public business details; product and promotion pages use their existing public API data.
+- A sitemap generator is available as npm run generate:sitemap. It reads public businesses, products and promotions from the existing API, writes public/sitemap.xml, and adds the configured sitemap URL to public/robots.txt.
+- PWA manifest, icon, offline fallback and a public-shell service worker are included. The service worker excludes API and sensitive/private paths from caching.
+- Responsive styling, keyboard skip links, visible focus states and reduced-motion handling are retained or applied to the updated layouts.
 
 ## Data and contract constraints
 
-The existing public home-summary response exposes categories, businesses and promotions. The inspected frontend contract does not expose monthly business rankings or monthly product rankings. The homepage therefore does not fabricate a "top business" or "top product" list, rank, rating, sales count or popularity score. A verified ranking feature requires a documented backend response and agreed ranking methodology before UI wiring.
+The public home-summary response exposes categories, businesses and promotions. It does not provide verified monthly business rankings or monthly product rankings. The homepage therefore does not invent a "top business" or "top product" list, rank, rating, sales count or popularity score. A ranking feature still needs an approved ranking methodology and backend response.
 
-The current directory query contract exposes search, category, city and state filters. It does not expose a locality-specific filter, so locality-level discovery cannot be implemented accurately without an approved API contract extension.
+The current business-directory contract supports search, category, city and state filters, but not locality-specific filtering. Locality discovery needs an approved API contract extension.
 
-The current business detail and product list/detail endpoints are reused. Storefront pages read the existing business and product records; no duplicate storefront catalogue is introduced. No backend endpoint, DTO, database table, authentication policy, permission or tenant policy is changed by this frontend work.
+The current public product queries do not return product media records. The public business detail API returns logo and cover image fields, but no full gallery or service catalogue endpoint was identified. Product image galleries, business gallery pages and structured service catalogues therefore remain unavailable until the public API exposes those records.
 
-The consumer, entrepreneur and admin areas retain the existing configuration-driven workspace action interface. Theme and responsive presentation were improved, but domain-specific management forms were not invented where the current frontend/backend contract does not define field-level request and response behavior.
+The management workspace uses the registered backend routes and module envelopes. Actions with contract-dependent request fields retain a JSON payload editor rather than guessing DTO fields. The backend status documentation marks broader tenant member management, notifications, expense/cash workflows, invoice generation, payment gateway integration and OAuth provider integration as unimplemented or guarded. Those are not presented as completed frontend capabilities. Inventory and purchasing remain future scope and have no active frontend routes.
+
+No backend endpoint, DTO, database table, authentication policy, permission seed, tenant policy or business rule was changed by this frontend work.
 
 ## PWA cache policy
 
-The service worker caches only the static application shell, approved `/assets/` and `/icons/` files, and hashed application bundles. Requests with query strings, API paths and URL paths containing authentication, token, payment, proof, admin, tenant, upload or media markers are excluded. No runtime caching of API responses, user profiles, tenant records, order state or payment information is enabled. The worker does not force immediate activation over an existing open application; the updated worker takes control after the previous worker's clients close.
+The service worker caches only the static application shell, approved /assets/ and /icons/ files, and hashed application bundles. Requests with query strings, API paths and URL paths containing authentication, token, payment, proof, admin, tenant, upload or media markers are excluded. No runtime caching of API responses, user profiles, tenant records, order state or payment information is enabled. The worker does not force immediate activation over an existing open application; the updated worker takes control after the previous worker's clients close.
 
 ## SEO / AEO / GEO release requirements still requiring deployment configuration
 
-- Set the production canonical origin and verify redirects from all alternate hostnames.
-- Generate sitemap XML from the actual public business, product and promotion records at the deployment origin. Do not include authenticated workspace routes.
+- Set BBG_PUBLIC_ORIGIN and BBG_API_BASE_URL, then run npm run generate:sitemap during a release build. The generator has not been run against production data in this implementation session.
 - Verify server-side rendering or prerendering for public discovery and storefront routes. This Angular client-rendered change alone does not guarantee crawler-visible dynamic business content.
 - Configure server fallback for Angular routes and verify robots, canonical, JSON-LD, Open Graph and 404 responses with production URLs.
-- Add business-specific structured-data types only when the business category and verified fields support them; the generic `LocalBusiness` type is the current conservative fallback.
+- Add business-specific structured-data types only when the business category and verified fields support them; generic LocalBusiness is the current conservative fallback.
 - Build substantial city/locality/category landing pages only when there is unique, useful content and an approved public data contract; avoid thin or duplicate programmatic SEO pages.
 
 ## Verification
 
-GitHub Actions run [`43389731713`](https://github.com/pawaprathamr593/BBG/actions/runs/43389731713) completed successfully on 13 November 2026:
-- `npm ci`: passed
-- `npm run build`: passed
-- `npm test -- --watch=false`: passed, 4 test files and 9 tests
+GitHub Actions is configured to run npm ci, the Angular production build and unit tests on frontend changes. The latest passing run will be linked in the implementation handoff.
 
-The production build still reports non-blocking component-style budget warnings for the business directory, workspace and homepage styles. Browser accessibility review, Lighthouse/SEO audit, real-device PWA install/offline testing and production URL verification have not been performed. No merge or deployment was performed.
+Automated tests cover existing marketplace/workspace requests plus the new cart, checkout, enquiry and permission-context contracts. Browser accessibility review, Lighthouse/SEO audit, end-to-end user journeys, real-device PWA install/offline testing and production URL verification remain outstanding. No merge or deployment was performed.
