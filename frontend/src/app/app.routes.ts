@@ -8,6 +8,7 @@ export const routes: Routes = [
   },
   {
     path: 'businesses',
+    pathMatch: 'full',
     loadComponent: () => import('./features/marketplace/businesses/business-directory').then((m) => m.BusinessDirectory),
     title: 'Discover Businesses | BBG',
   },
