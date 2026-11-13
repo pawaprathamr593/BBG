@@ -263,6 +263,18 @@ final readonly class CatalogueDao
             [':tenant_id' => $tenantId, ':product_id' => $productId], 'getProductMedia');
     }
 
+    public function getProductMediaRecord(ConnectionInterface $db, int $tenantId, int $productId, int $mediaId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT id, file_path, thumbnail_path
+            FROM PRODUCT_MEDIA
+            WHERE id = :media_id AND tenant_id = :tenant_id
+                AND product_id = :product_id AND status = 'A'
+            LIMIT 1",
+            [':media_id' => $mediaId, ':tenant_id' => $tenantId, ':product_id' => $productId],
+            'getProductMediaRecord');
+    }
+
     public function lockTenantProduct(ConnectionInterface $db, int $tenantId, int $productId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
