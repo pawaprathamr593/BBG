@@ -70,10 +70,11 @@ type ProductFilterKey = keyof ProductFilterValues;
         <app-filter-drawer
           [open]="filtersOpen()"
           [activeCount]="activeFilterCount()"
-          (openChange)="filtersOpen.set($event)"
+          (openChange)="setFiltersOpen($event)"
           (apply)="applyFilters()"
           (reset)="resetDraftFilters()">
           <form class="drawer-filters" aria-label="Advanced product filters">
+            @if (filterNotice()) { <p class="drawer-notice" role="alert">{{ filterNotice() }}</p> }
             <div class="filter-field">
               <label for="product-category">Category</label>
               <select id="product-category" name="category" [(ngModel)]="draftFilters.categoryId">
@@ -154,7 +155,7 @@ type ProductFilterKey = keyof ProductFilterValues;
           </div>
           <p class="data-note">Only active products published by approved businesses with active storefronts are displayed. “Newly added” uses the product record creation date.</p>
         } @else {
-          <div class="empty"><div class="empty-mark">⌕</div><h3>No products found</h3><p>Try changing your search or removing some filters.</p><button type="button" (click)="clearFilters()">Clear all filters</button></div>
+          <div class="empty"><div class="empty-mark">⌕</div><h3>No products found</h3><p>Try changing your search or removing some filters.</p><button type="button" (click)="clearAllFilters()">Clear all filters</button></div>
         }
       </section>
     </main>
@@ -170,7 +171,7 @@ type ProductFilterKey = keyof ProductFilterValues;
     .toolbar{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,230px) auto;align-items:end;gap:12px;margin:0 0 14px;padding:16px;background:var(--surface-card);border:1px solid var(--border);border-radius:15px;box-shadow:0 8px 24px rgba(20,35,27,.045)}
     .search-submit{height:42px;padding:0 20px;color:#17231b;background:#f5d928;border:1px solid #f5d928;border-radius:8px;font-size:.78rem;font-weight:800;cursor:pointer}
     .active-filters{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 22px}.active-filter-caption{color:var(--text-secondary);font-size:.72rem;font-weight:750}.filter-chip{display:inline-flex;align-items:center;gap:7px;min-height:30px;padding:5px 10px;color:#315d47;background:#edf4ef;border:1px solid #d8e7dc;border-radius:999px;font-size:.7rem;font-weight:700;cursor:pointer}.filter-chip span{font-size:1rem;line-height:1}.clear-active-filters{padding:5px 7px;color:var(--text-secondary);background:transparent;border:0;font-size:.72rem;font-weight:750;cursor:pointer}
-    .drawer-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:15px}.drawer-filters .check-field{grid-column:span 2}.drawer-filters .filter-field input,.drawer-filters .filter-field select{height:44px}
+    .drawer-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:15px}.drawer-filters .check-field{grid-column:span 2}.drawer-filters .filter-field input,.drawer-filters .filter-field select{height:44px}.drawer-notice{grid-column:1/-1;margin:0;padding:10px 12px;color:#765b12;background:#fff8dc;border:1px solid #f0e2a9;border-radius:8px;font-size:.75rem;line-height:1.45}
     .filter-field{display:grid;gap:7px;min-width:0}.filter-field label{color:var(--text-secondary);font-size:.72rem;font-weight:750}.filter-field input,.filter-field select{width:100%;min-width:0;height:42px;padding:0 11px;color:var(--text-primary);background:var(--surface-page);border:1px solid var(--border);border-radius:8px;font:inherit;font-size:.82rem;outline:none}.filter-field input:focus,.filter-field select:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 14%,transparent)}
     .check-field{display:flex;align-items:center;gap:9px;min-height:42px;color:var(--text-secondary);font-size:.76rem;font-weight:650}.check-field input{width:16px;height:16px;accent-color:#174d35}
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}.card{display:flex;min-width:0;flex-direction:column;padding:20px;background:var(--surface-card);border:1px solid var(--border);border-radius:15px;transition:transform .18s ease,border-color .18s ease}.card:hover{transform:translateY(-3px);border-color:#9bb9a5}
@@ -242,6 +243,16 @@ export class ProductDirectory implements OnInit {
     this.load();
   }
 
+  protected setFiltersOpen(open: boolean): void {
+    if (open) {
+      this.draftFilters = { ...this.appliedFilters() };
+      this.filterNotice.set('');
+    } else {
+      this.draftFilters = { ...this.appliedFilters() };
+    }
+    this.filtersOpen.set(open);
+  }
+
   protected applySearch(): void {
     this.page.set(1);
     this.load();
@@ -294,6 +305,14 @@ export class ProductDirectory implements OnInit {
     this.filterNotice.set('');
     this.page.set(1);
     this.load();
+  }
+
+  protected clearAllFilters(): void {
+    this.query = '';
+    this.sort = 'newest';
+    this.latitude = undefined;
+    this.longitude = undefined;
+    this.clearFilters();
   }
 
   protected sortChanged(value: ProductSort): void {
