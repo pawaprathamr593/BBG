@@ -116,6 +116,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
                   @if (business.accept_online_orders) { <span>Online orders</span> }
                   @if (business.whatsapp_enabled) { <span>WhatsApp</span> }
                 </div>
+                <a class="card-action" [routerLink]="['/businesses', business.business_slug]">Explore business <span aria-hidden="true">→</span></a>
               </article>
             }
           </div>
@@ -153,6 +154,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
                 @if (business.created_on) {
                   <time class="item-date" [attr.datetime]="business.created_on">Added {{ formatDate(business.created_on) }}</time>
                 }
+                <a class="card-action" [routerLink]="['/businesses', business.business_slug]">Explore business <span aria-hidden="true">→</span></a>
               </article>
             }
           </div>
@@ -188,6 +190,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
                 }
                 <p class="product-business">From {{ product.business.business_name }}</p>
                 <time class="item-date" [attr.datetime]="product.created_on">Added {{ formatDate(product.created_on) }}</time>
+                <a class="card-action" [routerLink]="['/products', product.id]">View product <span aria-hidden="true">→</span></a>
               </article>
             }
           </div>
@@ -339,6 +342,9 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
     .product-price-hidden { font-size:.82rem; font-weight:650; }
     .product-business { margin:8px 0 4px; }
     .item-date { display:block; margin-top:10px; }
+    .card-action { display:inline-flex; align-items:center; justify-content:space-between; gap:12px; width:100%; margin-top:15px; padding:10px 12px; color:#174d35; background:#edf4ef; border:1px solid #d8e7dc; border-radius:9px; font-size:.78rem; font-weight:750; text-decoration:none; transition:background .18s ease,transform .18s ease; }
+    .card-action:hover { background:#e1eee5; transform:translateY(-1px); }
+    .card-action span { font-size:1rem; }
     .data-note { margin:12px 0 0; color:var(--text-secondary); font-size:.72rem; line-height:1.5; }
     .promotion-banner { align-items:flex-start; flex-direction:column; }
     .promotion-copy { width:100%; }
