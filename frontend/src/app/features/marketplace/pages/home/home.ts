@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MarketplaceService } from '../../services/marketplace.service';
@@ -5,7 +6,7 @@ import { MarketplaceHomeSummary } from '../../models/marketplace.models';
 
 @Component({
   selector: 'app-marketplace-home',
-  imports: [RouterLink],
+  imports: [DatePipe, RouterLink],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
