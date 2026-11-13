@@ -1,0 +1,24 @@
+<div class="promotions-page">
+  <header class="page-heading"><p class="eyebrow">COMMUNITY UPDATES</p><h1>Promotions &amp; stories</h1><p>See the latest updates shared by published businesses across BBG.</p></header>
+  @if (loading()) {
+    <div class="promotion-grid" aria-live="polite" aria-busy="true"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+  } @else if (error()) {
+    <section class="state-panel" role="alert"><h2>Promotions are unavailable</h2><p>{{ error() }}</p><button type="button" class="primary-button" (click)="load()">Try again</button></section>
+  } @else if (result(); as data) {
+    @if (data.items.length) {
+      <div class="promotion-grid">
+        @for (promotion of data.items; track promotion.id) {
+          <article class="promotion-card">
+            <div class="card-kicker"><span>{{ promotion.business_name }}</span><time>{{ promotion.published_on | date:'mediumDate' }}</time></div>
+            <h2>{{ promotion.post_title }}</h2>
+            <p>{{ promotion.post_content }}</p>
+            @if (promotion.valid_until) { <div class="valid-until">Available until {{ promotion.valid_until | date:'mediumDate' }}</div> }
+          </article>
+        }
+      </div>
+      <nav class="pagination" aria-label="Promotion pages"><button type="button" [disabled]="page() <= 1" (click)="changePage(page() - 1)">Previous</button><span>Page {{ data.pagination.page }} of {{ Math.ceil(data.pagination.total / data.pagination.page_size) || 1 }}</span><button type="button" [disabled]="data.pagination.page * data.pagination.page_size >= data.pagination.total" (click)="changePage(page() + 1)">Next</button></nav>
+    } @else {
+      <section class="state-panel"><span aria-hidden="true">✦</span><h2>No promotions yet</h2><p>When businesses publish updates, they will appear here.</p></section>
+    }
+  }
+</div>
