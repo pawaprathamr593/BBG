@@ -165,7 +165,7 @@ final readonly class TenantServices implements ITenantServices
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $token = (string) ($actionData['_accessToken'] ?? '');
         $resArr = $this->authServices->getAuth([
-            'actionType' => 'getAuth',
+            'actionType' => 'getPrincipal',
             'actionData' => ['action' => 'getPrincipal', '_accessToken' => $token],
         ]);
         if ($resArr['status'] !== 'SUCCESS') {
