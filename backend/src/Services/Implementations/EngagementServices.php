@@ -239,7 +239,7 @@ final readonly class EngagementServices implements IEngagementServices
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $resArr = $this->authServices->getAuth([
-            'actionType' => 'getAuth',
+            'actionType' => 'getPrincipal',
             'actionData' => ['action' => 'getPrincipal', '_accessToken' => (string) ($actionData['_accessToken'] ?? '')],
         ]);
         if ($resArr['status'] !== 'SUCCESS') {
