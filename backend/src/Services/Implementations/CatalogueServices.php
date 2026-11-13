@@ -8,6 +8,7 @@ use App\Dao\CatalogueDao;
 use App\Dao\TenantDao;
 use App\Services\Interfaces\IAuthServices;
 use App\Services\Interfaces\ICatalogueServices;
+use App\Utils\AwsS3Storage;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use Yiisoft\Db\Connection\ConnectionInterface;
