@@ -18,7 +18,7 @@
         </nav>
         <div class="storefront-actions">
           <button type="button" class="theme-toggle" (click)="toggleTheme()" [attr.aria-label]="'Switch to ' + (isDarkTheme ? 'light' : 'dark') + ' theme'">
-            {{ theme.resolvedTheme() === 'dark' ? '☀' : '☾' }}
+            {{ isDarkTheme ? '☀' : '☾' }}
           </button>
           @if (auth.isAuthenticated()) {
             <a class="storefront-account" routerLink="/consumer">My account</a>
