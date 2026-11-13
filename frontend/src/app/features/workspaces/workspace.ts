@@ -56,6 +56,8 @@ export class Workspace implements OnInit {
   protected async run(action = this.activeAction()): Promise<void> {
     if (!action || this.loading()) return;
     this.loading.set(true);
+    this.result.set(null);
+    this.hasResult.set(false);
     this.error.set('');
     this.notice.set('');
     try {
