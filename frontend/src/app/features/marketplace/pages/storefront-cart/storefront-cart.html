@@ -1,0 +1,72 @@
+<div class="cart-page">
+  @if (loading()) {
+    <div class="cart-state" role="status" aria-busy="true">Loading your cart…</div>
+  } @else if (error() && !business()) {
+    <section class="cart-state" role="alert"><h1>Cart unavailable</h1><p>{{ error() }}</p><a [routerLink]="['/businesses', slug]">Return to storefront</a></section>
+  } @else if (order(); as placed) {
+    <section class="order-confirmation" role="status">
+      <span class="confirmation-mark" aria-hidden="true">✓</span>
+      <p class="eyebrow">ORDER PLACED</p>
+      <h1>Thank you for your order</h1>
+      <p>Your order <strong>{{ placed.order_number }}</strong> has been created with this business.</p>
+      <div class="order-summary"><span>Order status</span><strong>{{ placed.order_status }}</strong><span>Payment status</span><strong>{{ placed.payment_status }}</strong><span>Order total</span><strong>{{ formatMoney(placed.grand_total) }}</strong></div>
+      <p class="payment-note">Payment has not been collected through BBG. Your order is currently unpaid; the business will follow up using the contact details on your account.</p>
+      <a class="primary-link" [routerLink]="['/businesses', slug]">Continue shopping</a>
+    </section>
+  } @else if (business(); as data) {
+    <header class="cart-heading">
+      <a class="back-link" [routerLink]="['/businesses', slug]">← {{ data.business.business_name }}</a>
+      <p class="eyebrow">YOUR SHOPPING CART</p>
+      <h1>Your cart</h1>
+      <p>Items in this cart belong to this business. BBG uses separate carts for each storefront.</p>
+    </header>
+    @if (error()) { <p class="feedback error" role="alert">{{ error() }}</p> }
+    @if (notice()) { <p class="feedback success" role="status">{{ notice() }}</p> }
+    @if (cart()?.items?.length) {
+      <div class="cart-layout">
+        <section class="cart-items" aria-label="Cart items">
+          @for (item of cart()?.items ?? []; track item.id) {
+            <article class="cart-item">
+              <div class="item-mark" aria-hidden="true">{{ item.product_name.slice(0, 1) }}</div>
+              <div class="item-copy"><h2>{{ item.product_name }}</h2><span>{{ item.product_code }}</span><small>{{ formatMoney(item.unit_price_snapshot) }} each</small></div>
+              <label class="quantity-control">Quantity<input type="number" min="0.001" step="any" [value]="item.quantity" [disabled]="busy()" (change)="updateQuantity(item, $event)"></label>
+              <strong class="line-total">{{ formatMoney(item.line_total) }}</strong>
+              <button class="remove-button" type="button" [disabled]="busy()" (click)="removeItem(item)">Remove</button>
+            </article>
+          }
+          <button class="clear-button" type="button" [disabled]="busy()" (click)="clearCart()">Clear cart</button>
+        </section>
+        <aside class="cart-summary">
+          <p class="eyebrow">SUMMARY</p>
+          <h2>Order summary</h2>
+          <div><span>Subtotal</span><strong>{{ formatMoney(cart()?.subtotal) }}</strong></div>
+          <p class="summary-note">Taxes and final totals are recalculated by the server at checkout.</p>
+          @if (data.storefront.accept_online_orders) {
+            <button class="checkout-button" type="button" [disabled]="busy()" (click)="checkoutOpen.set(!checkoutOpen())">{{ checkoutOpen() ? 'Hide checkout' : 'Continue to checkout' }}</button>
+          } @else {
+            <p class="summary-note">Online checkout is not enabled for this storefront.</p>
+          }
+        </aside>
+      </div>
+      @if (checkoutOpen() && data.storefront.accept_online_orders) {
+        <section class="checkout-panel">
+          <p class="eyebrow">DELIVERY DETAILS</p>
+          <h2>Where should the business deliver?</h2>
+          <p>Enter the delivery address for this order. The business will receive the order as unpaid.</p>
+          <form [formGroup]="shippingForm" (ngSubmit)="placeOrder()">
+            <label for="recipient-name">Recipient name</label><input id="recipient-name" formControlName="recipient_name" autocomplete="name">
+            <label for="recipient-mobile">Mobile number</label><input id="recipient-mobile" formControlName="mobile" autocomplete="tel" type="tel">
+            <label for="address-one">Address line 1 *</label><input id="address-one" formControlName="address_line_1" autocomplete="address-line1" required>
+            <label for="address-two">Address line 2</label><input id="address-two" formControlName="address_line_2" autocomplete="address-line2">
+            <div class="address-grid"><div><label for="city">City *</label><input id="city" formControlName="city" autocomplete="address-level2" required></div><div><label for="state">State *</label><input id="state" formControlName="state" autocomplete="address-level1" required></div><div><label for="postal-code">Postal code *</label><input id="postal-code" formControlName="postal_code" autocomplete="postal-code" required></div><div><label for="country-code">Country code</label><input id="country-code" formControlName="country_code" maxlength="2"></div></div>
+            <label for="order-notes">Order notes</label><textarea id="order-notes" rows="3" formControlName="notes" maxlength="1000"></textarea>
+            @if (shippingForm.invalid && shippingForm.touched) { <p class="feedback error">Complete the required delivery address fields.</p> }
+            <button class="checkout-button" type="submit" [disabled]="busy()">{{ busy() ? 'Placing order…' : 'Place order' }}</button>
+          </form>
+        </section>
+      }
+    } @else {
+      <section class="empty-cart"><span class="empty-icon" aria-hidden="true">⌑</span><h2>Your cart is empty</h2><p>Explore this business catalogue and add products you’re interested in.</p><a class="primary-link" [routerLink]="['/businesses', slug, 'products']">Browse products</a></section>
+    }
+  }
+</div>
