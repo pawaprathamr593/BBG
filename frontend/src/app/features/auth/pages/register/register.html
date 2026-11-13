@@ -1,22 +1,22 @@
-<section class="auth-page">
-  <div class="auth-card">
-    <a class="auth-brand" routerLink="/" aria-label="BBG home"><span class="brand-mark">B</span><span><strong>BBG</strong><small>Business platform</small></span></a>
-    <p class="eyebrow">GET STARTED</p>
-    <h1>Create your account</h1>
-    <p class="intro">One account to connect with businesses and manage your workspace.</p>
-    @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
-    <form [formGroup]="form" (ngSubmit)="submit()">
-      <label for="full_name">Full name</label>
-      <input id="full_name" type="text" autocomplete="name" formControlName="full_name" placeholder="Your full name">
-      <label for="email">Email address <span>(optional if mobile is supplied)</span></label>
-      <input id="email" type="email" autocomplete="email" formControlName="email" placeholder="name@example.com">
-      <label for="mobile">Mobile number <span>(optional if email is supplied)</span></label>
-      <input id="mobile" type="tel" autocomplete="tel" formControlName="mobile" placeholder="Mobile number">
-      <label for="password">Password</label>
-      <input id="password" type="password" autocomplete="new-password" formControlName="password" placeholder="At least 8 characters">
-      @if (form.controls.password.touched && form.controls.password.invalid) { <small class="field-error">Use at least 8 characters.</small> }
-      <button type="submit" [disabled]="busy()">{{ busy() ? 'Creating account…' : 'Create account' }}</button>
-    </form>
-    <p class="switch-auth">Already registered? <a routerLink="/login">Sign in</a></p>
-  </div>
-</section>
+<section class="auth-page"><div class="auth-card register-card">
+<a class="auth-brand" routerLink="/"><span class="brand-mark">B</span><span><strong>BBG</strong><small>Business · Build · Grow</small></span></a>
+<p class="eyebrow">JOIN THE BBG COMMUNITY</p><h1>Start building connections.</h1><p class="intro">Create your BBG account to connect with businesses and unlock new opportunities.</p>
+<div class="social-section"><p class="section-label">Create an account with</p><div class="social-grid">
+<button class="social-button" type="button" (click)="selectProvider('Google')"><b class="provider-icon google">G</b>Google</button>
+<button class="social-button" type="button" (click)="selectProvider('Facebook')"><b class="provider-icon facebook">f</b>Facebook</button>
+<button class="social-button" type="button" (click)="selectProvider('Instagram')"><b class="provider-icon instagram">◎</b>Instagram</button>
+<button class="social-button" type="button" (click)="selectProvider('Apple')"><b class="provider-icon apple">●</b>Apple</button>
+</div>@if (providerNotice()) { <p class="provider-notice" role="status">{{ providerNotice() }}</p> }</div><div class="divider"><span>or sign up with email</span></div>
+@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+<form [formGroup]="form" (ngSubmit)="submit()">
+<label for="full_name">Full name</label><input id="full_name" type="text" autocomplete="name" formControlName="full_name" placeholder="Enter your full name">
+@if (form.controls.full_name.touched && form.controls.full_name.invalid) { <small class="field-error">Please enter your name (up to 150 characters).</small> }
+<label for="email">Email address <small>(optional if mobile is provided)</small></label><input id="email" type="email" autocomplete="email" formControlName="email" placeholder="you@example.com">
+@if (form.controls.email.touched && form.controls.email.invalid) { <small class="field-error">Enter a valid email address.</small> }
+<label for="mobile">Mobile number <small>(optional if email is provided)</small></label><input id="mobile" type="tel" autocomplete="tel" formControlName="mobile" placeholder="Enter your mobile number">
+<label for="password">Create password</label><input id="password" type="password" autocomplete="new-password" formControlName="password" placeholder="At least 8 characters">
+@if (form.controls.password.touched && form.controls.password.invalid) { <small class="field-error">Use at least 8 characters.</small> }
+<button class="submit-button" type="submit" [disabled]="busy()">{{ busy() ? 'Creating account…' : 'Create your BBG account' }} <span>→</span></button></form>
+<p class="approval-note"><strong>For business accounts:</strong> your business profile and public storefront are activated after Platform Admin verification and approval.</p>
+<p class="switch-auth">Already have an account? <a routerLink="/login">Sign in</a></p><p class="secure-note">⌑ Your account is protected by BBG authentication</p>
+</div></section>
