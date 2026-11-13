@@ -61,6 +61,7 @@ final class SubscriptionController
         $data = is_array($param['actionData'] ?? null) ? $param['actionData'] : [];
         $authorization = $request->getHeaderLine('Authorization');
         $data['_accessToken'] = str_starts_with($authorization, 'Bearer ') ? trim(substr($authorization, 7)) : '';
+        $data['action'] = $action;
         $param['actionType'] = $manage ? 'manageSubscription' : 'getSubscription';
         $param['actionData'] = $data;
         $input['subscriptionParam'] = $param;
