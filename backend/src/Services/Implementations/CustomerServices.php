@@ -33,6 +33,7 @@ final readonly class CustomerServices implements ICustomerServices
         }
         $actionData = $customerParam['actionData'];
         $actionData['action'] = (string) $customerParam['actionType'];
+        $actionData['action'] = (string) $customerParam['actionType'];
         try {
             switch ((string) $customerParam['actionType']) {
                 case 'getMyCustomerProfile':
@@ -66,6 +67,7 @@ final readonly class CustomerServices implements ICustomerServices
             return $resArr;
         }
         $actionData = $customerParam['actionData'];
+        $actionData['action'] = (string) $customerParam['actionType'];
         $actionData['action'] = (string) $customerParam['actionType'];
         try {
             switch ((string) $customerParam['actionType']) {
