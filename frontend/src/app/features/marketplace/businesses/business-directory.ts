@@ -123,11 +123,15 @@ export class BusinessDirectory implements OnInit {
 
   ngOnInit(): void {
     this.load();
-    this.api.getHomeSummary().subscribe({
+    this.api.listPublicCategories().subscribe({
       next: (response) => {
         if (response.status === 'SUCCESS' && response.data && !Array.isArray(response.data)) {
-          this.categories.set(response.data.categories ?? []);
+          this.categories.set(response.data.items ?? []);
         }
+      },
+      error: () => {
+        // Keep the directory usable if category metadata is temporarily unavailable.
+        this.categories.set([]);
       },
     });
   }
