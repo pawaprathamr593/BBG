@@ -37,7 +37,7 @@
 | POST | `/api/v1/auth/logout-all` | Revoke all sessions | Registered; bearer token required |
 | POST | `/api/v1/auth/profile` | Profile read | Registered; bearer token required |
 | POST | `/api/v1/auth/profile/update` | Profile edit | Route/controller branch exists; auth implementation note says profile update is not implemented in the initial increment |
-| POST | `/api/v1/auth/permissions` | Permission bootstrap | Route/controller branch exists; response/permission catalogue needs verification |
+| POST | `/api/v1/auth/permissions` | Permission bootstrap | Controller/service/DAO implementation verified; returns tenant_id and permission records (role_code, scope_type, permission_code, module_code). Tenant ID 0 resolves platform-scope assignments; positive IDs are tenant-scope and membership-checked. |
 
 **Existing frontend DTOs:** `LoginRequest`, `RegisterRequest`, `AuthResponseData`, `AuthUser`, `ApiResponse<T>`.  
 **Missing/uncertain:** exact permission DTO, profile-update DTO, error field mapping.  
@@ -68,9 +68,12 @@
 | POST | `/api/v1/marketplace/promotions/list` | Promotion feed | Registered; `listPublicPromotions` |
 | POST | `/api/v1/marketplace/promotions/detail` | Promotion detail | Registered; `getPublicPromotion` |
 
-**DTOs:** not yet present in frontend.  
-**Authentication:** intended public read; backend remains final authority.  
-**Missing contract:** query/filter/sort/page DTOs, exact response fields, public visibility rules and pagination envelope.
+**Frontend DTOs/service:** implemented under features/marketplace/models/marketplace.models.ts and features/marketplace/services/marketplace.service.ts. The service uses the confirmed marketplaceParam envelope; the controller overwrites the action from the matched route, and the service dispatches the corresponding action name.  
+**Confirmed directory filters:** page, page_size, search, city, state, category_id; pagination response is page, page_size, total, with items.  
+**Confirmed detail inputs:** business_slug; product detail uses business_slug + product_id; promotion detail uses promotion_id.  
+**Confirmed response groups:** home returns categories, businesses, promotions; business detail returns business + storefront; product detail returns product + variants; promotion detail returns promotion + media.  
+**Authentication:** public read; backend DAO queries enforce active tenant/storefront and published/approved business/product/promotion visibility. Backend remains final authority.  
+**Remaining verification:** run API integration tests against a disposable local backend and verify that stored media paths resolve through the deployed public media origin.
 
 ### API-BUS — entrepreneur business application and profile
 
@@ -427,3 +430,17 @@ Purchasing and inventory are future scope and must not be activated.
 6. Confirm product-media and subscription-proof upload lifecycle.
 7. Confirm order, payment and subscription lifecycle rules before enabling related state-changing UI.
 8. Update this matrix as each integration is verified; never mark a route as complete based only on its presence in `routes.php`.
+
+
+## 7. Frontend implementation update — 13 November 2026
+
+The public marketplace slice is now implemented on feature/frontend-development:
+
+- MarketplaceService calls the exact registered POST routes and uses the controller-confirmed marketplaceParam envelope.
+- Request/response DTOs mirror the current MarketplaceServices and MarketplaceDao source, not database columns inferred as API fields.
+- Lazy public screens cover home summary, category links, business directory filters/pagination, business storefront/product list, product detail/variants, promotion feed and promotion detail/media references.
+- API loading, empty and error states are included. The UI does not fabricate business/product/promotion records.
+- Permission bootstrap uses the checked-in /api/v1/auth/permissions action and verified record structure. Platform permissions load after login/session refresh; tenant-scoped permissions require an explicit tenant ID and are not activated by a guessed tenant context.
+- Tests have been added for marketplace request envelopes/filter fields and permission scope isolation. They have not yet been executed.
+
+The full Angular build, test suite, browser checks and local API integration remain pending; this update is implementation evidence, not a production-readiness claim.
