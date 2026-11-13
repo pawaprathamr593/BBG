@@ -176,10 +176,14 @@ export class MarketplaceApiService {
     );
   }
 
-  listBusinesses(search: string, page = 1, pageSize = 20): Observable<MarketplaceApiResponse<MarketplaceBusinessListData>> {
+  listBusinesses(
+    filters: { search?: string; city?: string; state?: string; category_id?: number },
+    page = 1,
+    pageSize = 20,
+  ): Observable<MarketplaceApiResponse<MarketplaceBusinessListData>> {
     return this.http.post<MarketplaceApiResponse<MarketplaceBusinessListData>>(
       `${this.apiBaseUrl}/api/v1/marketplace/businesses/list`,
-      { marketplaceParam: { actionData: { search, page, page_size: pageSize } } },
+      { marketplaceParam: { actionData: { ...filters, page, page_size: pageSize } } },
     );
   }
 }
