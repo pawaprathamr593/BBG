@@ -1,3 +1,5 @@
+import { Injectable, signal } from '@angular/core';
+
 export type PermissionScope = 'PLATFORM' | 'TENANT';
 
 export interface AuthPermissionRecord {
