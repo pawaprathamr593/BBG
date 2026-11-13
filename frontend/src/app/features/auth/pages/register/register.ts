@@ -37,7 +37,11 @@ export class Register {
     this.providerNotice.set('');
 
     try {
-      await this.auth.authenticateSocial(provider, 'register');
+      const { email, mobile } = this.form.getRawValue();
+      await this.auth.authenticateSocial(provider, 'register', {
+        ...(email.trim() ? { email: email.trim() } : {}),
+        ...(mobile.trim() ? { mobile: mobile.trim() } : {}),
+      });
       await this.router.navigateByUrl('/');
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
