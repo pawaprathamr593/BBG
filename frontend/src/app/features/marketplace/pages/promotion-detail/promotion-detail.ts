@@ -36,9 +36,8 @@ export class PromotionDetail implements OnInit {
       this.detail.set(detail);
       const promotion = detail.promotion;
       const description = promotion.post_content.slice(0, 300);
-      const canonicalPath = this.storefrontSlug
-        ? `/businesses/${encodeURIComponent(this.storefrontSlug)}/promotions/${promotion.id}`
-        : `/promotions/${promotion.id}`;
+      // The public promotion URL is the canonical version; the storefront route is a branded alternate view.
+      const canonicalPath = `/promotions/${promotion.id}`;
       this.seo.update(
         `${promotion.post_title} | ${promotion.business_name} | BBG`,
         description,
