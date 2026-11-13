@@ -31,13 +31,14 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         if (!isset($marketplaceParam['actionData']) || !is_array($marketplaceParam['actionData'])) {
             return $this->failure("Missing or invalid 'actionData'.");
         }
-        if ($marketplaceParam['actionType'] !== 'getMarketplace') {
+        if (!is_string($marketplaceParam['actionType'] ?? null) || $marketplaceParam['actionType'] === '') {
             return $this->failure('Unsupported actionType for getMarketplace.');
         }
 
         $actionData = $marketplaceParam['actionData'];
+        $actionData['action'] = (string) $marketplaceParam['actionType'];
         try {
-            switch ((string) marketplaceParam['actionType']) {
+            switch ((string) $marketplaceParam['actionType']) {
                 case 'listBusinesses':
                     $resArr = $this->getBusinesses($actionData);
                     break;
