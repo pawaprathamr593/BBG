@@ -13,7 +13,12 @@
   padding:0;
   gap:0;
 }
-.route-content > * {
+/* router-outlet is only Angular's insertion anchor. It must not become a
+   growing flex item, otherwise its empty space pushes the routed page down. */
+.route-content > router-outlet {
+  display:contents;
+}
+.route-content > :not(router-outlet) {
   flex:1 0 auto;
   align-self:stretch;
   width:100%;
