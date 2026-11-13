@@ -35,7 +35,7 @@ final readonly class EnquiryServices implements IEnquiryServices
         }
         $actionData = $enquiryParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) enquiryParam['actionType']) {
                 case 'listMyEnquiries':
                     $resArr = $this->getMyEnquiries($actionData);
                     break;
@@ -74,7 +74,7 @@ final readonly class EnquiryServices implements IEnquiryServices
         }
         $actionData = $enquiryParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) enquiryParam['actionType']) {
                 case 'createCustomerEnquiry':
                     $resArr = $this->manageCustomerEnquiry($actionData);
                     break;
