@@ -42,6 +42,16 @@ describe('CustomerCartService', () => {
     await expect(result).resolves.toEqual({ cart_id: 12 });
   });
 
+  it('accepts the backend empty-array success payload when clearing a cart', async () => {
+    const result = service.clearCart(42);
+    const request = http.expectOne('http://localhost:8080/api/v1/cart/clear');
+    expect(request.request.body).toEqual({
+      cartParam: { actionType: 'clearCart', actionData: { tenant_id: 42 } },
+    });
+    request.flush({ status: 'SUCCESS', msgArr: [], data: [] });
+    await expect(result).resolves.toEqual({});
+  });
+
   it('sends the required delivery snapshot fields to checkout', async () => {
     const shipping = {
       address_line_1: '12 Market Road',
