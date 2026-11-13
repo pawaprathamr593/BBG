@@ -19,9 +19,11 @@ export class ThemeService {
     } catch { /* Storage can be unavailable in private browsing contexts. */ }
     this.preference.set(saved);
     this.apply(saved);
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      if (this.preference() === 'system') this.apply('system');
-    });
+    if (typeof window.matchMedia === 'function') {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => {
+        if (this.preference() === 'system') this.apply('system');
+      });
+    }
   }
 
   toggle(): void {
@@ -37,9 +39,14 @@ export class ThemeService {
     this.apply(value);
   }
 
+  private prefersDark(): boolean {
+    return typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
   private apply(value: ThemePreference): void {
     if (!isPlatformBrowser(this.platformId)) return;
-    const dark = value === 'dark' || (value === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const dark = value === 'dark' || (value === 'system' && this.prefersDark());
     const theme = dark ? 'dark' : 'light';
     this.resolvedTheme.set(theme);
     this.document.documentElement.dataset['theme'] = theme;
