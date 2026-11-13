@@ -220,12 +220,57 @@ export class ProductDirectory implements OnInit {
     this.load();
   }
 
+  protected applySearch(): void {
+    this.page.set(1);
+    this.load();
+  }
+
   protected applyFilters(): void {
+    if (this.draftFilters.minPrice !== null && this.draftFilters.maxPrice !== null
+      && this.draftFilters.minPrice > this.draftFilters.maxPrice) {
+      this.filterNotice.set('Minimum price cannot be greater than maximum price.');
+      return;
+    }
+    this.filterNotice.set('');
+    this.appliedFilters.set({ ...this.draftFilters });
+    this.filtersOpen.set(false);
     this.page.set(1);
     if (this.sort === 'nearby' && (this.latitude === undefined || this.longitude === undefined)) {
       this.requestLocation();
       return;
     }
+    this.load();
+  }
+
+  protected resetDraftFilters(): void {
+    this.draftFilters = this.defaultFilters();
+    this.filterNotice.set('');
+  }
+
+  protected removeFilter(key: ProductFilterKey): void {
+    const next = { ...this.appliedFilters() };
+    switch (key) {
+      case 'categoryId': next.categoryId = ''; break;
+      case 'brand': next.brand = ''; break;
+      case 'city': next.city = ''; break;
+      case 'state': next.state = ''; break;
+      case 'minPrice': next.minPrice = null; break;
+      case 'maxPrice': next.maxPrice = null; break;
+      case 'onlineOnly': next.onlineOnly = false; break;
+      case 'variantsOnly': next.variantsOnly = false; break;
+      case 'withImages': next.withImages = false; break;
+    }
+    this.appliedFilters.set(next);
+    this.draftFilters = { ...next };
+    this.page.set(1);
+    this.load();
+  }
+
+  protected clearFilters(): void {
+    this.appliedFilters.set(this.defaultFilters());
+    this.draftFilters = this.defaultFilters();
+    this.filterNotice.set('');
+    this.page.set(1);
     this.load();
   }
 
@@ -242,23 +287,18 @@ export class ProductDirectory implements OnInit {
     this.load();
   }
 
-  protected clearFilters(): void {
-    this.query = '';
-    this.categoryId = '';
-    this.brand = '';
-    this.city = '';
-    this.state = '';
-    this.minPrice = null;
-    this.maxPrice = null;
-    this.onlineOnly = false;
-    this.variantsOnly = false;
-    this.withImages = false;
-    this.sort = 'newest';
-    this.latitude = undefined;
-    this.longitude = undefined;
-    this.filterNotice.set('');
-    this.page.set(1);
-    this.load();
+  private defaultFilters(): ProductFilterValues {
+    return {
+      categoryId: '',
+      brand: '',
+      city: '',
+      state: '',
+      minPrice: null,
+      maxPrice: null,
+      onlineOnly: false,
+      variantsOnly: false,
+      withImages: false,
+    };
   }
 
   protected changePage(value: number): void {
@@ -269,17 +309,18 @@ export class ProductDirectory implements OnInit {
   protected load(): void {
     this.loading.set(true);
     this.error.set('');
+    const applied = this.appliedFilters();
     const filters = {
       search: this.query.trim(),
-      ...(this.categoryId ? { category_id: Number(this.categoryId) } : {}),
-      brand: this.brand.trim(),
-      city: this.city.trim(),
-      state: this.state.trim(),
-      ...(this.minPrice !== null && this.minPrice !== undefined ? { min_price: this.minPrice } : {}),
-      ...(this.maxPrice !== null && this.maxPrice !== undefined ? { max_price: this.maxPrice } : {}),
-      online_only: this.onlineOnly,
-      variants_only: this.variantsOnly,
-      with_images: this.withImages,
+      ...(applied.categoryId ? { category_id: Number(applied.categoryId) } : {}),
+      brand: applied.brand.trim(),
+      city: applied.city.trim(),
+      state: applied.state.trim(),
+      ...(applied.minPrice !== null ? { min_price: applied.minPrice } : {}),
+      ...(applied.maxPrice !== null ? { max_price: applied.maxPrice } : {}),
+      online_only: applied.onlineOnly,
+      variants_only: applied.variantsOnly,
+      with_images: applied.withImages,
       sort: this.sort,
       ...(this.sort === 'nearby' && this.latitude !== undefined && this.longitude !== undefined
         ? { latitude: this.latitude, longitude: this.longitude }
