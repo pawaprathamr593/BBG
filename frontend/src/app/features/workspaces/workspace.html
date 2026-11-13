@@ -62,7 +62,7 @@
               @if (action.requiresPayload) {
                 <div class="payload-editor">
                   <label for="workspace-payload">Request payload (JSON)</label>
-                  <p>The backend route is registered, but its exact input fields are not documented in the frontend contract yet. Enter only fields defined by the backend DTO. No fields are guessed here.</p>
+                  <p>Enter only fields required by the selected backend action. Tenant-scoped actions require the tenant_id for a business you belong to; the backend verifies membership and permission. Other fields must follow the backend contract.</p>
                   <textarea id="workspace-payload" rows="8" spellcheck="false" [ngModel]="payload()"
                     (ngModelChange)="payload.set($event)" aria-describedby="payload-help"></textarea>
                   <small id="payload-help">Use a JSON object. The request will be sent to the registered route using its module envelope.</small>
