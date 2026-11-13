@@ -1,0 +1,14 @@
+<section class="auth-page">
+  <div class="auth-panel">
+    <div class="auth-card">
+      <p class="eyebrow">BBG SECURE SIGN-IN</p>
+      <h2>{{ busy() ? 'Completing Instagram sign-in…' : 'Sign-in could not be completed' }}</h2>
+      @if (busy()) {
+        <p class="intro">We are securely verifying your Instagram professional account with BBG.</p>
+      } @else {
+        <p class="error" role="alert">{{ error() }}</p>
+        <p class="switch-auth"><a routerLink="/login">Return to sign in</a></p>
+      }
+    </div>
+  </div>
+</section>
