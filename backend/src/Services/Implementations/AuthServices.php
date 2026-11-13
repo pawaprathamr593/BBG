@@ -257,7 +257,7 @@ final readonly class AuthServices implements IAuthServices
                         return $this->propagateFailure($contactCheck, 'AuthServices::manageSocialLogin');
                     }
                     if ($contactCheck['data'] !== []) {
-                        return $this->failed('A BBG account already uses this email or mobile. Sign in to that account and link this provider from account settings.');
+                        return $this->failed('A BBG account already uses this email or mobile. Sign in to that existing BBG account instead of creating a duplicate.');
                     }
                 }
 
