@@ -1,14 +1,17 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { JsonPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ApiError } from '../../core/http/api-error';
+import { AuthService } from '../../core/auth/auth.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { WorkspaceApiService } from './workspace-api.service';
 import { WorkspaceAction, WorkspaceConfig, WorkspaceSection } from './workspace.config';
 @Component({selector:'app-workspace',imports:[FormsModule,JsonPipe],templateUrl:'./workspace.html',styleUrl:'./workspace.scss'})
 export class Workspace implements OnInit {
   private readonly route=inject(ActivatedRoute);
+  private readonly router=inject(Router);
+  private readonly auth=inject(AuthService);
   private readonly api=inject(WorkspaceApiService);
   protected readonly theme=inject(ThemeService);
   protected readonly config=this.route.snapshot.data['workspace'] as WorkspaceConfig;
@@ -21,6 +24,8 @@ export class Workspace implements OnInit {
   protected readonly loading=signal(false);
   protected readonly error=signal('');
   protected readonly notice=signal('');
+  protected get accountName():string{return this.auth.user()?.full_name||'Signed in';}
+  protected async signOut():Promise<void>{try{await this.auth.logout();}finally{await this.router.navigateByUrl('/');}}
   ngOnInit():void{const initial=this.activeAction();if(initial&&!initial.requiresPayload)void this.run(initial);}
   protected selectSection(section:WorkspaceSection):void{
     this.activeSectionId.set(section.id);this.activeAction.set(section.actions[0]??null);this.result.set(null);this.hasResult.set(false);this.error.set('');this.notice.set('');this.payload.set('{}');
