@@ -12,7 +12,7 @@ final readonly class CartServices implements ICartServices {
     public function getCart(array $param): array {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         if(($bad=$this->envelope($param,'getCart'))!==null)return $bad;
-        if(($param['actionType']??'')!=='getCart'||($param['actionData']['action']??'')!=='getCart')return $this->fail('Unsupported cart read action.');
+        if(($param['actionType']??'')!=='getCart')return $this->fail('Unsupported cart read action.');
         $principal=$this->principal((string)($param['actionData']['_accessToken']??''));if($principal['status']!=='SUCCESS')return $principal;
         $tenant=$this->tenantId($param['actionData']['tenant_id']??null);if($tenant===null)return $this->fail('A valid tenant_id is required.');
         $store=$this->dao->getEnabledStorefront($this->db,$tenant);if($store['status']!=='SUCCESS')return $store;if($store['data']===[])return $this->fail('Business storefront is not approved or has no enabled ordering channel.');
@@ -25,8 +25,8 @@ final readonly class CartServices implements ICartServices {
     public function manageCart(array $param): array {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         if(($bad=$this->envelope($param,'manageCart'))!==null)return $bad;
-        if(($param['actionType']??'')!=='manageCart')return $this->fail('Unsupported actionType for manageCart.');
-        $d=$param['actionData'];$action=(string)($d['action']??'');
+        if(!is_string($param['actionType']??null)||$param['actionType']==='')return $this->fail('Unsupported actionType for manageCart.');
+        $d=$param['actionData'];$action=(string)$param['actionType'];$d['action']=$action;
         if(!in_array($action,['addItem','updateItem','removeItem','clearCart','checkout','whatsappOrder'],true))return $this->fail('Unsupported cart management action.');
         $principal=$this->principal((string)($d['_accessToken']??''));if($principal['status']!=='SUCCESS')return $principal;
         $user=(int)$principal['data']['user_id'];$tenant=$this->tenantId($d['tenant_id']??null);if($tenant===null)return $this->fail('A valid tenant_id is required.');
