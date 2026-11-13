@@ -94,7 +94,7 @@ export class MarketplaceService {
     );
   }
 
-  private async request<T>(path: string, action: string, actionData: Record<string, unknown> = {}): Promise<T> {
+  private async request<T>(path: string, action: string, actionData: object = {}): Promise<T> {
     const response = await firstValueFrom(this.api.post<T>(path, {
       marketplaceParam: { actionType: action, actionData },
     }));
