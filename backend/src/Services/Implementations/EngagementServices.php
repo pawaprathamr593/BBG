@@ -220,8 +220,8 @@ final readonly class EngagementServices implements IEngagementServices
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $contentType = strtoupper($this->filterText($actionData['content_type'] ?? '', 20));
         $contentId = $this->positiveInt($actionData['content_id'] ?? null);
-        if (!in_array($contentType, ['PRODUCT', 'POST'], true) || $contentId === null) {
-            $resArr['msgArr'][] = 'content_type must be PRODUCT or POST and content_id must be valid.';
+        if (!in_array($contentType, ['BUSINESS', 'PRODUCT', 'POST'], true) || $contentId === null) {
+            $resArr['msgArr'][] = 'content_type must be BUSINESS, PRODUCT or POST and content_id must be valid.';
             return $resArr;
         }
         $result = $this->dao->getPublicContentTenant($this->db, $contentType, $contentId);
