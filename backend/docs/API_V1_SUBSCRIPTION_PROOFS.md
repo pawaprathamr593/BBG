@@ -30,7 +30,7 @@ Required headers:
 - `Authorization: Bearer <access-token>`
 - `Content-Type: application/json`
 
-The authenticated user must have valid tenant context and the subscription must belong to that tenant. Upload URLs are issued only when the subscription status is `PENDING` or `REJECTED`.
+The authenticated user must have valid tenant context and the subscription must belong to that tenant. Upload URLs are issued only when the subscription status is `PENDING` or `REJECTED` and no proof is already awaiting review.
 
 Example success response:
 
