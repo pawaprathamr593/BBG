@@ -14,6 +14,20 @@ final class CartController {
         $body = $request->getParsedBody(); $input = is_array($body) ? $body : [];
         $param = is_array($input['cartParam'] ?? null) ? $input['cartParam'] : [];
         $data = is_array($param['actionData'] ?? null) ? $param['actionData'] : [];
+        $routeActions = [
+            '/api/v1/cart/get' => 'getCart',
+            '/api/v1/cart/add' => 'addItem',
+            '/api/v1/cart/update' => 'updateItem',
+            '/api/v1/cart/remove' => 'removeItem',
+            '/api/v1/cart/clear' => 'clearCart',
+            '/api/v1/cart/checkout' => 'checkout',
+            '/api/v1/cart/whatsapp-order' => 'whatsappOrder',
+        ];
+        $action = $routeActions[$request->getUri()->getPath()] ?? '';
+        if ($action === '') {
+            return $this->respond(['status' => 'FAILED', 'msgArr' => ['Unsupported cart route.'], 'data' => []], $responses, $streams);
+        }
+        $data['action'] = $action;
         $header = $request->getHeaderLine('Authorization');
         $data['_accessToken'] = str_starts_with($header, 'Bearer ') ? trim(substr($header, 7)) : '';
         $param['actionData'] = $data; $input['cartParam'] = $param;
