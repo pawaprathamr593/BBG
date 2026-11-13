@@ -131,7 +131,7 @@ Angular build, unit tests, browser tests and production build have NOT been exec
 | Deliverable | Status |
 |---|---|
 | Repository/branch audit | Complete |
-| Backend route/controller inspection | Complete for current public marketplace and auth permission calls |
+| Backend route/controller inspection | Public marketplace, auth and workspace controller dispatch inspected; Core Service/runtime contracts still require verification |
 | API-to-screen mapping | Committed; full route catalogue mapped |
 | Design direction and shared tokens | Committed and implemented |
 | Public/auth layouts and lazy routing | Implemented |
@@ -144,7 +144,7 @@ Angular build, unit tests, browser tests and production build have NOT been exec
 | Platform Administrator experience | Workspace shell + users/business/subscription/category/analytics/moderation/health route actions wired; permission catalogue approval pending |
 | Tenant workspace candidate modules | Tenant list/detail/member read routes exposed; tenant switching and conditional ERP modules remain disabled |
 | PWA | Not started |
-| Unit/component tests | Added for marketplace API and permission scope; not run |
+| Unit/component tests | Added for marketplace API, permission scope and workspace API envelopes/failures; not run |
 | Playwright E2E | Not started |
 | Production validation | Not run |
 
