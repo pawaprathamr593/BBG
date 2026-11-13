@@ -42,8 +42,14 @@ export class PermissionService {
         && record.permission_code.trim().length > 0
         && (record.scope_type === 'PLATFORM' || record.scope_type === 'TENANT'),
     );
-    this.contextState.set({ tenant_id: context.tenant_id, permissions: validRecords });
-    this.permissionState.set(new Set(validRecords.map((record) => record.permission_code)));
+    // Keep platform-scoped permissions while replacing the active tenant snapshot.
+    // Tenant permissions from a previously selected tenant are never carried forward.
+    const platformRecords = context.tenant_id && context.tenant_id > 0
+      ? this.contextState()?.permissions.filter((record) => record.scope_type === 'PLATFORM') ?? []
+      : [];
+    const mergedRecords = [...platformRecords, ...validRecords];
+    this.contextState.set({ tenant_id: context.tenant_id, permissions: mergedRecords });
+    this.permissionState.set(new Set(mergedRecords.map((record) => record.permission_code)));
   }
 
   clear(): void {
