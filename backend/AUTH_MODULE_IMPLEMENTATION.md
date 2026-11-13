@@ -121,14 +121,14 @@ Do not use production credentials or production accounts for replay tests.
 
 Social authentication uses provider-issued credentials that are verified server-side before BBG creates its own session. Provider access tokens and ID tokens are never stored in the database. BBG stores only the provider name, immutable provider subject, optional provider email, and linked user ID in `USER_IDENTITIES`.
 
-Supported providers in the implementation are Google, Facebook, Apple, and Instagram Login for Instagram professional (Business/Creator) accounts. Consumer/personal Instagram accounts are not supported by Meta's Instagram Login API. The backend rejects a provider credential unless it can verify the token against the configured provider application.
+Supported providers in the implementation are Google, Facebook, Apple, and Instagram Login for Instagram professional (Business/Creator) accounts. Instagram does not provide a general personal-account login flow; first-time Instagram registration must include an email address or mobile number on the BBG registration form. Consumer/personal Instagram accounts are not supported by Meta's Instagram Login API. The backend rejects a provider credential unless it can verify the token against the configured provider application.
 
 ### Social identity rules
 
 - Existing identities authenticate by the unique `(provider, provider_subject)` pair.
 - First-time account creation occurs only when the user explicitly chooses the registration flow.
 - A provider email matching an existing BBG account does not silently link accounts. The user must sign in to that BBG account and use the authenticated provider-link flow.
-- Social-only accounts may have a NULL email, mobile, and password hash; users can add contact details later through the BBG profile flow.
+- First-time social registration follows the existing BBG contact rule: at least one email address or mobile number must be supplied by the provider or entered on the registration form. The password hash may remain NULL for provider-only authentication. Only provider-attested verified email is marked as verified.
 - Provider tokens are verified server-side and are not persisted.
 - The refresh token remains in the existing HttpOnly `bbg_refresh` cookie; the access token remains in Angular memory.
 
