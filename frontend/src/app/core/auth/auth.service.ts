@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../http/api.service';
 import { ApiError } from '../http/api-error';
@@ -9,8 +9,11 @@ import { AuthResponseData, AuthUser, LoginRequest, RegisterRequest } from './aut
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly sessionHintKey = 'bbg-session-present';
-  private readonly api = inject(ApiService);
-  private readonly permissionService = inject(PermissionService);
+  constructor(
+    private readonly api: ApiService,
+    private readonly permissionService: PermissionService,
+  ) {}
+
   private readonly accessTokenState = signal<string | null>(null);
   readonly accessToken = this.accessTokenState.asReadonly();
   readonly user = signal<AuthUser | null>(null);
