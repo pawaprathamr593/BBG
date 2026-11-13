@@ -32,7 +32,7 @@ interface FacebookSdk {
 }
 
 interface AppleAuthResponse {
-  authorization?: { id_token?: string };
+  authorization?: { id_token?: string; state?: string };
   user?: { name?: { firstName?: string; lastName?: string } };
 }
 
@@ -111,8 +111,7 @@ export class AuthService {
       case 'APPLE':
         return this.authenticateApple(providerConfig.client_id ?? '', intent);
       case 'INSTAGRAM':
-        this.startInstagramLogin(providerConfig.app_id ?? '', intent);
-        throw new Error('Redirecting to Instagram…');
+        return new Promise<AuthUser>(() => this.startInstagramLogin(providerConfig.app_id ?? '', intent));
     }
   }
 
@@ -268,7 +267,7 @@ export class AuthService {
     });
     const result = await apple.auth.signIn();
     const idToken = result.authorization?.id_token;
-    if (!idToken) throw new Error('Apple did not return a valid identity token.');
+    if (!idToken || result.authorization?.state !== state) throw new Error('Apple sign-in could not be verified. Please try again.');
     const fullName = [result.user?.name?.firstName, result.user?.name?.lastName].filter(Boolean).join(' ');
     return this.completeSocialCredential('APPLE', idToken, intent, { nonce, full_name: fullName });
   }
