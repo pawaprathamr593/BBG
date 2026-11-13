@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, MarketplacePromotion } from '../../../core/marketplace/marketplace-api.service';
 
 @Component({
   selector: 'app-marketplace-home',
@@ -58,15 +59,28 @@ import { RouterLink } from '@angular/router';
           </div>
           <span class="section-note">Browse the BBG marketplace</span>
         </div>
-        <div class="category-empty">
-          <div class="category-empty-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M4 19V8.5L12 4l8 4.5V19M8 19v-5h8v5M8 9h.01M12 9h.01M16 9h.01"></path></svg>
+        @if (loading()) {
+          <p class="state-message" role="status">Loading marketplace categories…</p>
+        } @else if (loadError()) {
+          <p class="state-message state-error" role="alert">{{ loadError() }}</p>
+        } @else if (categories().length) {
+          <div class="category-grid">
+            @for (category of categories(); track category.id) {
+              <article class="category-card">
+                <span class="category-mark" aria-hidden="true">{{ category.category_name.slice(0, 1).toUpperCase() }}</span>
+                <span class="category-name">{{ category.category_name }}</span>
+                @if (category.description) { <span class="category-description">{{ category.description }}</span> }
+              </article>
+            }
           </div>
-          <div>
-            <h3>Business categories are coming together</h3>
-            <p>Available categories will appear here once the marketplace catalogue is connected.</p>
+        } @else {
+          <div class="category-empty">
+            <div class="category-empty-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 19V8.5L12 4l8 4.5V19M8 19v-5h8v5M8 9h.01M12 9h.01M16 9h.01"></path></svg>
+            </div>
+            <div><h3>No public categories yet</h3><p>Business categories published on BBG will appear here.</p></div>
           </div>
-        </div>
+        }
       </section>
 
       <section class="content-section businesses-section" id="businesses" aria-labelledby="businesses-title">
@@ -77,30 +91,60 @@ import { RouterLink } from '@angular/router';
           </div>
           <span class="section-note">Explore businesses on BBG</span>
         </div>
-        <div class="discovery-panel">
-          <div class="discovery-illustration" aria-hidden="true">
-            <div class="store-building"><span></span><span></span><span></span></div>
-            <div class="store-base"></div>
+        @if (searchLoading()) {
+          <p class="state-message" role="status">Searching published businesses…</p>
+        } @else if (searchError()) {
+          <p class="state-message state-error" role="alert">{{ searchError() }}</p>
+        } @else if (businesses().length) {
+          <div class="business-grid">
+            @for (business of businesses(); track business.id) {
+              <article class="business-card">
+                <div class="business-card-top">
+                  <span class="business-avatar" aria-hidden="true">{{ business.business_name.slice(0, 1).toUpperCase() }}</span>
+                  @if (business.category_name) { <span class="business-category">{{ business.category_name }}</span> }
+                </div>
+                <h3>{{ business.business_name }}</h3>
+                <p class="business-location">{{ locationLabel(business) }}</p>
+                @if (business.business_description) {
+                  <p class="business-description">{{ business.business_description }}</p>
+                }
+                <div class="business-card-footer">
+                  @if (business.accept_online_orders) { <span>Online orders</span> }
+                  @if (business.whatsapp_enabled) { <span>WhatsApp</span> }
+                </div>
+              </article>
+            }
           </div>
-          <div class="discovery-copy">
-            <h3>Your next business connection starts here.</h3>
-            <p>Business profiles and public listings will be displayed here as soon as the discovery service is available.</p>
-            <a class="text-link" routerLink="/register">List your business <span aria-hidden="true">→</span></a>
+        } @else {
+          <div class="category-empty">
+            <div class="category-empty-icon" aria-hidden="true">⌕</div>
+            <div><h3>No published businesses found</h3><p>Try another search, or check back as more businesses publish their storefronts.</p></div>
           </div>
-        </div>
+        }
       </section>
 
       <section class="promotion-banner" id="promotions" aria-labelledby="promotions-title">
-        <div class="promotion-art" aria-hidden="true">
-          <div class="gift-box"><span class="gift-ribbon"></span><span class="gift-bow"></span></div>
-          <span class="gift-spark spark-one"></span><span class="gift-spark spark-two"></span>
-        </div>
         <div class="promotion-copy">
           <p class="section-kicker">GROW TOGETHER</p>
-          <h2 id="promotions-title">Good things are on the way.</h2>
-          <p>Discover business promotions and updates as they become available on BBG.</p>
+          <h2 id="promotions-title">Latest business promotions</h2>
+          <p>Current public promotions published by businesses on BBG.</p>
         </div>
-        <a class="promotion-action" routerLink="/register">Join BBG <span aria-hidden="true">→</span></a>
+        @if (loading()) {
+          <p class="promotion-state" role="status">Loading promotions…</p>
+        } @else if (promotions().length) {
+          <div class="promotion-grid">
+            @for (promotion of promotions(); track promotion.id) {
+              <article class="promotion-card">
+                <span class="promotion-business">{{ promotion.business_name }}</span>
+                <h3>{{ promotion.post_title }}</h3>
+                <p>{{ promotion.post_content }}</p>
+                <time [attr.datetime]="promotion.published_on">{{ formatDate(promotion.published_on) }}</time>
+              </article>
+            }
+          </div>
+        } @else {
+          <p class="promotion-state">There are no active public promotions right now.</p>
+        }
       </section>
 
       <section class="entrepreneur-callout" aria-labelledby="entrepreneur-title">
@@ -189,14 +233,114 @@ import { RouterLink } from '@angular/router';
       .content-section,.promotion-banner,.entrepreneur-callout { width:calc(100% - 32px); }.content-section { padding-top:29px; }.section-heading { align-items:flex-start; flex-direction:column; gap:6px; }.section-heading h2 { font-size:1.3rem; }.category-empty { align-items:flex-start; padding:18px; }.category-empty-icon { flex-basis:42px; width:42px; height:42px; }.discovery-panel { grid-template-columns:1fr; }.discovery-illustration { min-height:145px; }.discovery-copy { padding:22px; }
       .promotion-banner { flex-wrap:wrap; gap:12px; padding:20px; }.promotion-art { flex-basis:92px; width:92px; height:75px; }.gift-box { left:5px; transform:scale(.8); transform-origin:bottom left; }.promotion-copy { min-width:calc(100% - 110px); }.promotion-copy h2 { font-size:1.2rem; }.promotion-action { margin-left:auto; }.entrepreneur-callout { align-items:flex-start; flex-direction:column; padding:22px; }
     }
+    .state-message { margin:0; padding:20px 22px; color:var(--text-secondary); background:var(--surface-subtle); border:1px solid var(--border); border-radius:13px; font-size:.88rem; }
+    .state-error { color:#9d3028; background:#fff5f3; border-color:#f1cbc5; }
+    .category-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:13px; }
+    .category-card { display:flex; min-height:118px; flex-direction:column; align-items:flex-start; gap:10px; padding:17px; background:var(--surface-card); border:1px solid var(--border); border-radius:14px; }
+    .category-mark,.business-avatar { display:grid; width:38px; height:38px; place-items:center; color:#174d35; background:#e8f1eb; border-radius:11px; font-weight:800; }
+    .category-name { color:var(--text-primary); font-size:.9rem; font-weight:750; }
+    .category-description { color:var(--text-secondary); font-size:.75rem; line-height:1.45; }
+    .business-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(245px,1fr)); gap:15px; }
+    .business-card { min-width:0; padding:20px; background:var(--surface-card); border:1px solid var(--border); border-radius:15px; }
+    .business-card-top { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+    .business-avatar { width:46px; height:46px; border-radius:13px; font-size:1.1rem; }
+    .business-category { padding:6px 9px; color:#315d47; background:#eaf2ec; border-radius:999px; font-size:.68rem; font-weight:700; }
+    .business-card h3 { margin:0 0 5px; color:var(--text-primary); font-size:1rem; }
+    .business-location { margin:0; color:var(--text-secondary); font-size:.76rem; }
+    .business-description { display:-webkit-box; min-height:3.9em; margin:12px 0; overflow:hidden; color:var(--text-secondary); font-size:.8rem; line-height:1.5; -webkit-line-clamp:3; -webkit-box-orient:vertical; }
+    .business-card-footer { display:flex; flex-wrap:wrap; gap:7px; margin-top:13px; }
+    .business-card-footer span { padding:5px 8px; color:#315d47; background:#edf4ef; border-radius:6px; font-size:.68rem; font-weight:700; }
+    .promotion-banner { align-items:flex-start; flex-direction:column; }
+    .promotion-copy { width:100%; }
+    .promotion-grid { position:relative; z-index:1; display:grid; width:100%; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+    .promotion-card { padding:16px; color:#fff; background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.2); border-radius:12px; }
+    .promotion-business { color:#f5d928; font-size:.7rem; font-weight:750; }
+    .promotion-card h3 { margin:7px 0; color:#fff; font-size:.96rem; }
+    .promotion-card p { display:-webkit-box; margin:0 0 10px; overflow:hidden; color:rgba(255,255,255,.82); font-size:.78rem; line-height:1.5; -webkit-line-clamp:3; -webkit-box-orient:vertical; }
+    .promotion-card time,.promotion-state { color:rgba(255,255,255,.76); font-size:.72rem; }
+    .promotion-state { margin:0; }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; } }
   `],
 })
-export class MarketplaceHome {
-  protected readonly searchNotice = signal('');
+export class MarketplaceHome implements OnInit {
+  private readonly marketplaceApi = inject(MarketplaceApiService);
+
+  protected readonly loading = signal(true);
+  protected readonly loadError = signal('');
+  protected readonly searchLoading = signal(false);
+  protected readonly searchError = signal('');
+  protected readonly categories = signal<MarketplaceCategory[]>([]);
+  protected readonly businesses = signal<MarketplaceBusiness[]>([]);
+  protected readonly promotions = signal<MarketplacePromotion[]>([]);
+
+  ngOnInit(): void {
+    this.loadHome();
+  }
 
   protected submitSearch(event: Event): void {
     event.preventDefault();
-    this.searchNotice.set('Marketplace search will be enabled when the public search API contract is finalized.');
+    const form = event.currentTarget as HTMLFormElement;
+    const formData = new FormData(form);
+    const query = String(formData.get('query') ?? '').trim();
+
+    if (!query) {
+      this.loadHome();
+      return;
+    }
+
+    this.searchLoading.set(true);
+    this.searchError.set('');
+    this.marketplaceApi.listBusinesses(query).subscribe({
+      next: (response) => {
+        if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+          this.searchError.set(response.msgArr?.join(' ') || 'Unable to search businesses right now.');
+          this.businesses.set([]);
+        } else {
+          this.businesses.set(response.data.items ?? []);
+        }
+        this.searchLoading.set(false);
+      },
+      error: () => {
+        this.searchError.set('We could not reach the marketplace. Please try again.');
+        this.searchLoading.set(false);
+      },
+    });
+  }
+
+  protected locationLabel(business: MarketplaceBusiness): string {
+    return [business.city, business.state].filter(Boolean).join(', ') || 'Location not provided';
+  }
+
+  protected formatDate(value: string): string {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? value
+      : new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+  }
+
+  private loadHome(): void {
+    this.loading.set(true);
+    this.loadError.set('');
+    this.searchError.set('');
+    this.marketplaceApi.getHomeSummary().subscribe({
+      next: (response) => {
+        if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+          this.loadError.set(response.msgArr?.join(' ') || 'Marketplace data is currently unavailable.');
+          this.categories.set([]);
+          this.businesses.set([]);
+          this.promotions.set([]);
+        } else {
+          this.categories.set(response.data.categories ?? []);
+          this.businesses.set(response.data.businesses ?? []);
+          this.promotions.set(response.data.promotions ?? []);
+        }
+        this.loading.set(false);
+        this.searchLoading.set(false);
+      },
+      error: () => {
+        this.loadError.set('We could not load marketplace data. Please refresh the page to try again.');
+        this.loading.set(false);
+      },
+    });
   }
 }
