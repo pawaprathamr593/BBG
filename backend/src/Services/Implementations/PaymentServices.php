@@ -25,7 +25,7 @@ final readonly class PaymentServices implements IPaymentServices
     public function getPayment(array $paymentParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($paymentParam['actionType']) || $paymentParam['actionType'] !== 'getPayment') {
+        if (!isset($paymentParam['actionType']) || !is_string($paymentParam['actionType']) || $paymentParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Invalid actionType for getPayment.';
             return $resArr;
         }
@@ -34,8 +34,9 @@ final readonly class PaymentServices implements IPaymentServices
             return $resArr;
         }
         $actionData = $paymentParam['actionData'];
+        $actionData['action'] = (string) $paymentParam['actionType'];
         try {
-            switch ((string) paymentParam['actionType']) {
+            switch ((string) $paymentParam['actionType']) {
                 case 'listMyPayments':
                     $resArr = $this->getMyPayments($actionData);
                     break;
