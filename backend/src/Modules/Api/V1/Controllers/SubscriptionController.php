@@ -63,7 +63,7 @@ final class SubscriptionController
         $data['_accessToken'] = str_starts_with($authorization, 'Bearer ') ? trim(substr($authorization, 7)) : '';
         $data['action'] = $action;
         $data['action'] = $action;
-        $param['actionType'] = $manage ? 'manageSubscription' : 'getSubscription';
+        $param['actionType'] = $action;
         $param['actionData'] = $data;
         $input['subscriptionParam'] = $param;
         try {
