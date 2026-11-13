@@ -26,7 +26,7 @@ This was a **static source audit**, not a live API penetration test. The audit t
 | Product image S3 | Presigned upload + object verification implemented |
 | Subscription proof S3 | Presigned upload URL and server-side object verification implemented; live S3 test pending |
 | Database design alignment | **Documented in v2.1 amendment:** CARTS/CART_ITEMS adopted as tables 69–70; three BUSINESS_APPLICATION* tables documented as migration-only/dormant |
-| CI | Latest run #43374101965 completed successfully on remediation commit `9fed58022b828ab02932c31e97822a233fed08ac`; covers PHP syntax, static route/actionType checks and clean MySQL migrations |
+| CI | Run #43374241981 completed successfully on remediation commit `d4b23cc4e53df36a3ac0c42f83d66cf834953720`; covers PHP syntax, static route/actionType checks and clean MySQL migrations |
 | End-to-end/security tests | Not demonstrated by the current workflow |
 
 **Overall assessment: P1 source-level corrections implemented; NOT READY FOR PRODUCTION API SIGN-OFF.** CI syntax/migration validation and live endpoint/S3 integration tests remain required. The source audit is not a penetration test.
