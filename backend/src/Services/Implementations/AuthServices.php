@@ -225,6 +225,9 @@ final readonly class AuthServices implements IAuthServices
 
             $isNewUser = false;
             if ($identityResult['data'] !== []) {
+                if (($identityResult['data']['status'] ?? '') !== 'A') {
+                    return $this->failed('This provider identity is inactive. Contact BBG support for assistance.');
+                }
                 $userResult = $this->authDao->getUserById($this->connection, (int) $identityResult['data']['user_id']);
                 if ($userResult['status'] !== 'SUCCESS' || $userResult['data'] === []) {
                     return $this->failed('The BBG account linked to this provider is unavailable.');
@@ -338,6 +341,9 @@ final readonly class AuthServices implements IAuthServices
                 return $this->propagateFailure($existingIdentity, 'AuthServices::manageSocialLink');
             }
             if ($existingIdentity['data'] !== []) {
+                if (($existingIdentity['data']['status'] ?? '') !== 'A') {
+                    return $this->failed('This provider identity is inactive and cannot be linked again.');
+                }
                 if ((int) $existingIdentity['data']['user_id'] !== $userId) {
                     return $this->failed('This provider account is already linked to another BBG account.');
                 }
