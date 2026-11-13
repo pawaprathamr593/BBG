@@ -194,7 +194,8 @@ final class SocialProviderTokenVerifier
             ]),
         );
         $subject = (string) ($profile['user_id'] ?? $profile['id'] ?? '');
-        if ($subject === '') {
+        $tokenSubject = (string) ($tokenResponse['user_id'] ?? '');
+        if ($subject === '' || ($tokenSubject !== '' && $tokenSubject !== $subject)) {
             throw new RuntimeException('Instagram account verification failed.');
         }
 
@@ -234,8 +235,10 @@ final class SocialProviderTokenVerifier
     {
         $issuer = (string) ($claims->iss ?? '');
         $audiences = is_array($claims->aud ?? null) ? $claims->aud : [(string) ($claims->aud ?? '')];
+        $authorizedParty = (string) ($claims->azp ?? '');
         if (!in_array($issuer, $issuers, true)
             || !in_array($audience, $audiences, true)
+            || (count($audiences) > 1 && $authorizedParty !== '' && $authorizedParty !== $audience)
             || (int) ($claims->exp ?? 0) <= time()
             || (int) ($claims->iat ?? 0) > time() + 60
         ) {
