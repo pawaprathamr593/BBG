@@ -25,9 +25,9 @@ All newly added modules use the seven logical layers and the .agents $resArr res
 
 ## Automated validation
 
-GitHub Actions workflow .github/workflows/backend-validation.yml runs PHP 8.4 syntax checks and applies the two additive migration scripts to a clean MySQL 8.4 service, then verifies the expected tables and generated cart-key columns.
+GitHub Actions workflow .github/workflows/backend-validation.yml runs PHP 8.4 syntax checks, the static API route/actionType contract checker, and applies the two additive migration scripts to a clean MySQL 8.4 service before verifying the expected tables and generated cart-key columns.
 
-A passing workflow validates PHP syntax and clean-database migration compatibility only. It does not establish live-schema compatibility, API integration correctness, business workflow correctness, or production readiness. No end-to-end API/security suite has been completed as part of this implementation pass.
+A passing workflow validates PHP syntax, the static route/actionType contract assertions and clean-database migration compatibility only. It does not establish live-schema compatibility, API integration correctness, business workflow correctness, or production readiness. No end-to-end API/security suite has been completed as part of this implementation pass.
 
 ## Guarded / not implemented
 
