@@ -63,7 +63,7 @@ final class CustomerController
         $authorization = $request->getHeaderLine('Authorization');
         $data['_accessToken'] = str_starts_with($authorization, 'Bearer ') ? trim(substr($authorization, 7)) : '';
         $data['action'] = $action;
-        $param['actionType'] = $manage ? 'manageCustomer' : 'getCustomer';
+        $param['actionType'] = $action;
         $param['actionData'] = $data;
         $input['customerParam'] = $param;
 
