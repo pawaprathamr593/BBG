@@ -27,6 +27,7 @@ final class CartController {
         if ($action === '') {
             return $this->respond(['status' => 'FAILED', 'msgArr' => ['Unsupported cart route.'], 'data' => []], $responses, $streams);
         }
+        $param['actionType'] = $action;
         $data['action'] = $action;
         $header = $request->getHeaderLine('Authorization');
         $data['_accessToken'] = str_starts_with($header, 'Bearer ') ? trim(substr($header, 7)) : '';
