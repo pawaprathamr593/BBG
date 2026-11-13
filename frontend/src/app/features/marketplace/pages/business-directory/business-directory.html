@@ -1,0 +1,44 @@
+<div class="directory-page">
+  <header class="page-heading">
+    <p class="eyebrow">DISCOVER THE BBG COMMUNITY</p>
+    <h1>Explore businesses</h1>
+    <p>Find a business by name, category or location and discover its public storefront.</p>
+  </header>
+
+  <form class="filter-panel" [formGroup]="filters" (ngSubmit)="search()">
+    <label class="search-field"><span>Business name or keyword</span><input formControlName="search" type="search" placeholder="Search businesses" /></label>
+    <label><span>Category</span><select formControlName="category_id"><option value="">All categories</option>@for (category of categories(); track category.id) { <option [value]="category.id">{{ category.category_name }}</option> }</select></label>
+    <label><span>City</span><input formControlName="city" type="text" autocomplete="address-level2" placeholder="Any city" /></label>
+    <label><span>State</span><input formControlName="state" type="text" autocomplete="address-level1" placeholder="Any state" /></label>
+    <div class="filter-actions"><button class="button button-primary" type="submit">Search businesses</button><button class="clear-button" type="button" (click)="clearFilters()">Clear</button></div>
+  </form>
+
+  <div class="results-heading"><div><h2>Business directory</h2>@if (businesses(); as result) { <p>{{ result.pagination.total }} published businesses</p> }</div></div>
+
+  @if (loading()) {
+    <div class="results-grid" aria-live="polite" aria-busy="true"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+  } @else if (error()) {
+    <section class="state-panel" role="alert"><h2>Directory unavailable</h2><p>{{ error() }}</p><button class="button button-primary" type="button" (click)="search()">Try again</button></section>
+  } @else if (businesses(); as result) {
+    @if (result.items.length) {
+      <div class="results-grid">
+        @for (business of result.items; track business.id) {
+          <a class="business-card" [routerLink]="['/businesses', business.business_slug]">
+            <div class="card-top"><span class="business-avatar">{{ business.business_name.slice(0, 1) }}</span><span aria-hidden="true">↗</span></div>
+            @if (business.category_name) { <span class="category-label">{{ business.category_name }}</span> }
+            <h3>{{ business.business_name }}</h3>
+            <p>{{ business.business_description || 'Visit this business storefront to learn more.' }}</p>
+            <span class="location">{{ business.city }}{{ business.city && business.state ? ', ' : '' }}{{ business.state }}</span>
+          </a>
+        }
+      </div>
+      <nav class="pagination" aria-label="Business directory pages">
+        <button type="button" [disabled]="page() <= 1" (click)="changePage(page() - 1)">Previous</button>
+        <span>Page {{ result.pagination.page }} · {{ Math.ceil(result.pagination.total / result.pagination.page_size) || 1 }}</span>
+        <button type="button" [disabled]="result.pagination.page * result.pagination.page_size >= result.pagination.total" (click)="changePage(page() + 1)">Next</button>
+      </nav>
+    } @else {
+      <section class="state-panel"><span aria-hidden="true">⌕</span><h2>No businesses found</h2><p>Try a different name, category or location.</p><button class="clear-button" type="button" (click)="clearFilters()">Clear filters</button></section>
+    }
+  }
+</div>
