@@ -66,7 +66,7 @@
         <div class="section-heading"><div><p class="eyebrow">FROM THE COMMUNITY</p><h2>Latest promotions</h2><p class="section-description">Updates shared by published businesses.</p></div><a class="text-link" routerLink="/promotions">View all promotions <span aria-hidden="true">→</span></a></div>
         <div class="promotion-grid">
           @for (promotion of data.promotions; track promotion.id) {
-            <article class="promotion-card">
+            <a class="promotion-card" [routerLink]="['/promotions', promotion.id]">
               <div class="promotion-meta"><span>{{ promotion.business_name }}</span><time>{{ promotion.published_on | date:'mediumDate' }}</time></div>
               <h3>{{ promotion.post_title }}</h3>
               <p>{{ promotion.post_content }}</p>
