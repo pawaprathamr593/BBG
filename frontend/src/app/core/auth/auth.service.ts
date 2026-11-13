@@ -243,7 +243,7 @@ export class AuthService {
     });
   }
 
-  private async authenticateFacebook(appId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string }): Promise<AuthUser> {
+  private async authenticateFacebook(appId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string; full_name?: string }): Promise<AuthUser> {
     await this.loadScript('https://connect.facebook.net/en_US/sdk.js');
     const facebook = window.FB;
     if (!facebook) throw new Error('Facebook sign-in could not be initialized. Please try again.');
@@ -265,7 +265,7 @@ export class AuthService {
     });
   }
 
-  private async authenticateApple(clientId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string }): Promise<AuthUser> {
+  private async authenticateApple(clientId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string; full_name?: string }): Promise<AuthUser> {
     await this.loadScript('https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js');
     const apple = window.AppleID;
     if (!apple) throw new Error('Apple sign-in could not be initialized. Please try again.');
@@ -287,7 +287,7 @@ export class AuthService {
     return this.completeSocialCredential('APPLE', authorizationCode, intent, { ...contact, nonce, full_name: fullName || contact.full_name || '', redirect_uri: redirectUri });
   }
 
-  private startInstagramLogin(appId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string }): void {
+  private startInstagramLogin(appId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string; full_name?: string }): void {
     const state = this.createNonce();
     const redirectUri = `${window.location.origin}/auth/social/callback`;
     sessionStorage.setItem('bbg_instagram_state', state);
