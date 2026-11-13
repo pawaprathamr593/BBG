@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authenticatedGuard, guestGuard } from './core/auth/auth.guards';
 import { AuthLayout } from './core/layouts/auth-layout/auth-layout';
 import { PublicLayout } from './core/layouts/public-layout/public-layout';
+import { StorefrontLayout } from './core/layouts/storefront-layout/storefront-layout';
 import { adminWorkspace, consumerWorkspace, entrepreneurWorkspace } from './features/workspaces/workspace.config';
 
 export const routes: Routes = [
@@ -12,32 +13,41 @@ export const routes: Routes = [
       {
         path: '',
         loadComponent: () => import('./features/marketplace/pages/home/home').then((m) => m.Home),
-        title: 'BBG | Discover businesses',
+        title: 'Discover local businesses, products and services | BBG',
+        data: { description: 'Explore local businesses, discover products and services, and connect directly with business owners on BBG.' },
       },
       {
         path: 'businesses',
         loadComponent: () => import('./features/marketplace/pages/business-directory/business-directory').then((m) => m.BusinessDirectory),
-        title: 'Explore businesses | BBG',
-      },
-      {
-        path: 'businesses/:businessSlug/products/:productId',
-        loadComponent: () => import('./features/marketplace/pages/product-detail/product-detail').then((m) => m.ProductDetail),
-        title: 'Product details | BBG',
-      },
-      {
-        path: 'businesses/:businessSlug',
-        loadComponent: () => import('./features/marketplace/pages/business-storefront/business-storefront').then((m) => m.BusinessStorefront),
-        title: 'Business storefront | BBG',
+        title: 'Explore businesses near you | BBG',
+        data: { description: 'Search the BBG business directory by name, category and location to discover published local businesses.' },
       },
       {
         path: 'promotions/:promotionId',
         loadComponent: () => import('./features/marketplace/pages/promotion-detail/promotion-detail').then((m) => m.PromotionDetail),
-        title: 'Promotion details | BBG',
+        title: 'Business promotion | BBG',
       },
       {
         path: 'promotions',
         loadComponent: () => import('./features/marketplace/pages/promotions/promotions').then((m) => m.Promotions),
-        title: 'Promotions | BBG',
+        title: 'Latest business promotions | BBG',
+        data: { description: 'Explore current promotions and updates published by businesses in the BBG marketplace.' },
+      },
+    ],
+  },
+  {
+    path: 'businesses/:businessSlug',
+    component: StorefrontLayout,
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./features/marketplace/pages/business-storefront/business-storefront').then((m) => m.BusinessStorefront),
+        title: 'Business storefront | BBG',
+      },
+      {
+        path: 'products/:productId',
+        loadComponent: () => import('./features/marketplace/pages/product-detail/product-detail').then((m) => m.ProductDetail),
+        title: 'Product details | BBG',
       },
     ],
   },
