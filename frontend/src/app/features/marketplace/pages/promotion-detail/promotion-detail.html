@@ -1,0 +1,17 @@
+<div class="promotion-detail-page">
+  <a class="back-link" routerLink="/promotions">← All promotions</a>
+  @if (loading()) { <div class="loading-panel" aria-live="polite" aria-busy="true">Loading promotion…</div> }
+  @else if (error()) { <section class="state-panel" role="alert"><h1>Promotion unavailable</h1><p>{{ error() }}</p></section> }
+  @else if (detail(); as data) {
+    <article class="promotion-panel">
+      <p class="eyebrow">BBG COMMUNITY UPDATE</p>
+      <span class="business-name">{{ data.promotion.business_name }}</span>
+      <h1>{{ data.promotion.post_title }}</h1>
+      <div class="published-date">Published {{ data.promotion.published_on | date:'longDate' }}</div>
+      <p class="promotion-content">{{ data.promotion.post_content }}</p>
+      @if (data.promotion.valid_until) { <p class="validity">Available until {{ data.promotion.valid_until | date:'longDate' }}</p> }
+      @if (data.media.length) { <div class="media-list"><h2>Shared media</h2>@for (media of data.media; track media.id) { <a [href]="media.file_path" target="_blank" rel="noopener noreferrer">{{ media.media_type }} attachment {{ media.display_order + 1 }}</a> }</div> }
+      <a class="business-link" [routerLink]="['/businesses', data.promotion.business_slug]">Visit business storefront →</a>
+    </article>
+  }
+</div>
