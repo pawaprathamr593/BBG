@@ -1,6 +1,7 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MarketplaceBusiness, MarketplaceCategory, MarketplaceList } from '../../models/marketplace.models';
 import { MarketplaceService } from '../../services/marketplace.service';
 
@@ -13,6 +14,8 @@ import { MarketplaceService } from '../../services/marketplace.service';
 export class BusinessDirectory implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly marketplace = inject(MarketplaceService);
   protected readonly businesses = signal<MarketplaceList<MarketplaceBusiness> | null>(null);
   protected readonly categories = signal<MarketplaceCategory[]>([]);
@@ -27,10 +30,20 @@ export class BusinessDirectory implements OnInit {
   });
 
   ngOnInit(): void {
-    const categoryId = this.route.snapshot.queryParamMap.get('category_id') ?? '';
-    if (categoryId) this.filters.controls.category_id.setValue(categoryId);
     void this.loadCategories();
-    void this.load();
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const requestedPage = Number(params.get('page') ?? 1);
+        this.page.set(Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1);
+        this.filters.patchValue({
+          search: params.get('search') ?? '',
+          city: params.get('city') ?? '',
+          state: params.get('state') ?? '',
+          category_id: params.get('category_id') ?? '',
+        }, { emitEvent: false });
+        void this.load();
+      });
   }
 
   protected totalPages(total: number, pageSize: number): number {
@@ -46,21 +59,49 @@ export class BusinessDirectory implements OnInit {
   }
 
   protected async search(): Promise<void> {
-    this.page.set(1);
-    await this.load();
+    const raw = this.filters.getRawValue();
+    const navigated = await this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        search: raw.search.trim() || null,
+        city: raw.city.trim() || null,
+        state: raw.state.trim() || null,
+        category_id: raw.category_id || null,
+        page: 1,
+      },
+      queryParamsHandling: 'merge',
+    });
+    if (!navigated) {
+      this.page.set(1);
+      await this.load();
+    }
   }
 
   protected async changePage(nextPage: number): Promise<void> {
     const totalPages = this.totalPages(this.businesses()?.pagination.total ?? 0, this.businesses()?.pagination.page_size ?? 20);
     if (nextPage < 1 || nextPage > totalPages) return;
-    this.page.set(nextPage);
-    await this.load();
+    const navigated = await this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: nextPage },
+      queryParamsHandling: 'merge',
+    });
+    if (!navigated) {
+      this.page.set(nextPage);
+      await this.load();
+    }
   }
 
   protected async clearFilters(): Promise<void> {
     this.filters.reset({ search: '', city: '', state: '', category_id: '' });
-    this.page.set(1);
-    await this.load();
+    const navigated = await this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { search: null, city: null, state: null, category_id: null, page: 1 },
+      queryParamsHandling: 'merge',
+    });
+    if (!navigated) {
+      this.page.set(1);
+      await this.load();
+    }
   }
 
   private async load(): Promise<void> {
