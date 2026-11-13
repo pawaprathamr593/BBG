@@ -36,6 +36,24 @@ The response envelope remains:
 | `POST /api/v1/marketplace/products/recent` | Currently published products across all eligible published storefronts, ordered by `PRODUCTS.created_on` |
 | `POST /api/v1/marketplace/home` | Existing home summary, extended with the three discovery collections |
 
+## Public product directory
+
+`POST /api/v1/marketplace/products/list` returns published products across all eligible storefronts when `business_slug` is omitted. The existing business-specific catalogue contract remains available by supplying `business_slug`.
+
+Supported `actionData` filters:
+
+- `search`: product name, code, barcode, description or brand.
+- `category_id`: platform-managed `CATEGORIES.id` where `category_type = 'PRODUCT'`.
+- `brand`, `city` and `state`: partial text matches.
+- `min_price` and `max_price`: applied only to storefronts that expose prices.
+- `online_only`: restricts results to storefronts accepting online orders.
+- `sort`: `newest`, `popular`, `nearby`, `price_low`, `price_high` or `name`.
+- `latitude` and `longitude`: required with `sort = 'nearby'`; distance is calculated from the owning business profile coordinates.
+
+The separate `POST /api/v1/marketplace/products/categories` endpoint returns active platform product categories. Product popularity uses persisted `CONTENT_VIEWS` and `CONTENT_LIKES` counts for `content_type = 'PRODUCT'`; it does not invent ranking scores. The public product detail route records a view through the existing engagement endpoint. Products without coordinates are placed after products with a calculable distance.
+
+Product location comes from `BUSINESS_PROFILES.latitude/longitude/city/state`. The current database design specifies latitude and longitude as `DOUBLE(10,2)`, so nearby ordering is approximate rather than rooftop-level precision.
+
 ## Popular-business ranking
 
 The ranking uses actual persisted counts:
