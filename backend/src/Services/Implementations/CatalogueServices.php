@@ -223,10 +223,21 @@ final readonly class CatalogueServices implements ICatalogueServices
         }
 
         foreach ($media['data'] as &$item) {
-            $item['url'] = $this->s3Storage->createDownloadUrl((string) $item['file_path']);
-            $item['thumbnail_url'] = !empty($item['thumbnail_path'])
-                ? $this->s3Storage->createDownloadUrl((string) $item['thumbnail_path'])
-                : null;
+            try {
+                $item['url'] = $this->s3Storage->createDownloadUrl((string) $item['file_path']);
+                $item['thumbnail_url'] = !empty($item['thumbnail_path'])
+                    ? $this->s3Storage->createDownloadUrl((string) $item['thumbnail_path'])
+                    : null;
+            } catch (Throwable $exception) {
+                $this->logger->warning('Unable to create a presigned URL for product media.', [
+                    'tenant_id' => $tenantId,
+                    'product_id' => $productId,
+                    'media_id' => (int) ($item['id'] ?? 0),
+                    'exception' => $exception,
+                ]);
+                $item['url'] = null;
+                $item['thumbnail_url'] = null;
+            }
         }
         unset($item);
 
