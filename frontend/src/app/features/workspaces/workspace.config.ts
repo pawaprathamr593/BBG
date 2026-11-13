@@ -1,0 +1,72 @@
+export interface WorkspaceAction {
+  label: string;
+  path: string;
+  envelope: string;
+  actionType: string;
+  /** Request fields are intentionally user-supplied until the backend DTO is finalized. */
+  requiresPayload?: boolean;
+}
+
+export interface WorkspaceSection {
+  id: string;
+  label: string;
+  description: string;
+  actions: WorkspaceAction[];
+}
+
+export interface WorkspaceConfig {
+  eyebrow: string;
+  title: string;
+  description: string;
+  sections: WorkspaceSection[];
+}
+
+const action = (label: string, path: string, envelope: string, actionType: string, requiresPayload = false): WorkspaceAction => ({
+  label, path, envelope, actionType, requiresPayload,
+});
+
+export const consumerWorkspace: WorkspaceConfig = {
+  eyebrow: 'YOUR BBG ACCOUNT',
+  title: 'Your space, all in one place.',
+  description: 'Keep track of your activity, manage your details and stay connected with the businesses you discover.',
+  sections: [
+    { id: 'overview', label: 'Overview', description: 'A snapshot of your BBG activity.', actions: [action('Load overview', '/api/v1/dashboard/consumer/summary', 'dashboardParam', 'getConsumerDashboard')] },
+    { id: 'profile', label: 'Profile', description: 'View your customer profile.', actions: [action('Load profile', '/api/v1/customers/profile', 'customerParam', 'getMyCustomerProfile')] },
+    { id: 'addresses', label: 'Addresses', description: 'Manage saved delivery and contact addresses.', actions: [action('View addresses', '/api/v1/customers/addresses/list', 'customerParam', 'listMyAddresses'), action('Add address', '/api/v1/customers/addresses/create', 'customerParam', 'createMyAddress', true), action('Update address', '/api/v1/customers/addresses/update', 'customerParam', 'updateMyAddress', true), action('Delete address', '/api/v1/customers/addresses/delete', 'customerParam', 'deleteMyAddress', true), action('Set default address', '/api/v1/customers/addresses/default', 'customerParam', 'setDefaultAddress', true)] },
+    { id: 'cart', label: 'Cart', description: 'Review cart contents and continue to checkout.', actions: [action('View cart', '/api/v1/cart/get', 'cartParam', 'getCart'), action('Add item', '/api/v1/cart/add', 'cartParam', 'addItem', true), action('Update item', '/api/v1/cart/update', 'cartParam', 'updateItem', true), action('Remove item', '/api/v1/cart/remove', 'cartParam', 'removeItem', true), action('Clear cart', '/api/v1/cart/clear', 'cartParam', 'clearCart', true), action('Checkout', '/api/v1/cart/checkout', 'cartParam', 'checkout', true), action('WhatsApp order handoff', '/api/v1/cart/whatsapp-order', 'cartParam', 'whatsappOrder', true)] },
+    { id: 'orders', label: 'Orders', description: 'Review orders associated with your account.', actions: [action('View orders', '/api/v1/orders/list', 'orderParam', 'listMyOrders'), action('View order details', '/api/v1/orders/detail', 'orderParam', 'getMyOrder', true)] },
+    { id: 'enquiries', label: 'Enquiries', description: 'Follow up on enquiries you have sent.', actions: [action('View enquiries', '/api/v1/enquiries/mine/list', 'enquiryParam', 'listMyEnquiries'), action('View enquiry details', '/api/v1/enquiries/mine/detail', 'enquiryParam', 'getMyEnquiry', true), action('Create enquiry', '/api/v1/enquiries/create', 'enquiryParam', 'createCustomerEnquiry', true)] },
+    { id: 'payments', label: 'Payments', description: 'Review payment records returned by BBG.', actions: [action('View payments', '/api/v1/payments/mine/list', 'paymentParam', 'listMyPayments'), action('View payment details', '/api/v1/payments/mine/detail', 'paymentParam', 'getMyPayment', true)] },
+  ],
+};
+
+export const entrepreneurWorkspace: WorkspaceConfig = {
+  eyebrow: 'BUSINESS WORKSPACE',
+  title: 'Build and manage your business.',
+  description: 'Manage your business presence, catalogue, customer activity and subscriptions from one workspace.',
+  sections: [
+    { id: 'overview', label: 'Overview', description: 'A snapshot of your business activity.', actions: [action('Load overview', '/api/v1/dashboard/entrepreneur/summary', 'dashboardParam', 'getEntrepreneurDashboard')] },
+    { id: 'tenant', label: 'Business access', description: 'View business spaces and membership information available to your account.', actions: [action('List my businesses', '/api/v1/tenants/mine/list', 'tenantParam', 'listMyTenants'), action('View business context', '/api/v1/tenants/mine/detail', 'tenantParam', 'getMyTenant'), action('View members', '/api/v1/tenants/members/list', 'tenantParam', 'listTenantMembers')] },
+    { id: 'business', label: 'Business profile', description: 'Manage your application, business profile, verification and storefront.', actions: [action('View application', '/api/v1/business/application/get', 'businessParam', 'getMyBusinessApplication'), action('View profile', '/api/v1/business/profile/get', 'businessParam', 'getMyBusinessProfile'), action('Verification status', '/api/v1/business/verification/get', 'businessParam', 'getBusinessVerification'), action('View storefront', '/api/v1/business/storefront/get', 'businessParam', 'getMyStorefront'), action('Submit application', '/api/v1/business/application/submit', 'businessParam', 'submitBusinessApplication', true), action('Update application', '/api/v1/business/application/update', 'businessParam', 'updateBusinessApplication', true), action('Resubmit application', '/api/v1/business/application/resubmit', 'businessParam', 'resubmitBusinessApplication', true), action('Update profile', '/api/v1/business/profile/update', 'businessParam', 'updateMyBusinessProfile', true), action('Update storefront', '/api/v1/business/storefront/update', 'businessParam', 'updateMyStorefront', true), action('Publish storefront', '/api/v1/business/storefront/publish', 'businessParam', 'publishMyStorefront', true), action('Unpublish storefront', '/api/v1/business/storefront/unpublish', 'businessParam', 'unpublishMyStorefront', true)] },
+    { id: 'catalogue', label: 'Catalogue', description: 'Manage product and category records. Media upload requires a backend-issued upload URL.', actions: [action('List products', '/api/v1/catalogue/products/list', 'catalogueParam', 'listTenantProducts'), action('View product', '/api/v1/catalogue/products/detail', 'catalogueParam', 'getTenantProduct', true), action('Create product', '/api/v1/catalogue/products/create', 'catalogueParam', 'createTenantProduct', true), action('Update product', '/api/v1/catalogue/products/update', 'catalogueParam', 'updateTenantProduct', true), action('Delete product', '/api/v1/catalogue/products/delete', 'catalogueParam', 'deleteTenantProduct', true), action('List categories', '/api/v1/catalogue/categories/list', 'catalogueParam', 'listTenantProductCategories'), action('Create category', '/api/v1/catalogue/categories/create', 'catalogueParam', 'createTenantProductCategory', true), action('Update category', '/api/v1/catalogue/categories/update', 'catalogueParam', 'updateTenantProductCategory', true), action('Delete category', '/api/v1/catalogue/categories/delete', 'catalogueParam', 'deleteTenantProductCategory', true), action('List units', '/api/v1/catalogue/units/list', 'catalogueParam', 'listUnitsOfMeasure')] },
+    { id: 'orders', label: 'Incoming orders', description: 'Review orders for your business. Status changes are sent only when you provide the backend-required payload.', actions: [action('List incoming orders', '/api/v1/orders/tenant/list', 'orderParam', 'listTenantOrders'), action('View order details', '/api/v1/orders/tenant/detail', 'orderParam', 'getTenantOrder', true), action('Update order status', '/api/v1/orders/tenant/status', 'orderParam', 'updateTenantOrderStatus', true), action('Confirm order', '/api/v1/orders/tenant/confirm', 'orderParam', 'confirmTenantOrder', true), action('Cancel order', '/api/v1/orders/tenant/cancel', 'orderParam', 'cancelTenantOrder', true)] },
+    { id: 'enquiries', label: 'Customer enquiries', description: 'Review and respond to incoming customer enquiries.', actions: [action('List enquiries', '/api/v1/enquiries/tenant/list', 'enquiryParam', 'listTenantEnquiries'), action('View enquiry', '/api/v1/enquiries/tenant/detail', 'enquiryParam', 'getTenantEnquiry', true), action('Respond to enquiry', '/api/v1/enquiries/tenant/respond', 'enquiryParam', 'respondToEnquiry', true), action('Close enquiry', '/api/v1/enquiries/tenant/close', 'enquiryParam', 'closeEnquiry', true)] },
+    { id: 'promotions', label: 'Promotions', description: 'Create and manage business promotions.', actions: [action('List promotions', '/api/v1/promotions/mine/list', 'promotionParam', 'listMyPromotions'), action('View promotion', '/api/v1/promotions/mine/detail', 'promotionParam', 'getMyPromotion', true), action('Create promotion', '/api/v1/promotions/create', 'promotionParam', 'createPromotion', true), action('Update promotion', '/api/v1/promotions/update', 'promotionParam', 'updatePromotion', true), action('Delete promotion', '/api/v1/promotions/delete', 'promotionParam', 'deletePromotion', true), action('Publish promotion', '/api/v1/promotions/publish', 'promotionParam', 'publishPromotion', true), action('Unpublish promotion', '/api/v1/promotions/unpublish', 'promotionParam', 'unpublishPromotion', true)] },
+    { id: 'subscriptions', label: 'Subscriptions', description: 'Review available plans and your subscription records.', actions: [action('List plans', '/api/v1/subscriptions/plans/list', 'subscriptionParam', 'listSubscriptionPlans'), action('List my subscriptions', '/api/v1/subscriptions/mine/list', 'subscriptionParam', 'listMySubscriptions'), action('View subscription', '/api/v1/subscriptions/mine/detail', 'subscriptionParam', 'getMySubscription', true), action('Request subscription', '/api/v1/subscriptions/request', 'subscriptionParam', 'requestSubscription', true), action('Request renewal', '/api/v1/subscriptions/renewal/request', 'subscriptionParam', 'requestSubscriptionRenewal', true), action('Get proof upload URL', '/api/v1/subscriptions/proofs/upload-url', 'subscriptionParam', 'generateSubscriptionProofUploadUrl', true), action('Submit payment proof', '/api/v1/subscriptions/proofs/submit', 'subscriptionParam', 'submitSubscriptionProof', true)] },
+    { id: 'payments', label: 'Payments', description: 'Review payment records for your business.', actions: [action('List payments', '/api/v1/payments/tenant/list', 'paymentParam', 'listTenantPayments'), action('View payment', '/api/v1/payments/tenant/detail', 'paymentParam', 'getTenantPayment', true)] },
+  ],
+};
+
+export const adminWorkspace: WorkspaceConfig = {
+  eyebrow: 'PLATFORM OPERATIONS',
+  title: 'Platform oversight.',
+  description: 'Review platform activity and administer users, businesses, subscriptions, categories and moderation queues.',
+  sections: [
+    { id: 'overview', label: 'Overview', description: 'Platform analytics and operational health.', actions: [action('Analytics summary', '/api/v1/admin/analytics/summary', 'adminParam', 'getAdminAnalyticsSummary'), action('Analytics trends', '/api/v1/admin/analytics/trends', 'adminParam', 'getAdminAnalyticsTrends'), action('System health', '/api/v1/admin/health/summary', 'adminParam', 'getSafeSystemHealth')] },
+    { id: 'users', label: 'Users', description: 'Review platform user records and account status.', actions: [action('List users', '/api/v1/admin/users/list', 'adminParam', 'listPlatformUsers'), action('View user', '/api/v1/admin/users/detail', 'adminParam', 'getPlatformUser', true), action('Suspend user', '/api/v1/admin/users/suspend', 'adminParam', 'suspendPlatformUser', true), action('Restore user', '/api/v1/admin/users/restore', 'adminParam', 'restorePlatformUser', true)] },
+    { id: 'businesses', label: 'Business reviews', description: 'Review pending business applications and decisions.', actions: [action('Pending businesses', '/api/v1/admin/businesses/pending/list', 'adminParam', 'listPendingBusinesses'), action('View business', '/api/v1/admin/businesses/detail', 'adminParam', 'getBusinessForReview', true), action('Approve business', '/api/v1/admin/businesses/approve', 'adminParam', 'approveBusiness', true), action('Reject business', '/api/v1/admin/businesses/reject', 'adminParam', 'rejectBusiness', true), action('Reopen review', '/api/v1/admin/businesses/reopen', 'adminParam', 'reopenBusinessReview', true)] },
+    { id: 'subscriptions', label: 'Subscriptions', description: 'Review pending and active business subscriptions.', actions: [action('Pending subscriptions', '/api/v1/admin/subscriptions/pending/list', 'adminParam', 'listPendingSubscriptions'), action('View subscription', '/api/v1/admin/subscriptions/detail', 'adminParam', 'getSubscriptionForReview', true), action('Active subscriptions', '/api/v1/admin/subscriptions/active/list', 'adminParam', 'listActiveSubscriptions'), action('Approve subscription', '/api/v1/admin/subscriptions/approve', 'adminParam', 'approveSubscription', true), action('Reject subscription', '/api/v1/admin/subscriptions/reject', 'adminParam', 'rejectSubscription', true)] },
+    { id: 'categories', label: 'Categories', description: 'Manage marketplace categories and review category statistics.', actions: [action('List categories', '/api/v1/admin/categories/list', 'adminParam', 'listAdminCategories'), action('Category statistics', '/api/v1/admin/categories/stats', 'adminParam', 'getCategoryStatistics'), action('Create category', '/api/v1/admin/categories/create', 'adminParam', 'createCategory', true), action('Update category', '/api/v1/admin/categories/update', 'adminParam', 'updateCategory', true), action('Delete category', '/api/v1/admin/categories/delete', 'adminParam', 'deleteCategory', true)] },
+    { id: 'moderation', label: 'Moderation', description: 'Review moderation queue and history.', actions: [action('Moderation queue', '/api/v1/admin/moderation/queue', 'adminParam', 'listModerationQueue'), action('Moderation history', '/api/v1/admin/moderation/history', 'adminParam', 'listModerationHistory'), action('Apply moderation action', '/api/v1/admin/moderation/action', 'adminParam', 'applyModerationAction', true)] },
+  ],
+};
