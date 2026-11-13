@@ -47,6 +47,7 @@ final class SubscriptionController
         $manageActions = [
             '/api/v1/subscriptions/request' => 'requestSubscription',
             '/api/v1/subscriptions/renewal/request' => 'requestSubscriptionRenewal',
+            '/api/v1/subscriptions/proofs/upload-url' => 'generateSubscriptionProofUploadUrl',
             '/api/v1/subscriptions/proofs/submit' => 'submitSubscriptionProof',
         ];
         $path = $request->getUri()->getPath();
@@ -61,6 +62,7 @@ final class SubscriptionController
         $data = is_array($param['actionData'] ?? null) ? $param['actionData'] : [];
         $authorization = $request->getHeaderLine('Authorization');
         $data['_accessToken'] = str_starts_with($authorization, 'Bearer ') ? trim(substr($authorization, 7)) : '';
+        $data['action'] = $action;
         $data['action'] = $action;
         $param['actionType'] = $manage ? 'manageSubscription' : 'getSubscription';
         $param['actionData'] = $data;
