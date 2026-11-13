@@ -395,4 +395,93 @@ final readonly class AuthDao
     {
         $this->logger->error('AuthDao::' . $operation . ' failed.', ['exception' => $exception]);
     }
+
+    public function getUserIdentity(ConnectionInterface $connection, string $provider, string $providerSubject): array
+    {
+        $resArr = $this->initialResponse();
+        try {
+            $row = $connection->createCommand(
+                "SELECT id, user_id, provider, provider_subject, provider_email
+                 FROM USER_IDENTITIES
+                 WHERE provider = :provider AND provider_subject = :provider_subject AND status = 'A'
+                 LIMIT 1",
+                [':provider' => $provider, ':provider_subject' => $providerSubject],
+            )->queryOne();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = is_array($row) ? $row : [];
+        } catch (Throwable $exception) {
+            $this->logException('getUserIdentity', $exception);
+            $resArr = $this->exceptionResponse('Unable to read social identity.');
+        }
+        return $resArr;
+    }
+
+    public function insertSocialUser(
+        ConnectionInterface $connection,
+        string $fullName,
+        ?string $email,
+        ?string $profileImage,
+        bool $emailVerified,
+    ): array {
+        $resArr = $this->initialResponse();
+        try {
+            $connection->createCommand(
+                "INSERT INTO USERS
+                    (full_name, email, mobile, password_hash, profile_image, email_verified_on,
+                     account_status, status, created_by, updated_by)
+                 VALUES
+                    (:full_name, :email, NULL, NULL, :profile_image,
+                     CASE WHEN :email_verified = 1 THEN CURRENT_TIMESTAMP ELSE NULL END,
+                     'ACTIVE', 'A', NULL, NULL)",
+                [
+                    ':full_name' => $fullName,
+                    ':email' => $email,
+                    ':profile_image' => $profileImage,
+                    ':email_verified' => $emailVerified ? 1 : 0,
+                ],
+            )->execute();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['id' => (int) $connection->getLastInsertId()];
+        } catch (Throwable $exception) {
+            $this->logException('insertSocialUser', $exception);
+            $resArr = $this->exceptionResponse('Unable to create social account.');
+        }
+        return $resArr;
+    }
+
+    public function insertUserIdentity(
+        ConnectionInterface $connection,
+        int $userId,
+        string $provider,
+        string $providerSubject,
+        ?string $providerEmail,
+    ): array {
+        $resArr = $this->initialResponse();
+        try {
+            $connection->createCommand(
+                "INSERT INTO USER_IDENTITIES
+                    (user_id, provider, provider_subject, provider_email, linked_on,
+                     status, created_by, updated_by)
+                 VALUES
+                    (:user_id, :provider, :provider_subject, :provider_email, CURRENT_TIMESTAMP,
+                     'A', :created_by, :updated_by)",
+                [
+                    ':user_id' => $userId,
+                    ':provider' => $provider,
+                    ':provider_subject' => $providerSubject,
+                    ':provider_email' => $providerEmail,
+                    ':created_by' => $userId,
+                    ':updated_by' => $userId,
+                ],
+            )->execute();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['id' => (int) $connection->getLastInsertId()];
+        } catch (Throwable $exception) {
+            $this->logException('insertUserIdentity', $exception);
+            $resArr = $this->exceptionResponse('Unable to link social identity.');
+        }
+        return $resArr;
+    }
+
+
 }
