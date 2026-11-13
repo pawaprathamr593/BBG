@@ -677,7 +677,8 @@ final readonly class MarketplaceDao
             $where .= " AND (p.product_name LIKE :search_name
                 OR p.product_code LIKE :search_code
                 OR p.description LIKE :search_description
-                OR p.brand_name LIKE :search_brand)";
+                OR p.brand_name LIKE :search_brand
+                OR p.barcode LIKE :search_barcode)";
         }
         if ($filters['category_id'] !== null) {
             $where .= ' AND p.global_category_id = :category_id';
@@ -690,6 +691,9 @@ final readonly class MarketplaceDao
         }
         if ($filters['state'] !== '') {
             $where .= ' AND bp.state LIKE :state';
+        }
+        if ($filters['price_visible_only']) {
+            $where .= ' AND ss.show_prices = 1';
         }
         if ($filters['min_price'] !== null) {
             $where .= ' AND ss.show_prices = 1 AND p.selling_price >= :min_price';
@@ -712,6 +716,7 @@ final readonly class MarketplaceDao
             $params[':search_code'] = $needle;
             $params[':search_description'] = $needle;
             $params[':search_brand'] = $needle;
+            $params[':search_barcode'] = $needle;
         }
         if ($filters['category_id'] !== null) {
             $params[':category_id'] = $filters['category_id'];
