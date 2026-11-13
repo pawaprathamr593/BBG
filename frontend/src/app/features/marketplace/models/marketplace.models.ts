@@ -34,8 +34,8 @@ export interface MarketplaceBusiness {
     country_code: string | null;
   };
   location?: {
-    latitude: number | null;
-    longitude: number | null;
+    latitude: number | string | null;
+    longitude: number | string | null;
   };
 }
 
@@ -113,7 +113,7 @@ export interface MarketplaceProductVariant {
   unit_name: string | null;
   unit_symbol: string | null;
   quantity_precision: number | null;
-  is_fraction_allowed: boolean | null;
+  is_fraction_allowed: boolean | number | null;
 }
 
 export interface MarketplaceProductDetail {
