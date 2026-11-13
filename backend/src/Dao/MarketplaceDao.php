@@ -72,6 +72,116 @@ final readonly class MarketplaceDao
         );
     }
 
+
+    /**
+     * Public businesses ordered by real marketplace engagement.
+     * BUSINESS views are recorded in CONTENT_VIEWS; enquiries are counted
+     * from active CUSTOMER_ENQUIRIES. No synthetic popularity score is used.
+     */
+    public function getPopularBusinesses(ConnectionInterface $db, int $limit = 8, int $offset = 0): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->many(
+            $db,
+            "SELECT bp.id, bp.tenant_id, bp.business_name, bp.business_slug,
+                    bp.business_description, bp.primary_category_id,
+                    c.category_name, bp.business_phone, bp.whatsapp_number,
+                    bp.business_email, bp.logo_path, bp.cover_image_path,
+                    bp.city, bp.state, bp.postal_code, bp.created_on,
+                    ss.show_prices, ss.accept_online_orders, ss.whatsapp_enabled,
+                    COALESCE(v.view_count, 0) AS view_count,
+                    COALESCE(e.enquiry_count, 0) AS enquiry_count,
+                    (COALESCE(v.view_count, 0) + COALESCE(e.enquiry_count, 0)) AS engagement_count
+             FROM BUSINESS_PROFILES bp
+             JOIN TENANTS t ON t.id = bp.tenant_id
+                AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+             JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = bp.tenant_id
+                AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
+             LEFT JOIN CATEGORIES c ON c.id = bp.primary_category_id AND c.status = 'A'
+             LEFT JOIN (
+                SELECT tenant_id, content_id, COUNT(*) AS view_count
+                FROM CONTENT_VIEWS
+                WHERE content_type = 'BUSINESS' AND status = 'A'
+                GROUP BY tenant_id, content_id
+             ) v ON v.tenant_id = bp.tenant_id AND v.content_id = bp.id
+             LEFT JOIN (
+                SELECT tenant_id, COUNT(*) AS enquiry_count
+                FROM CUSTOMER_ENQUIRIES
+                WHERE status = 'A'
+                GROUP BY tenant_id
+             ) e ON e.tenant_id = bp.tenant_id
+             WHERE bp.approval_status = 'APPROVED'
+                AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
+                AND (COALESCE(v.view_count, 0) + COALESCE(e.enquiry_count, 0)) > 0
+             ORDER BY engagement_count DESC, view_count DESC, enquiry_count DESC,
+                bp.business_name ASC, bp.id ASC
+             LIMIT :limit OFFSET :offset",
+            [':limit' => $limit, ':offset' => $offset],
+            'getPopularBusinesses',
+        );
+    }
+
+    public function countPopularBusinesses(ConnectionInterface $db): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one(
+            $db,
+            "SELECT COUNT(*) AS total
+             FROM BUSINESS_PROFILES bp
+             JOIN TENANTS t ON t.id = bp.tenant_id
+                AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+             JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = bp.tenant_id
+                AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
+             LEFT JOIN (
+                SELECT tenant_id, content_id, COUNT(*) AS view_count
+                FROM CONTENT_VIEWS
+                WHERE content_type = 'BUSINESS' AND status = 'A'
+                GROUP BY tenant_id, content_id
+             ) v ON v.tenant_id = bp.tenant_id AND v.content_id = bp.id
+             LEFT JOIN (
+                SELECT tenant_id, COUNT(*) AS enquiry_count
+                FROM CUSTOMER_ENQUIRIES
+                WHERE status = 'A'
+                GROUP BY tenant_id
+             ) e ON e.tenant_id = bp.tenant_id
+             WHERE bp.approval_status = 'APPROVED'
+                AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
+                AND (COALESCE(v.view_count, 0) + COALESCE(e.enquiry_count, 0)) > 0",
+            [],
+            'countPopularBusinesses',
+        );
+    }
+
+    /**
+     * Most recently created businesses that are currently published.
+     * BUSINESS_PROFILES has no published_on column in the current schema.
+     */
+    public function getRecentBusinesses(ConnectionInterface $db, int $limit = 8, int $offset = 0): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->many(
+            $db,
+            "SELECT bp.id, bp.tenant_id, bp.business_name, bp.business_slug,
+                    bp.business_description, bp.primary_category_id,
+                    c.category_name, bp.business_phone, bp.whatsapp_number,
+                    bp.business_email, bp.logo_path, bp.cover_image_path,
+                    bp.city, bp.state, bp.postal_code, bp.created_on,
+                    ss.show_prices, ss.accept_online_orders, ss.whatsapp_enabled
+             FROM BUSINESS_PROFILES bp
+             JOIN TENANTS t ON t.id = bp.tenant_id
+                AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+             JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = bp.tenant_id
+                AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
+             LEFT JOIN CATEGORIES c ON c.id = bp.primary_category_id AND c.status = 'A'
+             WHERE bp.approval_status = 'APPROVED'
+                AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
+             ORDER BY bp.created_on DESC, bp.id DESC
+             LIMIT :limit OFFSET :offset",
+            [':limit' => $limit, ':offset' => $offset],
+            'getRecentBusinesses',
+        );
+    }
+
     public function getBusinessBySlug(ConnectionInterface $db, string $slug): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
@@ -171,6 +281,63 @@ final readonly class MarketplaceDao
                 " . $searchSql,
             $params,
             'countProducts',
+        );
+    }
+
+
+    /**
+     * Global public product feed across all eligible published storefronts.
+     */
+    public function getRecentProducts(ConnectionInterface $db, int $limit = 8, int $offset = 0): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->many(
+            $db,
+            "SELECT p.id, p.tenant_id, p.product_code, p.product_name, p.description,
+                    p.category_id, pc.category_name, p.brand_name, p.barcode,
+                    p.selling_price, p.base_unit_id, u.unit_name, u.unit_symbol,
+                    u.quantity_precision, u.is_fraction_allowed,
+                    p.is_variant_product, p.created_on, ss.show_prices,
+                    bp.business_name, bp.business_slug, bp.logo_path AS business_logo_path
+             FROM PRODUCTS p
+             JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
+                AND bp.approval_status = 'APPROVED'
+                AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
+             JOIN TENANTS t ON t.id = p.tenant_id
+                AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+             JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = p.tenant_id
+                AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
+             JOIN UNITS_OF_MEASURE u ON u.id = p.base_unit_id AND u.status = 'A'
+             LEFT JOIN TENANT_PRODUCT_CATEGORIES pc ON pc.id = p.category_id
+                AND pc.tenant_id = p.tenant_id AND pc.status = 'A'
+             WHERE p.product_status = 'ACTIVE'
+                AND p.publication_status = 'PUBLISHED' AND p.status = 'A'
+             ORDER BY p.created_on DESC, p.id DESC
+             LIMIT :limit OFFSET :offset",
+            [':limit' => $limit, ':offset' => $offset],
+            'getRecentProducts',
+        );
+    }
+
+    public function countRecentProducts(ConnectionInterface $db): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one(
+            $db,
+            "SELECT COUNT(*) AS total
+             FROM PRODUCTS p
+             JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
+                AND bp.approval_status = 'APPROVED'
+                AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
+             JOIN TENANTS t ON t.id = p.tenant_id
+                AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+             JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = p.tenant_id
+                AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
+             JOIN UNITS_OF_MEASURE u ON u.id = p.base_unit_id AND u.status = 'A'
+             WHERE p.product_status = 'ACTIVE'
+                AND p.publication_status = 'PUBLISHED' AND p.status = 'A'",
+            [],
+            'countRecentProducts',
         );
     }
 
