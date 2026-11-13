@@ -67,7 +67,7 @@ export class CustomerCartService {
     return this.request('/api/v1/cart/remove', 'removeItem', { tenant_id: tenantId, item_id: itemId });
   }
 
-  clearCart(tenantId: number): Promise<Record<string, never>> {
+  clearCart(tenantId: number): Promise<{ cart_id: number }> {
     return this.request('/api/v1/cart/clear', 'clearCart', { tenant_id: tenantId });
   }
 
