@@ -253,7 +253,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             return $resArr;
         }
 
-        $key = 'tenants/' . $tenantId . '/subscription-proofs/'
+        $key = 'tenants/' . $tenantId . '/subscription-proofs/' . $subscriptionId . '/'
             . bin2hex(random_bytes(16)) . '.' . $mimeExtensions[$mimeType];
         $presigned = $this->s3Storage->createUploadUrl($key, $mimeType);
 
@@ -284,7 +284,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             || !str_starts_with($proofPath, $expectedPrefix)
             || str_starts_with($proofPath, '/') || str_contains($proofPath, '..')
             || preg_match('/^[a-z]+:\/\//i', $proofPath)
-            || preg_match('/^tenants\/' . $tenantId . '\/subscription-proofs\/[a-f0-9]{32}\.(jpg|png|webp|pdf)$/D', $proofPath) !== 1
+            || preg_match('/^tenants\/' . $tenantId . '\/subscription-proofs\/' . $subscriptionId . '\/[a-f0-9]{32}\.(jpg|png|webp|pdf)$/D', $proofPath) !== 1
         ) {
             $resArr['msgArr'][] = 'subscription_id and a tenant-scoped server-issued relative proof_file_path are required.';
             return $resArr;
