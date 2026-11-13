@@ -51,6 +51,9 @@ return [
     Route::post('/api/v1/orders/tenant/cancel')->action([OrderController::class, 'actionManageOrders'])->name('api/v1/orders/tenant/cancel'),
 
     Route::post('/api/v1/marketplace/businesses/list')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/businesses/list'),
+    Route::post('/api/v1/marketplace/businesses/popular')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/businesses/popular'),
+    Route::post('/api/v1/marketplace/businesses/recent')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/businesses/recent'),
+    Route::post('/api/v1/marketplace/products/recent')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/products/recent'),
     Route::post('/api/v1/marketplace/businesses/detail')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/businesses/detail'),
     Route::post('/api/v1/marketplace/products/list')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/products/list'),
     Route::post('/api/v1/marketplace/products/detail')->action([MarketplaceController::class, 'actionGetMarketplace'])->name('api/v1/marketplace/products/detail'),
