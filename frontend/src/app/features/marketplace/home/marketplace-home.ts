@@ -458,6 +458,19 @@ export class MarketplaceHome implements OnInit {
       : new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
   }
 
+  private loadProductCategories(): void {
+    this.marketplaceApi.listPublicProductCategories().subscribe({
+      next: (response) => {
+        if (response.status === 'SUCCESS' && response.data && !Array.isArray(response.data)) {
+          this.categories.set(response.data.items ?? []);
+        } else {
+          this.categories.set([]);
+        }
+      },
+      error: () => this.categories.set([]),
+    });
+  }
+
   private loadHome(): void {
     this.loading.set(true);
     this.loadError.set('');
@@ -475,7 +488,7 @@ export class MarketplaceHome implements OnInit {
           this.promotions.set([]);
         } else {
           this.homeStats.set(response.data.stats ?? null);
-          this.categories.set(response.data.categories ?? []);
+          this.loadProductCategories();
           this.businesses.set(response.data.popular_businesses ?? []);
           this.recentBusinesses.set(response.data.recent_businesses ?? []);
           this.recentProducts.set(response.data.recent_products ?? []);
