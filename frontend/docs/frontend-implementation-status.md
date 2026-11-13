@@ -107,7 +107,7 @@ Two distinct directions were evaluated conceptually against BBG's dual marketpla
 - Added guest and authenticated functional guards. Added a deny-by-default permission guard that requires both a backend permission code and an explicit PLATFORM or TENANT scope.
 - Added a typed PermissionService using the verified backend permission record shape (role_code, scope_type, permission_code, module_code) and context (tenant_id, permissions). Platform-scope permissions are loaded after login/session refresh; tenant-scoped permission loading remains an explicit call and is not wired to a tenant selector.
 - Added Marketplace DTOs and MarketplaceService using the exact marketplaceParam envelope and registered POST routes. The request fields and response shapes were checked against MarketplaceController, MarketplaceServicesV1, MarketplaceServices and MarketplaceDao.
-- Implemented public marketplace home, category browse, searchable/paginated business directory, business storefront with product listing, product detail, promotions feed and promotion detail.
+- Implemented public marketplace home, category browse, searchable/paginated business directory with URL-synchronized filters/page state, business storefront with product listing, product detail, promotions feed and promotion detail.
 - Added service/permission unit tests and removed obsolete starter dashboard-only global styling.
 - Kept all changes on feature/frontend-development; no backend or database files were modified.
 
