@@ -122,6 +122,7 @@ export class Workspace implements OnInit {
   private async activateTenant(tenantId: number): Promise<void> {
     if (!this.tenantOptions().some((tenant) => tenant.id === tenantId)) return;
     this.tenantLoading.set(true);
+    this.selectedTenantId.set(null);
     this.error.set('');
     this.notice.set('');
     try {
