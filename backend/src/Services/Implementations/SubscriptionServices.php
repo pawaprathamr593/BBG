@@ -252,6 +252,14 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             $resArr['msgArr'][] = 'Payment proof can only be uploaded for pending or rejected subscription requests.';
             return $resArr;
         }
+        $pendingProof = $this->dao->hasPendingProof($this->db, $tenantId, $subscriptionId);
+        if ($pendingProof['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($pendingProof, 'SubscriptionServices::generateSubscriptionProofUploadUrl');
+        }
+        if ($pendingProof['data'] !== []) {
+            $resArr['msgArr'][] = 'A payment proof is already awaiting review.';
+            return $resArr;
+        }
 
         $key = 'tenants/' . $tenantId . '/subscription-proofs/' . $subscriptionId . '/'
             . bin2hex(random_bytes(16)) . '.' . $mimeExtensions[$mimeType];
