@@ -35,7 +35,7 @@ final readonly class DashboardServices implements IDashboardServices
         }
         $actionData = $dashboardParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) dashboardParam['actionType']) {
                 case 'getConsumerDashboard':
                     $resArr = $this->getConsumerDashboard($actionData);
                     break;
