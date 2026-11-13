@@ -16,6 +16,13 @@ final readonly class EngagementDao
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $sql = match ($contentType) {
+            'BUSINESS' => "SELECT bp.tenant_id FROM BUSINESS_PROFILES bp
+                INNER JOIN TENANTS t ON t.id = bp.tenant_id
+                    AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+                INNER JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = bp.tenant_id
+                    AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
+                WHERE bp.id = :content_id AND bp.approval_status = 'APPROVED'
+                    AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A' LIMIT 1",
             'PRODUCT' => "SELECT p.tenant_id FROM PRODUCTS p
                 INNER JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
                     AND bp.approval_status = 'APPROVED' AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
