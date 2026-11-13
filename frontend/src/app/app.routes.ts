@@ -3,6 +3,7 @@ import { authenticatedGuard, guestGuard } from './core/auth/auth.guards';
 import { AuthLayout } from './core/layouts/auth-layout/auth-layout';
 import { PublicLayout } from './core/layouts/public-layout/public-layout';
 import { StorefrontLayout } from './core/layouts/storefront-layout/storefront-layout';
+import { permissionScopeGuard } from './core/permissions/permission.guard';
 import { adminWorkspace, consumerWorkspace, entrepreneurWorkspace } from './features/workspaces/workspace.config';
 
 export const routes: Routes = [
@@ -113,9 +114,9 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
-    canActivate: [authenticatedGuard],
+    canActivate: [authenticatedGuard, permissionScopeGuard],
     loadComponent: () => import('./features/workspaces/workspace').then((m) => m.Workspace),
-    data: { workspace: adminWorkspace },
+    data: { workspace: adminWorkspace, requiredScope: 'PLATFORM' },
     title: 'Platform administration | BBG',
   },
   {
