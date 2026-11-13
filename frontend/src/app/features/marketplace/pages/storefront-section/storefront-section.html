@@ -1,0 +1,86 @@
+<div class="storefront-section-page">
+  @if (loading()) {
+    <div class="section-loading" role="status" aria-live="polite">Loading {{ headings[section].title.toLowerCase() }}…</div>
+  } @else if (error()) {
+    <section class="section-state" role="alert"><h1>Page unavailable</h1><p>{{ error() }}</p><a [routerLink]="['/businesses', slug]">Return to storefront</a></section>
+  } @else if (detail(); as data) {
+    <header class="section-heading">
+      <p class="eyebrow">{{ headings[section].eyebrow }}</p>
+      <h1>{{ section === 'about' ? 'About ' + (data.storefront.title || data.business.business_name) : headings[section].title }}</h1>
+      <p>{{ headings[section].description }}</p>
+    </header>
+
+    @if (section === 'about') {
+      <article class="about-card">
+        @if (data.business.cover_image_path) { <img class="about-cover" [src]="data.business.cover_image_path" [alt]="(data.storefront.title || data.business.business_name) + ' cover image'" /> }
+        <div class="about-copy">
+          <div class="business-identity">
+            @if (data.business.logo_path) { <img [src]="data.business.logo_path" [alt]="(data.storefront.title || data.business.business_name) + ' logo'" /> }
+            <div><h2>{{ data.storefront.title || data.business.business_name }}</h2><span>{{ data.business.category_name || 'Local business' }}</span></div>
+          </div>
+          <p>{{ data.storefront.description || data.business.business_description || 'More information about this business will be published here.' }}</p>
+          @if (data.business.city || data.business.state) { <p class="location">{{ data.business.city }}{{ data.business.city && data.business.state ? ', ' : '' }}{{ data.business.state }}</p> }
+        </div>
+      </article>
+    }
+
+    @if (section === 'products') {
+      @if (products()?.items?.length) {
+        <div class="catalogue-grid">
+          @for (product of products()?.items ?? []; track product.id) {
+            <a class="catalogue-card" [routerLink]="['/businesses', slug, 'products', product.id]">
+              <span class="product-mark" aria-hidden="true">{{ product.product_name.slice(0, 1) }}</span>
+              @if (product.category_name) { <span class="category-label">{{ product.category_name }}</span> }
+              <h2>{{ product.product_name }}</h2>
+              <p>{{ product.description || 'View product details and available variants.' }}</p>
+              @if (data.storefront.show_prices && product.selling_price !== undefined) { <strong>{{ data.storefront.currency || '' }} {{ product.selling_price }}</strong> }
+              @else { <span class="price-on-request">Contact for pricing</span> }
+            </a>
+          }
+        </div>
+      } @else {
+        <div class="section-state"><h2>No published products yet</h2><p>This business has not added products to its public catalogue.</p></div>
+      }
+    }
+
+    @if (section === 'promotions') {
+      @if (promotions()?.items?.length) {
+        <div class="promotion-list">
+          @for (promotion of promotions()?.items ?? []; track promotion.id) {
+            <article class="promotion-card">
+              <div class="promotion-meta"><span>{{ promotion.business_name }}</span><time [attr.datetime]="promotion.published_on">{{ promotion.published_on | date:'mediumDate' }}</time></div>
+              <h2>{{ promotion.post_title }}</h2>
+              <p>{{ promotion.post_content }}</p>
+              @if (promotion.valid_until) { <span class="valid-until">Valid until {{ promotion.valid_until | date:'mediumDate' }}</span> }
+              <a [routerLink]="['/businesses', slug, 'promotions', promotion.id]">Read promotion</a>
+            </article>
+          }
+        </div>
+      } @else {
+        <div class="section-state"><h2>No current promotions</h2><p>There are no published promotions from this business right now.</p></div>
+      }
+    }
+
+    @if (section === 'contact') {
+      <div class="contact-grid">
+        @if (data.business.business_phone) {
+          <a class="contact-card" [href]="'tel:' + data.business.business_phone"><span class="contact-icon" aria-hidden="true">☎</span><span><small>PHONE</small><strong>{{ data.business.business_phone }}</strong><em>Call the business</em></span></a>
+        }
+        @if (data.business.business_email) {
+          <a class="contact-card" [href]="'mailto:' + data.business.business_email"><span class="contact-icon" aria-hidden="true">✉</span><span><small>EMAIL</small><strong>{{ data.business.business_email }}</strong><em>Send an email</em></span></a>
+        }
+        @if (data.business.whatsapp_enabled && data.business.whatsapp_number) {
+          <a class="contact-card" [href]="'https://wa.me/' + data.business.whatsapp_number.replace('+','')" target="_blank" rel="noopener noreferrer"><span class="contact-icon" aria-hidden="true">↗</span><span><small>WHATSAPP</small><strong>Message the business</strong><em>Opens WhatsApp in a new tab</em></span></a>
+        }
+        @if (data.business.address; as address) {
+          <article class="contact-card address-card"><span class="contact-icon" aria-hidden="true">⌖</span><span><small>ADDRESS</small><strong>{{ address.address_line_1 }} {{ address.address_line_2 }}</strong><em>{{ address.city }}{{ address.city && address.state ? ', ' : '' }}{{ address.state }} {{ address.postal_code }}</em></span></article>
+        } @else if (data.business.city || data.business.state) {
+          <article class="contact-card address-card"><span class="contact-icon" aria-hidden="true">⌖</span><span><small>LOCATION</small><strong>{{ data.business.city }}</strong><em>{{ data.business.state }}</em></span></article>
+        }
+        @if (!data.business.business_phone && !data.business.business_email && !(data.business.whatsapp_enabled && data.business.whatsapp_number)) {
+          <div class="section-state"><h2>Contact details not published</h2><p>This business has not made direct contact details available yet.</p></div>
+        }
+      </div>
+    }
+  }
+</div>
