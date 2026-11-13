@@ -33,7 +33,7 @@ The seeds do not alter table structures. Review each script before execution and
 
 - Product creation requires an active subscription with a configured `PRODUCT_LIMIT` entitlement. Only the Gold value of 50 is seeded here; any other plan's value must be configured from an approved commercial plan definition.
 - Promotion publishing requires an active subscription with `PROMOTIONAL_POSTS`. The seed attaches it to an active plan whose `plan_code` is `PLATINUM`.
-- Subscription proof metadata accepts a safe relative `proof_file_path` expected to be issued by the future private file-storage/upload integration. No arbitrary public URL is accepted. The upload provider, file-size/type policy and retention rules are not yet selected, so this repository does not claim to implement binary proof upload.
+- Subscription proofs use `POST /api/v1/subscriptions/proofs/upload-url` to obtain a tenant-scoped S3 presigned PUT URL. `POST /api/v1/subscriptions/proofs/submit` verifies the object exists and checks its actual MIME type, file signature, extension and size before saving proof metadata. The proof flow is implemented in code but requires live bucket credentials/IAM and end-to-end verification. No arbitrary public URL is accepted.
 - Platform administration APIs remain default-deny until a trusted user is explicitly assigned the `PLATFORM_ADMIN` role.
 
 ## Scope boundary
@@ -41,3 +41,8 @@ The seeds do not alter table structures. Review each script before execution and
 The current API work covers authentication/profile/permissions, tenant context and tenant orders, business application/storefront, marketplace/cart/orders, catalogue, customer address book, enquiries, engagement, promotions, subscriptions and platform administration.
 
 The 16 database tables explicitly marked future scope in the database design (supplier, purchasing and inventory/costing) remain inactive. Do not add their APIs, screens, jobs or workflows without separate approval.
+
+## Schema reconciliation
+
+- `CARTS` and `CART_ITEMS` are adopted as canonical tables 69 and 70 in `../docs/BBG_DATABASE_DESIGN_V2.1_AMENDMENT.md`.
+- `BUSINESS_APPLICATIONS`, `BUSINESS_APPLICATION_DOCUMENTS` and `BUSINESS_APPLICATION_REVIEWS` remain migration-only/dormant. The active BusinessServices/BusinessDao flow continues to use `BUSINESS_PROFILES`; do not wire the three dormant tables into the application until the business application history/document-review workflow is approved.
