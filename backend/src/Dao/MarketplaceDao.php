@@ -425,12 +425,6 @@ final readonly class MarketplaceDao
                     COALESCE(pl.like_count, 0) AS like_count,
                     (COALESCE(pv.view_count, 0) + COALESCE(pl.like_count, 0)) AS popularity_count,
                     " . $distanceSelect . ",
-                    (SELECT pm.file_path
-                     FROM PRODUCT_MEDIA pm
-                     WHERE pm.tenant_id = p.tenant_id AND pm.product_id = p.id
-                        AND pm.media_type = 'IMAGE' AND pm.media_status = 'ACTIVE' AND pm.status = 'A'
-                     ORDER BY pm.is_primary DESC, pm.display_order ASC, pm.id ASC
-                     LIMIT 1) AS primary_image_path
              FROM PRODUCTS p
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
                 AND bp.approval_status = 'APPROVED'
