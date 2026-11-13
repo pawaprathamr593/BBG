@@ -12,8 +12,8 @@ if ($routes === false) {
 
 preg_match_all("~Route::post\\('(/api/v1/[^']+)'\\)~", $routes, $routeMatches);
 $routePaths = $routeMatches[1] ?? [];
-if (count($routePaths) !== 125 || count(array_unique($routePaths)) !== 125) {
-    fwrite(STDERR, 'Expected 125 unique POST API routes; found ' . count($routePaths) . ".\n");
+if (count($routePaths) !== 127 || count(array_unique($routePaths)) !== 127) {
+    fwrite(STDERR, 'Expected 127 unique POST API routes; found ' . count($routePaths) . ".\n");
     exit(1);
 }
 
@@ -111,4 +111,15 @@ if (in_array(false, $discoveryContracts, true)) {
     exit(1);
 }
 
-echo "Static API contract checks passed: 125 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, marketplace discovery and subscription proof S3 flow.\n";
+$socialAuthContracts = [
+    str_contains($routes, "'/api/v1/auth/social/login'") && str_contains($routes, "'/api/v1/auth/social/link'"),
+    str_contains($routes, "'/api/v1/auth/social/config'") && str_contains($routes, "'socialLogin'") && str_contains($routes, "'socialLink'"),
+    str_contains($root . '/src/Services/Implementations/AuthServices.php', 'manageSocialLogin'),
+    is_file($root . '/src/Utils/SocialProviderTokenVerifier.php'),
+];
+if (in_array(false, $socialAuthContracts, true)) {
+    fwrite(STDERR, "Social authentication API contract is incomplete.\\n");
+    exit(1);
+}
+
+echo "Static API contract checks passed: 127 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, social authentication, marketplace discovery and subscription proof S3 flow.\\n";
