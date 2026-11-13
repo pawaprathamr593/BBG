@@ -1,10 +1,11 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MarketplaceApiService, MarketplaceBusiness } from '../../../core/marketplace/marketplace-api.service';
 
 @Component({
   selector: 'app-business-directory',
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   template: `
     <main class="page">
       <section class="intro">
@@ -38,6 +39,7 @@ import { MarketplaceApiService, MarketplaceBusiness } from '../../../core/market
                   @if (business.accept_online_orders) { <span>Online orders</span> }
                   @if (business.whatsapp_enabled) { <span>WhatsApp</span> }
                 </div>
+                <a class="card-action" [routerLink]="['/businesses', business.business_slug]">Explore business <span aria-hidden="true">→</span></a>
               </article>
             }
           </div>
@@ -67,6 +69,7 @@ import { MarketplaceApiService, MarketplaceBusiness } from '../../../core/market
     .tag,.features span{padding:6px 9px;color:#315d47;background:#eaf2ec;border-radius:999px;font-size:.68rem;font-weight:700}
     .card h3{margin:0 0 5px;color:var(--text-primary);font-size:1.02rem}.location{margin:0;color:var(--text-secondary);font-size:.76rem}.description{min-height:3.8em;margin:13px 0;color:var(--text-secondary);font-size:.81rem;line-height:1.55}
     .features{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}.features span{border-radius:6px}
+    .card-action{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding:10px 12px;color:#174d35;background:#edf4ef;border:1px solid #d8e7dc;border-radius:9px;font-size:.78rem;font-weight:750;text-decoration:none;transition:background .18s ease,transform .18s ease}.card-action:hover{background:#e1eee5;transform:translateY(-1px)}.card-action span{font-size:1rem}
     .state,.empty{padding:30px;text-align:center;color:var(--text-secondary);background:var(--surface-subtle);border:1px solid var(--border);border-radius:14px}.error{color:#a33}.empty{padding:44px 20px}.empty-mark{font-size:2.5rem;color:var(--brand)}.empty h3{margin:8px 0;color:var(--text-primary)}.empty p{margin:0 0 18px;font-size:.85rem}
     .pagination{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:24px;color:var(--text-secondary);font-size:.8rem}.pagination button{padding:9px 14px;color:var(--brand);background:var(--surface-card);border:1px solid var(--border);border-radius:8px;cursor:pointer}.pagination button:disabled{opacity:.4;cursor:not-allowed}
     .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
