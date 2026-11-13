@@ -21,6 +21,9 @@ jobs:
         with:
           php-version: '8.4'
           coverage: none
+      - name: Install backend Composer dependencies
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist --no-progress
       - name: Lint backend PHP files
         run: |
           find backend/src backend/config -type f -name '*.php' -print0 | xargs -0 -n1 php -l
