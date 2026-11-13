@@ -420,6 +420,7 @@ final readonly class AuthDao
         ConnectionInterface $connection,
         string $fullName,
         ?string $email,
+        ?string $mobile,
         ?string $profileImage,
         bool $emailVerified,
     ): array {
@@ -430,12 +431,13 @@ final readonly class AuthDao
                     (full_name, email, mobile, password_hash, profile_image, email_verified_on,
                      account_status, status, created_by, updated_by)
                  VALUES
-                    (:full_name, :email, NULL, NULL, :profile_image,
+                    (:full_name, :email, :mobile, NULL, :profile_image,
                      CASE WHEN :email_verified = 1 THEN CURRENT_TIMESTAMP ELSE NULL END,
                      'ACTIVE', 'A', NULL, NULL)",
                 [
                     ':full_name' => $fullName,
                     ':email' => $email,
+                    ':mobile' => $mobile,
                     ':profile_image' => $profileImage,
                     ':email_verified' => $emailVerified ? 1 : 0,
                 ],
