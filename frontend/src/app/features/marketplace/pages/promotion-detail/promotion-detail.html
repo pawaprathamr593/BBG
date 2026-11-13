@@ -10,7 +10,18 @@
       <div class="published-date">Published {{ data.promotion.published_on | date:'longDate' }}</div>
       <p class="promotion-content">{{ data.promotion.post_content }}</p>
       @if (data.promotion.valid_until) { <p class="validity">Available until {{ data.promotion.valid_until | date:'longDate' }}</p> }
-      @if (data.media.length) { <div class="media-list"><h2>Shared media</h2>@for (media of data.media; track media.id) { <a [href]="media.file_path" target="_blank" rel="noopener noreferrer">{{ media.media_type }} attachment {{ media.display_order + 1 }}</a> }</div> }
+      @if (data.media.length) {
+        <div class="media-list">
+          <h2>Shared media</h2>
+          @for (media of data.media; track media.id) {
+            @if (media.file_path.startsWith('https://') || media.file_path.startsWith('http://')) {
+              <a [href]="media.file_path" target="_blank" rel="noopener noreferrer">{{ media.media_type }} attachment {{ media.display_order + 1 }}</a>
+            } @else {
+              <span>{{ media.media_type }} attachment {{ media.display_order + 1 }} is stored by the business.</span>
+            }
+          }
+        </div>
+      }
       <a class="business-link" [routerLink]="['/businesses', data.promotion.business_slug]">Visit business storefront →</a>
     </article>
   }
