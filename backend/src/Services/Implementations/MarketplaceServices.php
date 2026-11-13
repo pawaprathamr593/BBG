@@ -281,7 +281,6 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         $items = array_map(function (array $row): array {
             $item = $this->publicProduct($row, (bool) $row['show_prices']);
             $item['created_on'] = $row['created_on'];
-            $item['primary_image_path'] = $row['primary_image_path'];
             $item['popularity'] = [
                 'views' => (int) $row['view_count'],
                 'likes' => (int) $row['like_count'],
