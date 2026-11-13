@@ -32,6 +32,8 @@ final class AuthController
             '/api/v1/auth/logout' => 'logout',
             '/api/v1/auth/logout-all' => 'logoutAll',
             '/api/v1/auth/profile/update' => 'updateProfile',
+            '/api/v1/auth/social/login' => 'socialLogin',
+            '/api/v1/auth/social/link' => 'socialLink',
         ];
         $action = $routeActions[$request->getUri()->getPath()] ?? '';
         if ($action === '') {
@@ -45,6 +47,32 @@ final class AuthController
         }
         $authParam['actionType'] = $action;
         $actionData['action'] = $action;
+
+        if (in_array($action, ['socialLogin', 'socialLink'], true)) {
+            $origin = $request->getHeaderLine('Origin');
+            $allowedOrigins = array_values(array_filter(array_map(
+                'trim',
+                explode(',', (string) (getenv('AUTH_SOCIAL_ALLOWED_ORIGINS') ?: '')),
+            )));
+            if ($origin === '' || !in_array($origin, $allowedOrigins, true)) {
+                return $this->respond(
+                    ['status' => 'FAILED', 'msgArr' => ['Social authentication origin is not allowed.'], 'data' => []],
+                    $request,
+                    $tokenService,
+                    $responseFactory,
+                    $streamFactory,
+                );
+            }
+            if ($action === 'socialLink' && $request->getHeaderLine('X-BBG-CSRF') !== '1') {
+                return $this->respond(
+                    ['status' => 'FAILED', 'msgArr' => ['Missing required same-origin request header.'], 'data' => []],
+                    $request,
+                    $tokenService,
+                    $responseFactory,
+                    $streamFactory,
+                );
+            }
+        }
 
         if (in_array($action, ['refresh', 'logout'], true) && $request->getHeaderLine('X-BBG-CSRF') !== '1') {
             return $this->respond(
@@ -60,7 +88,7 @@ final class AuthController
         if (in_array($action, ['refresh', 'logout'], true)) {
             $actionData['_refreshToken'] = (string) ($cookies['bbg_refresh'] ?? '');
         }
-        if (in_array($action, ['logoutAll', 'updateProfile'], true)) {
+        if (in_array($action, ['logoutAll', 'updateProfile', 'socialLink'], true)) {
             $authorization = $request->getHeaderLine('Authorization');
             $actionData['_accessToken'] = str_starts_with($authorization, 'Bearer ')
                 ? trim(substr($authorization, 7))
@@ -80,6 +108,35 @@ final class AuthController
         }
 
         return $this->respond($resArr, $request, $tokenService, $responseFactory, $streamFactory, $action);
+    }
+
+    public function actionSocialConfig(
+        ResponseFactoryInterface $responseFactory,
+        StreamFactoryInterface $streamFactory,
+    ): ResponseInterface {
+        $googleClientId = (string) (getenv('AUTH_GOOGLE_CLIENT_ID') ?: '');
+        $facebookAppId = (string) (getenv('AUTH_FACEBOOK_APP_ID') ?: '');
+        $facebookAppSecret = (string) (getenv('AUTH_FACEBOOK_APP_SECRET') ?: '');
+        $instagramAppId = (string) (getenv('AUTH_INSTAGRAM_APP_ID') ?: '');
+        $instagramAppSecret = (string) (getenv('AUTH_INSTAGRAM_APP_SECRET') ?: '');
+        $appleClientId = (string) (getenv('AUTH_APPLE_CLIENT_ID') ?: '');
+
+        $payload = [
+            'status' => 'SUCCESS',
+            'msgArr' => [],
+            'data' => [
+                'providers' => [
+                    'GOOGLE' => ['enabled' => $googleClientId !== '', 'client_id' => $googleClientId],
+                    'FACEBOOK' => ['enabled' => $facebookAppId !== '' && $facebookAppSecret !== '', 'app_id' => $facebookAppId],
+                    'INSTAGRAM' => ['enabled' => $instagramAppId !== '' && $instagramAppSecret !== '', 'app_id' => $instagramAppId],
+                    'APPLE' => ['enabled' => $appleClientId !== '', 'client_id' => $appleClientId],
+                ],
+            ],
+        ];
+
+        return $responseFactory->createResponse(200)
+            ->withHeader('Content-Type', 'application/json; charset=utf-8')
+            ->withBody($streamFactory->createStream(json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES)));
     }
 
     public function actionGetAuth(
