@@ -37,6 +37,7 @@ final readonly class BusinessServices implements IBusinessServices
         }
         $actionData = $businessParam['actionData'];
         $actionData['action'] = (string) $businessParam['actionType'];
+        $actionData['action'] = (string) $businessParam['actionType'];
         try {
             switch ((string) $businessParam['actionType']) {
                 case 'getMyBusinessApplication':
@@ -80,6 +81,7 @@ final readonly class BusinessServices implements IBusinessServices
             return $resArr;
         }
         $actionData = $businessParam['actionData'];
+        $actionData['action'] = (string) $businessParam['actionType'];
         $actionData['action'] = (string) $businessParam['actionType'];
         try {
             switch ((string) $businessParam['actionType']) {
