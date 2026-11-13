@@ -243,11 +243,11 @@ The following are deliberately not operationalized in this API set:
 - Ratings/reviews, wishlist, bulk orders, advanced location discovery and full offline writes/background sync.
 - Automated invoice generation.
 - Expenses/cash workflows and expanded workspace reporting, because their Phase 1 inclusion and business rules are not approved in the current frontend requirements.
-- Binary upload/storage endpoints until a storage provider, MIME/size limits, retention and access policy are selected. The media/proof metadata endpoints accept only a server-issued stored file reference, never an arbitrary public URL.
+- Business verification document binary upload/storage remains unimplemented pending its own approved document types, retention and access policy. Product images and subscription payment proofs use the private S3 upload flows documented below; arbitrary public URLs are never accepted.
 
 ## 9. Implementation status and guarded dependencies
 
-The routes listed in Sections 2–7 are registered on `feature/auth-foundation`: **120 unique POST routes across 15 route groups**. They have corresponding V1/Core Services and DAO implementations, including the additions below:
+The original API catalogue contains **120 unique POST routes across 15 route groups**. The current `fix/bbg-seven-layer-audit` branch registers 122 POST routes after adding the product-media and subscription-proof upload-URL routes. The routes have corresponding V1/Core Services and DAO implementations, including the additions below:
 
 - Auth: profile update and permission snapshot.
 - Business: storefront read/update/publish/unpublish.
@@ -258,7 +258,7 @@ The routes listed in Sections 2–7 are registered on `feature/auth-foundation`:
 Implementation is **not production-verified** until the PHP 8.4 workflow, clean MySQL migration workflow, live-schema compatibility checks, and API integration/security tests pass. A registered route is not a claim that a local or production API call has been tested.
 
 Guarded dependencies:
-- Subscription proof submission stores a server-issued relative file reference; binary upload is not implemented until private storage is selected.
+- Subscription proof upload is implemented through `POST /api/v1/subscriptions/proofs/upload-url`; the client uploads directly to S3 and then calls `POST /api/v1/subscriptions/proofs/submit`. The server verifies the actual S3 object before saving proof metadata. Live S3 verification still requires configured bucket credentials and end-to-end testing.
 - Product media linking likewise expects a file reference already created by a storage/upload service. The route does not upload bytes or verify an external storage provider.
 - Gold product cap (50) and Platinum promotional-post entitlement are seeded only when matching plan codes exist. Other plan entitlements must be configured from approved commercial plan definitions.
 - Platform admin APIs remain unavailable until a trusted platform user is explicitly assigned the PLATFORM_ADMIN role.
@@ -285,3 +285,7 @@ Guarded dependencies:
 - Supported image MIME types: JPEG, PNG and WebP. Default maximum file size: 10 MiB (configurable). Presigned URL expiry defaults to 10 minutes (configurable).
 - Keep the bucket private with S3 Block Public Access enabled. Configure bucket CORS for the deployed Angular origin with PUT/GET and the required Content-Type header; do not use a wildcard origin in production.
 - Credentials are supplied to the PHP container through environment variables or an AWS workload IAM role. Never commit a populated `.env` file.
+
+## 10. Subscription proof S3 upload
+
+See [`API_V1_SUBSCRIPTION_PROOFS.md`](API_V1_SUBSCRIPTION_PROOFS.md) for the complete request/response contract. The flow issues a tenant-scoped S3 presigned PUT URL for JPEG, PNG, WebP or PDF files and verifies the uploaded object before accepting proof metadata. A proof upload or submission does not approve a subscription or mark any order/payment as paid.
