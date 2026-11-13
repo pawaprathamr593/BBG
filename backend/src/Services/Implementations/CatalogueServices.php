@@ -628,7 +628,7 @@ final readonly class CatalogueServices implements ICatalogueServices
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $principal = $this->authServices->getAuth([
-            'actionType' => 'getAuth',
+            'actionType' => 'getPrincipal',
             'actionData' => ['action' => 'getPrincipal', '_accessToken' => (string) ($actionData['_accessToken'] ?? '')],
         ]);
         if ($principal['status'] !== 'SUCCESS') {
