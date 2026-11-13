@@ -12,6 +12,18 @@ export const routes: Routes = [
     title: 'Discover Businesses | BBG',
   },
   {
+    path: 'businesses/:identifier',
+    loadComponent: () => import('./features/marketplace/details/marketplace-item-placeholder').then((m) => m.MarketplaceItemPlaceholder),
+    data: { itemType: 'Business', directoryLink: '/businesses' },
+    title: 'Business Details | BBG',
+  },
+  {
+    path: 'products/:identifier',
+    loadComponent: () => import('./features/marketplace/details/marketplace-item-placeholder').then((m) => m.MarketplaceItemPlaceholder),
+    data: { itemType: 'Product', directoryLink: '/' },
+    title: 'Product Details | BBG',
+  },
+  {
     path: 'categories',
     loadComponent: () => import('./features/marketplace/categories/category-directory').then((m) => m.CategoryDirectory),
     title: 'Marketplace Categories | BBG',
