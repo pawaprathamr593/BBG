@@ -35,7 +35,7 @@ final readonly class PaymentServices implements IPaymentServices
         }
         $actionData = $paymentParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) paymentParam['actionType']) {
                 case 'listMyPayments':
                     $resArr = $this->getMyPayments($actionData);
                     break;
