@@ -330,7 +330,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
     .state-message { margin:0; padding:20px 22px; color:var(--text-secondary); background:var(--surface-subtle); border:1px solid var(--border); border-radius:13px; font-size:.88rem; }
     .state-error { color:#9d3028; background:#fff5f3; border-color:#f1cbc5; }
     .category-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:13px; }
-    .category-card { display:flex; min-height:118px; flex-direction:column; align-items:flex-start; gap:10px; padding:17px; background:var(--surface-card); border:1px solid var(--border); border-radius:14px; }
+    .category-card { display:flex; color:inherit; text-decoration:none; cursor:pointer; min-height:118px; flex-direction:column; align-items:flex-start; gap:10px; padding:17px; background:var(--surface-card); border:1px solid var(--border); border-radius:14px; }
     .category-mark,.business-avatar { display:grid; width:38px; height:38px; place-items:center; color:#174d35; background:#e8f1eb; border-radius:11px; font-weight:800; }
     .category-name { color:var(--text-primary); font-size:.9rem; font-weight:750; }
     .category-description { color:var(--text-secondary); font-size:.75rem; line-height:1.45; }
