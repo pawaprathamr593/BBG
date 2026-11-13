@@ -23,15 +23,14 @@ export class PermissionService {
   readonly permissions = this.permissionState.asReadonly();
   readonly context = this.contextState.asReadonly();
 
-  has(permission: string, scope?: PermissionScope): boolean {
+  has(permission: string, scope: PermissionScope): boolean {
     if (!permission.trim() || !this.permissionState().has(permission)) return false;
-    if (!scope) return true;
     return this.contextState()?.permissions.some(
       (record) => record.permission_code === permission && record.scope_type === scope,
     ) ?? false;
   }
 
-  hasAll(permissions: readonly string[], scope?: PermissionScope): boolean {
+  hasAll(permissions: readonly string[], scope: PermissionScope): boolean {
     return permissions.length > 0 && permissions.every((permission) => this.has(permission, scope));
   }
 
