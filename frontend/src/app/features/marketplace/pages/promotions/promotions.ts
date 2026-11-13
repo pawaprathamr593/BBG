@@ -20,9 +20,13 @@ export class Promotions implements OnInit {
     void this.load();
   }
 
+  protected totalPages(total: number, pageSize: number): number {
+    return Math.max(1, Math.ceil(total / pageSize));
+  }
+
   protected async changePage(page: number): Promise<void> {
     const current = this.result();
-    const totalPages = Math.ceil((current?.pagination.total ?? 0) / (current?.pagination.page_size ?? 20));
+    const totalPages = this.totalPages(current?.pagination.total ?? 0, current?.pagination.page_size ?? 20);
     if (page < 1 || page > totalPages) return;
     this.page.set(page);
     await this.load();
