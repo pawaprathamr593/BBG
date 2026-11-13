@@ -8,6 +8,7 @@ import { AuthResponseData, AuthUser, LoginRequest, RegisterRequest } from './aut
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly sessionHintKey = 'bbg-session-present';
   private readonly api = inject(ApiService);
   private readonly permissionService = inject(PermissionService);
   private readonly accessTokenState = signal<string | null>(null);
@@ -56,6 +57,9 @@ export class AuthService {
 
   async restoreSession(): Promise<boolean> {
     if (this.accessTokenState()) return true;
+    // Avoid a guaranteed 400 refresh request for visitors who have never signed in.
+    // This flag is only a non-secret hint; the HttpOnly refresh cookie remains authoritative.
+    if (!this.hasSessionHint()) return false;
     return this.refreshSession();
   }
 
@@ -115,6 +119,7 @@ export class AuthService {
     }
     const data = response.data;
     this.accessTokenState.set(data.access_token);
+    this.setSessionHint(true);
     this.user.set(data.user);
     this.isAuthenticated.set(true);
     return data.user;
@@ -126,7 +131,22 @@ export class AuthService {
     }
   }
 
+  private hasSessionHint(): boolean {
+    if (typeof window === 'undefined') return false;
+    try { return window.localStorage.getItem(this.sessionHintKey) === '1'; }
+    catch { return true; }
+  }
+
+  private setSessionHint(active: boolean): void {
+    if (typeof window === 'undefined') return;
+    try {
+      if (active) window.localStorage.setItem(this.sessionHintKey, '1');
+      else window.localStorage.removeItem(this.sessionHintKey);
+    } catch { /* The HttpOnly cookie remains authoritative if storage is unavailable. */ }
+  }
+
   private clearLocalSession(): void {
+    this.setSessionHint(false);
     this.accessTokenState.set(null);
     this.user.set(null);
     this.isAuthenticated.set(false);
