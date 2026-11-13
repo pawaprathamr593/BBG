@@ -10,6 +10,7 @@ import { AuthService } from './core/auth/auth.service';
 })
 export class App {
   protected readonly menuOpen = signal(false);
+  protected readonly theme = signal<'light' | 'dark'>('light');
   protected readonly currentYear = new Date().getFullYear();
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
@@ -20,6 +21,12 @@ export class App {
 
   protected closeMenu(): void {
     this.menuOpen.set(false);
+  }
+
+  protected toggleTheme(): void {
+    const nextTheme = this.theme() === 'light' ? 'dark' : 'light';
+    this.theme.set(nextTheme);
+    document.documentElement.setAttribute('data-theme', nextTheme);
   }
 
   protected async signOut(): Promise<void> {
