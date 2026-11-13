@@ -407,3 +407,51 @@ A green syntax/migration workflow must not be interpreted as proof that all 120 
 **Static audit status:** Completed for the original 120 registered routes and their implemented module flows.  
 **Production sign-off:** Not granted.  
 **Recommended next phase:** Correct the dispatch/route-binding design and the subscription-proof storage gap, then add automated API/security tests before production deployment.
+
+
+---
+
+## 12. Remediation update — 13 November 2026
+
+**Remediation branch:** `fix/bbg-seven-layer-audit`  
+**Remediation baseline:** `ed7aa002a990e9b4d25a2c50aed354f696ebf77f`
+
+### 12.1 Route-to-operation binding — corrected in controllers
+
+The following controllers now derive the operation from the matched request path and overwrite any client-supplied `actionData.action` before calling Versioned Services:
+
+- Auth, Cart, Tenant, Business, Customer, Enquiry, Promotion and Engagement.
+- Subscription, Admin, Payment and Dashboard.
+
+Order and Marketplace already derived their operation from the route. Catalogue already used route-derived `actionType` values.
+
+This prevents the request body from selecting a different operation from the one represented by the URL. The public route paths and request/response payload fields have not been changed.
+
+### 12.2 Subscription proof object verification — partially corrected
+
+Subscription proof submission now checks the referenced S3 object server-side before persisting proof metadata:
+
+- S3 object must exist.
+- Actual Content-Type must be a supported image/PDF type.
+- File signature must match the actual Content-Type (JPEG, PNG, WebP or PDF).
+- Actual object size must be greater than zero and within the configured S3 upload limit.
+- Storage verification failures are logged and the proof is rejected.
+
+**Remaining gap:** no subscription-proof upload-URL endpoint has been added. The current endpoint accepts the existing `proof_file_path` field and verifies the object, but the API does not yet issue the presigned PUT URL/key for this flow. That endpoint is a new API action and requires its own approved request/response contract before implementation.
+
+### 12.3 Remaining P1 items
+
+| Finding | Current status |
+|---|---|
+| API-AUD-001 — direct Level 1 dispatch by route-derived `actionType` | **Open.** The current generic module-level `actionType` values remain. The BBG architecture document explicitly leaves the exact per-module `actionType` catalogue pending; changing it requires an approved catalogue and coordinated Core Services changes. |
+| API-AUD-002 — route-to-operation binding | **Controller correction implemented.** Re-run the full route inventory and API tests before marking runtime-verified. |
+| API-AUD-003 — subscription proof S3 | **Partially implemented.** Object verification is in place; presigned upload URL/key issuance remains open. |
+| API-AUD-004 — database design/migration drift | **Open.** Cart tables and three unused business-application tables in migration 001 still need an approved reconciliation against Database Design Final v2.0. No schema was silently invented or dropped. |
+
+### 12.4 Validation status and limitations
+
+The route count remains 121 registered POST routes: the original 120 plus the existing product-media upload-URL route. The subscription-proof upload-URL route was deliberately not added.
+
+GitHub Actions runs were triggered for the remediation commits. The latest run must complete successfully before the branch is treated as CI-validated. CI syntax/migration checks do not replace API integration, cross-tenant authorization, upload-flow or concurrency tests.
+
+**Production sign-off remains withheld.** The open items in API-AUD-001, API-AUD-003 and API-AUD-004 must be resolved, followed by endpoint-level tests.
