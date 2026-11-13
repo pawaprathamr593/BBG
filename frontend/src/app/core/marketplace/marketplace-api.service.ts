@@ -1,0 +1,85 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { API_BASE_URL } from '../../config/api-base-url';
+
+export interface MarketplaceCategory {
+  id: number;
+  parent_category_id: number | null;
+  category_code: string;
+  category_name: string;
+  category_type: string;
+  description: string | null;
+  display_order: number;
+}
+
+export interface MarketplaceBusiness {
+  id: number;
+  business_name: string;
+  business_slug: string;
+  business_description: string | null;
+  category_id: number | null;
+  category_name: string | null;
+  business_phone: string | null;
+  business_email: string | null;
+  logo_path: string | null;
+  cover_image_path: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  whatsapp_enabled: boolean;
+  accept_online_orders: boolean;
+}
+
+export interface MarketplacePromotion {
+  id: number;
+  tenant_id: number;
+  post_title: string;
+  post_content: string;
+  published_on: string;
+  valid_until: string | null;
+  business_name: string;
+  business_slug: string;
+  logo_path: string | null;
+}
+
+export interface MarketplaceHomeData {
+  categories: MarketplaceCategory[];
+  businesses: MarketplaceBusiness[];
+  promotions: MarketplacePromotion[];
+}
+
+export interface MarketplaceBusinessListData {
+  items: MarketplaceBusiness[];
+  pagination: {
+    page: number;
+    page_size: number;
+    total: number;
+  };
+}
+
+export interface MarketplaceApiResponse<T> {
+  status: 'SUCCESS' | 'FAILED' | 'EXCEPTION';
+  msgArr: string[];
+  data: T | [];
+}
+
+@Injectable({ providedIn: 'root' })
+export class MarketplaceApiService {
+  private readonly http = inject(HttpClient);
+  private readonly apiBaseUrl = inject(API_BASE_URL);
+
+  getHomeSummary(): Observable<MarketplaceApiResponse<MarketplaceHomeData>> {
+    return this.http.post<MarketplaceApiResponse<MarketplaceHomeData>>(
+      `${this.apiBaseUrl}/api/v1/marketplace/home`,
+      { marketplaceParam: { actionData: {} } },
+    );
+  }
+
+  listBusinesses(search: string, page = 1, pageSize = 20): Observable<MarketplaceApiResponse<MarketplaceBusinessListData>> {
+    return this.http.post<MarketplaceApiResponse<MarketplaceBusinessListData>>(
+      `${this.apiBaseUrl}/api/v1/marketplace/businesses/list`,
+      { marketplaceParam: { actionData: { search, page, page_size: pageSize } } },
+    );
+  }
+}
