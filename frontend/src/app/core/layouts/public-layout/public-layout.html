@@ -24,7 +24,7 @@
           <a class="nav-join" routerLink="/register" (click)="closeMenu()">Join BBG</a>
         }
         <button class="theme-toggle" type="button" (click)="toggleTheme()" [attr.aria-label]="'Switch to ' + (isDarkTheme ? 'light' : 'dark') + ' theme'">
-          {{ theme.resolvedTheme() === 'dark' ? '☀ Light' : '☾ Dark' }}
+          {{ isDarkTheme ? '☀ Light' : '☾ Dark' }}
         </button>
       </nav>
     </div>
