@@ -43,6 +43,7 @@ The ranking uses actual persisted counts:
 - `view_count`: active `CONTENT_VIEWS` rows where `content_type = 'BUSINESS'`, joined by both `tenant_id` and business-profile `content_id`.
 - `enquiry_count`: active `CUSTOMER_ENQUIRIES` rows for the business tenant.
 - `engagement_count`: `view_count + enquiry_count`; no weighting or fabricated score.
+- The ranking period is all-time; `view_count` is the number of active persisted view events, not unique visitors.
 - Businesses with zero recorded views and zero active enquiries are excluded from the popular list.
 - Tie-break order: engagement count, views, enquiries, business name, then profile ID.
 
