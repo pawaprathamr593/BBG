@@ -28,6 +28,7 @@ final class MarketplaceController
             '/api/v1/marketplace/products/recent' => 'listRecentProducts',
             '/api/v1/marketplace/businesses/detail' => 'getBusiness',
             '/api/v1/marketplace/products/list' => 'listProducts',
+            '/api/v1/marketplace/products/categories' => 'listPublicProductCategories',
             '/api/v1/marketplace/products/detail' => 'getProduct',
             '/api/v1/marketplace/categories/list' => 'listPublicCategories',
             '/api/v1/marketplace/promotions/list' => 'listPublicPromotions',
