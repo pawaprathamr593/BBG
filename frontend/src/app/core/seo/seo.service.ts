@@ -36,7 +36,7 @@ export class SeoService {
       this.meta.updateTag({ property: 'og:url', content: canonical.href });
     }
 
-    const schema = structuredData ? { ...structuredData } : {
+    const schema: Record<string, unknown> = structuredData ? { ...structuredData } : {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
       name: 'BBG',
