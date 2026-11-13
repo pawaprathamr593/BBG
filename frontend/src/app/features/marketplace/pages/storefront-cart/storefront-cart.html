@@ -40,7 +40,7 @@
           <p class="eyebrow">SUMMARY</p>
           <h2>Order summary</h2>
           <div><span>Subtotal</span><strong>{{ formatMoney(cart()?.subtotal) }}</strong></div>
-          <p class="summary-note">Taxes and final totals are recalculated by the server at checkout.</p>
+          <p class="summary-note">Taxes and final totals are recalculated by the server at checkout. Current order quantities support up to two decimal places.</p>
           @if (data.storefront.accept_online_orders) {
             <button class="checkout-button" type="button" [disabled]="busy()" (click)="checkoutOpen.set(!checkoutOpen())">{{ checkoutOpen() ? 'Hide checkout' : 'Continue to checkout' }}</button>
           } @else {
