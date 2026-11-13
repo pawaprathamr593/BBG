@@ -76,7 +76,15 @@ export interface MarketplacePromotion {
   logo_path: string | null;
 }
 
+export interface MarketplaceHomeStats {
+  businesses_registered: number;
+  platform_users: number;
+  products_listed: number;
+  orders_completed: number;
+}
+
 export interface MarketplaceHomeData {
+  stats: MarketplaceHomeStats;
   categories: MarketplaceCategory[];
   businesses: MarketplaceBusiness[];
   popular_businesses?: MarketplaceBusiness[];
