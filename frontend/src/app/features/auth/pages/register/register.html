@@ -39,24 +39,25 @@
         <div class="social-section">
           <p class="section-label">Sign up quickly with</p>
           <div class="social-grid">
-            <button class="social-button" type="button" (click)="selectProvider('Google')">
+            <button class="social-button" type="button" (click)="selectProvider('GOOGLE')" [disabled]="busy() || !providerEnabled('GOOGLE')">
               <svg class="provider-logo google-logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.35 12.23c0-.72-.06-1.42-.18-2.09H12v3.96h5.24a4.48 4.48 0 0 1-1.94 2.94v2.45h3.14c1.84-1.7 2.91-4.2 2.91-7.26Z"/><path fill="#34A853" d="M12 21.6c2.63 0 4.84-.87 6.45-2.35l-3.14-2.45c-.87.58-1.98.93-3.31.93-2.54 0-4.7-1.71-5.47-4.02H3.29v2.53A9.74 9.74 0 0 0 12 21.6Z"/><path fill="#FBBC05" d="M6.53 13.71a5.85 5.85 0 0 1 0-3.42V7.76H3.29a9.73 9.73 0 0 0 0 8.48l3.24-2.53Z"/><path fill="#EA4335" d="M12 6.27c1.43 0 2.71.49 3.72 1.46l2.79-2.79C16.83 3.36 14.63 2.4 12 2.4a9.74 9.74 0 0 0-8.71 5.36l3.24 2.53C7.3 7.98 9.46 6.27 12 6.27Z"/></svg>
               <span>Google</span>
             </button>
-            <button class="social-button" type="button" (click)="selectProvider('Facebook')">
+            <button class="social-button" type="button" (click)="selectProvider('FACEBOOK')" [disabled]="busy() || !providerEnabled('FACEBOOK')">
               <svg class="provider-logo facebook-logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M13.5 21v-8.2h2.76l.41-3.2H13.5V7.56c0-.93.26-1.56 1.6-1.56h1.7V3.14c-.3-.04-1.34-.14-2.55-.14-2.52 0-4.25 1.54-4.25 4.37V9.6H7.14v3.2H10V21h3.5Z"/></svg>
               <span>Facebook</span>
             </button>
-            <button class="social-button" type="button" (click)="selectProvider('Instagram')">
+            <button class="social-button" type="button" (click)="selectProvider('INSTAGRAM')" [disabled]="busy() || !providerEnabled('INSTAGRAM')">
               <svg class="provider-logo instagram-logo" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="3.2" width="17.6" height="17.6" rx="5.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4.1" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.7" cy="6.7" r="1.2" fill="currentColor"/></svg>
               <span>Instagram</span>
             </button>
-            <button class="social-button" type="button" (click)="selectProvider('Apple')">
+            <button class="social-button" type="button" (click)="selectProvider('APPLE')" [disabled]="busy() || !providerEnabled('APPLE')">
               <svg class="provider-logo apple-logo" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16.7 12.8c0-2.1 1.7-3.1 1.8-3.2a4 4 0 0 0-3.1-1.7c-1.3-.1-2.5.8-3.2.8-.7 0-1.7-.8-2.8-.8a4.2 4.2 0 0 0-3.5 2.1c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.1 2.6 2.1 1 0 1.4-.7 2.7-.7s1.7.7 2.8.7 1.8-1 2.5-2c.8-1.1 1.1-2.2 1.1-2.2s-2-.8-2-3.6ZM14.6 6.5c.6-.8 1.1-1.8 1-2.9-.9 0-2 .6-2.6 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2-.5 2.6-1.3Z"/></svg>
               <span>Apple</span>
             </button>
           </div>
           @if (providerNotice()) { <p class="provider-notice" role="status">{{ providerNotice() }}</p> }
+          <p class="provider-notice">Instagram sign-in supports Business and Creator accounts only.</p>
         </div>
 
         <div class="divider"><span>or sign up with email</span></div>
