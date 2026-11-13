@@ -53,6 +53,7 @@ final class CatalogueController
             '/api/v1/catalogue/products/create' => 'createTenantProduct',
             '/api/v1/catalogue/products/update' => 'updateTenantProduct',
             '/api/v1/catalogue/products/delete' => 'deleteTenantProduct',
+            '/api/v1/catalogue/products/media/upload-url' => 'generateProductMediaUploadUrl',
             '/api/v1/catalogue/products/media/link' => 'linkProductMedia',
             '/api/v1/catalogue/products/media/delete' => 'deleteProductMedia',
         ];
@@ -69,7 +70,8 @@ final class CatalogueController
         $data = is_array($param['actionData'] ?? null) ? $param['actionData'] : [];
         $authorization = $request->getHeaderLine('Authorization');
         $data['_accessToken'] = str_starts_with($authorization, 'Bearer ') ? trim(substr($authorization, 7)) : '';
-        $param['actionType'] = $manage ? 'manageCatalogue' : 'getCatalogue';
+        unset($data['action']);
+        $param['actionType'] = $action;
         $param['actionData'] = $data;
         $input['catalogueParam'] = $param;
 
