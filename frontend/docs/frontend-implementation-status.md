@@ -100,28 +100,45 @@ Two distinct directions were evaluated conceptually against BBG's dual marketpla
 
 ## 7. Current completion snapshot
 
-### Changes committed during this implementation increment
+### Changes committed during the current implementation increment
 
-- Added `frontend/src/app/core/http/api.models.ts`, `api-error.ts` and `api.service.ts`.
-- Refactored the existing authentication service to use the centralized POST client while preserving the checked-in auth request envelope and cookie/CSRF behavior.
-- Fixed the auth interceptor's production-mode URL matching: an empty production API base URL previously matched every request and could attach the BBG bearer token to unrelated absolute URLs. The interceptor now limits token attachment to BBG API paths.
-- Added initial BBG color, spacing, radius, shadow and motion tokens in `src/styles.scss`, retaining aliases for the existing starter UI.
-- Added the route/API matrix, implementation audit and design direction documents under `frontend/docs/`.
+- Added separate public marketplace and authentication layouts; the root component now hosts the router only.
+- Added lazy public routes for marketplace home, business directory, business storefront, product detail, promotion feed and promotion detail, plus access-denied and not-found states.
+- Added guest and authenticated functional guards. Added a deny-by-default permission guard that requires both a backend permission code and an explicit PLATFORM or TENANT scope.
+- Added a typed PermissionService using the verified backend permission record shape (role_code, scope_type, permission_code, module_code) and context (tenant_id, permissions). Platform-scope permissions are loaded after login/session refresh; tenant-scoped permission loading remains an explicit call and is not wired to a tenant selector.
+- Added Marketplace DTOs and MarketplaceService using the exact marketplaceParam envelope and registered POST routes. The request fields and response shapes were checked against MarketplaceController, MarketplaceServicesV1, MarketplaceServices and MarketplaceDao.
+- Implemented public marketplace home, category browse, searchable/paginated business directory, business storefront with product listing, product detail, promotions feed and promotion detail.
+- Added service/permission unit tests and removed obsolete starter dashboard-only global styling.
+- Kept all changes on feature/frontend-development; no backend or database files were modified.
 
-These changes are committed to `feature/frontend-development`. Angular build/tests have not been executed in this environment; compile/runtime verification remains required.
+### Remaining source and contract caveats
+
+- backend_architecture.md is still absent; the supplied BBG_Backend_Architecture_v1.0.md and checked-in implementation remain the source references.
+- The backend permission record structure and tenant/platform scope discriminator are now confirmed from the auth controller/service/DAO. Actual permission code values and the approved route-to-permission catalogue still need owner confirmation before protected role routes are activated.
+- Tenant selection/context UI remains disabled. Tenant-scoped permission lookup is available through the service method, but no active tenant ID is inferred or selected by the frontend.
+- The frontend architecture document is marked proposed/awaiting approval. Consumer, Entrepreneur and Platform Administrator feature pages remain pending.
+- The marketplace API is wired to backend source contracts, but end-to-end runtime behavior and media URL delivery still require local backend verification.
+
+### Validation
+
+Angular build, unit tests, browser tests and production build have NOT been executed in this environment. Test files have been added but remain unrun. No claim of compile or runtime success is made.
 
 | Deliverable | Status |
 |---|---|
 | Repository/branch audit | Complete |
-| Frontend stack audit | Complete |
-| Backend route catalogue extraction | Complete |
-| API-to-screen mapping | Committed in `docs/frontend-api-mapping.md`; service/runtime verification pending |
-| Design direction | Selected and documented in `docs/design-system.md` |
-| Design system implementation | Initial centralized SCSS tokens implemented; component system pending |
-| Angular role layouts/routes | Not started |
-| Feature API DTOs/services | Shared `ApiService`, typed envelope and error normalization added; feature DTOs/services pending |
-| Consumer/Entrepreneur/Admin pages | Not started |
+| Backend route/controller inspection | Complete for current public marketplace and auth permission calls |
+| API-to-screen mapping | Committed; full route catalogue mapped |
+| Design direction and shared tokens | Committed and implemented |
+| Public/auth layouts and lazy routing | Implemented |
+| Authenticated/guest guards | Implemented |
+| Scoped permission service/guard | Implemented; protected route catalogue pending approval |
+| Public marketplace DTOs/API service | Implemented against checked-in backend source |
+| Public marketplace pages | Home, directory, storefront, product detail, promotions and promotion detail implemented |
+| Consumer experience | Not started |
+| Entrepreneur experience | Not started |
+| Platform Administrator experience | Not started |
+| Tenant workspace candidate modules | Disabled / not implemented |
 | PWA | Not started |
-| Unit/component tests | Existing starter only; feature coverage not started |
+| Unit/component tests | Added for marketplace API and permission scope; not run |
 | Playwright E2E | Not started |
-| Production validation | Not run; remote repository changes have not been built locally |
+| Production validation | Not run |
