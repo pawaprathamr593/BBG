@@ -29,6 +29,39 @@ export interface MarketplaceBusiness {
   postal_code: string | null;
   whatsapp_enabled: boolean;
   accept_online_orders: boolean;
+  rank?: number;
+  popularity?: {
+    views: number;
+    enquiries: number;
+    engagements: number;
+  };
+  created_on?: string;
+}
+
+export interface MarketplaceProduct {
+  id: number;
+  product_code: string;
+  product_name: string;
+  description: string | null;
+  category_id: number | null;
+  category_name: string | null;
+  brand_name: string | null;
+  barcode: string | null;
+  selling_price?: number | string;
+  unit: {
+    id: number;
+    name: string;
+    symbol: string;
+    quantity_precision: number;
+    is_fraction_allowed: boolean;
+  };
+  is_variant_product: boolean;
+  created_on: string;
+  business: {
+    business_name: string;
+    business_slug: string;
+    logo_path: string | null;
+  };
 }
 
 export interface MarketplacePromotion {
@@ -46,7 +79,15 @@ export interface MarketplacePromotion {
 export interface MarketplaceHomeData {
   categories: MarketplaceCategory[];
   businesses: MarketplaceBusiness[];
+  popular_businesses?: MarketplaceBusiness[];
+  recent_businesses?: MarketplaceBusiness[];
+  recent_products?: MarketplaceProduct[];
   promotions: MarketplacePromotion[];
+  discovery_meta?: {
+    popular_businesses_ranking_basis: string[];
+    recent_businesses_sort_basis: string;
+    recent_products_sort_basis: string;
+  };
 }
 
 export interface MarketplaceBusinessListData {
@@ -73,6 +114,28 @@ export class MarketplaceApiService {
     return this.http.post<MarketplaceApiResponse<MarketplaceHomeData>>(
       `${this.apiBaseUrl}/api/v1/marketplace/home`,
       { marketplaceParam: { actionData: {} } },
+    );
+  }
+
+
+  listPopularBusinesses(page = 1, pageSize = 8): Observable<MarketplaceApiResponse<MarketplaceBusinessListData>> {
+    return this.http.post<MarketplaceApiResponse<MarketplaceBusinessListData>>(
+      `${this.apiBaseUrl}/api/v1/marketplace/businesses/popular`,
+      { marketplaceParam: { actionData: { page, page_size: pageSize } } },
+    );
+  }
+
+  listRecentBusinesses(page = 1, pageSize = 8): Observable<MarketplaceApiResponse<MarketplaceBusinessListData>> {
+    return this.http.post<MarketplaceApiResponse<MarketplaceBusinessListData>>(
+      `${this.apiBaseUrl}/api/v1/marketplace/businesses/recent`,
+      { marketplaceParam: { actionData: { page, page_size: pageSize } } },
+    );
+  }
+
+  listRecentProducts(page = 1, pageSize = 8): Observable<MarketplaceApiResponse<{ items: MarketplaceProduct[] }>> {
+    return this.http.post<MarketplaceApiResponse<{ items: MarketplaceProduct[] }>>(
+      `${this.apiBaseUrl}/api/v1/marketplace/products/recent`,
+      { marketplaceParam: { actionData: { page, page_size: pageSize } } },
     );
   }
 
