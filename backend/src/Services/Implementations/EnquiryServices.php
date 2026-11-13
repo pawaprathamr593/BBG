@@ -204,7 +204,7 @@ final readonly class EnquiryServices implements IEnquiryServices
             return $this->propagateFailure($principal, 'EnquiryServices::manageCustomerEnquiry');
         }
         $profile = $this->authServices->getAuth([
-            'actionType' => 'getAuth',
+            'actionType' => 'getProfile',
             'actionData' => ['action' => 'getProfile', '_accessToken' => (string) ($actionData['_accessToken'] ?? '')],
         ]);
         if ($profile['status'] !== 'SUCCESS') {
@@ -333,7 +333,7 @@ final readonly class EnquiryServices implements IEnquiryServices
         }
         if ($identity['data'] === []) {
             $profile = $this->authServices->getAuth([
-                'actionType' => 'getAuth',
+                'actionType' => 'getProfile',
                 'actionData' => ['action' => 'getProfile', '_accessToken' => (string) ($actionData['_accessToken'] ?? '')],
             ]);
             if ($profile['status'] !== 'SUCCESS') {
@@ -355,7 +355,7 @@ final readonly class EnquiryServices implements IEnquiryServices
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $resArr = $this->authServices->getAuth([
-            'actionType' => 'getAuth',
+            'actionType' => 'getPrincipal',
             'actionData' => ['action' => 'getPrincipal', '_accessToken' => (string) ($actionData['_accessToken'] ?? '')],
         ]);
         if ($resArr['status'] !== 'SUCCESS') {
