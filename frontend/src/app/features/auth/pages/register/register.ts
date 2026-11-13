@@ -15,6 +15,11 @@ export class Register {
   private readonly router = inject(Router);
   readonly busy = signal(false);
   readonly error = signal('');
+  readonly providerNotice = signal('');
+
+  selectProvider(provider: string): void {
+    this.providerNotice.set(`${provider} authentication is not connected to the BBG backend yet. Create your account with email or mobile and password for now.`);
+  }
   readonly form = this.fb.nonNullable.group({
     full_name: ['', [Validators.required, Validators.maxLength(150)]],
     email: ['', [Validators.email, Validators.maxLength(190)]],
