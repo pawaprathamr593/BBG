@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { API_BASE_URL } from '../../config/api-base-url';
+import { API_BASE_URL } from '../config/api-base-url';
 
 export interface MarketplaceCategory {
   id: number;
