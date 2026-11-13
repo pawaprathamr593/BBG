@@ -7,6 +7,7 @@ namespace App\Services\Implementations;
 use App\Dao\AuthDao;
 use App\Services\Interfaces\IAuthServices;
 use App\Utils\AuthTokenService;
+use App\Utils\SocialProviderTokenVerifier;
 use DateTimeImmutable;
 use DateTimeZone;
 use Psr\Log\LoggerInterface;
@@ -19,6 +20,7 @@ final readonly class AuthServices implements IAuthServices
         private ConnectionInterface $connection,
         private AuthDao $authDao,
         private AuthTokenService $tokenService,
+        private SocialProviderTokenVerifier $socialProviderTokenVerifier,
         private LoggerInterface $logger,
     ) {}
 
@@ -56,6 +58,8 @@ final readonly class AuthServices implements IAuthServices
         return match ($authParam['actionType']) {
             'register' => $this->manageRegistration($actionData),
             'login' => $this->manageLogin($actionData),
+            'socialLogin' => $this->manageSocialLogin($actionData),
+            'socialLink' => $this->manageSocialLink($actionData),
             'refresh' => $this->manageRefreshSession($actionData),
             'logout' => $this->manageLogoutSession($actionData),
             'logoutAll' => $this->manageLogoutAllSessions($actionData),
@@ -191,6 +195,174 @@ final readonly class AuthServices implements IAuthServices
                 $transaction->rollBack();
             }
             return $this->exception('createSession', $exception);
+        }
+    }
+
+    private function manageSocialLogin(array $actionData): array
+    {
+        $provider = strtoupper(trim((string) ($actionData['provider'] ?? '')));
+        $intent = strtolower(trim((string) ($actionData['intent'] ?? 'login')));
+        $credential = trim((string) ($actionData['credential'] ?? ''));
+        if (!in_array($intent, ['login', 'register'], true)) {
+            return $this->failed('Social authentication intent must be login or register.');
+        }
+
+        try {
+            $this->tokenService->assertConfigured();
+            $verified = $this->socialProviderTokenVerifier->verify($provider, $credential, [
+                'nonce' => (string) ($actionData['nonce'] ?? ''),
+                'full_name' => (string) ($actionData['full_name'] ?? ''),
+                'redirect_uri' => (string) ($actionData['redirect_uri'] ?? ''),
+            ]);
+            $identityResult = $this->authDao->getUserIdentity(
+                $this->connection,
+                $verified['provider'],
+                $verified['subject'],
+            );
+            if ($identityResult['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($identityResult, 'AuthServices::manageSocialLogin');
+            }
+
+            $isNewUser = false;
+            if ($identityResult['data'] !== []) {
+                $userResult = $this->authDao->getUserById($this->connection, (int) $identityResult['data']['user_id']);
+                if ($userResult['status'] !== 'SUCCESS' || $userResult['data'] === []) {
+                    return $this->failed('The BBG account linked to this provider is unavailable.');
+                }
+                $user = $userResult['data'];
+                if (($user['account_status'] ?? '') !== 'ACTIVE') {
+                    return $this->failed('This BBG account is inactive.');
+                }
+            } else {
+                if ($intent !== 'register') {
+                    return $this->failed('No BBG account is linked to this provider. Choose create account to register.');
+                }
+                if ($verified['email'] !== null) {
+                    $emailCheck = $this->authDao->getUserByIdentifierForUniqueness($this->connection, $verified['email']);
+                    if ($emailCheck['status'] !== 'SUCCESS') {
+                        return $this->propagateFailure($emailCheck, 'AuthServices::manageSocialLogin');
+                    }
+                    if ($emailCheck['data'] !== []) {
+                        return $this->failed('A BBG account already uses this email. Sign in to that account and link this provider from account settings.');
+                    }
+                }
+
+                $fullName = trim($verified['full_name']);
+                if ($fullName === '') {
+                    $fullName = $verified['email'] !== null
+                        ? (string) strstr($verified['email'], '@', true)
+                        : ucfirst(strtolower($verified['provider'])) . ' member';
+                }
+                $transaction = $this->connection->beginTransaction();
+                try {
+                    $created = $this->authDao->insertSocialUser(
+                        $this->connection,
+                        substr($fullName, 0, 150),
+                        $verified['email'],
+                        $verified['profile_image'],
+                        $verified['email_verified'],
+                    );
+                    if ($created['status'] !== 'SUCCESS') {
+                        $transaction->rollBack();
+                        return $this->propagateFailure($created, 'AuthServices::manageSocialLogin');
+                    }
+                    $userId = (int) $created['data']['id'];
+                    $linked = $this->authDao->insertUserIdentity(
+                        $this->connection,
+                        $userId,
+                        $verified['provider'],
+                        $verified['subject'],
+                        $verified['email'],
+                    );
+                    if ($linked['status'] !== 'SUCCESS') {
+                        $transaction->rollBack();
+                        return $this->propagateFailure($linked, 'AuthServices::manageSocialLogin');
+                    }
+                    $transaction->commit();
+                    $userResult = $this->authDao->getUserById($this->connection, $userId);
+                    if ($userResult['status'] !== 'SUCCESS' || $userResult['data'] === []) {
+                        return $this->failed('The new BBG account could not be loaded.');
+                    }
+                    $user = $userResult['data'];
+                    $isNewUser = true;
+                } catch (Throwable $exception) {
+                    if ($transaction->isActive()) {
+                        $transaction->rollBack();
+                    }
+                    throw $exception;
+                }
+            }
+
+            $session = $this->createSession((int) $user['id'], $this->publicUser($user), true, $actionData);
+            if (($session['status'] ?? '') === 'SUCCESS') {
+                $session['data']['is_new_user'] = $isNewUser;
+            }
+            return $session;
+        } catch (Throwable $exception) {
+            return $this->exception('manageSocialLogin', $exception);
+        }
+    }
+
+    private function manageSocialLink(array $actionData): array
+    {
+        $principal = $this->resolvePrincipal((string) ($actionData['_accessToken'] ?? ''));
+        if ($principal['status'] !== 'SUCCESS') {
+            return $principal;
+        }
+        try {
+            $verified = $this->socialProviderTokenVerifier->verify(
+                strtoupper(trim((string) ($actionData['provider'] ?? ''))),
+                trim((string) ($actionData['credential'] ?? '')),
+                [
+                    'nonce' => (string) ($actionData['nonce'] ?? ''),
+                    'full_name' => (string) ($actionData['full_name'] ?? ''),
+                    'redirect_uri' => (string) ($actionData['redirect_uri'] ?? ''),
+                ],
+            );
+            $userId = (int) $principal['data']['user_id'];
+            $existingIdentity = $this->authDao->getUserIdentity(
+                $this->connection,
+                $verified['provider'],
+                $verified['subject'],
+            );
+            if ($existingIdentity['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($existingIdentity, 'AuthServices::manageSocialLink');
+            }
+            if ($existingIdentity['data'] !== []) {
+                if ((int) $existingIdentity['data']['user_id'] !== $userId) {
+                    return $this->failed('This provider account is already linked to another BBG account.');
+                }
+                $resArr = $this->initialResponse();
+                $resArr['status'] = 'SUCCESS';
+                $resArr['msgArr'][] = 'This provider is already linked to your BBG account.';
+                return $resArr;
+            }
+            if ($verified['email'] !== null) {
+                $emailCheck = $this->authDao->getUserByIdentifierForUniqueness($this->connection, $verified['email']);
+                if ($emailCheck['status'] !== 'SUCCESS') {
+                    return $this->propagateFailure($emailCheck, 'AuthServices::manageSocialLink');
+                }
+                if ($emailCheck['data'] !== [] && (int) $emailCheck['data']['id'] !== $userId) {
+                    return $this->failed('The provider email belongs to a different BBG account and cannot be linked.');
+                }
+            }
+            $linked = $this->authDao->insertUserIdentity(
+                $this->connection,
+                $userId,
+                $verified['provider'],
+                $verified['subject'],
+                $verified['email'],
+            );
+            if ($linked['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($linked, 'AuthServices::manageSocialLink');
+            }
+            $resArr = $this->initialResponse();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['msgArr'][] = 'Provider linked to your BBG account successfully.';
+            $resArr['data'] = ['provider' => $verified['provider']];
+            return $resArr;
+        } catch (Throwable $exception) {
+            return $this->exception('manageSocialLink', $exception);
         }
     }
 
