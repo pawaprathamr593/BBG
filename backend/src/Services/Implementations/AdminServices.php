@@ -34,7 +34,7 @@ final readonly class AdminServices implements IAdminServices
         }
         $actionData = $adminParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) adminParam['actionType']) {
                 case 'listPlatformUsers':
                     $resArr = $this->getPlatformUsers($actionData);
                     break;
@@ -103,7 +103,7 @@ final readonly class AdminServices implements IAdminServices
         }
         $actionData = $adminParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) adminParam['actionType']) {
                 case 'suspendPlatformUser':
                     $resArr = $this->managePlatformUser($actionData, 'SUSPENDED');
                     break;
