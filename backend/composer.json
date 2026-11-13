@@ -31,6 +31,7 @@
     "require": {
         "php": "8.2 - 8.5",
         "ext-filter": "*",
+        "aws/aws-sdk-php": "^3.300",
         "httpsoft/http-message": "^1.1.6",
         "psr/container": "^2.0.2",
         "psr/http-factory": "^1.1",
