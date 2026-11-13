@@ -38,7 +38,7 @@ final readonly class TenantServices implements ITenantServices
 
         $actionData = $tenantParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) tenantParam['actionType']) {
                 case 'listMyTenants':
                     $resArr = $this->getMyTenants($actionData);
                     break;
