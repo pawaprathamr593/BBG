@@ -33,6 +33,9 @@ return [
     Route::post('/api/v1/auth/profile')->action([AuthController::class, 'actionGetAuth'])->name('api/v1/auth/profile'),
     Route::post('/api/v1/auth/profile/update')->action([AuthController::class, 'actionManageAuth'])->name('api/v1/auth/profile/update'),
     Route::post('/api/v1/auth/permissions')->action([AuthController::class, 'actionGetAuth'])->name('api/v1/auth/permissions'),
+    Route::post('/api/v1/auth/social/login')->action([AuthController::class, 'actionManageAuth'])->name('api/v1/auth/social/login'),
+    Route::post('/api/v1/auth/social/link')->action([AuthController::class, 'actionManageAuth'])->name('api/v1/auth/social/link'),
+    Route::get('/api/v1/auth/social/config')->action([AuthController::class, 'actionSocialConfig'])->name('api/v1/auth/social/config'),
 
     Route::post('/api/v1/cart/get')->action([CartController::class, 'actionGetCart'])->name('api/v1/cart/get'),
     Route::post('/api/v1/cart/add')->action([CartController::class, 'actionManageCart'])->name('api/v1/cart/add'),
