@@ -19,24 +19,24 @@ export const routes: Routes = [
         title: 'Explore businesses | BBG',
       },
       {
-        path: 'businesses/:businessSlug',
-        loadComponent: () => import('./features/marketplace/pages/business-storefront/business-storefront').then((m) => m.BusinessStorefront),
-        title: 'Business storefront | BBG',
-      },
-      {
         path: 'businesses/:businessSlug/products/:productId',
         loadComponent: () => import('./features/marketplace/pages/product-detail/product-detail').then((m) => m.ProductDetail),
         title: 'Product details | BBG',
       },
       {
-        path: 'promotions',
-        loadComponent: () => import('./features/marketplace/pages/promotions/promotions').then((m) => m.Promotions),
-        title: 'Promotions | BBG',
+        path: 'businesses/:businessSlug',
+        loadComponent: () => import('./features/marketplace/pages/business-storefront/business-storefront').then((m) => m.BusinessStorefront),
+        title: 'Business storefront | BBG',
       },
       {
         path: 'promotions/:promotionId',
         loadComponent: () => import('./features/marketplace/pages/promotion-detail/promotion-detail').then((m) => m.PromotionDetail),
         title: 'Promotion details | BBG',
+      },
+      {
+        path: 'promotions',
+        loadComponent: () => import('./features/marketplace/pages/promotions/promotions').then((m) => m.Promotions),
+        title: 'Promotions | BBG',
       },
     ],
   },
