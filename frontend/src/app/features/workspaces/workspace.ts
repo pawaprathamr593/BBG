@@ -21,9 +21,7 @@ export class Workspace implements OnInit {
     () => this.config.sections.find((section) => section.id === this.activeSectionId()) ?? this.config.sections[0],
   );
   protected readonly activeAction = signal<WorkspaceAction | null>(this.activeSection()?.actions[0] ?? null);
-  protected readonly payload = signal('{
-  
-}');
+  protected readonly payload = signal('{}');
   protected readonly result = signal<unknown>(null);
   protected readonly hasResult = signal(false);
   protected readonly loading = signal(false);
@@ -42,9 +40,7 @@ export class Workspace implements OnInit {
     this.hasResult.set(false);
     this.error.set('');
     this.notice.set('');
-    this.payload.set('{
-  
-}');
+    this.payload.set('{}');
     const first = section.actions[0];
     if (first && !first.requiresPayload) void this.run(first);
   }
