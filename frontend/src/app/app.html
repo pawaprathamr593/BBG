@@ -41,7 +41,7 @@
 
   <router-outlet />
 
-  <footer class="site-footer">
+  <footer class="site-footer" id="about">
     <div class="footer-brand">
       <a class="brand footer-logo" routerLink="/" aria-label="BBG home">
         <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
@@ -50,8 +50,8 @@
       <span class="footer-tagline">Build · Grow · Connect</span>
     </div>
     <nav class="footer-links" aria-label="Footer navigation">
-      <a routerLink="/about">About</a><a href="mailto:support@bbg.example">Help</a><a href="mailto:support@bbg.example">Contact us</a>
-      <a href="/privacy">Privacy policy</a><a href="/terms">Terms of service</a>
+      <a routerLink="/about">About</a><a href="/#about">Help</a><a href="/#about">Contact us</a>
+      <a href="/#about">Privacy policy</a><a href="/#about">Terms of service</a>
     </nav>
     <span class="copyright">© {{ currentYear }} BBG</span>
   </footer>
