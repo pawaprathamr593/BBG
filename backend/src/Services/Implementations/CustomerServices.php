@@ -33,7 +33,7 @@ final readonly class CustomerServices implements ICustomerServices
         }
         $actionData = $customerParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) customerParam['actionType']) {
                 case 'getMyCustomerProfile':
                     $resArr = $this->getMyCustomerProfile($actionData);
                     break;
@@ -66,7 +66,7 @@ final readonly class CustomerServices implements ICustomerServices
         }
         $actionData = $customerParam['actionData'];
         try {
-            switch ((string) ($actionData['action'] ?? '')) {
+            switch ((string) customerParam['actionType']) {
                 case 'createMyAddress':
                     $resArr = $this->manageMyAddress($actionData, 'create');
                     break;
