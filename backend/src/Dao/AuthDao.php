@@ -403,7 +403,7 @@ final readonly class AuthDao
             $row = $connection->createCommand(
                 "SELECT id, user_id, provider, provider_subject, provider_email
                  FROM USER_IDENTITIES
-                 WHERE provider = :provider AND provider_subject = :provider_subject AND status = 'A'
+                 WHERE provider = :provider AND provider_subject = :provider_subject
                  LIMIT 1",
                 [':provider' => $provider, ':provider_subject' => $providerSubject],
             )->queryOne();
