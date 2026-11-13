@@ -140,6 +140,13 @@ export class MarketplaceApiService {
   }
 
 
+  listPublicCategories(): Observable<MarketplaceApiResponse<{ items: MarketplaceCategory[] }>> {
+    return this.http.post<MarketplaceApiResponse<{ items: MarketplaceCategory[] }>>(
+      `${this.apiBaseUrl}/api/v1/marketplace/categories/list`,
+      { marketplaceParam: { actionData: {} } },
+    );
+  }
+
   listPopularBusinesses(page = 1, pageSize = 8): Observable<MarketplaceApiResponse<MarketplaceBusinessListData>> {
     return this.http.post<MarketplaceApiResponse<MarketplaceBusinessListData>>(
       `${this.apiBaseUrl}/api/v1/marketplace/businesses/popular`,
