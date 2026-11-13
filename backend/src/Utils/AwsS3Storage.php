@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\\Utils;
+namespace App\Utils;
 
-use Aws\\Exception\\AwsException;
-use Aws\\S3\\S3Client;
+use Aws\Exception\AwsException;
+use Aws\S3\S3Client;
 use RuntimeException;
 use Throwable;
 
