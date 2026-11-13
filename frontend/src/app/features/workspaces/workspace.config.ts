@@ -22,8 +22,26 @@ export interface WorkspaceConfig {
   sections: WorkspaceSection[];
 }
 
+const tenantScopedPrefixes = [
+  '/api/v1/dashboard/entrepreneur',
+  '/api/v1/tenants/mine/detail',
+  '/api/v1/tenants/members',
+  '/api/v1/business/profile',
+  '/api/v1/business/verification',
+  '/api/v1/business/storefront',
+  '/api/v1/catalogue/',
+  '/api/v1/orders/tenant/',
+  '/api/v1/enquiries/tenant/',
+  '/api/v1/promotions/',
+  '/api/v1/subscriptions/mine',
+  '/api/v1/subscriptions/request',
+  '/api/v1/subscriptions/renewal',
+  '/api/v1/subscriptions/proofs/',
+  '/api/v1/payments/tenant/',
+];
+
 const isTenantScopedPath = (path: string): boolean =>
-  /^\\/api\\/v1\\/(?:dashboard\\/entrepreneur|tenants\\/(?:mine\\/detail|members)|business\\/(?:profile|verification|storefront)|catalogue\\/|orders\\/tenant\\/|enquiries\\/tenant\\/|promotions\\/|subscriptions\\/(?:mine|request|renewal|proofs)|payments\\/tenant\\/)/.test(path);
+  tenantScopedPrefixes.some((prefix) => path.startsWith(prefix));
 
 const action = (label: string, path: string, envelope: string, actionType: string, requiresPayload = false): WorkspaceAction => ({
   label, path, envelope, actionType, requiresPayload, tenantScoped: isTenantScopedPath(path),
