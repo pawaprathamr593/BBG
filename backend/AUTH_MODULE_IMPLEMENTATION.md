@@ -76,6 +76,12 @@ Set these in the root `.env` for Docker Compose (copy from `.env.example`) or in
 - `AUTH_REFRESH_COOKIE_SAMESITE`: defaults to `Lax`.
 - `AUTH_REFRESH_COOKIE_DOMAIN`: optional; leave empty for host-only cookies.
 - `AUTH_TOKEN_ISSUER` and `AUTH_TOKEN_AUDIENCE`: defaults `bbg` and `bbg-web`.
+- `AUTH_SOCIAL_ALLOWED_ORIGINS`: exact comma-separated frontend origins; the default local origin is `http://localhost:4200`.
+- `AUTH_GOOGLE_CLIENT_ID`: Google web OAuth client ID.
+- `AUTH_FACEBOOK_APP_ID` / `AUTH_FACEBOOK_APP_SECRET`: Facebook Login Meta app credentials.
+- `AUTH_INSTAGRAM_APP_ID` / `AUTH_INSTAGRAM_APP_SECRET`: credentials from the Instagram product's Business Login setup (not interchangeable with the general Meta app credential pair).
+- `AUTH_APPLE_CLIENT_ID`, `AUTH_APPLE_TEAM_ID`, `AUTH_APPLE_KEY_ID` and `AUTH_APPLE_PRIVATE_KEY`: Apple Services ID and server-side Sign in with Apple key material. Store the private key only in the ignored `.env` or a secret manager; escaped `\\n` sequences are expanded by the verifier.
+- `AUTH_META_GRAPH_API_VERSION`: defaults to `v27.0` for Facebook token validation.
 
 TTL and cookie defaults are implementation defaults pending final security review. The access-token secret is mandatory; auth operations fail closed if it is absent, is a placeholder, or is shorter than 32 characters.
 
@@ -146,7 +152,7 @@ Configure these variables in the ignored root `.env` for Docker Compose, or in t
 - `AUTH_APPLE_CLIENT_ID`: Sign in with Apple Services ID / client ID.
 - `AUTH_META_GRAPH_API_VERSION`: Graph API version used for Meta token validation (currently configured as `v27.0`).
 
-The public client IDs are safe to expose to the Angular application; app secrets must remain backend-only. Provider application setup, redirect URI/domain registration, permissions, app review and production verification are external setup requirements. Empty credentials keep the corresponding provider disabled. Never commit real credentials.
+The public client IDs are safe to expose to the Angular application; app secrets and the Apple private key remain backend-only. The PHP Docker service receives these values from the root `.env`. Provider application setup, redirect URI/domain registration, permissions, app review and production verification are external setup requirements. Empty or incomplete credentials keep the corresponding provider disabled. Never commit real credentials. Google email is marked verified only when Google is authoritative for it (Gmail address or a verified hosted-domain claim); other provider emails are stored as unverified contact values.
 
 ### Social routes
 
