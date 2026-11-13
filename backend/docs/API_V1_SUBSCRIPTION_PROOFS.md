@@ -40,7 +40,7 @@ Example success response:
   "msgArr": [],
   "data": {
     "upload_url": "<presigned-s3-put-url>",
-    "object_key": "tenants/123/subscription-proofs/<32-hex-character-id>.pdf",
+    "object_key": "tenants/123/subscription-proofs/456/<32-hex-character-id>.pdf",
     "method": "PUT",
     "headers": {
       "Content-Type": "application/pdf"
@@ -88,7 +88,7 @@ The client-provided MIME type and size are used only to request an upload URL; t
 
 ## 4. Security and operational notes
 
-- The upload key is generated server-side with 128 bits of random key material and is scoped to the tenant.
+- The upload key is generated server-side with 128 bits of random key material and is scoped to both the tenant and the requested subscription, preventing a proof object issued for one subscription from being attached to another subscription in the same tenant.
 - The client cannot select another tenant's object key by supplying an arbitrary path.
 - A successful upload-URL response does not mean the proof was submitted or approved. The client must upload to S3 and then call the submit endpoint.
 - S3 credentials remain server-side in environment configuration. Never commit real credentials.
