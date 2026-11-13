@@ -28,10 +28,11 @@ export class SeoService {
     this.meta.updateTag({ property: 'og:description', content: safeDescription });
     this.meta.updateTag({ name: 'twitter:card', content: 'summary' });
 
-    const canonical = this.canonicalElement();
+    const origin = this.document.location?.origin;
+    const canonical = origin ? this.canonicalElement() : null;
     if (canonical) {
       const path = canonicalPath ?? (isPlatformBrowser(this.platformId) ? window.location.pathname : '/');
-      canonical.href = new URL(path, this.document.location?.origin ?? 'https://example.invalid').toString();
+      canonical.href = new URL(path, origin).toString();
     }
     this.setStructuredData(structuredData ?? {
       '@context': 'https://schema.org',
@@ -71,7 +72,7 @@ export class SeoService {
     this.update(title, description);
   }
 
-  private canonicalElement(): HTMLLinkElement | null {
+  private canonicalElement(): HTMLLinkElement {
     let element = this.document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!element) {
       element = this.document.createElement('link');
