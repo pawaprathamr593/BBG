@@ -157,9 +157,9 @@ The service loads the full message list for the enquiry through `EnquiryDao::get
 
 #### API-AUD-010 — Concurrency-sensitive quota checks need transactional/unique enforcement
 
-The reviewed service flows use check-then-write patterns for at least subscription request/proof creation and promotion/product entitlement limits. The code checks existing rows/counts and then performs inserts. The audit did not establish database uniqueness/locking guarantees for every quota invariant.
+The reviewed service flows use check-then-write patterns for subscription request/proof creation and product-limit enforcement. The code checks existing rows/counts and then performs inserts or updates. The audit did not establish database uniqueness/locking guarantees for every invariant.
 
-**Impact:** Concurrent requests may pass the same precondition and exceed a limit or create duplicate pending records.
+**Impact:** Concurrent requests may pass the same precondition and create duplicate pending records or exceed the product limit.
 
 **Required correction:** For each invariant, document the concurrency guarantee and enforce it with a transaction/row lock or a suitable unique/index constraint where supported by the approved schema. Add concurrent integration tests. Do not add constraints without checking the database design and existing data.
 
