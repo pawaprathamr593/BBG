@@ -39,8 +39,8 @@
 | POST | `/api/v1/auth/profile/update` | Profile edit | Route/controller branch exists; auth implementation note says profile update is not implemented in the initial increment |
 | POST | `/api/v1/auth/permissions` | Permission bootstrap | Controller/service/DAO implementation verified; returns tenant_id and permission records (role_code, scope_type, permission_code, module_code). Tenant ID 0 resolves platform-scope assignments; positive IDs are tenant-scope and membership-checked. |
 
-**Existing frontend DTOs:** `LoginRequest`, `RegisterRequest`, `AuthResponseData`, `AuthUser`, `ApiResponse<T>`.  
-**Missing/uncertain:** exact permission DTO, profile-update DTO, error field mapping.  
+**Existing frontend DTOs:** LoginRequest, RegisterRequest, AuthResponseData, AuthUser and the permission context/record DTOs. Permission records are returned as role_code, scope_type, permission_code and module_code; the context contains tenant_id and permissions.  
+**Missing/uncertain:** profile-update DTO and final error field mapping.  
 **Authentication:** login/register public; refresh/logout cookie-based; profile/logout-all bearer-token protected.  
 **Provider login:** Google/Facebook/Instagram routes and callback contract are not present; do not render active provider login buttons yet.
 
@@ -48,13 +48,13 @@
 
 **Frontend screens:** Profile and account settings.  
 **Calling service:** planned `ProfileService`; profile read currently belongs to `AuthService`.  
-**Backend mapping:** no standalone `/users/*` routes found. Profile read is `POST /api/v1/auth/profile`; profile update route is `POST /api/v1/auth/profile/update` but its service implementation is explicitly listed as incomplete in `backend/AUTH_MODULE_IMPLEMENTATION.md`.  
+**Backend mapping:** no standalone `/users/*` routes found. Profile read is POST /api/v1/auth/profile. The checked-in AuthController and AuthServices now contain the updateProfile dispatch and service/DAO implementation for POST /api/v1/auth/profile/update; this conflicts with the older backend/AUTH_MODULE_IMPLEMENTATION.md note that profile update was not part of the initial increment. The checked-in source is newer evidence, but a frontend profile form is not included in this increment.  
 **DTO/auth/permission:** reuse no new fields until response schema is confirmed; authenticated profile access. Platform user administration is mapped separately under API-ADMIN.
 
 ### API-PUB — public home, directory, storefront and product discovery
 
 **Frontend screens:** Home, business directory, business storefront, public product detail, public promotion feed.  
-**Calling service:** planned `MarketplaceService`; public product/business pages share the marketplace feature boundary.  
+**Calling service:** MarketplaceService implemented under frontend/src/app/features/marketplace/services/marketplace.service.ts.  
 **Backend controller/service:** `MarketplaceController` / `MarketplaceServicesV1`.
 
 | Method | Exact path | Screen/action | Status / contract |
