@@ -38,7 +38,7 @@ final class PaymentController
         $authorization = $request->getHeaderLine('Authorization');
         $data['_accessToken'] = str_starts_with($authorization, 'Bearer ') ? trim(substr($authorization, 7)) : '';
         $data['action'] = $action;
-        $param['actionType'] = 'getPayment';
+        $param['actionType'] = $action;
         $param['actionData'] = $data;
         $input['paymentParam'] = $param;
         try {
