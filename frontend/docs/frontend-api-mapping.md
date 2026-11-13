@@ -12,7 +12,7 @@
 - Therefore, exact paths and methods below are taken from the checked-in `backend/config/common/routes.php` on `feature/frontend-development`, and controller dispatch mappings are taken from the corresponding controller source.
 - All listed routes are registered as **POST** routes. Registration does not, by itself, prove that every underlying service action is complete or operational.
 - The backend's internal/public response currently uses `{ status, msgArr, data }` with `SUCCESS | FAILED | EXCEPTION`; exact per-endpoint data DTOs are not yet defined consistently.
-- The frontend currently contains only a small authentication/dashboard foundation. Only authentication request/response models exist today; feature DTOs and feature API services are not yet implemented.
+- The frontend now includes a shared API client, auth/session infrastructure, scoped permission bootstrap and a public marketplace API adapter. Consumer, Entrepreneur and Platform Administrator feature services and screens are still pending.
 
 ## 2. Frontend-to-backend mapping
 
@@ -25,7 +25,7 @@
 ### API-AUTH — authentication and session
 
 **Frontend screens:** Login, registration, logout, session restore, profile, access-denied.  
-**Calling service:** `AuthService` (existing); proposed consolidation behind `ApiService`.  
+**Calling service:** AuthService using the shared ApiService.  
 **Backend controller/service:** `AuthController` / `AuthServicesV1`.
 
 | Method | Exact path | Screen/action | Status / contract |
@@ -36,7 +36,7 @@
 | POST | `/api/v1/auth/logout` | Logout | Registered; cookie + CSRF header |
 | POST | `/api/v1/auth/logout-all` | Revoke all sessions | Registered; bearer token required |
 | POST | `/api/v1/auth/profile` | Profile read | Registered; bearer token required |
-| POST | `/api/v1/auth/profile/update` | Profile edit | Route/controller branch exists; auth implementation note says profile update is not implemented in the initial increment |
+| POST | `/api/v1/auth/profile/update` | Profile edit | Checked-in AuthController/AuthServices/AuthDao implement updateProfile; older AUTH_MODULE_IMPLEMENTATION.md is stale on this point; frontend form not included |
 | POST | `/api/v1/auth/permissions` | Permission bootstrap | Controller/service/DAO implementation verified; returns tenant_id and permission records (role_code, scope_type, permission_code, module_code). Tenant ID 0 resolves platform-scope assignments; positive IDs are tenant-scope and membership-checked. |
 
 **Existing frontend DTOs:** LoginRequest, RegisterRequest, AuthResponseData, AuthUser and the permission context/record DTOs. Permission records are returned as role_code, scope_type, permission_code and module_code; the context contains tenant_id and permissions.  
@@ -47,13 +47,13 @@
 ### API-USER — user profile and account management
 
 **Frontend screens:** Profile and account settings.  
-**Calling service:** planned `ProfileService`; profile read currently belongs to `AuthService`.  
-**Backend mapping:** no standalone `/users/*` routes found. Profile read is POST /api/v1/auth/profile. The checked-in AuthController and AuthServices now contain the updateProfile dispatch and service/DAO implementation for POST /api/v1/auth/profile/update; this conflicts with the older backend/AUTH_MODULE_IMPLEMENTATION.md note that profile update was not part of the initial increment. The checked-in source is newer evidence, but a frontend profile form is not included in this increment.  
+**Calling service:** ProfileService is planned; profile read currently belongs to AuthService.  
+**Backend mapping:** no standalone /users/* routes found. Profile read is POST /api/v1/auth/profile. The checked-in AuthController and AuthServices contain the updateProfile dispatch and service/DAO implementation for POST /api/v1/auth/profile/update; this conflicts with the older backend/AUTH_MODULE_IMPLEMENTATION.md note that profile update was not part of the initial increment. The checked-in source is newer evidence, but a frontend profile form is not included in this increment.  
 **DTO/auth/permission:** reuse no new fields until response schema is confirmed; authenticated profile access. Platform user administration is mapped separately under API-ADMIN.
 
 ### API-PUB — public home, directory, storefront and product discovery
 
-**Frontend screens:** Home, business directory, business storefront, public product detail, public promotion feed.  
+**Frontend screens:** Home, business directory, business storefront, public product detail, public promotion feed and promotion detail.  
 **Calling service:** MarketplaceService implemented under frontend/src/app/features/marketplace/services/marketplace.service.ts.  
 **Backend controller/service:** `MarketplaceController` / `MarketplaceServicesV1`.
 
