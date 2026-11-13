@@ -47,3 +47,8 @@ The 16 database tables explicitly marked future scope in the database design (su
 
 - `CARTS` and `CART_ITEMS` are adopted as canonical tables 69 and 70 in `../docs/BBG_DATABASE_DESIGN_V2.1_AMENDMENT.md`.
 - `BUSINESS_APPLICATIONS`, `BUSINESS_APPLICATION_DOCUMENTS` and `BUSINESS_APPLICATION_REVIEWS` remain migration-only/dormant. The active BusinessServices/BusinessDao flow continues to use `BUSINESS_PROFILES`; do not wire the three dormant tables into the application until the business application history/document-review workflow is approved.
+
+### `20261113_003_public_product_discovery_support.sql`
+
+Creates `CONTENT_LIKES` and `PRODUCT_MEDIA` when they are not already present. These tables support persisted product popularity (likes) and public catalogue image/variant filtering. The migration is additive and does not alter an existing table. Review the live schema and take a backup before applying it.
+
