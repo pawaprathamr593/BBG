@@ -112,9 +112,13 @@ if (in_array(false, $discoveryContracts, true)) {
 }
 
 $socialAuthService = file_get_contents($root . '/src/Services/Implementations/AuthServices.php');
+$socialAuthController = file_get_contents($root . '/src/Modules/Api/V1/Controllers/AuthController.php');
 $socialAuthContracts = [
     str_contains($routes, "'/api/v1/auth/social/login'") && str_contains($routes, "'/api/v1/auth/social/link'"),
-    str_contains($routes, "'/api/v1/auth/social/config'") && str_contains($routes, "'socialLogin'") && str_contains($routes, "'socialLink'"),
+    str_contains($routes, "'/api/v1/auth/social/config'")
+        && $socialAuthController !== false
+        && str_contains($socialAuthController, "'socialLogin'")
+        && str_contains($socialAuthController, "'socialLink'"),
     $socialAuthService !== false && str_contains($socialAuthService, 'manageSocialLogin'),
     is_file($root . '/src/Utils/SocialProviderTokenVerifier.php'),
 ];
