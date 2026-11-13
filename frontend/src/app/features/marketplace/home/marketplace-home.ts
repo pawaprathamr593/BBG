@@ -411,7 +411,7 @@ export class MarketplaceHome implements OnInit {
     this.searchLoading.set(true);
     this.searchError.set('');
     this.searchActive.set(true);
-    this.marketplaceApi.listBusinesses(query).subscribe({
+    this.marketplaceApi.listBusinesses({ search: query }).subscribe({
       next: (response) => {
         if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
           this.searchError.set(response.msgArr?.join(' ') || 'Unable to search businesses right now.');
