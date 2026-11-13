@@ -437,6 +437,10 @@ final readonly class MarketplaceServices implements IMarketplaceServices
     private function getHomeSummary(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $stats = $this->dao->getHomepageStats($this->db);
+        if ($stats['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($stats, 'MarketplaceServices::getHomeSummary');
+        }
         $categories = $this->getCategories([]);
         if ($categories['status'] !== 'SUCCESS') {
             return $this->propagateFailure($categories, 'MarketplaceServices::getHomeSummary');
@@ -463,6 +467,12 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         }
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = [
+            'stats' => [
+                'businesses_registered' => (int) ($stats['data']['businesses_registered'] ?? 0),
+                'platform_users' => (int) ($stats['data']['platform_users'] ?? 0),
+                'products_listed' => (int) ($stats['data']['products_listed'] ?? 0),
+                'orders_completed' => (int) ($stats['data']['orders_completed'] ?? 0),
+            ],
             'categories' => $categories['data']['items'],
             'businesses' => $businesses['data']['items'],
             'popular_businesses' => $popularBusinesses['data']['items'],
