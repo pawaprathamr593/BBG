@@ -35,7 +35,6 @@ final readonly class EnquiryServices implements IEnquiryServices
         }
         $actionData = $enquiryParam['actionData'];
         $actionData['action'] = (string) $enquiryParam['actionType'];
-        $actionData['action'] = (string) $enquiryParam['actionType'];
         try {
             switch ((string) $enquiryParam['actionType']) {
                 case 'listMyEnquiries':
@@ -75,7 +74,6 @@ final readonly class EnquiryServices implements IEnquiryServices
             return $resArr;
         }
         $actionData = $enquiryParam['actionData'];
-        $actionData['action'] = (string) $enquiryParam['actionType'];
         $actionData['action'] = (string) $enquiryParam['actionType'];
         try {
             switch ((string) $enquiryParam['actionType']) {
