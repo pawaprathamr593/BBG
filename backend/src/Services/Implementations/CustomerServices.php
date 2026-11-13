@@ -228,7 +228,7 @@ final readonly class CustomerServices implements ICustomerServices
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $profile = $this->authServices->getAuth([
-            'actionType' => 'getAuth',
+            'actionType' => 'getProfile',
             'actionData' => ['action' => 'getProfile', '_accessToken' => (string) ($actionData['_accessToken'] ?? '')],
         ]);
         if ($profile['status'] !== 'SUCCESS') {
