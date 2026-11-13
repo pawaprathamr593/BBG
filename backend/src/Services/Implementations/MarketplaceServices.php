@@ -262,6 +262,8 @@ final readonly class MarketplaceServices implements IMarketplaceServices
             'min_price' => $minPrice,
             'max_price' => $maxPrice,
             'online_only' => filter_var($actionData['online_only'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'variants_only' => filter_var($actionData['variants_only'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'with_images' => filter_var($actionData['with_images'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'price_visible_only' => in_array($sort, ['price_low', 'price_high'], true),
             'latitude' => $latitude,
             'longitude' => $longitude,
