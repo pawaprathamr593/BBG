@@ -248,7 +248,7 @@ final readonly class PromotionServices implements IPromotionServices
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $principal = $this->authServices->getAuth([
-            'actionType' => 'getAuth',
+            'actionType' => 'getPrincipal',
             'actionData' => ['action' => 'getPrincipal', '_accessToken' => (string) ($actionData['_accessToken'] ?? '')],
         ]);
         if ($principal['status'] !== 'SUCCESS') {
