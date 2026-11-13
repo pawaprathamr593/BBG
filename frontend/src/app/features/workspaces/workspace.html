@@ -1,0 +1,108 @@
+<div class="workspace-page">
+  <header class="workspace-heading">
+    <div>
+      <p class="eyebrow">{{ config.eyebrow }}</p>
+      <h1>{{ config.title }}</h1>
+      <p class="workspace-intro">{{ config.description }}</p>
+    </div>
+    <div class="account-chip"><span class="account-dot"></span><span>Signed in</span></div>
+  </header>
+
+  <div class="workspace-layout">
+    <aside class="workspace-sidebar" aria-label="Workspace sections">
+      <p class="sidebar-label">WORKSPACE</p>
+      @for (section of config.sections; track section.id) {
+        <button type="button" class="sidebar-link" [class.is-active]="activeSectionId() === section.id"
+          [attr.aria-current]="activeSectionId() === section.id ? 'page' : null"
+          (click)="selectSection(section)">
+          <span class="sidebar-indicator"></span>{{ section.label }}
+        </button>
+      }
+      <div class="sidebar-note">
+        <strong>Secure by design</strong>
+        <span>BBG checks access on the server for every request. Your role is never inferred from this page.</span>
+      </div>
+    </aside>
+
+    <main class="workspace-main">
+      @if (activeSection(); as section) {
+        <div class="section-top">
+          <div>
+            <p class="eyebrow">MANAGE</p>
+            <h2>{{ section.label }}</h2>
+            <p>{{ section.description }}</p>
+          </div>
+          <span class="section-count">{{ section.actions.length }} actions</span>
+        </div>
+
+        <section class="action-panel">
+          <div class="action-list" aria-label="Available actions">
+            @for (action of section.actions; track action.path) {
+              <button type="button" class="action-choice" [class.is-selected]="activeAction()?.path === action.path"
+                (click)="selectAction(action)">
+                <span>{{ action.label }}</span>
+                <span class="choice-arrow" aria-hidden="true">→</span>
+              </button>
+            }
+          </div>
+
+          @if (activeAction(); as action) {
+            <div class="action-workspace">
+              <div class="action-heading">
+                <div>
+                  <span class="method-label">POST</span>
+                  <h3>{{ action.label }}</h3>
+                  <code>{{ action.path }}</code>
+                </div>
+                <button class="button button-primary" type="button" [disabled]="loading()" (click)="run()">
+                  @if (loading()) { Working… } @else { {{ action.requiresPayload ? 'Submit request' : 'Load data' }} }
+                </button>
+              </div>
+
+              @if (action.requiresPayload) {
+                <div class="payload-editor">
+                  <label for="workspace-payload">Request payload (JSON)</label>
+                  <p>The backend route is registered, but its exact input fields are not documented in the frontend contract yet. Enter only fields defined by the backend DTO. No fields are guessed here.</p>
+                  <textarea id="workspace-payload" rows="8" spellcheck="false" [ngModel]="payload()"
+                    (ngModelChange)="payload.set($event)" aria-describedby="payload-help"></textarea>
+                  <small id="payload-help">Use a JSON object. The request will be sent to the registered route using its module envelope.</small>
+                </div>
+              } @else {
+                <p class="request-note">This read action sends an empty actionData object. The backend remains responsible for authorization and data scoping.</p>
+              }
+
+              @if (error()) {
+                <div class="feedback feedback-error" role="alert"><strong>Request not completed</strong><span>{{ error() }}</span></div>
+              }
+              @if (notice()) {
+                <div class="feedback feedback-success" role="status">{{ notice() }}</div>
+              }
+            </div>
+          }
+        </section>
+
+        @if (hasResult()) {
+          <section class="result-panel" aria-live="polite">
+            <div class="result-heading"><div><p class="eyebrow">SERVER RESPONSE</p><h3>Returned data</h3></div><span>Live API response</span></div>
+            @if (isRecord(result())) {
+              <div class="result-grid">
+                @for (entry of resultEntries(result()); track entry[0]) {
+                  <article class="result-card">
+                    <span>{{ entry[0] }}</span>
+                    @if (entry[1] === null || ['string', 'number', 'boolean'].includes(typeof entry[1])) {
+                      <strong>{{ entry[1] ?? '—' }}</strong>
+                    } @else {
+                      <pre>{{ entry[1] | json }}</pre>
+                    }
+                  </article>
+                }
+              </div>
+            } @else {
+              <pre class="raw-result">{{ result() | json }}</pre>
+            }
+          </section>
+        }
+      }
+    </main>
+  </div>
+</div>
