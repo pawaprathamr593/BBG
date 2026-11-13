@@ -1,4 +1,4 @@
-# BBG Auth module — initial implementation
+# BBG Auth module — implementation status
 
 ## Implemented scope
 
@@ -9,10 +9,12 @@
 - Secure/HttpOnly refresh cookie support, configurable for local HTTP and production HTTPS.
 - Refresh-token rotation, old-token replacement tracking and token-family revocation on replay.
 - Current-session logout and all-session logout.
-- Authenticated profile read.
+- Authenticated profile read and update.
+- Google, Facebook, Apple and Instagram professional-account sign-in / registration with server-side provider verification.
+- Explicit authenticated provider-identity linking through `USER_IDENTITIES`.
 - The seven-layer BBG architecture and internal `$resArr` contract.
 
-No business-application, tenant-selection, role-assignment or social-provider endpoints are implemented in this increment.
+No business-application, tenant-selection or role-assignment endpoints are added by this authentication increment. Provider applications and credentials still require external setup.
 
 ## Routes
 
@@ -25,7 +27,7 @@ All routes are POST and require the `authParam` module envelope.
 | `/api/v1/auth/refresh` | `manageAuth` | `refresh` |
 | `/api/v1/auth/logout` | `manageAuth` | `logout` |
 | `/api/v1/auth/logout-all` | `manageAuth` | `logoutAll` |
-| `/api/v1/auth/profile` | `getAuth` | `getProfile` |
+| `/api/v1/auth/profile` | `getAuth` | `getProfile` |\n| `/api/v1/auth/social/login` | `manageAuth` | `socialLogin` |\n| `/api/v1/auth/social/link` | `manageAuth` | `socialLink` |\n| `/api/v1/auth/social/config` | GET | public provider configuration |
 
 Example registration body:
 
@@ -79,7 +81,7 @@ TTL and cookie defaults are implementation defaults pending final security revie
 
 ## Database behaviour
 
-This implementation uses only the existing `USERS` and `USER_SESSIONS` tables and documented columns. It does not create or alter tables and does not run migrations. User rows are created with `status='A'` and `account_status='ACTIVE'`; `email_verified_on` and `mobile_verified_on` remain NULL. Account verification has not yet been implemented or decided. The initial registration validator enforces an 8-character minimum password pending a formal password policy.
+Password authentication uses `USERS` and `USER_SESSIONS`. Social authentication also uses `USER_IDENTITIES`, created by the additive migration `20261113_002_social_identity_mapping.sql`. The migration is not executed automatically. No existing table is altered. User rows are created with `status='A'` and `account_status='ACTIVE'`; `email_verified_on` and `mobile_verified_on` remain NULL. Account verification has not yet been implemented or decided. The initial registration validator enforces an 8-character minimum password pending a formal password policy.
 
 Refresh rotation inserts a replacement session and marks the old session revoked with `replaced_by_session_id` in one Core Services transaction. Reuse of a rotated token revokes the token family. DAO operations use parameterized commands and standard user reads filter `status='A'`.
 
@@ -87,10 +89,11 @@ Registration checks duplicate email/mobile values across active and soft-deleted
 
 ## Explicit limitations / follow-up
 
-- Google and Facebook sign-in are not enabled. Provider SDK selection, app credentials, callback configuration and server-side provider verification must be completed before enabling them.
-- Instagram sign-in remains unimplemented pending verification of a supported identity product for the intended account type.
+- Google, Facebook, Apple and Instagram sign-in code is implemented, but each provider remains disabled until its developer application credentials and redirect/origin configuration are supplied. Apple requires a Services ID, Team ID, Key ID and private key. Instagram uses the Instagram Login product's own client ID and secret.
+- Instagram Login supports professional Business/Creator accounts only; consumer/personal accounts are not supported by the official Instagram Login API.
+- The authenticated provider-link API is implemented; a provider-management settings screen is not included in this increment.
 - Registration currently permits an account with an email or mobile and does not enforce verification. Confirm the verification workflow before production.
-- Rate limiting, password reset/recovery, email/SMS verification, account linking, session-management UI and provider login remain follow-up work.
+- Rate limiting, password reset/recovery, email/SMS verification, session-management UI and provider app review remain follow-up work.
 - The `X-BBG-CSRF: 1` custom-header check assumes same-origin use or a restrictive CORS policy. A formal CSRF/origin allowlist policy is still required before production.
 - Profile read is implemented; profile update and password change are not part of this first increment.
 
