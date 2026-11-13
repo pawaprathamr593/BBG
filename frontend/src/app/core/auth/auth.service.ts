@@ -32,7 +32,7 @@ interface FacebookSdk {
 }
 
 interface AppleAuthResponse {
-  authorization?: { id_token?: string; state?: string };
+  authorization?: { id_token?: string; code?: string; state?: string };
   user?: { name?: { firstName?: string; lastName?: string } };
 }
 
@@ -274,10 +274,11 @@ export class AuthService {
       usePopup: true,
     });
     const result = await apple.auth.signIn();
-    const idToken = result.authorization?.id_token;
-    if (!idToken || result.authorization?.state !== state) throw new Error('Apple sign-in could not be verified. Please try again.');
+    const authorizationCode = result.authorization?.code;
+    if (!authorizationCode || result.authorization?.state !== state) throw new Error('Apple sign-in could not be verified. Please try again.');
     const fullName = [result.user?.name?.firstName, result.user?.name?.lastName].filter(Boolean).join(' ');
-    return this.completeSocialCredential('APPLE', idToken, intent, { nonce, full_name: fullName, ...contact });
+    const redirectUri = `${window.location.origin}/auth/social/callback`;
+    return this.completeSocialCredential('APPLE', authorizationCode, intent, { nonce, full_name: fullName, redirect_uri: redirectUri, ...contact });
   }
 
   private startInstagramLogin(appId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string }): void {
