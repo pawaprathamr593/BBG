@@ -50,12 +50,15 @@ final class SocialProviderTokenVerifier
             throw new RuntimeException('Google did not return a stable account identifier.');
         }
         $email = strtolower(trim((string) ($claims->email ?? '')));
-        $emailVerified = ($claims->email_verified ?? false) === true || ($claims->email_verified ?? '') === 'true';
+        $emailIsValid = filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+        $providerVerified = ($claims->email_verified ?? false) === true || ($claims->email_verified ?? '') === 'true';
+        $googleIsAuthoritative = str_ends_with($email, '@gmail.com') || trim((string) ($claims->hd ?? '')) !== '';
+        $emailVerified = $providerVerified && $googleIsAuthoritative;
 
         return $this->identity(
             'GOOGLE',
             $subject,
-            $emailVerified && filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null,
+            $emailIsValid ? $email : null,
             $emailVerified,
             (string) ($claims->name ?? ''),
             (string) ($claims->picture ?? ''),
