@@ -1,4 +1,7 @@
 <main class="auth-shell">
+  <button class="auth-theme-toggle" type="button" (click)="theme.toggle()" [attr.aria-label]="'Switch to ' + (theme.resolvedTheme()==='dark'?'light':'dark') + ' theme'">
+    {{ theme.resolvedTheme()==='dark'?'☀ Light':'☾ Dark' }}
+  </button>
   <a class="auth-brand" routerLink="/" aria-label="Return to BBG home">
     <span class="brand-mark" aria-hidden="true">B</span>
     <span><strong>BBG</strong><small>Business, better connected</small></span>
