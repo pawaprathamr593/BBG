@@ -424,7 +424,7 @@ final readonly class MarketplaceDao
                     COALESCE(pv.view_count, 0) AS view_count,
                     COALESCE(pl.like_count, 0) AS like_count,
                     (COALESCE(pv.view_count, 0) + COALESCE(pl.like_count, 0)) AS popularity_count,
-                    " . $distanceSelect . ",
+                    " . $distanceSelect . "
              FROM PRODUCTS p
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
                 AND bp.approval_status = 'APPROVED'
