@@ -23,6 +23,13 @@ INNER JOIN ROLES r
     ON r.role_code = 'CONSUMER'
    AND r.scope_type = 'GLOBAL'
    AND r.status = 'A'
+   AND r.id = (
+       SELECT MIN(active_role.id)
+       FROM ROLES active_role
+       WHERE active_role.role_code = 'CONSUMER'
+         AND active_role.scope_type = 'GLOBAL'
+         AND active_role.status = 'A'
+   )
 WHERE u.account_status = 'ACTIVE'
   AND u.status = 'A'
   AND NOT EXISTS (
