@@ -31,7 +31,7 @@ A passing workflow validates PHP syntax and clean-database migration compatibili
 
 ## Guarded / not implemented
 
-- Binary upload/storage for business verification documents and subscription payment proofs remains unimplemented; product image storage is integrated with AWS S3 through presigned URLs and tenant-scoped metadata verification.
+- Binary upload/storage for business verification documents remains unimplemented. Product image storage is integrated with AWS S3 through presigned URLs and tenant-scoped metadata verification. Subscription proof submission now verifies the referenced S3 object, MIME type, file signature and size before saving metadata; a subscription-proof presigned upload-URL endpoint is still pending approval and implementation, so the proof upload flow is not yet end-to-end.
 - Payment initiation, UPI QR generation, gateway webhooks, reconciliation, payment confirmation automation and refund workflows. The approved schema has no tenant UPI/QR configuration contract; QR display or proof submission must never mark an order paid.
 - Automated invoice generation and invoice numbering/tax policy.
 - Expense and cash-session/movement workflows.
