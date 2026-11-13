@@ -171,6 +171,8 @@ export class MarketplaceApiService {
       min_price?: number;
       max_price?: number;
       online_only?: boolean;
+      variants_only?: boolean;
+      with_images?: boolean;
       sort?: 'newest' | 'popular' | 'nearby' | 'price_low' | 'price_high' | 'name';
       latitude?: number;
       longitude?: number;
