@@ -34,7 +34,7 @@
       </div>
       <nav class="pagination" aria-label="Business directory pages">
         <button type="button" [disabled]="page() <= 1" (click)="changePage(page() - 1)">Previous</button>
-        <span>Page {{ result.pagination.page }} · {{ Math.ceil(result.pagination.total / result.pagination.page_size) || 1 }}</span>
+        <span>Page {{ result.pagination.page }} · {{ totalPages(result.pagination.total, result.pagination.page_size) }}</span>
         <button type="button" [disabled]="result.pagination.page * result.pagination.page_size >= result.pagination.total" (click)="changePage(page() + 1)">Next</button>
       </nav>
     } @else {
