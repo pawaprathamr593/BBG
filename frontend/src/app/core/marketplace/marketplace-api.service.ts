@@ -65,7 +65,6 @@ export interface MarketplaceProduct {
     city?: string | null;
     state?: string | null;
   };
-  primary_image_path?: string | null;
   distance_km?: number;
   popularity?: { views: number; likes: number; engagements: number };
 }
