@@ -520,7 +520,7 @@ final readonly class CatalogueServices implements ICatalogueServices
         $thumbnailPath = $this->optionalText($actionData['thumbnail_path'] ?? null, 500);
         $altText = $this->optionalText($actionData['alt_text'] ?? null, 255);
         $caption = $this->optionalText($actionData['caption'] ?? null, 500);
-        $expectedPrefix = 'tenants/' . $tenantId . '/products/';
+        $expectedPrefix = 'tenants/' . $tenantId . '/products/' . $productId . '/';
         if ($filePath === null || $originalName === null || $fileSize === null || $fileSize < 0
             || $displayOrder === null || $displayOrder < 0 || $isPrimary === null
             || $mediaType !== 'IMAGE' || !in_array($mimeType, ['image/jpeg', 'image/png', 'image/webp'], true)
@@ -541,10 +541,19 @@ final readonly class CatalogueServices implements ICatalogueServices
         $storedObject = $this->s3Storage->headObject($filePath);
         $actualMimeType = strtolower((string) ($storedObject['ContentType'] ?? ''));
         $actualFileSize = (int) ($storedObject['ContentLength'] ?? 0);
+        $signature = $this->s3Storage->getObjectPrefix($filePath);
+        $signatureValid = match ($mimeType) {
+            'image/jpeg' => str_starts_with($signature, "\xFF\xD8\xFF"),
+            'image/png' => str_starts_with($signature, "\x89PNG\r\n\x1A\n"),
+            'image/webp' => str_starts_with($signature, 'RIFF')
+                && substr($signature, 8, 4) === 'WEBP',
+            default => false,
+        };
         if ($actualMimeType !== $mimeType || $actualFileSize !== $fileSize
-            || $actualFileSize < 1 || $actualFileSize > $this->s3Storage->getMaxUploadBytes()) {
+            || $actualFileSize < 1 || $actualFileSize > $this->s3Storage->getMaxUploadBytes()
+            || !$signatureValid) {
             $this->s3Storage->deleteObject($filePath);
-            $resArr['msgArr'][] = 'Uploaded S3 object does not match the declared image MIME type or file size.';
+            $resArr['msgArr'][] = 'Uploaded S3 object failed image type, content signature or file size verification.';
             return $resArr;
         }
         if ($variantId !== null) {
