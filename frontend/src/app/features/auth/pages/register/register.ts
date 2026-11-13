@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth.service';
+import { SocialProvider } from '../../../../core/auth/auth.models';
 
 @Component({
   selector: 'app-register',
@@ -19,10 +20,30 @@ export class Register {
   readonly providerNotice = signal('');
   readonly passwordVisible = signal(false);
 
-  selectProvider(provider: string): void {
-    this.providerNotice.set(
-      `${provider} sign-up is not connected to the BBG backend yet. You can create your account using your email or mobile number and a password.`,
-    );
+  constructor() {
+    void this.auth.loadSocialConfig().catch(() => {
+      this.providerNotice.set('Social sign-in is temporarily unavailable. Use your email or mobile number instead.');
+    });
+  }
+
+  providerEnabled(provider: SocialProvider): boolean {
+    return this.auth.socialConfig()?.providers?.[provider]?.enabled ?? false;
+  }
+
+  async selectProvider(provider: SocialProvider): Promise<void> {
+    if (this.busy()) return;
+    this.busy.set(true);
+    this.error.set('');
+    this.providerNotice.set('');
+
+    try {
+      await this.auth.authenticateSocial(provider, 'register');
+      await this.router.navigateByUrl('/');
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   togglePasswordVisibility(): void {
