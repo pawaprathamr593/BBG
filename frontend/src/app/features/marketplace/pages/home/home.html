@@ -1,0 +1,84 @@
+<div class="home-page">
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow">THE BBG MARKETPLACE</p>
+      <h1>Find the businesses that move you forward.</h1>
+      <p>Discover local businesses, explore what they offer and connect directly with the people behind them.</p>
+      <div class="hero-actions">
+        <a class="button button-light" routerLink="/businesses">Explore businesses <span aria-hidden="true">→</span></a>
+        <a class="hero-secondary" routerLink="/promotions">See what's new</a>
+      </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="art-card art-card-one"><span>Discover</span><strong>Local makers</strong></div>
+      <div class="art-card art-card-two"><span>Connect</span><strong>With businesses</strong></div>
+      <div class="art-orbit"></div>
+      <div class="art-dot"></div>
+    </div>
+  </section>
+
+  @if (loading()) {
+    <section class="content-section" aria-live="polite" aria-busy="true">
+      <div class="section-heading"><div><p class="eyebrow">JUST A MOMENT</p><h2>Preparing your discovery feed</h2></div></div>
+      <div class="skeleton-grid"><div class="skeleton" /><div class="skeleton" /><div class="skeleton" /></div>
+    </section>
+  } @else if (error()) {
+    <section class="feedback-panel" role="alert">
+      <span class="feedback-icon" aria-hidden="true">!</span>
+      <div><h2>We couldn't load the marketplace</h2><p>{{ error() }}</p><button class="button button-primary" type="button" (click)="load()">Try again</button></div>
+    </section>
+  } @else if (summary(); as data) {
+    @if (data.categories.length) {
+      <section class="content-section category-section">
+        <div class="section-heading"><div><p class="eyebrow">BROWSE BY INTEREST</p><h2>Explore categories</h2></div><a class="text-link" routerLink="/businesses">All businesses <span aria-hidden="true">→</span></a></div>
+        <div class="category-list">
+          @for (category of data.categories; track category.id) {
+            <a class="category-chip" [routerLink]="['/businesses']" [queryParams]="{ category_id: category.id }">
+              <span class="category-mark" aria-hidden="true">{{ category.category_name.slice(0, 1) }}</span>
+              <span>{{ category.category_name }}</span><span class="chip-arrow" aria-hidden="true">↗</span>
+            </a>
+          }
+        </div>
+      </section>
+    }
+
+    @if (data.businesses.length) {
+      <section class="content-section">
+        <div class="section-heading"><div><p class="eyebrow">MEET THE COMMUNITY</p><h2>Businesses to discover</h2><p class="section-description">A selection of published businesses from across the BBG marketplace.</p></div><a class="text-link" routerLink="/businesses">Browse directory <span aria-hidden="true">→</span></a></div>
+        <div class="business-grid">
+          @for (business of data.businesses; track business.id) {
+            <a class="business-card" [routerLink]="['/businesses', business.business_slug]">
+              <div class="business-card-top"><span class="business-avatar">{{ business.business_name.slice(0, 1) }}</span><span class="card-arrow" aria-hidden="true">↗</span></div>
+              <div class="business-card-body">
+                @if (business.category_name) { <span class="category-label">{{ business.category_name }}</span> }
+                <h3>{{ business.business_name }}</h3>
+                <p>{{ business.business_description || 'Discover this business and explore its storefront.' }}</p>
+                @if (business.city || business.state) { <span class="location-label"><span aria-hidden="true">⌖</span> {{ business.city }}{{ business.city && business.state ? ', ' : '' }}{{ business.state }}</span> }
+              </div>
+            </a>
+          }
+        </div>
+      </section>
+    }
+
+    @if (data.promotions.length) {
+      <section class="content-section promotion-section">
+        <div class="section-heading"><div><p class="eyebrow">FROM THE COMMUNITY</p><h2>Latest promotions</h2><p class="section-description">Updates shared by published businesses.</p></div><a class="text-link" routerLink="/promotions">View all promotions <span aria-hidden="true">→</span></a></div>
+        <div class="promotion-grid">
+          @for (promotion of data.promotions; track promotion.id) {
+            <article class="promotion-card">
+              <div class="promotion-meta"><span>{{ promotion.business_name }}</span><time>{{ promotion.published_on | date:'mediumDate' }}</time></div>
+              <h3>{{ promotion.post_title }}</h3>
+              <p>{{ promotion.post_content }}</p>
+              @if (promotion.valid_until) { <span class="validity">Valid until {{ promotion.valid_until | date:'mediumDate' }}</span> }
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    @if (!data.categories.length && !data.businesses.length && !data.promotions.length) {
+      <section class="empty-state"><span aria-hidden="true">✦</span><h2>Your marketplace is getting ready</h2><p>There are no published businesses or promotions to show just yet. Please check back soon.</p></section>
+    }
+  }
+</div>
