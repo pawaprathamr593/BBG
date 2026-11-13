@@ -26,7 +26,7 @@ final readonly class PromotionServices implements IPromotionServices
     public function getPromotion(array $promotionParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($promotionParam['actionType']) || $promotionParam['actionType'] !== 'getPromotion') {
+        if (!isset($promotionParam['actionType']) || !is_string($promotionParam['actionType']) || $promotionParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Invalid actionType for getPromotion.';
             return $resArr;
         }
@@ -35,8 +35,9 @@ final readonly class PromotionServices implements IPromotionServices
             return $resArr;
         }
         $actionData = $promotionParam['actionData'];
+        $actionData['action'] = (string) $promotionParam['actionType'];
         try {
-            switch ((string) promotionParam['actionType']) {
+            switch ((string) $promotionParam['actionType']) {
                 case 'listMyPromotions':
                     $resArr = $this->getMyPromotions($actionData);
                     break;
@@ -62,7 +63,7 @@ final readonly class PromotionServices implements IPromotionServices
     public function managePromotion(array $promotionParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($promotionParam['actionType']) || $promotionParam['actionType'] !== 'managePromotion') {
+        if (!isset($promotionParam['actionType']) || !is_string($promotionParam['actionType']) || $promotionParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Invalid actionType for managePromotion.';
             return $resArr;
         }
@@ -71,8 +72,9 @@ final readonly class PromotionServices implements IPromotionServices
             return $resArr;
         }
         $actionData = $promotionParam['actionData'];
+        $actionData['action'] = (string) $promotionParam['actionType'];
         try {
-            switch ((string) promotionParam['actionType']) {
+            switch ((string) $promotionParam['actionType']) {
                 case 'createPromotion':
                     $resArr = $this->manageMyPromotion($actionData, 'create');
                     break;
