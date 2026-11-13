@@ -12,6 +12,48 @@ final readonly class MarketplaceDao
 {
     public function __construct(private LoggerInterface $logger) {}
 
+    /**
+     * Live public marketplace counters for the homepage hero.
+     * Only active accounts, approved/published storefronts and published products
+     * are included. Completed orders are counted from delivered fulfilments.
+     */
+    public function getHomepageStats(ConnectionInterface $db): array
+    {
+        return $this->one(
+            $db,
+            "SELECT
+                (SELECT COUNT(DISTINCT bp.id)
+                 FROM BUSINESS_PROFILES bp
+                 INNER JOIN TENANTS t ON t.id = bp.tenant_id
+                    AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+                 INNER JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = bp.tenant_id
+                    AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
+                 WHERE bp.approval_status = 'APPROVED'
+                    AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A') AS businesses_registered,
+                (SELECT COUNT(*) FROM USERS u
+                 WHERE u.account_status = 'ACTIVE' AND u.status = 'A') AS platform_users,
+                (SELECT COUNT(DISTINCT p.id)
+                 FROM PRODUCTS p
+                 INNER JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
+                    AND bp.approval_status = 'APPROVED'
+                    AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
+                 INNER JOIN TENANTS t ON t.id = p.tenant_id
+                    AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+                 INNER JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = p.tenant_id
+                    AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
+                 WHERE p.product_status = 'ACTIVE'
+                    AND p.publication_status = 'PUBLISHED' AND p.status = 'A') AS products_listed,
+                (SELECT COUNT(DISTINCT o.id)
+                 FROM ORDERS o
+                 INNER JOIN ORDER_FULFILMENTS f ON f.tenant_id = o.tenant_id
+                    AND f.order_id = o.id AND f.status = 'A'
+                    AND f.delivered_on IS NOT NULL
+                 WHERE o.status = 'A') AS orders_completed",
+            [],
+            'getHomepageStats',
+        );
+    }
+
     public function getBusinesses(
         ConnectionInterface $db,
         string $search = '',
