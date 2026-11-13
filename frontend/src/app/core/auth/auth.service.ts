@@ -99,7 +99,7 @@ export class AuthService {
   async authenticateSocial(
     provider: SocialProvider,
     intent: SocialAuthIntent,
-    contact: { email?: string; mobile?: string } = {},
+    contact: { email?: string; mobile?: string; full_name?: string } = {},
   ): Promise<AuthUser> {
     const config = this.socialConfigState() ?? await this.loadSocialConfig();
     const providerConfig = config.providers?.[provider];
@@ -122,17 +122,19 @@ export class AuthService {
   async completeInstagramLogin(code: string, returnedState: string): Promise<AuthUser> {
     const expectedState = sessionStorage.getItem('bbg_instagram_state') ?? '';
     const intent = (sessionStorage.getItem('bbg_instagram_intent') ?? 'login') as SocialAuthIntent;
+    const fullName = sessionStorage.getItem('bbg_instagram_full_name') ?? '';
     const email = sessionStorage.getItem('bbg_instagram_email') ?? '';
     const mobile = sessionStorage.getItem('bbg_instagram_mobile') ?? '';
     sessionStorage.removeItem('bbg_instagram_state');
     sessionStorage.removeItem('bbg_instagram_intent');
+    sessionStorage.removeItem('bbg_instagram_full_name');
     sessionStorage.removeItem('bbg_instagram_email');
     sessionStorage.removeItem('bbg_instagram_mobile');
     if (!expectedState || !returnedState || expectedState !== returnedState) {
       throw new Error('Instagram sign-in could not be verified. Please start again.');
     }
     const redirectUri = `${window.location.origin}/auth/social/callback`;
-    return this.completeSocialCredential('INSTAGRAM', code, intent, { redirect_uri: redirectUri, email, mobile });
+    return this.completeSocialCredential('INSTAGRAM', code, intent, { redirect_uri: redirectUri, full_name: fullName, email, mobile });
   }
 
   async linkSocialProvider(
@@ -204,7 +206,7 @@ export class AuthService {
     }
   }
 
-  private async authenticateGoogle(clientId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string }): Promise<AuthUser> {
+  private async authenticateGoogle(clientId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string; full_name?: string }): Promise<AuthUser> {
     await this.loadScript('https://accounts.google.com/gsi/client');
     const google = window.google?.accounts?.id;
     if (!google) throw new Error('Google sign-in could not be initialized. Please try again.');
@@ -213,7 +215,10 @@ export class AuthService {
     return new Promise<AuthUser>((resolve, reject) => {
       let completed = false;
       const timeout = window.setTimeout(() => {
-        if (!completed) reject(new Error('Google sign-in timed out. Please try again.'));
+        if (!completed) {
+          completed = true;
+          reject(new Error('Google sign-in timed out. Please try again.'));
+        }
       }, 60000);
       google.initialize({
         client_id: clientId,
@@ -230,6 +235,7 @@ export class AuthService {
       });
       google.prompt((notification) => {
         if (!completed && (notification.isNotDisplayed?.() || notification.isSkippedMoment?.())) {
+          completed = true;
           window.clearTimeout(timeout);
           reject(new Error('Google sign-in was not completed. Please try again.'));
         }
@@ -278,7 +284,7 @@ export class AuthService {
     if (!authorizationCode || result.authorization?.state !== state) throw new Error('Apple sign-in could not be verified. Please try again.');
     const fullName = [result.user?.name?.firstName, result.user?.name?.lastName].filter(Boolean).join(' ');
     const redirectUri = `${window.location.origin}/auth/social/callback`;
-    return this.completeSocialCredential('APPLE', authorizationCode, intent, { nonce, full_name: fullName, redirect_uri: redirectUri, ...contact });
+    return this.completeSocialCredential('APPLE', authorizationCode, intent, { nonce, full_name: fullName || contact.full_name || '', redirect_uri: redirectUri, ...contact });
   }
 
   private startInstagramLogin(appId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string }): void {
@@ -286,6 +292,7 @@ export class AuthService {
     const redirectUri = `${window.location.origin}/auth/social/callback`;
     sessionStorage.setItem('bbg_instagram_state', state);
     sessionStorage.setItem('bbg_instagram_intent', intent);
+    sessionStorage.setItem('bbg_instagram_full_name', contact.full_name?.trim() ?? '');
     sessionStorage.setItem('bbg_instagram_email', contact.email?.trim() ?? '');
     sessionStorage.setItem('bbg_instagram_mobile', contact.mobile?.trim() ?? '');
     const url = new URL('https://www.instagram.com/oauth/authorize');
