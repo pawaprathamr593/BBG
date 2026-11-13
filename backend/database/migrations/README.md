@@ -8,6 +8,7 @@ The additive table scripts are:
 
 1. `20261112_001_business_application_and_cart.sql`
 2. `20261112_002_marketplace_baseline.sql`
+3. `20261113_001_public_marketplace_engagement.sql` — creates `CONTENT_VIEWS` and `CUSTOMER_ENQUIRIES` when absent for public business-view tracking and enquiry-based discovery ranking.
 
 They use `CREATE TABLE IF NOT EXISTS`; they do not reconcile an already-existing table definition. Review the live schema first. No destructive migration is authorized.
 
