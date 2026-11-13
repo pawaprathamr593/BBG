@@ -69,6 +69,8 @@ type ProductSort = 'newest' | 'popular' | 'nearby' | 'price_low' | 'price_high' 
             <input id="product-max-price" name="maxPrice" type="number" min="0" step="0.01" [(ngModel)]="maxPrice" placeholder="No maximum" />
           </div>
           <label class="check-field"><input type="checkbox" name="onlineOnly" [(ngModel)]="onlineOnly" /><span>Businesses accepting online orders only</span></label>
+          <label class="check-field"><input type="checkbox" name="variantsOnly" [(ngModel)]="variantsOnly" /><span>Variant products only</span></label>
+          <label class="check-field"><input type="checkbox" name="withImages" [(ngModel)]="withImages" /><span>Products with images</span></label>
           <div class="filter-actions">
             <button class="apply-filters" type="submit">Apply filters</button>
             <button class="clear-filters" type="button" (click)="clearFilters()">Clear all</button>
@@ -162,6 +164,8 @@ export class ProductDirectory implements OnInit {
   protected minPrice: number | null = null;
   protected maxPrice: number | null = null;
   protected onlineOnly = false;
+  protected variantsOnly = false;
+  protected withImages = false;
   protected sort: ProductSort = 'newest';
   protected readonly categories = signal<MarketplaceCategory[]>([]);
   protected readonly products = signal<MarketplaceProduct[]>([]);
@@ -220,6 +224,8 @@ export class ProductDirectory implements OnInit {
     this.minPrice = null;
     this.maxPrice = null;
     this.onlineOnly = false;
+    this.variantsOnly = false;
+    this.withImages = false;
     this.sort = 'newest';
     this.latitude = undefined;
     this.longitude = undefined;
@@ -245,6 +251,8 @@ export class ProductDirectory implements OnInit {
       ...(this.minPrice !== null && this.minPrice !== undefined ? { min_price: this.minPrice } : {}),
       ...(this.maxPrice !== null && this.maxPrice !== undefined ? { max_price: this.maxPrice } : {}),
       online_only: this.onlineOnly,
+      variants_only: this.variantsOnly,
+      with_images: this.withImages,
       sort: this.sort,
       ...(this.sort === 'nearby' && this.latitude !== undefined && this.longitude !== undefined
         ? { latitude: this.latitude, longitude: this.longitude }
