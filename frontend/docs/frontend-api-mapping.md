@@ -12,7 +12,7 @@
 - Therefore, exact paths and methods below are taken from the checked-in `backend/config/common/routes.php` on `feature/frontend-development`, and controller dispatch mappings are taken from the corresponding controller source.
 - All listed routes are registered as **POST** routes. Registration does not, by itself, prove that every underlying service action is complete or operational.
 - The backend's internal/public response currently uses `{ status, msgArr, data }` with `SUCCESS | FAILED | EXCEPTION`; exact per-endpoint data DTOs are not yet defined consistently.
-- The frontend now includes a shared API client, auth/session infrastructure, scoped permission bootstrap and a public marketplace API adapter. Consumer, Entrepreneur and Platform Administrator feature services and screens are still pending.
+- The frontend now includes a shared API client, auth/session infrastructure, scoped permission bootstrap, public marketplace API adapter and authenticated Consumer, Entrepreneur and Platform Administrator workspace shells. Workspace actions use the module envelope verified in each controller. Exact per-action DTO fields remain unconfirmed for several modules; the UI therefore accepts caller-supplied JSON for writes and does not invent field names.
 
 ## 2. Frontend-to-backend mapping
 
@@ -444,3 +444,18 @@ The public marketplace slice is now implemented on feature/frontend-development:
 - Tests have been added for marketplace request envelopes/filter fields and permission scope isolation. They have not yet been executed.
 
 The full Angular build, test suite, browser checks and local API integration remain pending; this update is implementation evidence, not a production-readiness claim.
+
+
+## 10. Workspace frontend integration
+
+The frontend workspace configuration is in `frontend/src/app/features/workspaces/workspace.config.ts`; the shared page and API adapter are `workspace.ts` and `workspace-api.service.ts`. The route shells are `/consumer`, `/entrepreneur` and `/admin`, and require an authenticated session.
+
+| Workspace | Registered route families exposed in the UI |
+|---|---|
+| Consumer | Dashboard summary, customer profile and addresses, cart, orders, enquiries, engagement and payments |
+| Entrepreneur | Dashboard summary, tenant list/detail/members, business application/profile/verification/storefront, catalogue/categories/units/product media, incoming orders, enquiries, promotions, subscriptions and payments |
+| Platform Administrator | Users, business review, subscriptions, categories, analytics, moderation and safe health summary |
+
+The shared API adapter posts the configured module envelope (for example `dashboardParam`, `customerParam`, `cartParam`, `businessParam`, `catalogueParam` and `adminParam`) to the exact registered POST route. Read actions send an empty `actionData` unless the route requires lookup input. Write/detail actions with unknown DTO fields require a non-empty JSON object entered by the operator. This is a contract-safe bridge, not a substitute for field-specific forms, client validation or backend integration tests.
+
+**Still not mapped to an implemented route:** inventory, purchasing/procurement, notifications, direct messaging and conditional tenant ERP modules. Tenant selection/activation semantics and the approved permission-code catalogue also remain open. No tenant ID or role is inferred from a URL.
