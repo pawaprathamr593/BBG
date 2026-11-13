@@ -23,6 +23,9 @@ final class MarketplaceController
         $path = $request->getUri()->getPath();
         $action = match ($path) {
             '/api/v1/marketplace/businesses/list' => 'listBusinesses',
+            '/api/v1/marketplace/businesses/popular' => 'listPopularBusinesses',
+            '/api/v1/marketplace/businesses/recent' => 'listRecentBusinesses',
+            '/api/v1/marketplace/products/recent' => 'listRecentProducts',
             '/api/v1/marketplace/businesses/detail' => 'getBusiness',
             '/api/v1/marketplace/products/list' => 'listProducts',
             '/api/v1/marketplace/products/detail' => 'getProduct',
