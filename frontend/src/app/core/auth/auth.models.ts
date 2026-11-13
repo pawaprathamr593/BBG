@@ -30,3 +30,16 @@ export interface RegisterRequest {
   mobile?: string;
   password: string;
 }
+
+export type SocialProvider = 'GOOGLE' | 'FACEBOOK' | 'INSTAGRAM' | 'APPLE';
+export type SocialAuthIntent = 'login' | 'register';
+
+export interface SocialProviderConfig {
+  enabled: boolean;
+  client_id?: string;
+  app_id?: string;
+}
+
+export interface SocialAuthConfig {
+  providers: Record<SocialProvider, SocialProviderConfig>;
+}
