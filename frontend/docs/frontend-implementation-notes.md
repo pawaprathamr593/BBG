@@ -44,6 +44,10 @@ The service worker caches only the static application shell, approved /assets/ a
 
 ## Verification
 
-GitHub Actions is configured to run npm ci, the Angular production build and unit tests on frontend changes. The latest passing run will be linked in the implementation handoff.
+GitHub Actions run 43394678683 completed successfully on 13 November 2026:
+- npm ci: passed
+- Sitemap generator syntax check: passed
+- Angular production build: passed
+- Unit tests: passed, 6 test files and 15 tests
 
-Automated tests cover existing marketplace/workspace requests plus the new cart, checkout, enquiry and permission-context contracts. Browser accessibility review, Lighthouse/SEO audit, end-to-end user journeys, real-device PWA install/offline testing and production URL verification remain outstanding. No merge or deployment was performed.
+The build has non-blocking component stylesheet budget warnings, including the storefront cart and existing business directory/home styles. Browser accessibility review, Lighthouse/SEO audit, end-to-end user journeys, real-device PWA install/offline testing and production URL verification remain outstanding. No merge or deployment was performed.
