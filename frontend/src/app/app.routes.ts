@@ -28,5 +28,6 @@ export const routes: Routes = [
   },
   { path: 'login', loadComponent: () => import('./features/auth/pages/login/login').then((m) => m.Login), title: 'Sign in | BBG' },
   { path: 'register', loadComponent: () => import('./features/auth/pages/register/register').then((m) => m.Register), title: 'Create account | BBG' },
+  { path: 'auth/social/callback', loadComponent: () => import('./features/auth/pages/social-callback/social-callback').then((m) => m.SocialAuthCallback), title: 'Complete sign-in | BBG' },
   { path: '**', redirectTo: '' },
 ];
