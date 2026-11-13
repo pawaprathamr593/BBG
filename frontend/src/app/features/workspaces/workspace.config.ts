@@ -5,6 +5,7 @@ export interface WorkspaceAction {
   actionType: string;
   /** Request fields are intentionally user-supplied until the backend DTO is finalized. */
   requiresPayload?: boolean;
+  tenantScoped?: boolean;
 }
 
 export interface WorkspaceSection {
@@ -21,8 +22,11 @@ export interface WorkspaceConfig {
   sections: WorkspaceSection[];
 }
 
+const isTenantScopedPath = (path: string): boolean =>
+  /^\\/api\\/v1\\/(?:dashboard\\/entrepreneur|tenants\\/(?:mine\\/detail|members)|business\\/(?:profile|verification|storefront)|catalogue\\/|orders\\/tenant\\/|enquiries\\/tenant\\/|promotions\\/|subscriptions\\/(?:mine|request|renewal|proofs)|payments\\/tenant\\/)/.test(path);
+
 const action = (label: string, path: string, envelope: string, actionType: string, requiresPayload = false): WorkspaceAction => ({
-  label, path, envelope, actionType, requiresPayload,
+  label, path, envelope, actionType, requiresPayload, tenantScoped: isTenantScopedPath(path),
 });
 
 export const consumerWorkspace: WorkspaceConfig = {
@@ -46,7 +50,7 @@ export const entrepreneurWorkspace: WorkspaceConfig = {
   title: 'Build and manage your business.',
   description: 'Manage your business presence, catalogue, customer activity and subscriptions from one workspace.',
   sections: [
-    { id: 'overview', label: 'Overview', description: 'A snapshot of your business activity.', actions: [action('Load overview', '/api/v1/dashboard/entrepreneur/summary', 'dashboardParam', 'getEntrepreneurDashboard', true)] },
+    { id: 'overview', label: 'Overview', description: 'A snapshot of your business activity.', actions: [action('Load overview', '/api/v1/dashboard/entrepreneur/summary', 'dashboardParam', 'getEntrepreneurDashboard')] },
     { id: 'tenant', label: 'Business access', description: 'View business spaces and membership information available to your account.', actions: [action('List my businesses', '/api/v1/tenants/mine/list', 'tenantParam', 'listMyTenants'), action('View business context', '/api/v1/tenants/mine/detail', 'tenantParam', 'getMyTenant', true), action('View members', '/api/v1/tenants/members/list', 'tenantParam', 'listTenantMembers', true)] },
     { id: 'business', label: 'Business profile', description: 'Manage your application, business profile, verification and storefront.', actions: [action('View application', '/api/v1/business/application/get', 'businessParam', 'getMyBusinessApplication'), action('View profile', '/api/v1/business/profile/get', 'businessParam', 'getMyBusinessProfile'), action('Verification status', '/api/v1/business/verification/get', 'businessParam', 'getBusinessVerification'), action('View storefront', '/api/v1/business/storefront/get', 'businessParam', 'getMyStorefront', true), action('Submit application', '/api/v1/business/application/submit', 'businessParam', 'submitBusinessApplication', true), action('Update application', '/api/v1/business/application/update', 'businessParam', 'updateBusinessApplication', true), action('Resubmit application', '/api/v1/business/application/resubmit', 'businessParam', 'resubmitBusinessApplication', true), action('Update profile', '/api/v1/business/profile/update', 'businessParam', 'updateMyBusinessProfile', true), action('Update storefront', '/api/v1/business/storefront/update', 'businessParam', 'updateMyStorefront', true), action('Publish storefront', '/api/v1/business/storefront/publish', 'businessParam', 'publishMyStorefront', true), action('Unpublish storefront', '/api/v1/business/storefront/unpublish', 'businessParam', 'unpublishMyStorefront', true)] },
     { id: 'catalogue', label: 'Catalogue', description: 'Manage product and category records. Media upload requires a backend-issued upload URL.', actions: [action('List products', '/api/v1/catalogue/products/list', 'catalogueParam', 'listTenantProducts', true), action('View product', '/api/v1/catalogue/products/detail', 'catalogueParam', 'getTenantProduct', true), action('Create product', '/api/v1/catalogue/products/create', 'catalogueParam', 'createTenantProduct', true), action('Update product', '/api/v1/catalogue/products/update', 'catalogueParam', 'updateTenantProduct', true), action('Delete product', '/api/v1/catalogue/products/delete', 'catalogueParam', 'deleteTenantProduct', true), action('List categories', '/api/v1/catalogue/categories/list', 'catalogueParam', 'listTenantProductCategories', true), action('Create category', '/api/v1/catalogue/categories/create', 'catalogueParam', 'createTenantProductCategory', true), action('Update category', '/api/v1/catalogue/categories/update', 'catalogueParam', 'updateTenantProductCategory', true), action('Delete category', '/api/v1/catalogue/categories/delete', 'catalogueParam', 'deleteTenantProductCategory', true), action('List units', '/api/v1/catalogue/units/list', 'catalogueParam', 'listUnitsOfMeasure', true), action('List product media', '/api/v1/catalogue/products/media/list', 'catalogueParam', 'listProductMedia', true), action('Request media upload URL', '/api/v1/catalogue/products/media/upload-url', 'catalogueParam', 'generateProductMediaUploadUrl', true), action('Link uploaded media', '/api/v1/catalogue/products/media/link', 'catalogueParam', 'linkProductMedia', true), action('Delete product media', '/api/v1/catalogue/products/media/delete', 'catalogueParam', 'deleteProductMedia', true)] },
