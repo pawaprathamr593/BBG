@@ -228,6 +228,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             || !str_starts_with($proofPath, $expectedPrefix)
             || str_starts_with($proofPath, '/') || str_contains($proofPath, '..')
             || preg_match('/^[a-z]+:\/\//i', $proofPath)
+            || preg_match('/^tenants\/' . $tenantId . '\/subscription-proofs\/[a-f0-9]{32}\.(jpg|png|webp|pdf)$/D', $proofPath) !== 1
         ) {
             $resArr['msgArr'][] = 'subscription_id and a tenant-scoped server-issued relative proof_file_path are required.';
             return $resArr;
@@ -244,7 +245,15 @@ final readonly class SubscriptionServices implements ISubscriptionServices
                 'application/pdf' => str_starts_with($signature, '%PDF-'),
                 default => false,
             };
-            if (!$signatureValid || $actualFileSize < 1 || $actualFileSize > $this->s3Storage->getMaxUploadBytes()) {
+            $expectedExtensions = [
+                'image/jpeg' => 'jpg',
+                'image/png' => 'png',
+                'image/webp' => 'webp',
+                'application/pdf' => 'pdf',
+            ];
+            $extensionMatches = ($expectedExtensions[$actualMimeType] ?? '') === strtolower(pathinfo($proofPath, PATHINFO_EXTENSION));
+            if (!$signatureValid || !$extensionMatches || $actualFileSize < 1
+                || $actualFileSize > $this->s3Storage->getMaxUploadBytes()) {
                 $resArr['msgArr'][] = 'Uploaded subscription proof failed file type, content signature or file size verification.';
                 return $resArr;
             }
