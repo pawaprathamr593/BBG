@@ -98,6 +98,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
               <article class="business-card">
                 <div class="business-card-top">
                   <span class="business-avatar" aria-hidden="true">{{ business.business_name.slice(0, 1).toUpperCase() }}</span>
+                  @if (!searchActive() && business.rank) { <span class="business-rank">#{{ business.rank }}</span> }
                   @if (business.category_name) { <span class="business-category">{{ business.category_name }}</span> }
                 </div>
                 <h3>{{ business.business_name }}</h3>
@@ -318,6 +319,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
     .business-card-top { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
     .business-avatar { width:46px; height:46px; border-radius:13px; font-size:1.1rem; }
     .business-category { padding:6px 9px; color:#315d47; background:#eaf2ec; border-radius:999px; font-size:.68rem; font-weight:700; }
+    .business-rank { display:grid; width:28px; height:28px; place-items:center; color:#171d19; background:#f5d928; border-radius:8px; font-size:.72rem; font-weight:850; }
     .business-card h3 { margin:0 0 5px; color:var(--text-primary); font-size:1rem; }
     .business-location { margin:0; color:var(--text-secondary); font-size:.76rem; }
     .business-description { display:-webkit-box; min-height:3.9em; margin:12px 0; overflow:hidden; color:var(--text-secondary); font-size:.8rem; line-height:1.5; -webkit-line-clamp:3; -webkit-box-orient:vertical; }
