@@ -13,6 +13,33 @@
         @if (business()?.storefront?.show_prices && data.product.selling_price !== undefined) { <strong class="price">{{ business()?.storefront?.currency || '' }} {{ data.product.selling_price }}</strong> }
         @else { <span class="price-on-request">Contact the business for pricing</span> }
         <div class="product-meta"><span>Unit: {{ data.product.unit.name }} ({{ data.product.unit.symbol }})</span>@if (data.product.is_variant_product) { <span>Available in variants</span> }</div>
+        @if (business()?.storefront?.accept_online_orders) {
+          <section class="purchase-panel" aria-label="Add product to cart">
+            @if (data.product.is_variant_product) {
+              <label for="product-variant">Choose a variant
+                <select id="product-variant" (change)="onVariantChange($event)">
+                  <option value="">Select a variant</option>
+                  @for (variant of data.variants; track variant.id) {
+                    <option [value]="variant.id">{{ variant.variant_name }}{{ variant.selling_price !== undefined ? ' · ' + (business()?.storefront?.currency || '') + ' ' + variant.selling_price : '' }}</option>
+                  }
+                </select>
+              </label>
+            }
+            <div class="purchase-actions">
+              <label for="product-quantity">Quantity
+                <input id="product-quantity" type="number" min="0.001" [step]="quantityStep" [value]="quantity()" (input)="onQuantityChange($event)">
+              </label>
+              <button type="button" [disabled]="addingToCart()" (click)="addToCart()">{{ addingToCart() ? 'Adding…' : 'Add to cart' }}</button>
+            </div>
+            @if (cartError()) { <p class="cart-feedback error" role="alert">{{ cartError() }}</p> }
+            @if (cartNotice()) {
+              <p class="cart-feedback success" role="status">{{ cartNotice() }}</p>
+              <a class="view-cart-link" [routerLink]="['/businesses', slug, 'cart']">View business cart →</a>
+            }
+          </section>
+        } @else {
+          <p class="ordering-note">Online checkout is not enabled. Contact the business for ordering options.</p>
+        }
       </div>
     </article>
     @if (data.variants.length) {
