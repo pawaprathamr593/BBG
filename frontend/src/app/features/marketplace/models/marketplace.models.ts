@@ -10,6 +10,7 @@ export interface MarketplaceCategory {
 
 export interface MarketplaceBusiness {
   id: number;
+  tenant_id: number;
   business_name: string;
   business_slug: string;
   business_description: string | null;
