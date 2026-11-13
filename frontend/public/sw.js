@@ -4,11 +4,11 @@ const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/offline.html', '/i
 const STATIC_FILE = /\.(?:css|js|mjs|svg|png|jpg|jpeg|webp|woff2?)$/i;
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)));
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith('bbg-public-shell-') && key !== CACHE_NAME).map((key) => caches.delete(key)))).then(() => self.clients.claim()));
+  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key.startsWith('bbg-public-shell-') && key !== CACHE_NAME).map((key) => caches.delete(key))));
 });
 
 self.addEventListener('fetch', (event) => {
