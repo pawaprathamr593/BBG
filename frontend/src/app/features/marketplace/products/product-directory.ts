@@ -1,7 +1,8 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MarketplaceApiService, MarketplaceCategory, MarketplaceProduct } from '../../../core/marketplace/marketplace-api.service';
+import { FilterDrawer } from '../../../shared/filter-drawer/filter-drawer';
 
 type ProductSort = 'newest' | 'popular' | 'nearby' | 'price_low' | 'price_high' | 'name';
 type ProductFilterValues = {
@@ -19,7 +20,7 @@ type ProductFilterKey = keyof ProductFilterValues;
 
 @Component({
   selector: 'app-product-directory',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, FilterDrawer],
   template: `
     <main class="page">
       <section class="intro">
@@ -35,21 +36,12 @@ type ProductFilterKey = keyof ProductFilterValues;
           <span>{{ total() }} products</span>
         </div>
 
-        <form class="filters" (ngSubmit)="applyFilters()" aria-label="Filter products">
+        <form class="toolbar" (ngSubmit)="applySearch()" aria-label="Search and sort products">
           <div class="filter-field search-field">
             <label for="product-search">Search products</label>
             <input id="product-search" name="search" [(ngModel)]="query" placeholder="Name, code, brand or keyword" />
           </div>
-          <div class="filter-field">
-            <label for="product-category">Category</label>
-            <select id="product-category" name="category" [(ngModel)]="categoryId">
-              <option value="">All product categories</option>
-              @for (category of categories(); track category.id) {
-                <option [value]="category.id">{{ category.category_name }}</option>
-              }
-            </select>
-          </div>
-          <div class="filter-field">
+          <div class="filter-field sort-field">
             <label for="product-sort">Sort by</label>
             <select id="product-sort" name="sort" [(ngModel)]="sort" (ngModelChange)="sortChanged($event)">
               <option value="newest">Newly added</option>
@@ -60,34 +52,62 @@ type ProductFilterKey = keyof ProductFilterValues;
               <option value="name">Name: A to Z</option>
             </select>
           </div>
-          <div class="filter-field">
-            <label for="product-brand">Brand</label>
-            <input id="product-brand" name="brand" [(ngModel)]="brand" placeholder="Any brand" />
-          </div>
-          <div class="filter-field">
-            <label for="product-city">City</label>
-            <input id="product-city" name="city" [(ngModel)]="city" placeholder="Any city" />
-          </div>
-          <div class="filter-field">
-            <label for="product-state">State</label>
-            <input id="product-state" name="state" [(ngModel)]="state" placeholder="Any state" />
-          </div>
-          <div class="filter-field">
-            <label for="product-min-price">Minimum price (₹)</label>
-            <input id="product-min-price" name="minPrice" type="number" min="0" step="0.01" [(ngModel)]="minPrice" placeholder="No minimum" />
-          </div>
-          <div class="filter-field">
-            <label for="product-max-price">Maximum price (₹)</label>
-            <input id="product-max-price" name="maxPrice" type="number" min="0" step="0.01" [(ngModel)]="maxPrice" placeholder="No maximum" />
-          </div>
-          <label class="check-field"><input type="checkbox" name="onlineOnly" [(ngModel)]="onlineOnly" /><span>Businesses accepting online orders only</span></label>
-          <label class="check-field"><input type="checkbox" name="variantsOnly" [(ngModel)]="variantsOnly" /><span>Variant products only</span></label>
-          <label class="check-field"><input type="checkbox" name="withImages" [(ngModel)]="withImages" /><span>Products with images</span></label>
-          <div class="filter-actions">
-            <button class="apply-filters" type="submit">Apply filters</button>
-            <button class="clear-filters" type="button" (click)="clearFilters()">Clear all</button>
-          </div>
+          <button class="search-submit" type="submit">Search</button>
         </form>
+
+        @if (activeFilterChips().length) {
+          <div class="active-filters" aria-label="Applied filters">
+            <span class="active-filter-caption">Active filters</span>
+            @for (chip of activeFilterChips(); track chip.key) {
+              <button class="filter-chip" type="button" (click)="removeFilter(chip.key)">
+                {{ chip.label }} <span aria-hidden="true">×</span>
+              </button>
+            }
+            <button class="clear-active-filters" type="button" (click)="clearFilters()">Clear all</button>
+          </div>
+        }
+
+        <app-filter-drawer
+          [open]="filtersOpen()"
+          [activeCount]="activeFilterCount()"
+          (openChange)="filtersOpen.set($event)"
+          (apply)="applyFilters()"
+          (reset)="resetDraftFilters()">
+          <form class="drawer-filters" aria-label="Advanced product filters">
+            <div class="filter-field">
+              <label for="product-category">Category</label>
+              <select id="product-category" name="category" [(ngModel)]="draftFilters.categoryId">
+                <option value="">All product categories</option>
+                @for (category of categories(); track category.id) {
+                  <option [value]="category.id">{{ category.category_name }}</option>
+                }
+              </select>
+            </div>
+            <div class="filter-field">
+              <label for="product-brand">Brand</label>
+              <input id="product-brand" name="brand" [(ngModel)]="draftFilters.brand" placeholder="Any brand" />
+            </div>
+            <div class="filter-field">
+              <label for="product-city">City</label>
+              <input id="product-city" name="city" [(ngModel)]="draftFilters.city" placeholder="Any city" />
+            </div>
+            <div class="filter-field">
+              <label for="product-state">State</label>
+              <input id="product-state" name="state" [(ngModel)]="draftFilters.state" placeholder="Any state" />
+            </div>
+            <div class="filter-field">
+              <label for="product-min-price">Minimum price (₹)</label>
+              <input id="product-min-price" name="minPrice" type="number" min="0" step="0.01" [(ngModel)]="draftFilters.minPrice" placeholder="No minimum" />
+            </div>
+            <div class="filter-field">
+              <label for="product-max-price">Maximum price (₹)</label>
+              <input id="product-max-price" name="maxPrice" type="number" min="0" step="0.01" [(ngModel)]="draftFilters.maxPrice" placeholder="No maximum" />
+            </div>
+            <label class="check-field"><input type="checkbox" name="onlineOnly" [(ngModel)]="draftFilters.onlineOnly" /><span>Businesses accepting online orders only</span></label>
+            <label class="check-field"><input type="checkbox" name="variantsOnly" [(ngModel)]="draftFilters.variantsOnly" /><span>Variant products only</span></label>
+            <label class="check-field"><input type="checkbox" name="withImages" [(ngModel)]="draftFilters.withImages" /><span>Products with images</span></label>
+          </form>
+        </app-filter-drawer>
 
         @if (filterNotice()) { <p class="notice" role="status">{{ filterNotice() }}</p> }
         @if (loading()) {
@@ -207,7 +227,7 @@ export class ProductDirectory implements OnInit {
 
   ngOnInit(): void {
     const category = this.route.snapshot.queryParamMap.get('category_id');
-    if (category && /^\\d+$/.test(category)) {
+    if (category && /^\d+$/.test(category)) {
       this.appliedFilters.update((filters) => ({ ...filters, categoryId: category }));
       this.draftFilters = { ...this.appliedFilters() };
     }
