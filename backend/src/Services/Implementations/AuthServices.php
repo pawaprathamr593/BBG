@@ -214,6 +214,9 @@ final readonly class AuthServices implements IAuthServices
                 'full_name' => (string) ($actionData['full_name'] ?? ''),
                 'redirect_uri' => (string) ($actionData['redirect_uri'] ?? ''),
             ]);
+            if ($verified['full_name'] === '') {
+                $verified['full_name'] = trim(substr((string) ($actionData['full_name'] ?? ''), 0, 150));
+            }
             $identityResult = $this->authDao->getUserIdentity(
                 $this->connection,
                 $verified['provider'],
