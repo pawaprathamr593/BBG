@@ -31,7 +31,7 @@ final class OrderController
             $resArr['msgArr'][] = 'Unsupported order read route.';
             return $this->respond($resArr, $responses, $streams);
         }
-        $input = $this->requestInput($request, 'getOrders', $action);
+        $input = $this->requestInput($request, $action);
         try {
             $resArr = $services->getOrders($input);
         } catch (Throwable) {
@@ -58,7 +58,7 @@ final class OrderController
             return $this->respond($resArr, $responses, $streams);
         }
         $routeAction = $routeActions[$path];
-        $input = $this->requestInput($request, 'manageOrders', $routeAction['action']);
+        $input = $this->requestInput($request, $routeAction['action']);
         $param = $input['orderParam'];
         if ($routeAction['new_status'] !== null) {
             $param['actionData']['new_status'] = $routeAction['new_status'];
@@ -72,7 +72,7 @@ final class OrderController
         return $this->respond($resArr, $responses, $streams);
     }
 
-    private function requestInput(ServerRequestInterface $request, string $actionType, string $action): array
+    private function requestInput(ServerRequestInterface $request, string $action): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $body = $request->getParsedBody();
