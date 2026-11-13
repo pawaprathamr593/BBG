@@ -33,6 +33,10 @@ export class BusinessDirectory implements OnInit {
     void this.load();
   }
 
+  protected totalPages(total: number, pageSize: number): number {
+    return Math.max(1, Math.ceil(total / pageSize));
+  }
+
   protected async loadCategories(): Promise<void> {
     try {
       this.categories.set(await this.marketplace.listCategories());
@@ -47,7 +51,7 @@ export class BusinessDirectory implements OnInit {
   }
 
   protected async changePage(nextPage: number): Promise<void> {
-    const totalPages = Math.ceil((this.businesses()?.pagination.total ?? 0) / (this.businesses()?.pagination.page_size ?? 20));
+    const totalPages = this.totalPages(this.businesses()?.pagination.total ?? 0, this.businesses()?.pagination.page_size ?? 20);
     if (nextPage < 1 || nextPage > totalPages) return;
     this.page.set(nextPage);
     await this.load();
