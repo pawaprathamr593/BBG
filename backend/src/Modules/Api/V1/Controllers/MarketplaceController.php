@@ -43,7 +43,7 @@ final class MarketplaceController
         $param = is_array($input['marketplaceParam'] ?? null) ? $input['marketplaceParam'] : [];
         $actionData = is_array($param['actionData'] ?? null) ? $param['actionData'] : [];
         $actionData['action'] = $action;
-        $param['actionType'] = 'getMarketplace';
+        $param['actionType'] = $action;
         $param['actionData'] = $actionData;
         $input['marketplaceParam'] = $param;
 
