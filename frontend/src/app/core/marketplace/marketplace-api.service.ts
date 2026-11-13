@@ -44,6 +44,7 @@ export interface MarketplaceProduct {
   product_name: string;
   description: string | null;
   category_id: number | null;
+  global_category_id?: number | null;
   category_name: string | null;
   brand_name: string | null;
   barcode: string | null;
@@ -61,7 +62,12 @@ export interface MarketplaceProduct {
     business_name: string;
     business_slug: string;
     logo_path: string | null;
+    city?: string | null;
+    state?: string | null;
   };
+  primary_image_path?: string | null;
+  distance_km?: number;
+  popularity?: { views: number; likes: number; engagements: number };
 }
 
 export interface MarketplacePromotion {
@@ -112,6 +118,7 @@ export interface MarketplaceBusinessListData {
 
 export interface MarketplaceProductListData {
   items: MarketplaceProduct[];
+  sort?: string;
   sort_basis: string;
   timestamp_note: string;
   pagination: {
@@ -144,6 +151,36 @@ export class MarketplaceApiService {
     return this.http.post<MarketplaceApiResponse<{ items: MarketplaceCategory[] }>>(
       `${this.apiBaseUrl}/api/v1/marketplace/categories/list`,
       { marketplaceParam: { actionData: {} } },
+    );
+  }
+
+  listPublicProductCategories(): Observable<MarketplaceApiResponse<{ items: MarketplaceCategory[] }>> {
+    return this.http.post<MarketplaceApiResponse<{ items: MarketplaceCategory[] }>>(
+      `${this.apiBaseUrl}/api/v1/marketplace/products/categories`,
+      { marketplaceParam: { actionData: {} } },
+    );
+  }
+
+  listProducts(
+    filters: {
+      search?: string;
+      category_id?: number;
+      brand?: string;
+      city?: string;
+      state?: string;
+      min_price?: number;
+      max_price?: number;
+      online_only?: boolean;
+      sort?: 'newest' | 'popular' | 'nearby' | 'price_low' | 'price_high' | 'name';
+      latitude?: number;
+      longitude?: number;
+    },
+    page = 1,
+    pageSize = 20,
+  ): Observable<MarketplaceApiResponse<MarketplaceProductListData>> {
+    return this.http.post<MarketplaceApiResponse<MarketplaceProductListData>>(
+      `${this.apiBaseUrl}/api/v1/marketplace/products/list`,
+      { marketplaceParam: { actionData: { ...filters, page, page_size: pageSize } } },
     );
   }
 
