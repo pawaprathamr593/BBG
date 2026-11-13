@@ -1,9 +1,10 @@
 :host { display:block; min-height:100dvh; }
 .app-shell { display:flex; flex-direction:column; min-height:100dvh; background:var(--surface-page); }
-/* Angular renders the routed page immediately after router-outlet. Let it fill
-   the available space so short pages keep the footer at the viewport bottom. */
-.route-content { display:flex; flex:1 0 auto; flex-direction:column; }
-.route-content > * { flex:1 0 auto; }
+/* Routed pages start flush beneath the header. The route host also grows
+   to keep short pages filling the viewport and the footer at the bottom. */
+.route-content { display:flex; flex:1 0 auto; flex-direction:column; min-width:0; margin:0; padding:0; gap:0; }
+.route-content > * { flex:1 0 auto; margin-block-start:0 !important; }
+.route-content > *:first-child { align-self:stretch; }
 .topbar {
   position:sticky; z-index:50; top:0; display:flex; align-items:center; justify-content:space-between;
   min-height:76px; padding:0 max(28px,calc((100vw - 1400px)/2));
