@@ -31,14 +31,15 @@ final readonly class TenantServices implements ITenantServices
             $resArr['msgArr'][] = "Missing or invalid 'actionData'.";
             return $resArr;
         }
-        if ($tenantParam['actionType'] !== 'getTenant') {
+        if (!is_string($tenantParam['actionType'] ?? null) || $tenantParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Unsupported actionType for getTenant.';
             return $resArr;
         }
 
         $actionData = $tenantParam['actionData'];
+        $actionData['action'] = (string) $tenantParam['actionType'];
         try {
-            switch ((string) tenantParam['actionType']) {
+            switch ((string) $tenantParam['actionType']) {
                 case 'listMyTenants':
                     $resArr = $this->getMyTenants($actionData);
                     break;
@@ -64,7 +65,7 @@ final readonly class TenantServices implements ITenantServices
     public function manageTenant(array $tenantParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($tenantParam['actionType']) || $tenantParam['actionType'] !== 'manageTenant'
+        if (!isset($tenantParam['actionType']) || !is_string($tenantParam['actionType']) || $tenantParam['actionType'] === ''
             || !isset($tenantParam['actionData']) || !is_array($tenantParam['actionData'])) {
             $resArr['msgArr'][] = 'Invalid tenant management request envelope.';
             return $resArr;
