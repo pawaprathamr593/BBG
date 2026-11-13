@@ -23,7 +23,7 @@ final readonly class EngagementServices implements IEngagementServices
     public function getEngagement(array $engagementParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($engagementParam['actionType']) || $engagementParam['actionType'] !== 'getEngagement') {
+        if (!isset($engagementParam['actionType']) || !is_string($engagementParam['actionType']) || $engagementParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Invalid actionType for getEngagement.';
             return $resArr;
         }
@@ -32,6 +32,7 @@ final readonly class EngagementServices implements IEngagementServices
             return $resArr;
         }
         $actionData = $engagementParam['actionData'];
+        $actionData['action'] = (string) $engagementParam['actionType'];
         try {
             if (($engagementParam['actionType'] ?? '') === 'listContentComments') {
                 $resArr = $this->getContentComments($actionData);
@@ -50,7 +51,7 @@ final readonly class EngagementServices implements IEngagementServices
     public function manageEngagement(array $engagementParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($engagementParam['actionType']) || $engagementParam['actionType'] !== 'manageEngagement') {
+        if (!isset($engagementParam['actionType']) || !is_string($engagementParam['actionType']) || $engagementParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Invalid actionType for manageEngagement.';
             return $resArr;
         }
@@ -59,8 +60,9 @@ final readonly class EngagementServices implements IEngagementServices
             return $resArr;
         }
         $actionData = $engagementParam['actionData'];
+        $actionData['action'] = (string) $engagementParam['actionType'];
         try {
-            switch ((string) engagementParam['actionType']) {
+            switch ((string) $engagementParam['actionType']) {
                 case 'toggleContentLike':
                     $resArr = $this->manageLike($actionData);
                     break;
