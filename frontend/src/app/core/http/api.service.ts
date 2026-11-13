@@ -1,5 +1,5 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
 import { API_BASE_URL } from '../config/api-base-url';
 import { ApiError } from './api-error';
@@ -7,8 +7,10 @@ import { ApiEnvelope, ApiRequestOptions } from './api.models';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private readonly http = inject(HttpClient);
-  private readonly baseUrl = inject(API_BASE_URL);
+  constructor(
+    private readonly http: HttpClient,
+    @Inject(API_BASE_URL) private readonly baseUrl: string,
+  ) {}
 
   post<TResponse>(
     path: string,
