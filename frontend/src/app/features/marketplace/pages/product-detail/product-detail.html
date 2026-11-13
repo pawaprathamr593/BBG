@@ -15,7 +15,10 @@
         <div class="product-meta"><span>Unit: {{ data.product.unit.name }} ({{ data.product.unit.symbol }})</span>@if (data.product.is_variant_product) { <span>Available in variants</span> }</div>
         @if (business()?.storefront?.accept_online_orders) {
           <section class="purchase-panel" aria-label="Add product to cart">
-            @if (data.product.is_variant_product) {
+            @if (data.product.is_variant_product && !data.variants.length) {
+              <p class="cart-feedback error" role="status">No active variants are currently available for online ordering.</p>
+            }
+            @if (data.product.is_variant_product && data.variants.length) {
               <label for="product-variant">Choose a variant
                 <select id="product-variant" (change)="onVariantChange($event)">
                   <option value="">Select a variant</option>
@@ -29,7 +32,7 @@
               <label for="product-quantity">Quantity
                 <input id="product-quantity" type="number" min="0.001" [step]="quantityStep" [value]="quantity()" (input)="onQuantityChange($event)">
               </label>
-              <button type="button" [disabled]="addingToCart()" (click)="addToCart()">{{ addingToCart() ? 'Adding…' : 'Add to cart' }}</button>
+              <button type="button" [disabled]="addingToCart() || (data.product.is_variant_product && !data.variants.length)" (click)="addToCart()">{{ addingToCart() ? 'Adding…' : 'Add to cart' }}</button>
             </div>
             @if (cartError()) { <p class="cart-feedback error" role="alert">{{ cartError() }}</p> }
             @if (cartNotice()) {
