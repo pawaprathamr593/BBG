@@ -25,7 +25,25 @@ final class AuthController
         $input = is_array($body) ? $body : [];
         $authParam = is_array($input['authParam'] ?? null) ? $input['authParam'] : [];
         $actionData = is_array($authParam['actionData'] ?? null) ? $authParam['actionData'] : [];
-        $action = (string) ($actionData['action'] ?? '');
+        $routeActions = [
+            '/api/v1/auth/register' => 'register',
+            '/api/v1/auth/login' => 'login',
+            '/api/v1/auth/refresh' => 'refresh',
+            '/api/v1/auth/logout' => 'logout',
+            '/api/v1/auth/logout-all' => 'logoutAll',
+            '/api/v1/auth/profile/update' => 'updateProfile',
+        ];
+        $action = $routeActions[$request->getUri()->getPath()] ?? '';
+        if ($action === '') {
+            return $this->respond(
+                ['status' => 'FAILED', 'msgArr' => ['Unsupported authentication route.'], 'data' => []],
+                $request,
+                $tokenService,
+                $responseFactory,
+                $streamFactory,
+            );
+        }
+        $actionData['action'] = $action;
 
         if (in_array($action, ['refresh', 'logout'], true) && $request->getHeaderLine('X-BBG-CSRF') !== '1') {
             return $this->respond(
@@ -74,6 +92,21 @@ final class AuthController
         $input = is_array($body) ? $body : [];
         $authParam = is_array($input['authParam'] ?? null) ? $input['authParam'] : [];
         $actionData = is_array($authParam['actionData'] ?? null) ? $authParam['actionData'] : [];
+        $routeActions = [
+            '/api/v1/auth/profile' => 'getProfile',
+            '/api/v1/auth/permissions' => 'getPermissions',
+        ];
+        $action = $routeActions[$request->getUri()->getPath()] ?? '';
+        if ($action === '') {
+            return $this->respond(
+                ['status' => 'FAILED', 'msgArr' => ['Unsupported authentication route.'], 'data' => []],
+                $request,
+                $tokenService,
+                $responseFactory,
+                $streamFactory,
+            );
+        }
+        $actionData['action'] = $action;
         $authorization = $request->getHeaderLine('Authorization');
         $actionData['_accessToken'] = str_starts_with($authorization, 'Bearer ')
             ? trim(substr($authorization, 7))
