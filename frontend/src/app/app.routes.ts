@@ -46,6 +46,12 @@ export const routes: Routes = [
         title: 'Business storefront | BBG',
       },
       {
+        path: 'cart',
+        canActivate: [authenticatedGuard],
+        loadComponent: () => import('./features/marketplace/pages/storefront-cart/storefront-cart').then((m) => m.StorefrontCart),
+        title: 'Your cart | BBG',
+      },
+      {
         path: 'about',
         loadComponent: () => import('./features/marketplace/pages/storefront-section/storefront-section').then((m) => m.StorefrontSection),
         data: { storefrontSection: 'about' },
