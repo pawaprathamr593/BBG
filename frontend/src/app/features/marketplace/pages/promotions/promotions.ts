@@ -1,11 +1,12 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { MarketplaceList, MarketplacePromotion } from '../../models/marketplace.models';
 import { MarketplaceService } from '../../services/marketplace.service';
 
 @Component({
   selector: 'app-promotions',
-  imports: [DatePipe],
+  imports: [DatePipe, RouterLink],
   templateUrl: './promotions.html',
   styleUrl: './promotions.scss',
 })
