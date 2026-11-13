@@ -71,7 +71,7 @@
               <h3>{{ promotion.post_title }}</h3>
               <p>{{ promotion.post_content }}</p>
               @if (promotion.valid_until) { <span class="validity">Valid until {{ promotion.valid_until | date:'mediumDate' }}</span> }
-            </article>
+            </a>
           }
         </div>
       </section>
