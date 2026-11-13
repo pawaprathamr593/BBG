@@ -125,7 +125,6 @@ return [
     Route::post('/api/v1/subscriptions/mine/detail')->action([SubscriptionController::class, 'actionGetSubscription'])->name('api/v1/subscriptions/mine/detail'),
     Route::post('/api/v1/subscriptions/request')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/request'),
     Route::post('/api/v1/subscriptions/renewal/request')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/renewal/request'),
-    Route::post('/api/v1/subscriptions/proofs/upload-url')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/proofs/upload-url'),
     Route::post('/api/v1/subscriptions/proofs/submit')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/proofs/submit'),
 
     Route::post('/api/v1/admin/users/list')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/users/list'),
