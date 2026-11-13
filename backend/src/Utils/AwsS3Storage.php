@@ -7,7 +7,6 @@ namespace App\Utils;
 use Aws\Exception\AwsException;
 use Aws\S3\S3Client;
 use RuntimeException;
-use Throwable;
 
 /**
  * Server-side S3 adapter. Credentials are resolved by the AWS SDK default
@@ -15,9 +14,10 @@ use Throwable;
  */
 final class AwsS3Storage
 {
-    private S3Client $client;
+    private ?S3Client $client = null;
     private string $bucket;
     private int $urlTtlMinutes;
+    private string $region;
 
     public function __construct()
     {
@@ -25,25 +25,18 @@ final class AwsS3Storage
         $region = trim((string) (getenv('AWS_DEFAULT_REGION') ?: 'ap-south-1'));
         $this->urlTtlMinutes = max(1, min(60, (int) (getenv('AWS_S3_URL_TTL_MINUTES') ?: 10)));
 
-        if ($this->bucket === '') {
-            throw new RuntimeException('AWS S3 bucket configuration is missing.');
-        }
-
-        $this->client = new S3Client([
-            'version' => 'latest',
-            'region' => $region,
-        ]);
+        $this->region = $region;
     }
 
     public function createUploadUrl(string $key, string $contentType): array
     {
         try {
-            $command = $this->client->getCommand('PutObject', [
+            $command = $this->client()->getCommand('PutObject', [
                 'Bucket' => $this->bucket,
                 'Key' => $key,
                 'ContentType' => $contentType,
             ]);
-            $request = $this->client->createPresignedRequest(
+            $request = $this->client()->createPresignedRequest(
                 $command,
                 '+' . $this->urlTtlMinutes . ' minutes',
             );
@@ -76,7 +69,7 @@ final class AwsS3Storage
     public function headObject(string $key): array
     {
         try {
-            return $this->client->headObject([
+            return $this->client()->headObject([
                 'Bucket' => $this->bucket,
                 'Key' => $key,
             ])->toArray();
@@ -88,13 +81,27 @@ final class AwsS3Storage
     public function deleteObject(string $key): void
     {
         try {
-            $this->client->deleteObject([
+            $this->client()->deleteObject([
                 'Bucket' => $this->bucket,
                 'Key' => $key,
             ]);
         } catch (AwsException $exception) {
             throw new RuntimeException('Unable to delete S3 object.', 0, $exception);
         }
+    }
+
+    private function client(): S3Client
+    {
+        if ($this->bucket === '') {
+            throw new RuntimeException('AWS S3 bucket configuration is missing.');
+        }
+        if ($this->client === null) {
+            $this->client = new S3Client([
+                'version' => 'latest',
+                'region' => $this->region,
+            ]);
+        }
+        return $this->client;
     }
 
     public function getMaxUploadBytes(): int
