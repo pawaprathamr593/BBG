@@ -113,7 +113,7 @@ export class Workspace implements OnInit {
     const tenantId = Number(target.value);
     if (!Number.isInteger(tenantId) || tenantId < 1) {
       this.selectedTenantId.set(null);
-      this.auth['loadPermissions'];
+      await this.auth.loadPermissions(0).catch(() => undefined);
       return;
     }
     await this.activateTenant(tenantId);
@@ -196,7 +196,7 @@ export class Workspace implements OnInit {
     }
   }
 
-  protected isRecord(value: unknown): boolean {
+  protected isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
   }
 
