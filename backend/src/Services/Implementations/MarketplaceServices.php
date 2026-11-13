@@ -351,6 +351,7 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         $resArr['data'] = [
             'items' => $items,
             'ranking_basis' => ['business_profile_views', 'active_customer_enquiries'],
+            'ranking_period' => 'ALL_TIME',
             'pagination' => [
                 'page' => $page,
                 'page_size' => $pageSize,
