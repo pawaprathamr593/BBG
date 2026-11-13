@@ -31,7 +31,7 @@ The migration creates the table with the source-defined fields:
 | `id` | `INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY` |
 | `user_id` | `INT UNSIGNED NOT NULL` |
 | `provider` | `VARCHAR(50) NOT NULL` |
-| `provider_subject` | `VARCHAR(190) NOT NULL` |
+| `provider_subject` | `VARCHAR(190) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL` |
 | `provider_email` | `VARCHAR(190) NULL` |
 | `linked_on` | `DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP` |
 | `status` | `VARCHAR(1) NOT NULL DEFAULT 'A'` |
