@@ -14,8 +14,8 @@ final readonly class MarketplaceDao
 
     /**
      * Live public marketplace counters for the homepage hero.
-     * Only active accounts, approved/published storefronts and published products
-     * are included. Completed orders are counted from delivered fulfilments.
+     * Counts active registered business profiles and user accounts, published
+     * products from approved storefronts, and orders with delivered fulfilments.
      */
     public function getHomepageStats(ConnectionInterface $db): array
     {
