@@ -2,6 +2,7 @@ import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MarketplaceBusinessDetail } from '../../../features/marketplace/models/marketplace.models';
+import { AuthService } from '../../auth/auth.service';
 import { MarketplaceService } from '../../../features/marketplace/services/marketplace.service';
 import { SeoService } from '../../seo/seo.service';
 import { ThemeService } from '../../theme/theme.service';
@@ -13,6 +14,7 @@ export class StorefrontLayout implements OnInit {
   private readonly marketplace=inject(MarketplaceService);
   private readonly seo=inject(SeoService);
   protected readonly theme=inject(ThemeService);
+  protected readonly auth=inject(AuthService);
   protected readonly detail=signal<MarketplaceBusinessDetail|null>(null);
   protected readonly loading=signal(true);
   protected readonly error=signal('');
@@ -40,4 +42,9 @@ export class StorefrontLayout implements OnInit {
   protected get brandName():string{const data=this.detail();return data?.storefront.title||data?.business.business_name||'Business storefront';}
   protected get brandInitial():string{return this.brandName.slice(0,1).toUpperCase();}
   protected get loginReturnUrl():string{return this.router.url;}
+  protected async signOut():Promise<void>{
+    const returnUrl=this.router.url;
+    try{await this.auth.logout();}
+    finally{await this.router.navigateByUrl(returnUrl);}
+  }
 }
