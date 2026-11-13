@@ -45,6 +45,35 @@ export const routes: Routes = [
         title: 'Business storefront | BBG',
       },
       {
+        path: 'about',
+        loadComponent: () => import('./features/marketplace/pages/storefront-section/storefront-section').then((m) => m.StorefrontSection),
+        data: { storefrontSection: 'about' },
+        title: 'About this business | BBG',
+      },
+      {
+        path: 'products',
+        loadComponent: () => import('./features/marketplace/pages/storefront-section/storefront-section').then((m) => m.StorefrontSection),
+        data: { storefrontSection: 'products' },
+        title: 'Products | BBG',
+      },
+      {
+        path: 'promotions/:promotionId',
+        loadComponent: () => import('./features/marketplace/pages/promotion-detail/promotion-detail').then((m) => m.PromotionDetail),
+        title: 'Business promotion | BBG',
+      },
+      {
+        path: 'promotions',
+        loadComponent: () => import('./features/marketplace/pages/storefront-section/storefront-section').then((m) => m.StorefrontSection),
+        data: { storefrontSection: 'promotions' },
+        title: 'Offers and promotions | BBG',
+      },
+      {
+        path: 'contact',
+        loadComponent: () => import('./features/marketplace/pages/storefront-section/storefront-section').then((m) => m.StorefrontSection),
+        data: { storefrontSection: 'contact' },
+        title: 'Contact this business | BBG',
+      },
+      {
         path: 'products/:productId',
         loadComponent: () => import('./features/marketplace/pages/product-detail/product-detail').then((m) => m.ProductDetail),
         title: 'Product details | BBG',
