@@ -111,4 +111,4 @@ if (in_array(false, $discoveryContracts, true)) {
     exit(1);
 }
 
-echo "Static API contract checks passed: 125 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, marketplace discovery and subscription proof S3 flow.\\n";\n
+echo "Static API contract checks passed: 125 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, marketplace discovery and subscription proof S3 flow.\n";
