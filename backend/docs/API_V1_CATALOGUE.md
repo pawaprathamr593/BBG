@@ -286,6 +286,6 @@ Guarded dependencies:
 - Keep the bucket private with S3 Block Public Access enabled. Configure bucket CORS for the deployed Angular origin with PUT/GET and the required Content-Type header; do not use a wildcard origin in production.
 - Credentials are supplied to the PHP container through environment variables or an AWS workload IAM role. Never commit a populated `.env` file.
 
-## 10. Subscription proof S3 upload
+## 11. Subscription proof S3 upload
 
 See [`API_V1_SUBSCRIPTION_PROOFS.md`](API_V1_SUBSCRIPTION_PROOFS.md) for the complete request/response contract. The flow issues a tenant-scoped S3 presigned PUT URL for JPEG, PNG, WebP or PDF files and verifies the uploaded object before accepting proof metadata. A proof upload or submission does not approve a subscription or mark any order/payment as paid.
