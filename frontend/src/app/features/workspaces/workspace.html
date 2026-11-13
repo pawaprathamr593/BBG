@@ -89,7 +89,7 @@
                 @for (entry of resultEntries(result()); track entry[0]) {
                   <article class="result-card">
                     <span>{{ entry[0] }}</span>
-                    @if (entry[1] === null || ['string', 'number', 'boolean'].includes(typeof entry[1])) {
+                    @if (isPrimitive(entry[1])) {
                       <strong>{{ entry[1] ?? '—' }}</strong>
                     } @else {
                       <pre>{{ entry[1] | json }}</pre>
