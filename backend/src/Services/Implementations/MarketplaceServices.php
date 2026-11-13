@@ -60,6 +60,15 @@ final readonly class MarketplaceServices implements IMarketplaceServices
                 case 'getPublicPromotion':
                     $resArr = $this->getPromotion($actionData);
                     break;
+                case 'listPopularBusinesses':
+                    $resArr = $this->getPopularBusinesses($actionData);
+                    break;
+                case 'listRecentBusinesses':
+                    $resArr = $this->getRecentBusinesses($actionData);
+                    break;
+                case 'listRecentProducts':
+                    $resArr = $this->getRecentProducts($actionData);
+                    break;
                 case 'getHomeSummary':
                     $resArr = $this->getHomeSummary($actionData);
                     break;
@@ -312,6 +321,118 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         return $resArr;
     }
 
+    private function getPopularBusinesses(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(50, $this->positiveInt($actionData['page_size'] ?? 8) ?? 8);
+        $rows = $this->dao->getPopularBusinesses($this->db, $pageSize, ($page - 1) * $pageSize);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'MarketplaceServices::getPopularBusinesses');
+        }
+        $count = $this->dao->countPopularBusinesses($this->db);
+        if ($count['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($count, 'MarketplaceServices::getPopularBusinesses');
+        }
+
+        $items = [];
+        foreach ($rows['data'] as $index => $row) {
+            $business = $this->publicBusiness($row, false);
+            $business['rank'] = (($page - 1) * $pageSize) + $index + 1;
+            $business['popularity'] = [
+                'views' => (int) ($row['view_count'] ?? 0),
+                'enquiries' => (int) ($row['enquiry_count'] ?? 0),
+                'engagements' => (int) ($row['engagement_count'] ?? 0),
+            ];
+            $items[] = $business;
+        }
+
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
+            'items' => $items,
+            'ranking_basis' => ['business_profile_views', 'active_customer_enquiries'],
+            'pagination' => [
+                'page' => $page,
+                'page_size' => $pageSize,
+                'total' => (int) ($count['data']['total'] ?? 0),
+            ],
+        ];
+        return $resArr;
+    }
+
+    private function getRecentBusinesses(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(50, $this->positiveInt($actionData['page_size'] ?? 8) ?? 8);
+        $rows = $this->dao->getRecentBusinesses($this->db, $pageSize, ($page - 1) * $pageSize);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'MarketplaceServices::getRecentBusinesses');
+        }
+        $count = $this->dao->countBusinesses($this->db);
+        if ($count['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($count, 'MarketplaceServices::getRecentBusinesses');
+        }
+
+        $items = array_map(function (array $row): array {
+            $business = $this->publicBusiness($row, false);
+            $business['created_on'] = $row['created_on'];
+            return $business;
+        }, $rows['data']);
+
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
+            'items' => $items,
+            'sort_basis' => 'created_on',
+            'timestamp_note' => 'Businesses are currently ordered by record creation time because BUSINESS_PROFILES has no published_on column.',
+            'pagination' => [
+                'page' => $page,
+                'page_size' => $pageSize,
+                'total' => (int) ($count['data']['total'] ?? 0),
+            ],
+        ];
+        return $resArr;
+    }
+
+    private function getRecentProducts(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(50, $this->positiveInt($actionData['page_size'] ?? 8) ?? 8);
+        $rows = $this->dao->getRecentProducts($this->db, $pageSize, ($page - 1) * $pageSize);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'MarketplaceServices::getRecentProducts');
+        }
+        $count = $this->dao->countRecentProducts($this->db);
+        if ($count['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($count, 'MarketplaceServices::getRecentProducts');
+        }
+
+        $items = array_map(function (array $row): array {
+            $item = $this->publicProduct($row, (bool) $row['show_prices']);
+            $item['business'] = [
+                'business_name' => $row['business_name'],
+                'business_slug' => $row['business_slug'],
+                'logo_path' => $row['business_logo_path'],
+            ];
+            $item['created_on'] = $row['created_on'];
+            return $item;
+        }, $rows['data']);
+
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
+            'items' => $items,
+            'sort_basis' => 'created_on',
+            'timestamp_note' => 'Products are currently ordered by record creation time because PRODUCTS has no published_on column.',
+            'pagination' => [
+                'page' => $page,
+                'page_size' => $pageSize,
+                'total' => (int) ($count['data']['total'] ?? 0),
+            ],
+        ];
+        return $resArr;
+    }
+
     private function getHomeSummary(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
@@ -327,11 +448,31 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         if ($promotions['status'] !== 'SUCCESS') {
             return $this->propagateFailure($promotions, 'MarketplaceServices::getHomeSummary');
         }
+        $popularBusinesses = $this->getPopularBusinesses(['page' => 1, 'page_size' => 8]);
+        if ($popularBusinesses['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($popularBusinesses, 'MarketplaceServices::getHomeSummary');
+        }
+        $recentBusinesses = $this->getRecentBusinesses(['page' => 1, 'page_size' => 8]);
+        if ($recentBusinesses['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($recentBusinesses, 'MarketplaceServices::getHomeSummary');
+        }
+        $recentProducts = $this->getRecentProducts(['page' => 1, 'page_size' => 8]);
+        if ($recentProducts['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($recentProducts, 'MarketplaceServices::getHomeSummary');
+        }
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = [
             'categories' => $categories['data']['items'],
             'businesses' => $businesses['data']['items'],
+            'popular_businesses' => $popularBusinesses['data']['items'],
+            'recent_businesses' => $recentBusinesses['data']['items'],
+            'recent_products' => $recentProducts['data']['items'],
             'promotions' => $promotions['data']['items'],
+            'discovery_meta' => [
+                'popular_businesses_ranking_basis' => $popularBusinesses['data']['ranking_basis'],
+                'recent_businesses_sort_basis' => $recentBusinesses['data']['sort_basis'],
+                'recent_products_sort_basis' => $recentProducts['data']['sort_basis'],
+            ],
         ];
         return $resArr;
     }
