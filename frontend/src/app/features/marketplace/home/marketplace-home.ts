@@ -23,7 +23,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
           </form>
           <div class="hero-links" aria-label="Quick links">
             <span>Start exploring</span>
-            <a href="#categories">Categories</a>
+            <a routerLink="/products">Products</a>
             <i aria-hidden="true"></i>
             <a href="#businesses">Businesses</a>
             <i aria-hidden="true"></i>
@@ -64,7 +64,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
         <div class="section-heading">
           <div>
             <p class="section-kicker">FIND YOUR SPACE</p>
-            <h2 id="categories-title">Explore categories</h2>
+            <h2 id="categories-title">Browse product categories</h2>
           </div>
           <span class="section-note">Browse the BBG marketplace</span>
         </div>
@@ -75,11 +75,11 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
         } @else if (categories().length) {
           <div class="category-grid">
             @for (category of categories(); track category.id) {
-              <article class="category-card">
+              <a class="category-card" [routerLink]="['/products']" [queryParams]="{ category_id: category.id }">
                 <span class="category-mark" aria-hidden="true">{{ category.category_name.slice(0, 1).toUpperCase() }}</span>
                 <span class="category-name">{{ category.category_name }}</span>
                 @if (category.description) { <span class="category-description">{{ category.description }}</span> }
-              </article>
+              </a>
             }
           </div>
         } @else {
