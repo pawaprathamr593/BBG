@@ -1,0 +1,42 @@
+<div class="storefront-page">
+  @if (loading()) {
+    <div class="storefront-skeleton" aria-live="polite" aria-busy="true"></div>
+  } @else if (error()) {
+    <section class="state-panel" role="alert"><h1>Storefront unavailable</h1><p>{{ error() }}</p><a routerLink="/businesses">Back to businesses</a></section>
+  } @else if (detail(); as data) {
+    <a class="back-link" routerLink="/businesses">← All businesses</a>
+    <section class="storefront-hero">
+      <div class="storefront-avatar">{{ data.business.business_name.slice(0, 1) }}</div>
+      <div class="storefront-heading">
+        @if (data.business.category_name) { <span class="category-label">{{ data.business.category_name }}</span> }
+        <h1>{{ data.storefront.title || data.business.business_name }}</h1>
+        <p>{{ data.storefront.description || data.business.business_description }}</p>
+        @if (data.business.city || data.business.state) { <span class="location">{{ data.business.city }}{{ data.business.city && data.business.state ? ', ' : '' }}{{ data.business.state }}</span> }
+      </div>
+    </section>
+    <section class="contact-strip">
+      @if (data.business.business_phone) { <span>Phone: {{ data.business.business_phone }}</span> }
+      @if (data.business.business_email) { <span>Email: {{ data.business.business_email }}</span> }
+      @if (data.storefront.accept_online_orders) { <span class="capability">Online orders accepted</span> }
+    </section>
+    <section class="products-section">
+      <div class="section-heading"><div><p class="eyebrow">THE CATALOGUE</p><h2>Products</h2></div><span>{{ products()?.pagination?.total ?? 0 }} listed</span></div>
+      @if (products()?.items?.length) {
+        <div class="product-grid">
+          @for (product of products()?.items ?? []; track product.id) {
+            <a class="product-card" [routerLink]="['/businesses', slug, 'products', product.id]">
+              <span class="product-mark" aria-hidden="true">{{ product.product_name.slice(0, 1) }}</span>
+              @if (product.category_name) { <span class="category-label">{{ product.category_name }}</span> }
+              <h3>{{ product.product_name }}</h3>
+              <p>{{ product.description || 'View product details.' }}</p>
+              @if (product.selling_price !== undefined) { <strong>{{ data.storefront.currency || '' }} {{ product.selling_price }}</strong> }
+              @else { <span class="price-on-request">Price on request</span> }
+            </a>
+          }
+        </div>
+      } @else {
+        <div class="empty-state"><h3>No published products</h3><p>This storefront has not published products yet.</p></div>
+      }
+    </section>
+  }
+</div>
