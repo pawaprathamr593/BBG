@@ -1,5 +1,5 @@
 <div class="promotion-detail-page">
-  <a class="back-link" routerLink="/promotions">← All promotions</a>
+  <a class="back-link" [routerLink]="storefrontSlug ? ['/businesses', storefrontSlug, 'promotions'] : '/promotions'">← {{ storefrontSlug ? 'Business promotions' : 'All promotions' }}</a>
   @if (loading()) { <div class="loading-panel" aria-live="polite" aria-busy="true">Loading promotion…</div> }
   @else if (error()) { <section class="state-panel" role="alert"><h1>Promotion unavailable</h1><p>{{ error() }}</p></section> }
   @else if (detail(); as data) {
