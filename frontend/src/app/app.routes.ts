@@ -25,9 +25,10 @@ export const routes: Routes = [
     title: 'Product Details | BBG',
   },
   {
-    path: 'categories',
-    loadComponent: () => import('./features/marketplace/categories/category-directory').then((m) => m.CategoryDirectory),
-    title: 'Marketplace Categories | BBG',
+    path: 'products',
+    pathMatch: 'full',
+    loadComponent: () => import('./features/marketplace/products/product-directory').then((m) => m.ProductDirectory),
+    title: 'Explore Products | BBG',
   },
   {
     path: 'promotions',
