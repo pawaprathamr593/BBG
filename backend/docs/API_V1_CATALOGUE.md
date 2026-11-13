@@ -1,6 +1,6 @@
 # BBG API V1 Catalogue
 
-**Branch:** `feature/auth-foundation`  
+**Working branch:** `fix/bbg-seven-layer-audit` (based on `feature/auth-foundation`)  
 **Framework:** Yii 3 / PHP 8.4 / MySQL 8.4  
 **Client:** Angular 22  
 **Status:** Implementation catalogue derived from the approved BBG backend/database/frontend architecture and Phase 1 backend status.  
@@ -283,4 +283,5 @@ Guarded dependencies:
 - Angular then calls the existing `POST /api/v1/catalogue/products/media/link` with the returned `object_key` and media metadata. The backend performs S3 HeadObject verification and compares actual MIME type and size before inserting `PRODUCT_MEDIA` metadata.
 - The existing media list route returns short-lived presigned GET URLs for media and optional thumbnails. The existing delete route soft-deletes metadata and attempts S3 object cleanup; cleanup failures are logged for later reconciliation.
 - Supported image MIME types: JPEG, PNG and WebP. Default maximum file size: 10 MiB (configurable). Presigned URL expiry defaults to 10 minutes (configurable).
+- Keep the bucket private with S3 Block Public Access enabled. Configure bucket CORS for the deployed Angular origin with PUT/GET and the required Content-Type header; do not use a wildcard origin in production.
 - Credentials are supplied to the PHP container through environment variables or an AWS workload IAM role. Never commit a populated `.env` file.
