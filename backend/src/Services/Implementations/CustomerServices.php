@@ -23,7 +23,7 @@ final readonly class CustomerServices implements ICustomerServices
     public function getCustomer(array $customerParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($customerParam['actionType']) || $customerParam['actionType'] !== 'getCustomer') {
+        if (!isset($customerParam['actionType']) || !is_string($customerParam['actionType']) || $customerParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Invalid actionType for getCustomer.';
             return $resArr;
         }
@@ -32,8 +32,9 @@ final readonly class CustomerServices implements ICustomerServices
             return $resArr;
         }
         $actionData = $customerParam['actionData'];
+        $actionData['action'] = (string) $customerParam['actionType'];
         try {
-            switch ((string) customerParam['actionType']) {
+            switch ((string) $customerParam['actionType']) {
                 case 'getMyCustomerProfile':
                     $resArr = $this->getMyCustomerProfile($actionData);
                     break;
@@ -56,7 +57,7 @@ final readonly class CustomerServices implements ICustomerServices
     public function manageCustomer(array $customerParam): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        if (!isset($customerParam['actionType']) || $customerParam['actionType'] !== 'manageCustomer') {
+        if (!isset($customerParam['actionType']) || !is_string($customerParam['actionType']) || $customerParam['actionType'] === '') {
             $resArr['msgArr'][] = 'Invalid actionType for manageCustomer.';
             return $resArr;
         }
@@ -65,8 +66,9 @@ final readonly class CustomerServices implements ICustomerServices
             return $resArr;
         }
         $actionData = $customerParam['actionData'];
+        $actionData['action'] = (string) $customerParam['actionType'];
         try {
-            switch ((string) customerParam['actionType']) {
+            switch ((string) $customerParam['actionType']) {
                 case 'createMyAddress':
                     $resArr = $this->manageMyAddress($actionData, 'create');
                     break;
