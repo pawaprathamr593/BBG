@@ -1,19 +1,18 @@
-<section class="auth-page">
-  <div class="auth-card">
-    <a class="auth-brand" routerLink="/" aria-label="BBG home"><span class="brand-mark">B</span><span><strong>BBG</strong><small>Business platform</small></span></a>
-    <p class="eyebrow">WELCOME BACK</p>
-    <h1>Sign in to BBG</h1>
-    <p class="intro">Access your business workspace and marketplace tools.</p>
-    @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
-    <form [formGroup]="form" (ngSubmit)="submit()">
-      <label for="identifier">Email or mobile number</label>
-      <input id="identifier" type="text" autocomplete="username" formControlName="identifier" placeholder="Enter email or mobile">
-      @if (form.controls.identifier.touched && form.controls.identifier.invalid) { <small class="field-error">Enter your email or mobile number.</small> }
-      <label for="password">Password</label>
-      <input id="password" type="password" autocomplete="current-password" formControlName="password" placeholder="Enter password">
-      @if (form.controls.password.touched && form.controls.password.invalid) { <small class="field-error">Password is required.</small> }
-      <button type="submit" [disabled]="busy()">{{ busy() ? 'Signing in…' : 'Sign in' }}</button>
-    </form>
-    <p class="switch-auth">New to BBG? <a routerLink="/register">Create an account</a></p>
-  </div>
-</section>
+<section class="auth-page"><div class="auth-card">
+<a class="auth-brand" routerLink="/"><span class="brand-mark">B</span><span><strong>BBG</strong><small>Business · Build · Grow</small></span></a>
+<p class="eyebrow">WELCOME BACK</p><h1>Good to see you again.</h1><p class="intro">Sign in to discover businesses, manage your workspace and grow with the BBG community.</p>
+<div class="social-section"><p class="section-label">Continue with</p><div class="social-grid">
+<button class="social-button" type="button" (click)="selectProvider('Google')"><b class="provider-icon google">G</b>Google</button>
+<button class="social-button" type="button" (click)="selectProvider('Facebook')"><b class="provider-icon facebook">f</b>Facebook</button>
+<button class="social-button" type="button" (click)="selectProvider('Instagram')"><b class="provider-icon instagram">◎</b>Instagram</button>
+<button class="social-button" type="button" (click)="selectProvider('Apple')"><b class="provider-icon apple">●</b>Apple</button>
+</div>@if (providerNotice()) { <p class="provider-notice" role="status">{{ providerNotice() }}</p> }</div><div class="divider"><span>or continue with email</span></div>
+@if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+<form [formGroup]="form" (ngSubmit)="submit()">
+<label for="identifier">Email or mobile number</label><input id="identifier" type="text" autocomplete="username" formControlName="identifier" placeholder="you@example.com or mobile number">
+@if (form.controls.identifier.touched && form.controls.identifier.invalid) { <small class="field-error">Enter your email or mobile number.</small> }
+<label for="password">Password</label><input id="password" type="password" autocomplete="current-password" formControlName="password" placeholder="Enter your password">
+@if (form.controls.password.touched && form.controls.password.invalid) { <small class="field-error">Password is required.</small> }
+<button class="submit-button" type="submit" [disabled]="busy()">{{ busy() ? 'Signing in…' : 'Sign in to BBG' }} <span>→</span></button></form>
+<p class="switch-auth">New to BBG? <a routerLink="/register">Create an account</a></p><p class="secure-note">⌑ Secure sign-in protected by BBG authentication</p>
+</div></section>
