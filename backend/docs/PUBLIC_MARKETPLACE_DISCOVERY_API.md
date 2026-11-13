@@ -95,7 +95,7 @@ The legacy `businesses` collection retains its existing directory ordering and c
 
 ## Database support
 
-Migration `../database/migrations/20261113_001_public_marketplace_engagement.sql` creates `CONTENT_VIEWS` and `CUSTOMER_ENQUIRIES` only when they do not already exist. It is additive and does not alter existing tables. Review the live schema and take a backup before applying it. The migration is not automatically executed by this code change.
+Migration `../database/migrations/20261113_001_public_marketplace_engagement.sql` creates `CONTENT_VIEWS` and `CUSTOMER_ENQUIRIES`, while `../database/migrations/20261113_003_public_product_discovery_support.sql` creates `CONTENT_LIKES` and `PRODUCT_MEDIA` only when they do not already exist. Both are additive and do not alter existing tables. Review the live schema and take a backup before applying them. Migrations are not automatically executed by this code change.
 
 ## Security and tenancy
 
