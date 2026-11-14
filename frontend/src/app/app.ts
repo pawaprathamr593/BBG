@@ -1,5 +1,7 @@
-import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from './core/auth/auth.service';
 import { AuthPopupComponent } from './shared/auth-popup/auth-popup';
 
@@ -14,7 +16,22 @@ export class App {
   protected readonly theme = signal<'light' | 'dark'>('light');
   protected readonly currentYear = new Date().getFullYear();
   protected readonly auth = inject(AuthService);
+  protected readonly isStorefrontRoute = signal(false);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+
+  constructor() {
+    this.syncShellWithRoute(this.router.url);
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((event) => this.syncShellWithRoute(event.urlAfterRedirects));
+  }
+
+  private syncShellWithRoute(url: string): void {
+    this.isStorefrontRoute.set(url.split(/[?#]/, 1)[0].startsWith('/store/'));
+    this.closeMenu();
+  }
 
   protected toggleMenu(): void {
     this.menuOpen.update((open) => !open);
