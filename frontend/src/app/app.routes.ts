@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
+  { path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard), title: 'Workspace Dashboard | BBG' },
   {
     path: '',
     loadComponent: () => import('./features/marketplace/home/marketplace-home').then((m) => m.MarketplaceHome),
