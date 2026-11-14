@@ -62,8 +62,8 @@ export class AuthExperienceComponent implements OnInit {
     this.form.reset();
   }
 
-  revealEmailForm(): void {
-    this.emailFormVisible.set(true);
+  toggleEmailForm(): void {
+    this.emailFormVisible.update((visible) => !visible);
     this.error.set('');
   }
 
@@ -163,6 +163,6 @@ export class AuthExperienceComponent implements OnInit {
       return;
     }
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-    await this.router.navigateByUrl(returnUrl && returnUrl.startsWith('/') ? returnUrl : '/');
+    await this.router.navigateByUrl(returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/');
   }
 }
