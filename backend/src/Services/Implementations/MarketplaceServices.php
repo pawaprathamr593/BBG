@@ -119,6 +119,7 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         $items = array_map(fn (array $row): array => $this->publicBusiness($row, false), $rows['data']);
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = [
+            ...($businessSlug !== null ? ['business_slug' => $businessSlug] : []),
             'items' => $items,
             'pagination' => [
                 'page' => $page,
@@ -171,43 +172,22 @@ final readonly class MarketplaceServices implements IMarketplaceServices
             return $this->getMarketplaceProducts($actionData);
         }
 
-        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $business = $this->dao->getBusinessBySlug($this->db, $slug);
         if ($business['status'] !== 'SUCCESS') {
             return $this->propagateFailure($business, 'MarketplaceServices::getProducts');
         }
         if ($business['data'] === []) {
-            $resArr['msgArr'][] = 'Published business storefront was not found.';
-            return $resArr;
+            return ['status' => 'FAILED', 'msgArr' => ['Published business storefront was not found.'], 'data' => []];
         }
 
-        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
-        $pageSize = min(50, $this->positiveInt($actionData['page_size'] ?? 20) ?? 20);
-        $search = $this->filterText($actionData['search'] ?? '', 100);
-        $rows = $this->dao->getProducts($this->db, $slug, $search, $pageSize, ($page - 1) * $pageSize);
-        if ($rows['status'] !== 'SUCCESS') {
-            return $this->propagateFailure($rows, 'MarketplaceServices::getProducts');
-        }
-        $count = $this->dao->countProducts($this->db, $slug, $search);
-        if ($count['status'] !== 'SUCCESS') {
-            return $this->propagateFailure($count, 'MarketplaceServices::getProducts');
-        }
-
-        $showPrices = (bool) $business['data']['show_prices'];
-        $resArr['status'] = 'SUCCESS';
-        $resArr['data'] = [
-            'business_slug' => $slug,
-            'items' => array_map(fn (array $row): array => $this->publicProduct($row, $showPrices), $rows['data']),
-            'pagination' => [
-                'page' => $page,
-                'page_size' => $pageSize,
-                'total' => (int) ($count['data']['total'] ?? 0),
-            ],
-        ];
-        return $resArr;
+        return $this->getMarketplaceProducts(
+            $actionData,
+            (int) $business['data']['tenant_id'],
+            $slug,
+        );
     }
 
-    private function getMarketplaceProducts(array $actionData): array
+    private function getMarketplaceProducts(array $actionData, ?int $tenantId = null, ?string $businessSlug = null): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
@@ -268,6 +248,7 @@ final readonly class MarketplaceServices implements IMarketplaceServices
             'price_visible_only' => in_array($sort, ['price_low', 'price_high'], true),
             'latitude' => $latitude,
             'longitude' => $longitude,
+            'tenant_id' => $tenantId,
         ];
 
         $rows = $this->dao->getMarketplaceProducts($this->db, $filters, $sort, $pageSize, ($page - 1) * $pageSize);
