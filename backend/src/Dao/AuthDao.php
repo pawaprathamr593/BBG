@@ -89,7 +89,7 @@ final readonly class AuthDao
                  WHERE ura.user_id = :user_id AND ura.status = 'A'
                     AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
                     AND (
-                        (:tenant_filter = 0 AND ura.tenant_id IS NULL AND r.scope_type = 'PLATFORM')
+                        (:tenant_filter = 0 AND ura.tenant_id IS NULL AND r.scope_type IN ('PLATFORM', 'GLOBAL'))
                         OR
                         (:tenant_filter_match > 0 AND ura.tenant_id = :tenant_id
                             AND r.scope_type = 'TENANT'
