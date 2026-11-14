@@ -20,6 +20,7 @@ export class AuthExperienceComponent implements OnInit {
   @Input() mode: SocialAuthIntent = 'login';
   @Input() presentation: 'page' | 'popup' = 'page';
   @Input() reason = '';
+  @Input() brandName = 'BBG';
   @Output() authenticated = new EventEmitter<void>();
   @Output() dismissed = new EventEmitter<void>();
 
