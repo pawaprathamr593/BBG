@@ -700,7 +700,7 @@ final readonly class MarketplaceServices implements IMarketplaceServices
     {
         $salt = trim((string) (getenv('BBG_PUBLIC_ID_SALT') ?: getenv('AUTH_ACCESS_TOKEN_SECRET')));
         if (strlen($salt) < 32) {
-            throw new \\RuntimeException('BBG public product ID salt must contain at least 32 characters.');
+            throw new \RuntimeException('BBG public product ID salt must contain at least 32 characters.');
         }
         return new Hashids($salt, 10);
     }

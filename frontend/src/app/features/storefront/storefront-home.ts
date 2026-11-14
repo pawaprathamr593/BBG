@@ -9,7 +9,7 @@ import { StorefrontContextService } from './storefront-context.service';
   template:`
     @if(context.detail();as data){
       <section class="hero">
-        @if(data.business.cover_image_path){<img class="cover" [src]="data.business.cover_image_path" [alt]="brandName+' cover"/>}
+        @if(data.business.cover_image_path){<img class="cover" [src]="data.business.cover_image_path" [alt]="brandName + ' cover image'"/>}
         <div class="hero-copy"><p class="eyebrow">{{data.business.category_name||'BBG BUSINESS STOREFRONT'}}</p><h1>{{brandName}}</h1>
           <p>{{data.storefront.description||data.business.business_description||'Explore our products and connect with our team.'}}</p>
           <div class="actions"><a class="primary" [routerLink]="['/store',data.business.business_slug,'products']">Explore products</a><a class="secondary" [routerLink]="['/store',data.business.business_slug,'contact']">Contact business</a></div>
