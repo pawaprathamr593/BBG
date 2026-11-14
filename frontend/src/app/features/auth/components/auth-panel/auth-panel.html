@@ -3,13 +3,28 @@
   @if(contextualReason){<p class="context-reason">{{contextualReason}}</p>}@else{<p class="panel-intro">{{mode()==='login'?'Sign in to continue.':'Create one account to connect across BBG.'}}</p>}
   <h2>{{mode()==='login'?'Continue to BBG':'Join BBG'}}</h2>
   <div class="social-grid">
-    <button type="button" class="social-button" (click)="selectProvider('Google')"><b class="google">G</b>Google</button>
-    <button type="button" class="social-button" (click)="selectProvider('Instagram')"><b class="instagram">◎</b>Instagram</button>
-    <button type="button" class="social-button" (click)="selectProvider('Facebook')"><b class="facebook">f</b>Facebook</button>
-    <button type="button" class="social-button" (click)="selectProvider('Apple')"><b>●</b>Apple</button>
+    <button type="button" class="social-button" (click)="selectProvider('Google')" [disabled]="busy()"><b class="google">G</b>Google</button>
+    <button type="button" class="social-button" (click)="selectProvider('Instagram')" [disabled]="busy()"><b class="instagram">◎</b>Instagram <small>Business/Creator</small></button>
+    <button type="button" class="social-button" (click)="selectProvider('Facebook')" [disabled]="busy()"><b class="facebook">f</b>Facebook</button>
+    <button type="button" class="social-button" (click)="selectProvider('Apple')" [disabled]="busy()"><b>●</b>Apple</button>
   </div>
   @if(providerMessage()){<p class="provider-message" role="status">{{providerMessage()}}</p>}
-  @if(!credentialsVisible()){<button type="button" class="email-toggle" (click)="revealCredentials()">Or {{mode()==='login'?'sign in':'create an account'}} with email or phone</button>}
+  @if(emailOtpMode()){
+    <div class="social-email-verification">
+      <h3>Verify your email</h3>
+      <p>BBG needs a verified email to connect this social account to your central account.</p>
+      <label for="bbg-social-email">Email address</label>
+      <input id="bbg-social-email" type="email" autocomplete="email" [value]="socialEmail()" (input)="socialEmail.set($any($event.target).value)" placeholder="name@example.com">
+      <button class="submit-button" type="button" [disabled]="otpBusy()" (click)="sendSocialEmailOtp()">{{otpBusy()?'Sending…':'Send verification code'}}</button>
+      @if(otpSent()){
+        <label for="bbg-social-otp">Six-digit code</label>
+        <input id="bbg-social-otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" [value]="socialOtp()" (input)="socialOtp.set($any($event.target).value)" placeholder="000000">
+        <button class="submit-button" type="button" [disabled]="otpBusy()" (click)="verifySocialEmailOtp()">{{otpBusy()?'Verifying…':'Verify and continue'}}</button>
+      }
+      <button type="button" class="email-toggle" (click)="cancelSocialEmailOtp()">Cancel and choose another sign-in method</button>
+    </div>
+  }
+  @else if(!credentialsVisible()){<button type="button" class="email-toggle" (click)="revealCredentials()">Or {{mode()==='login'?'sign in':'create an account'}} with email or phone</button>}
   @else{
     <div class="form-divider">Or continue with email or phone</div>
     @if(error()){<p class="form-error" role="alert">{{error()}}</p>}
