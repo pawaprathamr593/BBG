@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { DashboardApiService, DashboardPermission, DashboardTenant } from '../../core/dashboard/dashboard-api.service';
+import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
 
 interface DashboardModule {
   code: string;
@@ -158,6 +159,7 @@ interface DashboardModule {
 export class Dashboard implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly api = inject(DashboardApiService);
+  private readonly workspace = inject(WorkspaceContextService);
   private readonly router = inject(Router);
 
   readonly loading = signal(true);
@@ -211,12 +213,10 @@ export class Dashboard implements OnInit {
         return;
       }
       if (!this.auth.user()) await this.auth.loadProfile();
-      const [tenants, permissions] = await Promise.all([
-        this.api.getMyTenants(),
-        this.api.getPermissions(0),
-      ]);
-      this.tenants.set(tenants);
-      this.selectedTenantId.set(null);
+      await this.workspace.initialize();
+      const permissions = this.workspace.permissions();
+      this.tenants.set(this.workspace.tenants());
+      this.selectedTenantId.set(this.workspace.activeTenantId());
       this.permissions.set(permissions);
       this.summary.set(null);
       this.summaryError.set('');
@@ -234,12 +234,14 @@ export class Dashboard implements OnInit {
     const value = (event.target as HTMLSelectElement).value;
     const tenantId = value ? Number(value) : null;
     if (tenantId !== null && (!Number.isInteger(tenantId) || !this.tenants().some((tenant) => tenant.id === tenantId))) return;
-    this.selectedTenantId.set(tenantId);
     this.summary.set(null);
     this.summaryError.set('');
     this.loading.set(true);
     try {
-      this.permissions.set(await this.api.getPermissions(tenantId ?? 0));
+      await this.workspace.switchWorkspace(tenantId);
+      this.selectedTenantId.set(this.workspace.activeTenantId());
+      this.permissions.set(this.workspace.permissions());
+      this.tenants.set(this.workspace.tenants());
       this.loading.set(false);
       if (tenantId !== null && this.permissions().some((permission) => permission.permission_code === 'TENANT_MEMBERS_VIEW')) {
         await this.loadTenantSummary(tenantId);
