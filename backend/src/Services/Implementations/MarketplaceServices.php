@@ -649,6 +649,7 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $product = [
             'id' => (int) $row['id'],
+            'offering_type' => 'PRODUCT',
             'public_id' => $this->productHashids()->encode((int) $row['id']),
             'slug' => $this->productSlug((string) $row['product_name']),
             'product_code' => $row['product_code'],
