@@ -6,9 +6,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from './core/auth/auth.service';
 import { AuthPopupComponent } from './shared/auth-popup/auth-popup';
 import { ThemeService } from './core/theme/theme.service';
+import { UserProfileDrawerComponent } from './shared/user-profile-drawer/user-profile-drawer';
 
 @Component({
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, AuthPopupComponent],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, AuthPopupComponent, UserProfileDrawerComponent],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',
