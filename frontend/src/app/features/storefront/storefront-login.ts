@@ -37,4 +37,5 @@ export class StorefrontLogin {
       const description = 'Sign in to your customer account at ' + name + '.';
       this.seo.update(title, description, '/store/' + encodeURIComponent(this.slug) + '/login', undefined, 'noindex,follow');
     });
-  }}
+  }
+}
