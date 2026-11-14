@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MarketplaceApiService, MarketplaceProduct } from '../../core/marketplace/marketplace-api.service';
 import { StorefrontContextService } from './storefront-context.service';
+import { StorefrontSeoService } from './storefront-seo.service';
 
 @Component({
   selector:'app-storefront-home',imports:[RouterLink],
@@ -28,10 +29,10 @@ import { StorefrontContextService } from './storefront-context.service';
   `],
 })
 export class StorefrontHome implements OnInit {
-  readonly context=inject(StorefrontContextService); private readonly api=inject(MarketplaceApiService);
+  readonly context=inject(StorefrontContextService); private readonly api=inject(MarketplaceApiService); private readonly seo=inject(StorefrontSeoService);
   readonly products=signal<MarketplaceProduct[]>([]); readonly loading=signal(true);
   get brandName():string {const d=this.context.detail();return d?.storefront.title||d?.business.business_name||'Storefront';}
-  async ngOnInit():Promise<void>{const slug=this.context.detail()?.business.business_slug;if(!slug){this.loading.set(false);return;}try{const r=await firstValueFrom(this.api.listStorefrontProducts(slug,1,8));if(r.status==='SUCCESS'&&!Array.isArray(r.data))this.products.set(r.data.items||[]);}catch{}finally{this.loading.set(false);}}
+  async ngOnInit():Promise<void>{const detail=this.context.detail();const slug=detail?.business.business_slug;if(!slug){this.loading.set(false);return;}const name=detail.storefront.title||detail.business.business_name;const description=detail.storefront.description||detail.business.business_description||`Explore products and services from ${name}.`;const path=`/store/${encodeURIComponent(slug)}`;this.seo.update(`${name} | Official Store`,description,path,{'@context':'https://schema.org','@type':'WebSite',name,url:path,publisher:{'@type':'Organization',name}});try{const r=await firstValueFrom(this.api.listStorefrontProducts(slug,1,8));if(r.status==='SUCCESS'&&!Array.isArray(r.data))this.products.set(r.data.items||[]);}catch{}finally{this.loading.set(false);}}
   productRoute(p:MarketplaceProduct):string{return `${p.slug||slugify(p.product_name)}-${p.public_id||p.id}`;}
 }
 function slugify(v:string):string{return v.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'product';}
