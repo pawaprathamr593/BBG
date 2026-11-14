@@ -1,5 +1,5 @@
 @if(promptService.prompt();as prompt){
- <div class="auth-prompt-position" [class.above]="prompt.placement==='above'" [style.top.px]="prompt.top" [style.left.px]="prompt.left" [style.--arrow-left.px]="prompt.arrowLeft" role="dialog" aria-label="Sign in to continue">
+ <div class="auth-prompt-position" [class.above]="prompt.placement==='above'" [style.top.px]="prompt.top" [style.left.px]="prompt.left" [style.--arrow-left]="prompt.arrowLeft + 'px'" role="dialog" aria-label="Sign in to continue">
   <app-auth-panel [compact]="true" [contextualReason]="prompt.reason" (authenticated)="onAuthenticated()" (close)="promptService.close()"/>
  </div>
 }
