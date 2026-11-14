@@ -59,7 +59,7 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
           } @else if (workspace.error()) {
             <div class="drawer-error" role="alert">{{ workspace.error() }}</div>
             <button class="retry-button" type="button" (click)="reloadWorkspaces()">Try again</button>
-          } @else if (workspace.tenants().length) {
+          } @else if (workspace.tenants().length || workspace.permissions().length) {
             <section class="drawer-section">
               <div class="section-heading">
                 <h3>Switch workspace</h3>
@@ -71,8 +71,8 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
                 (click)="switchWorkspace(null)">
                 <span class="workspace-symbol">◎</span>
                 <span class="workspace-copy">
-                  <strong>Personal / Platform</strong>
-                  <small>Marketplace and platform context</small>
+                  <strong>{{ personalContextLabel() }}</strong>
+                  <small>Personal account and platform access</small>
                 </span>
                 @if (workspace.activeTenantId() === null) { <span class="selected-mark">✓</span> }
               </button>
@@ -263,6 +263,12 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
 
   setTheme(mode: ThemeMode): void {
     this.theme.setMode(mode);
+  }
+
+  personalContextLabel(): string {
+    return this.workspace.permissions().some((permission) => permission.scope_type === 'PLATFORM')
+      ? 'Platform workspace'
+      : 'Personal / Marketplace';
   }
 
   roleLabel(roles: string | null): string {
