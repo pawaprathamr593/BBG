@@ -616,9 +616,13 @@ export class StorefrontSection {
     this.sort = 'newest';
     this.latitude = undefined;
     this.longitude = undefined;
-    this.clearFilters();
-    void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1, q: null }, queryParamsHandling: 'merge' });
+    this.appliedFilters.set(this.defaultFilters());
+    this.draftFilters = this.defaultFilters();
+    this.filterNotice.set('');
     this.searchTerm.set('');
+    this.queryPage = 1;
+    this.querySearch = '';
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1, q: null }, queryParamsHandling: 'merge' });
     void this.loadProducts(1, '');
   }
 
