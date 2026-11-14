@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
@@ -18,10 +19,11 @@ export class App {
   protected readonly auth = inject(AuthService);
   protected readonly isStorefrontRoute = signal(false);
   private readonly router = inject(Router);
+  private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
 
   constructor() {
-    this.syncShellWithRoute(this.router.url);
+    this.syncShellWithRoute(this.document.location?.pathname || this.router.url);
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
       takeUntilDestroyed(this.destroyRef),
