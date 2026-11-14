@@ -25,6 +25,7 @@ export class App {
 
   constructor() {
     this.syncShellWithRoute(this.document.location?.pathname || this.router.url);
+    void this.auth.restoreSession();
     this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
       takeUntilDestroyed(this.destroyRef),
