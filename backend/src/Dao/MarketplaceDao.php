@@ -667,6 +667,9 @@ final readonly class MarketplaceDao
         $where = "bp.approval_status = 'APPROVED'
             AND bp.publication_status = 'PUBLISHED'
             AND bp.status = 'A'";
+        if (($filters['tenant_id'] ?? null) !== null) {
+            $where .= ' AND p.tenant_id = :tenant_id';
+        }
         if ($filters['search'] !== '') {
             $where .= " AND (p.product_name LIKE :search_name
                 OR p.product_code LIKE :search_code
@@ -714,6 +717,9 @@ final readonly class MarketplaceDao
     private function publicProductParams(array $filters): array
     {
         $params = [];
+        if (($filters['tenant_id'] ?? null) !== null) {
+            $params[':tenant_id'] = $filters['tenant_id'];
+        }
         if ($filters['search'] !== '') {
             $needle = '%' . $filters['search'] . '%';
             $params[':search_name'] = $needle;
