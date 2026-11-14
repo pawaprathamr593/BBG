@@ -165,6 +165,7 @@ type ProductFilterKey = keyof ProductFilterValues;
                 <h2>{{ searchTerm().trim() ? 'No matching products found' : 'No products published yet' }}</h2>
                 <p>{{ searchTerm().trim() ? 'Try a different product name or clear your search to browse the catalogue.' : brandName + ' has not published products to this catalogue yet. Please check back later or contact the business.' }}</p>
                 @if (searchTerm().trim()) { <button class="reset-button" type="button" (click)="clearSearch()">Clear search</button> }
+                @if (activeFilterCount() || sort !== 'newest') { <button class="reset-button" type="button" (click)="clearAllFilters()">Clear all filters</button> }
                 <a class="contact-text-link" [routerLink]="['/store', data.business.business_slug, 'contact']">Contact the business <span aria-hidden="true">↗</span></a>
               </div>
             }
