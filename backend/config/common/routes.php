@@ -33,6 +33,17 @@ return [
     Route::post('/api/v1/auth/profile')->action([AuthController::class, 'actionGetAuth'])->name('api/v1/auth/profile'),
     Route::post('/api/v1/auth/profile/update')->action([AuthController::class, 'actionManageAuth'])->name('api/v1/auth/profile/update'),
     Route::post('/api/v1/auth/permissions')->action([AuthController::class, 'actionGetAuth'])->name('api/v1/auth/permissions'),
+    Route::get('/api/v1/auth/oauth/google/start')->action([OAuthController::class, 'actionStartGoogle'])->name('api/v1/auth/oauth/google/start'),
+    Route::get('/api/v1/auth/oauth/google/callback')->action([OAuthController::class, 'actionCallbackGoogle'])->name('api/v1/auth/oauth/google/callback'),
+    Route::get('/api/v1/auth/oauth/apple/start')->action([OAuthController::class, 'actionStartApple'])->name('api/v1/auth/oauth/apple/start'),
+    Route::post('/api/v1/auth/oauth/apple/callback')->action([OAuthController::class, 'actionCallbackApple'])->name('api/v1/auth/oauth/apple/callback'),
+    Route::get('/api/v1/auth/oauth/facebook/start')->action([OAuthController::class, 'actionStartFacebook'])->name('api/v1/auth/oauth/facebook/start'),
+    Route::get('/api/v1/auth/oauth/facebook/callback')->action([OAuthController::class, 'actionCallbackFacebook'])->name('api/v1/auth/oauth/facebook/callback'),
+    Route::get('/api/v1/auth/oauth/instagram/start')->action([OAuthController::class, 'actionStartInstagram'])->name('api/v1/auth/oauth/instagram/start'),
+    Route::get('/api/v1/auth/oauth/instagram/callback')->action([OAuthController::class, 'actionCallbackInstagram'])->name('api/v1/auth/oauth/instagram/callback'),
+    Route::post('/api/v1/auth/oauth/email/send')->action([OAuthController::class, 'actionSendEmailOtp'])->name('api/v1/auth/oauth/email/send'),
+    Route::post('/api/v1/auth/oauth/email/verify')->action([OAuthController::class, 'actionVerifyEmailOtp'])->name('api/v1/auth/oauth/email/verify'),
+
 
     Route::post('/api/v1/cart/get')->action([CartController::class, 'actionGetCart'])->name('api/v1/cart/get'),
     Route::post('/api/v1/cart/add')->action([CartController::class, 'actionManageCart'])->name('api/v1/cart/add'),
