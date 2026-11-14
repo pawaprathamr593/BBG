@@ -393,6 +393,10 @@ export class MarketplaceHome implements OnInit {
   protected readonly homeStats = signal<MarketplaceHomeStats | null>(null);
   protected readonly statLabels = ['Businesses registered', 'Platform users', 'Products listed', 'Orders completed'];
 
+  protected slugifyProduct(value: string): string {
+    return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
+  }
+
   ngOnInit(): void {
     this.loadHome();
   }
@@ -505,4 +509,4 @@ export class MarketplaceHome implements OnInit {
   }
 }
 
-function slugifyProduct(value: string): string { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product'; }
+|-$/g, '') || 'product'; }
