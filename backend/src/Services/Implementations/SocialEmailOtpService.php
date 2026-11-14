@@ -24,7 +24,8 @@ final class SocialEmailOtpService
         $redis = $this->redis();
         $key = $this->challengeKey($ticket);
         $cooldownKey = $key . ':cooldown';
-        if ($redis->exists($cooldownKey)) {
+        $cooldown = max(30, min(300, (int) $this->env('AUTH_EMAIL_OTP_RESEND_COOLDOWN', '60')));
+        if (!$redis->set($cooldownKey, '1', ['nx', 'ex' => $cooldown])) {
             throw new RuntimeException('Please wait before requesting another verification code.');
         }
 
@@ -41,8 +42,6 @@ final class SocialEmailOtpService
             'created_at' => time(),
         ];
         $redis->setex($key, $ttl, json_encode($challenge, JSON_THROW_ON_ERROR));
-        $cooldown = max(30, min(300, (int) $this->env('AUTH_EMAIL_OTP_RESEND_COOLDOWN', '60')));
-        $redis->setex($cooldownKey, $cooldown, '1');
 
         try {
             $this->sendEmail($email, $otp, $ttl);
@@ -69,34 +68,42 @@ final class SocialEmailOtpService
         }
         $redis = $this->redis();
         $key = $this->challengeKey($ticket);
-        $raw = $redis->get($key);
-        if (!is_string($raw)) {
-            throw new RuntimeException('The verification code has expired. Request a new code.');
+        $lockKey = $key . ':verify-lock';
+        if (!$redis->set($lockKey, '1', ['nx', 'ex' => 10])) {
+            throw new RuntimeException('This verification request is already being processed.');
         }
-        $challenge = json_decode($raw, true);
-        if (!is_array($challenge) || !hash_equals((string) ($challenge['email'] ?? ''), $email)) {
-            throw new RuntimeException('The verification request is invalid or expired.');
-        }
-
-        $attempts = (int) ($challenge['attempts'] ?? 0);
-        $maxAttempts = max(3, min(10, (int) $this->env('AUTH_EMAIL_OTP_MAX_ATTEMPTS', '5')));
-        $expected = (string) ($challenge['code_hash'] ?? '');
-        $secret = $this->env('AUTH_ACCESS_TOKEN_SECRET');
-        $actual = hash_hmac('sha256', $ticket . ':' . $email . ':' . $otp, $secret);
-        if ($expected === '' || !hash_equals($expected, $actual)) {
-            $attempts++;
-            $remaining = max(1, (int) $redis->ttl($key));
-            if ($attempts >= $maxAttempts) {
-                $redis->del($key);
-                throw new RuntimeException('Too many incorrect attempts. Request a new verification code.');
+        try {
+            $raw = $redis->get($key);
+            if (!is_string($raw)) {
+                throw new RuntimeException('The verification code has expired. Request a new code.');
             }
-            $challenge['attempts'] = $attempts;
-            $redis->setex($key, $remaining, json_encode($challenge, JSON_THROW_ON_ERROR));
-            throw new RuntimeException('The verification code is incorrect. Please try again.');
-        }
+            $challenge = json_decode($raw, true);
+            if (!is_array($challenge) || !hash_equals((string) ($challenge['email'] ?? ''), $email)) {
+                throw new RuntimeException('The verification request is invalid or expired.');
+            }
 
-        $redis->del($key, $key . ':cooldown');
-        return $email;
+            $attempts = (int) ($challenge['attempts'] ?? 0);
+            $maxAttempts = max(3, min(10, (int) $this->env('AUTH_EMAIL_OTP_MAX_ATTEMPTS', '5')));
+            $expected = (string) ($challenge['code_hash'] ?? '');
+            $secret = $this->env('AUTH_ACCESS_TOKEN_SECRET');
+            $actual = hash_hmac('sha256', $ticket . ':' . $email . ':' . $otp, $secret);
+            if ($expected === '' || !hash_equals($expected, $actual)) {
+                $attempts++;
+                $remaining = max(1, (int) $redis->ttl($key));
+                if ($attempts >= $maxAttempts) {
+                    $redis->del($key);
+                    throw new RuntimeException('Too many incorrect attempts. Request a new verification code.');
+                }
+                $challenge['attempts'] = $attempts;
+                $redis->setex($key, $remaining, json_encode($challenge, JSON_THROW_ON_ERROR));
+                throw new RuntimeException('The verification code is incorrect. Please try again.');
+            }
+
+            $redis->del($key, $key . ':cooldown');
+            return $email;
+        } finally {
+            $redis->del($lockKey);
+        }
     }
 
     private function sendEmail(string $email, string $otp, int $ttl): void
