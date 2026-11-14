@@ -260,7 +260,7 @@ export class StorefrontLayout implements OnInit {
           '@type': 'LocalBusiness',
           name,
           description,
-          url: path,
+          url: this.seo.canonicalUrl(path),
           ...(detail.business.business_phone ? { telephone: detail.business.business_phone } : {}),
           ...(detail.business.business_email ? { email: detail.business.business_email } : {}),
           ...(detail.business.address ? {
