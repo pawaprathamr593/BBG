@@ -22,9 +22,9 @@
 
       <div class="topbar-actions">
         <button class="theme-toggle" type="button" (click)="toggleTheme()"
-          [attr.aria-label]="theme() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'"
-          [attr.title]="theme() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'">
-          @if (theme() === 'light') {
+          [attr.aria-label]="theme.mode() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'"
+          [attr.title]="theme.mode() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'">
+          @if (theme.mode() === 'light') {
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg>
           } @else {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.6 8.6 0 1 0 20.2 15.2Z"></path></svg>
