@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/auth/auth.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { StorefrontContextService } from './storefront-context.service';
+import { UserProfileDrawerComponent } from '../../shared/user-profile-drawer/user-profile-drawer';
 
 interface StorefrontNavItem {
   label: string;
@@ -14,7 +15,7 @@ interface StorefrontNavItem {
 
 @Component({
   selector: 'app-storefront-layout',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, UserProfileDrawerComponent],
   providers: [StorefrontContextService],
   template: `<div class="store-shell">
       @if (context.loading()) {
@@ -51,21 +52,25 @@ interface StorefrontNavItem {
                   routerLinkActive="active" (click)="closeMenu()">{{ item.label }}</a>
               }
             </nav>
-            <button class="store-theme-toggle" type="button" (click)="toggleTheme()"
-              [attr.aria-label]="theme.mode() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'"
-              [attr.title]="theme.mode() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'">
-              @if (theme.mode() === 'light') {
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg>
-              } @else {
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.6 8.6 0 1 0 20.2 15.2Z"></path></svg>
-              }
-            </button>
-            <a class="account" [routerLink]="['/store', slug, 'login']" [queryParams]="{ returnUrl: currentUrl }">
-              <span class="account-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none"><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-              </span>
-              <span>{{ auth.isAuthenticated() ? 'My account' : 'Sign in' }}</span>
-            </a>
+            @if (!auth.isAuthenticated()) {
+              <button class="store-theme-toggle" type="button" (click)="toggleTheme()"
+                [attr.aria-label]="theme.resolvedMode() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'"
+                [attr.title]="theme.resolvedMode() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'">
+                @if (theme.resolvedMode() === 'light') {
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l-1.42 1.42m11.3-11.3 1.42-1.42"></path></svg>
+                } @else {
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.6 8.6 0 1 0 20.2 15.2Z"></path></svg>
+                }
+              </button>
+              <a class="account" [routerLink]="['/store', slug, 'login']" [queryParams]="{ returnUrl: currentUrl }">
+                <span class="account-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none"><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                </span>
+                <span>Sign in</span>
+              </a>
+            } @else {
+              <app-user-profile-drawer />
+            }
           </div>
         </header>
         <main id="storefront-content"><router-outlet /></main>
