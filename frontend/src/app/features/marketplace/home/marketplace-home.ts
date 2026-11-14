@@ -29,18 +29,6 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
             <i aria-hidden="true"></i>
             <a href="#promotions">Promotions</a>
           </div>
-          <div class="hero-stats" aria-label="Live BBG marketplace statistics">
-            @if (homeStats(); as stats) {
-              <div class="hero-stat"><strong>{{ formatCount(stats.businesses_registered) }}</strong><span>Businesses registered</span></div>
-              <div class="hero-stat"><strong>{{ formatCount(stats.platform_users) }}</strong><span>Platform users</span></div>
-              <div class="hero-stat"><strong>{{ formatCount(stats.products_listed) }}</strong><span>Products listed</span></div>
-              <div class="hero-stat"><strong>{{ formatCount(stats.orders_completed) }}</strong><span>Orders completed</span></div>
-            } @else {
-              @for (label of statLabels; track label) {
-                <div class="hero-stat hero-stat-loading"><strong>—</strong><span>{{ label }}</span></div>
-              }
-            }
-          </div>
         </div>
 
         <div class="hero-visual" aria-hidden="true">
@@ -58,6 +46,21 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
         </div>
         <div class="hero-stripe stripe-one" aria-hidden="true"></div>
         <div class="hero-stripe stripe-two" aria-hidden="true"></div>
+      </section>
+
+      <section class="marketplace-stats" aria-label="Live BBG marketplace statistics">
+          <div class="hero-stats" aria-label="Live BBG marketplace statistics">
+            @if (homeStats(); as stats) {
+              <div class="hero-stat"><strong>{{ formatCount(stats.businesses_registered) }}</strong><span>Businesses registered</span></div>
+              <div class="hero-stat"><strong>{{ formatCount(stats.platform_users) }}</strong><span>Platform users</span></div>
+              <div class="hero-stat"><strong>{{ formatCount(stats.products_listed) }}</strong><span>Products listed</span></div>
+              <div class="hero-stat"><strong>{{ formatCount(stats.orders_completed) }}</strong><span>Orders completed</span></div>
+            } @else {
+              @for (label of statLabels; track label) {
+                <div class="hero-stat hero-stat-loading"><strong>—</strong><span>{{ label }}</span></div>
+              }
+            }
+          </div>
       </section>
 
       <section class="content-section categories-section" id="categories" aria-labelledby="categories-title">
@@ -268,11 +271,12 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
     .hero-links a { color:inherit; text-decoration:none; }
     .hero-links a:hover { color:#f5d928; }
     .hero-links i { width:4px; height:4px; background:#f5d928; border-radius:50%; }
-    .hero-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; width:min(100%,720px); margin-top:25px; }
-    .hero-stat { display:flex; min-height:78px; flex-direction:column; justify-content:center; gap:5px; padding:11px 12px; background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.19); border-radius:12px; box-shadow:inset 0 1px rgba(255,255,255,.08); backdrop-filter:blur(8px); }
-    .hero-stat strong { color:#fff; font-size:clamp(1.2rem,2.1vw,1.8rem); font-weight:850; letter-spacing:-.045em; line-height:1; font-variant-numeric:tabular-nums; }
-    .hero-stat span { color:rgba(255,255,255,.78); font-size:.65rem; font-weight:650; line-height:1.3; }
-    .hero-stat-loading strong { color:rgba(255,255,255,.55); }
+    .marketplace-stats { display:block; width:100%; padding:22px max(24px,calc((100vw - 1400px)/2)); background:#f3f7f3; border-bottom:1px solid #e1eae3; }
+    .hero-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; width:100%; margin:0; }
+    .hero-stat { display:flex; min-height:82px; flex-direction:column; justify-content:center; gap:7px; padding:15px 20px; background:#fff; border:1px solid #e0e9e2; border-radius:12px; box-shadow:0 5px 18px rgba(17,64,43,.045); }
+    .hero-stat strong { color:#174d35; font-size:clamp(1.2rem,2.1vw,1.8rem); font-weight:850; letter-spacing:-.045em; line-height:1; font-variant-numeric:tabular-nums; }
+    .hero-stat span { color:#65756a; font-size:.65rem; font-weight:650; line-height:1.3; }
+    .hero-stat-loading strong { color:#a8b5ab; }
     .hero-visual { position:relative; min-height:390px; overflow:hidden; background:linear-gradient(145deg,#b8d8d0 0%,#dbe8d8 48%,#f1e9c8 100%); clip-path:polygon(18% 0,100% 0,100% 100%,0 100%); }
     .visual-glow { position:absolute; top:13%; right:12%; width:220px; height:220px; background:rgba(245,217,40,.38); border-radius:50%; filter:blur(2px); }
     .visual-sun { position:absolute; top:18%; right:22%; width:88px; height:88px; background:#f5d928; border-radius:50%; box-shadow:0 0 55px rgba(245,217,40,.55); }
@@ -372,8 +376,8 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
     .promotion-card p { display:-webkit-box; margin:0 0 10px; overflow:hidden; color:rgba(255,255,255,.82); font-size:.78rem; line-height:1.5; -webkit-line-clamp:3; -webkit-box-orient:vertical; }
     .promotion-card time,.promotion-state { color:rgba(255,255,255,.76); font-size:.72rem; }
     .promotion-state { margin:0; }
-    @media(max-width:900px) { .hero { grid-template-columns:minmax(0,1fr) minmax(260px,.72fr); } .hero-stats { grid-template-columns:repeat(2,minmax(0,1fr)); max-width:430px; } }
-    @media(max-width:650px) { .hero { grid-template-columns:1fr; min-height:0; } .hero-copy { padding:48px 22px 32px; } .hero-visual { min-height:220px; clip-path:none; } .hero-stripe { display:none; } .hero-stats { max-width:none; } .hero-stat { min-height:70px; } }
+    @media(max-width:900px) { .hero { grid-template-columns:minmax(0,1fr) minmax(260px,.72fr); } .hero-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media(max-width:650px) { .hero { grid-template-columns:1fr; min-height:0; } .hero-copy { padding:48px 22px 32px; } .hero-visual { min-height:220px; clip-path:none; } .hero-stripe { display:none; } .hero-stats { max-width:none; } .hero-stat { min-height:70px; } .marketplace-stats { padding:16px 20px; } }
     @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; } }
   `],
 })
