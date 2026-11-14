@@ -37,7 +37,7 @@ export class StorefrontSection implements OnInit{
   if(this.section==='products'){
    try{const r=await firstValueFrom(this.api.listStorefrontProducts(slug,1,48));if(r.status==='SUCCESS'&&!Array.isArray(r.data))this.products.set(r.data.items||[]);}catch{}finally{this.loading.set(false);}
    const description=`Browse products published by ${name}.`;
-   const schema={'@context':'https://schema.org','@type':'CollectionPage',name:`Products | ${name}`,description,url:path,mainEntity:{'@type':'ItemList',numberOfItems:this.products().length,itemListElement:this.products().map((p,index)=>({'@type':'ListItem',position:index+1,name:p.product_name,url:`${path}/${p.slug||p.public_id||p.id}`}))}};
+   const schema={'@context':'https://schema.org','@type':'CollectionPage',name:`Products | ${name}`,description,url:path,mainEntity:{'@type':'ItemList',numberOfItems:this.products().length,itemListElement:this.products().map((p,index)=>({'@type':'ListItem',position:index+1,name:p.product_name,url:`${path}/${this.productRoute(p)}`}))}};
    this.seo.update(`Products | ${name}`,description,path,schema);
    return;
   }
