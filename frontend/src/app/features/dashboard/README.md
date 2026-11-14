@@ -5,10 +5,13 @@ The `/dashboard` route renders BBG's unified, responsive workspace for authentic
 ## Access model
 
 - One dashboard shell serves consumer, platform and tenant contexts.
-- The active context is explicit. A tenant is never selected automatically.
+- The active context is explicit. A tenant is never selected on first visit; a previously selected workspace may be restored for the same signed-in user during the current browser session.
 - The dashboard loads permissions from `/api/v1/auth/permissions` and renders modules only when the matching permission is present for the active scope.
 - Platform/global permissions are loaded with `tenant_id: 0`; tenant permissions are loaded only after the user explicitly selects a tenant.
 - Tenant membership and role labels come from `/api/v1/tenants/mine/list`.
+- `WorkspaceContextService` is the shared source of active tenant context and permissions for the dashboard and the reusable profile drawer in both platform and storefront navigation.
+- The profile drawer allows users to switch only to workspaces returned by the authenticated membership endpoint; it reloads permissions before applying the new context and routes to `/dashboard`.
+- The selected workspace is stored in session storage under a user-specific key and is cleared on logout.
 - The existing consumer and entrepreneur summary endpoints provide the current dashboard metrics when their backend authorization conditions are met.
 - Backend authorization remains authoritative. Hiding a module in Angular is not a security boundary.
 
