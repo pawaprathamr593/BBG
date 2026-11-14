@@ -8,7 +8,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
 @Component({
   selector: 'app-storefront-home',
   imports: [RouterLink],
-  template: \`
+  template: `
     @if (context.detail(); as data) {
       <main class="home-page">
         <section class="hero" aria-labelledby="storefront-title">
@@ -116,8 +116,8 @@ import { StorefrontSeoService } from './storefront-seo.service';
         </section>
       </main>
     }
-  \`,
-  styles: [\`
+  `,
+  styles: [`
     :host{display:block;color:var(--text-primary)}
     .home-page{overflow:hidden;background:var(--surface-page)}
     .hero{position:relative;isolation:isolate;display:flex;min-height:clamp(500px,62vw,690px);align-items:center;overflow:hidden;background:#102b20;color:#fff}
@@ -205,7 +205,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
     @media(max-width:650px){.hero{min-height:570px}.hero-content{width:calc(100% - 40px);padding:65px 0 100px}.hero h1{font-size:clamp(3rem,15vw,5rem)}.hero-description{font-size:.96rem}.hero-actions{align-items:stretch;flex-direction:column;max-width:300px}.button{justify-content:space-between}.hero-scroll{right:20px;bottom:22px}.section-wrap,.band-inner{width:calc(100% - 40px)}.intro{grid-template-columns:1fr;gap:18px;padding-top:62px;padding-bottom:62px}.intro-kicker{flex-direction:row}.intro h2{margin:0 0 14px;font-size:2.35rem}.intro>.text-link{grid-column:1}.featured{padding-top:64px;padding-bottom:70px}.section-heading{align-items:flex-start;flex-direction:column;gap:18px}.section-heading h2{font-size:2.5rem}.product-grid{gap:12px}.product-art{min-height:155px}.art-monogram{font-size:4.8rem}.product-info{padding:13px}.product-info>p{font-size:.72rem}.product-title-row h3{font-size:.88rem}.view-label{display:none}.empty-products{align-items:flex-start;flex-direction:column;padding:22px}.empty-products .text-link{margin-left:0}.band-inner{align-items:flex-start;flex-direction:column;justify-content:center;padding:48px 0}.band-button{width:100%}}
     @media(max-width:390px){.product-grid{grid-template-columns:1fr}.product-art{min-height:210px}.art-monogram{font-size:6rem}}
     @media(prefers-reduced-motion:reduce){.button,.text-link span,.product-card,.outline-link{transition:none}.button:hover,.product-card:hover{transform:none}}
-  \`],
+  `],
 })
 export class StorefrontHome {
   readonly context = inject(StorefrontContextService);
