@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { SocialAuthIntent } from './auth.models';
+import { AuthService } from './auth.service';
 
 export interface AuthDialogState {
   reason: string;
@@ -11,8 +12,22 @@ export interface AuthDialogState {
 
 @Injectable({ providedIn: 'root' })
 export class AuthDialogService {
+  private readonly auth = inject(AuthService);
   readonly state = signal<AuthDialogState | null>(null);
   private pendingAction: (() => void | Promise<void>) | null = null;
+
+  async requireAuthentication(
+    reason: string,
+    anchor: HTMLElement | null,
+    action: () => void | Promise<void>,
+    mode: SocialAuthIntent = 'login',
+  ): Promise<void> {
+    if (this.auth.isAuthenticated()) {
+      await action();
+      return;
+    }
+    this.open(reason, anchor, mode, action);
+  }
 
   open(
     reason: string,
