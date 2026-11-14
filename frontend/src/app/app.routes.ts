@@ -13,6 +13,18 @@ export const routes: Routes = [
     title: 'Discover Businesses | BBG',
   },
   {
+    path: 'store/:businessSlug',
+    loadComponent: () => import('./features/storefront/storefront-layout').then((m) => m.StorefrontLayout),
+    children: [
+      { path: '', loadComponent: () => import('./features/storefront/storefront-home').then((m) => m.StorefrontHome), title: 'Business storefront | BBG' },
+      { path: 'products', loadComponent: () => import('./features/storefront/storefront-section').then((m) => m.StorefrontSection), data: { section: 'products' }, title: 'Products | BBG' },
+      { path: 'products/:productSlug', loadComponent: () => import('./features/storefront/storefront-product-detail').then((m) => m.StorefrontProductDetail), title: 'Product details | BBG' },
+      { path: 'about', loadComponent: () => import('./features/storefront/storefront-section').then((m) => m.StorefrontSection), data: { section: 'about' }, title: 'About the business | BBG' },
+      { path: 'contact', loadComponent: () => import('./features/storefront/storefront-section').then((m) => m.StorefrontSection), data: { section: 'contact' }, title: 'Contact the business | BBG' },
+      { path: 'login', redirectTo: '/login' },
+    ],
+  },
+  {
     path: 'businesses/:identifier',
     loadComponent: () => import('./features/marketplace/details/marketplace-item-placeholder').then((m) => m.MarketplaceItemPlaceholder),
     data: { itemType: 'Business', directoryLink: '/businesses' },

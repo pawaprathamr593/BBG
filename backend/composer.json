@@ -29,10 +29,14 @@
         }
     ],
     "require": {
-        "php": "8.2 - 8.5",
-        "ext-filter": "*",
         "aws/aws-sdk-php": "^3.300",
+        "ext-curl": "*",
+        "ext-filter": "*",
+        "ext-openssl": "*",
+        "firebase/php-jwt": "^7.2.1",
+        "hashids/hashids": "^5.0",
         "httpsoft/http-message": "^1.1.6",
+        "php": "8.2 - 8.5",
         "psr/container": "^2.0.2",
         "psr/http-factory": "^1.1",
         "psr/http-message": "^2.0",
@@ -62,10 +66,7 @@
         "yiisoft/yii-console": "^2.4.2",
         "yiisoft/yii-http": "^1.1.1",
         "yiisoft/yii-runner-console": "^2.2.1",
-        "yiisoft/yii-runner-http": "^3.2.1",
-        "firebase/php-jwt": "^7.2.1",
-        "ext-curl": "*",
-        "ext-openssl": "*"
+        "yiisoft/yii-runner-http": "^3.2.1"
     },
     "require-dev": {
         "vlucas/phpdotenv": "^5.6",

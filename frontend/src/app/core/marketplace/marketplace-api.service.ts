@@ -40,6 +40,8 @@ export interface MarketplaceBusiness {
 
 export interface MarketplaceProduct {
   id: number;
+  public_id?: string;
+  slug?: string;
   product_code: string;
   product_name: string;
   description: string | null;
@@ -69,6 +71,27 @@ export interface MarketplaceProduct {
   popularity?: { views: number; likes: number; engagements: number };
 }
 
+export interface MarketplaceStorefront {
+  title: string | null;
+  description: string | null;
+  theme_code: string | null;
+  show_prices: boolean;
+  accept_online_orders: boolean;
+  whatsapp_enabled: boolean;
+  currency: string | null;
+}
+export interface MarketplaceBusinessDetail {
+  business: MarketplaceBusiness & {
+    address?: { address_line_1: string | null; address_line_2: string | null; city: string | null; state: string | null; postal_code: string | null; country_code: string | null };
+    whatsapp_number?: string | null;
+    location?: { latitude: number | null; longitude: number | null };
+  };
+  storefront: MarketplaceStorefront;
+}
+export interface MarketplaceProductDetail {
+  product: MarketplaceProduct;
+  variants: Array<{ id: number; variant_code: string; variant_name: string; barcode: string | null; selling_price?: number | string; unit_id: number | null; unit_name: string | null; unit_symbol: string | null; quantity_precision?: number; is_fraction_allowed?: boolean }>;
+}
 export interface MarketplacePromotion {
   id: number;
   tenant_id: number;
@@ -137,6 +160,33 @@ export interface MarketplaceApiResponse<T> {
 export class MarketplaceApiService {
   private readonly http = inject(HttpClient);
   private readonly apiBaseUrl = inject(API_BASE_URL);
+
+  getBusiness(businessSlug: string): Observable<MarketplaceApiResponse<MarketplaceBusinessDetail>> {
+    return this.http.post<MarketplaceApiResponse<MarketplaceBusinessDetail>>(
+      `${this.apiBaseUrl}/api/v1/marketplace/businesses/detail`,
+      { marketplaceParam: { actionData: { business_slug: businessSlug } } },
+    );
+  }
+
+  listStorefrontProducts(businessSlug: string, page = 1, pageSize = 24, search = ''): Observable<MarketplaceApiResponse<{
+    business_slug: string; items: MarketplaceProduct[];
+    pagination: { page: number; page_size: number; total: number };
+  }>> {
+    return this.http.post<MarketplaceApiResponse<{
+      business_slug: string; items: MarketplaceProduct[];
+      pagination: { page: number; page_size: number; total: number };
+    }>>(
+      `${this.apiBaseUrl}/api/v1/marketplace/products/list`,
+      { marketplaceParam: { actionData: { business_slug: businessSlug, page, page_size: pageSize, search } } },
+    );
+  }
+
+  getStorefrontProduct(businessSlug: string, publicProductId: string): Observable<MarketplaceApiResponse<MarketplaceProductDetail>> {
+    return this.http.post<MarketplaceApiResponse<MarketplaceProductDetail>>(
+      `${this.apiBaseUrl}/api/v1/marketplace/products/detail`,
+      { marketplaceParam: { actionData: { business_slug: businessSlug, product_id: publicProductId } } },
+    );
+  }
 
   getHomeSummary(): Observable<MarketplaceApiResponse<MarketplaceHomeData>> {
     return this.http.post<MarketplaceApiResponse<MarketplaceHomeData>>(

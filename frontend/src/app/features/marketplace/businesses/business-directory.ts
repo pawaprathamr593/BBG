@@ -86,7 +86,7 @@ interface BusinessFilterValues {
                   @if (business.accept_online_orders) { <span>Online orders</span> }
                   @if (business.whatsapp_enabled) { <span>WhatsApp</span> }
                 </div>
-                <a class="card-action" [routerLink]="['/businesses', business.business_slug]">Explore business <span aria-hidden="true">→</span></a>
+                <a class="card-action" [routerLink]="['/store', business.business_slug]">Explore business <span aria-hidden="true">→</span></a>
               </article>
             }
           </div>

@@ -128,7 +128,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
                   @if (business.accept_online_orders) { <span>Online orders</span> }
                   @if (business.whatsapp_enabled) { <span>WhatsApp</span> }
                 </div>
-                <a class="card-action" [routerLink]="['/businesses', business.business_slug]">Explore business <span aria-hidden="true">→</span></a>
+                <a class="card-action" [routerLink]="['/store', business.business_slug]">Explore business <span aria-hidden="true">→</span></a>
               </article>
             }
           </div>
@@ -166,7 +166,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
                 @if (business.created_on) {
                   <time class="item-date" [attr.datetime]="business.created_on">Added {{ formatDate(business.created_on) }}</time>
                 }
-                <a class="card-action" [routerLink]="['/businesses', business.business_slug]">Explore business <span aria-hidden="true">→</span></a>
+                <a class="card-action" [routerLink]="['/store', business.business_slug]">Explore business <span aria-hidden="true">→</span></a>
               </article>
             }
           </div>
@@ -202,7 +202,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
                 }
                 <p class="product-business">From {{ product.business.business_name }}</p>
                 <time class="item-date" [attr.datetime]="product.created_on">Added {{ formatDate(product.created_on) }}</time>
-                <a class="card-action" [routerLink]="['/products', product.id]">View product <span aria-hidden="true">→</span></a>
+                <a class="card-action" [routerLink]="['/store', product.business.business_slug, 'products', (product.slug || slugifyProduct(product.product_name)) + '-' + (product.public_id || product.id)]">View product <span aria-hidden="true">→</span></a>
               </article>
             }
           </div>
@@ -504,3 +504,5 @@ export class MarketplaceHome implements OnInit {
     });
   }
 }
+
+function slugifyProduct(value: string): string { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product'; }

@@ -6,6 +6,7 @@ namespace App\Services\Implementations;
 
 use App\Dao\MarketplaceDao;
 use App\Services\Interfaces\IMarketplaceServices;
+use Hashids\Hashids;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use Yiisoft\Db\Connection\ConnectionInterface;
@@ -339,7 +340,7 @@ final readonly class MarketplaceServices implements IMarketplaceServices
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $slug = $this->businessSlug($actionData['business_slug'] ?? null);
-        $productId = $this->positiveInt($actionData['product_id'] ?? null);
+        $productId = $this->decodePublicProductId($actionData['product_id'] ?? null);
         if ($slug === null || $productId === null) {
             $resArr['msgArr'][] = 'Valid business_slug and product_id are required.';
             return $resArr;
@@ -667,6 +668,8 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $product = [
             'id' => (int) $row['id'],
+            'public_id' => $this->productHashids()->encode((int) $row['id']),
+            'slug' => $this->productSlug((string) $row['product_name']),
             'product_code' => $row['product_code'],
             'product_name' => $row['product_name'],
             'description' => $row['description'],
@@ -690,6 +693,39 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = $product;
         return $product;
+    }
+
+
+    private function productHashids(): Hashids
+    {
+        $salt = trim((string) (getenv('BBG_PUBLIC_ID_SALT') ?: getenv('AUTH_ACCESS_TOKEN_SECRET')));
+        if (strlen($salt) < 32) {
+            throw new \\RuntimeException('BBG public product ID salt must contain at least 32 characters.');
+        }
+        return new Hashids($salt, 10);
+    }
+
+    private function decodePublicProductId(mixed $value): ?int
+    {
+        if (!is_string($value) && !is_int($value)) {
+            return null;
+        }
+        $identifier = trim((string) $value);
+        if ($identifier === '' || strlen($identifier) > 64) {
+            return null;
+        }
+        if (ctype_digit($identifier)) {
+            return $this->positiveInt($identifier);
+        }
+        $decoded = $this->productHashids()->decode($identifier);
+        return count($decoded) === 1 && $decoded[0] > 0 ? (int) $decoded[0] : null;
+    }
+
+    private function productSlug(string $name): string
+    {
+        $slug = strtolower(trim($name));
+        $slug = preg_replace('/[^a-z0-9]+/', '-', $slug) ?? '';
+        return trim($slug, '-') ?: 'product';
     }
 
     private function businessSlug(mixed $value): ?string

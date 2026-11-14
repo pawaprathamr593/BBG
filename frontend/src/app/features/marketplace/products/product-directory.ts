@@ -142,8 +142,8 @@ type ProductFilterKey = keyof ProductFilterValues;
                   <span class="popularity">{{ product.popularity.engagements }} views and likes</span>
                 }
                 <div class="card-actions">
-                  <a class="primary-action" [routerLink]="['/products', product.id]">View product <span aria-hidden="true">→</span></a>
-                  <a class="secondary-action" [routerLink]="['/businesses', product.business.business_slug]">Explore business</a>
+                  <a class="primary-action" [routerLink]="['/store', product.business.business_slug, 'products', (product.slug || slugifyProduct(product.product_name)) + '-' + (product.public_id || product.id)]">View product <span aria-hidden="true">→</span></a>
+                  <a class="secondary-action" [routerLink]="['/store', product.business.business_slug]">Explore business</a>
                 </div>
               </article>
             }
@@ -421,3 +421,5 @@ export class ProductDirectory implements OnInit {
     );
   }
 }
+
+function slugifyProduct(value: string): string { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product'; }
