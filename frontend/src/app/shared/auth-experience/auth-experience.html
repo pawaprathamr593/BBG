@@ -1,6 +1,9 @@
 <section class="auth-experience" [class.auth-page-mode]="presentation === 'page'" [class.auth-popup-mode]="presentation === 'popup'">
   @if (presentation === 'popup') {
-    <p class="popup-reason" role="note">Sign in required for this action</p>
+    <div class="popup-reason" role="note">
+      <strong>Sign in required for this action</strong>
+      @if (reason) { <span>{{ reason }}</span> }
+    </div>
   }
   <div class="auth-heading">
     @if (presentation === 'page') {
