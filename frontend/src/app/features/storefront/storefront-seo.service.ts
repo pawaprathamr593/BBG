@@ -8,12 +8,12 @@ export class StorefrontSeoService {
   private readonly meta = inject(Meta);
   private readonly document = inject(DOCUMENT);
 
-  update(title: string, description: string, path: string, schema?: Record<string, unknown>): void {
+  update(title: string, description: string, path: string, schema?: Record<string, unknown>, robots = 'index,follow,max-image-preview:large'): void {
     const origin = this.document.location?.origin || 'https://bbg.example';
     const canonical = new URL(path, origin).toString();
     this.title.setTitle(title);
     this.meta.updateTag({ name: 'description', content: description.slice(0, 300) });
-    this.meta.updateTag({ name: 'robots', content: 'index,follow,max-image-preview:large' });
+    this.meta.updateTag({ name: 'robots', content: robots });
     this.meta.updateTag({ property: 'og:type', content: 'website' });
     this.meta.updateTag({ property: 'og:title', content: title });
     this.meta.updateTag({ property: 'og:description', content: description.slice(0, 300) });
