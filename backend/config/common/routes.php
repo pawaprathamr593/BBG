@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Api;
 use App\Modules\Api\V1\Controllers\AuthController;
+use App\Modules\Api\V1\Controllers\OAuthController;
 use App\Modules\Api\V1\Controllers\CartController;
 use App\Modules\Api\V1\Controllers\OrderController;
 use App\Modules\Api\V1\Controllers\MarketplaceController;
