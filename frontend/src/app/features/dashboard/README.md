@@ -14,9 +14,9 @@ The `/dashboard` route renders BBG's unified, responsive workspace for authentic
 
 ## Current module permission mapping
 
-Tenant context: `CATALOGUE_MANAGE`, `BUSINESS_PROFILE_MANAGE`, `CUSTOMERS_MANAGE`, `ENQUIRIES_MANAGE`, `ORDERS_MANAGE`, `PAYMENTS_VIEW`, `PROMOTIONS_MANAGE`, `SUBSCRIPTIONS_MANAGE`, `TENANT_MEMBERS_VIEW`, and `ANALYTICS_VIEW`.
+Tenant context: `CATALOGUE_MANAGE`, `BUSINESS_PROFILE_MANAGE`, `CUSTOMERS_MANAGE`, `ENQUIRIES_MANAGE`, `ORDERS_MANAGE`, `PAYMENTS_VIEW`, `PROMOTIONS_MANAGE`, `SUBSCRIPTIONS_MANAGE`, and `TENANT_MEMBERS_VIEW`.
 
-Platform context: `PLATFORM_USERS_MANAGE`, `BUSINESS_APPROVE`, `SUBSCRIPTIONS_APPROVE`, `CATEGORIES_MANAGE`, `MODERATION_MANAGE`, `SYSTEM_HEALTH_VIEW), and platform-scoped `ANALYTICS_VIEW`.
+Platform context: `PLATFORM_USERS_MANAGE`, `BUSINESS_APPROVE`, `SUBSCRIPTIONS_APPROVE`, `CATEGORIES_MANAGE`, `MODERATION_MANAGE`, `SYSTEM_HEALTH_VIEW`, and `ANALYTICS_VIEW`.
 
 Custom tenant roles can use this same model later: the dashboard resolves permission codes and scope rather than depending on a fixed role-name allowlist.
 
