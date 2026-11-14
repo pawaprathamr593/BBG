@@ -176,7 +176,7 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
   readonly loggingOut = signal(false);
   readonly logoutError = signal('');
   readonly initials = computed(() => (this.auth.user()?.full_name || 'BBG')
-    .trim().split(/\\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join(''));
+    .trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join(''));
 
   @ViewChild('trigger') private trigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('drawer') private drawer?: ElementRef<HTMLElement>;
