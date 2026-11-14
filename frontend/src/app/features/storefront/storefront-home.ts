@@ -269,7 +269,7 @@ export class StorefrontHome {
     const address = data.business.address;
     const location = data.business.location;
     return {
-      '@type': 'LocalBusiness',
+      '@type': address ? 'LocalBusiness' : 'Organization',
       '@id': this.seo.canonicalUrl(pathForBusiness(data.business.business_slug)) + '#business',
       name: data.storefront.title || data.business.business_name,
       description: data.storefront.description || data.business.business_description || undefined,
