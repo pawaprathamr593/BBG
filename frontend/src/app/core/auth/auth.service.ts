@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { environment } from '../../../environments/environment';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../http/api.service';
 import { ApiError } from '../http/api-error';
@@ -35,6 +36,87 @@ export class AuthService {
     const response = await firstValueFrom(this.api.post<AuthResponseData>(
       '/api/v1/auth/login',
       { authParam: { actionType: 'manageAuth', actionData: { action: 'login', ...payload } } },
+      { withCredentials: true },
+    ));
+    const user = this.acceptAuthResponse(response);
+    await this.loadPermissions(0).catch(() => this.permissionService.clear());
+    return user;
+  }
+
+  async startSocialLogin(provider: 'google' | 'apple' | 'facebook' | 'instagram'): Promise<
+    | { status: 'SUCCESS'; user: AuthUser }
+    | { status: 'EMAIL_REQUIRED'; ticket: string; email: string | null }
+  > {
+    if (typeof window === 'undefined') throw new ApiError('Social sign-in is only available in a browser.');
+    const base = environment.apiBaseUrl || window.location.origin;
+    const apiOrigin = new URL(base, window.location.origin).origin;
+    const popupUrl = `${base.replace(/\\/$/, '')}/api/v1/auth/oauth/${provider}/start`;
+    const popup = window.open(popupUrl, 'bbg-social-sign-in', 'popup=yes,width=520,height=680,resizable=yes,scrollbars=yes');
+    if (!popup) throw new ApiError('Your browser blocked the sign-in window. Allow pop-ups for BBG and try again.');
+
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const cleanup = (): void => {
+        window.removeEventListener('message', onMessage);
+        window.clearTimeout(timeout);
+        window.clearInterval(closeCheck);
+        if (!popup.closed) popup.close();
+      };
+      const finish = (callback: () => void): void => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        callback();
+      };
+      const onMessage = (event: MessageEvent): void => {
+        if (event.origin !== apiOrigin || event.source !== popup || !event.data || typeof event.data !== 'object') return;
+        if (event.data.type === 'BBG_OAUTH_EMAIL_REQUIRED') {
+          finish(() => resolve({
+            status: 'EMAIL_REQUIRED',
+            ticket: String(event.data.ticket ?? ''),
+            email: typeof event.data.email === 'string' ? event.data.email : null,
+          }));
+          return;
+        }
+        if (event.data.type === 'BBG_OAUTH_SUCCESS') {
+          void (async () => {
+            try {
+              const user = this.acceptAuthResponse(event.data.payload as ApiEnvelope<AuthResponseData>);
+              await this.loadPermissions(0).catch(() => this.permissionService.clear());
+              finish(() => resolve({ status: 'SUCCESS', user }));
+            } catch (error) {
+              finish(() => reject(error));
+            }
+          })();
+          return;
+        }
+        if (event.data.type === 'BBG_OAUTH_ERROR') {
+          finish(() => reject(new ApiError(String(event.data.message ?? 'Social sign-in failed.'))));
+        }
+      };
+      window.addEventListener('message', onMessage);
+      const timeout = window.setTimeout(() => finish(() => reject(new ApiError('Social sign-in timed out. Please try again.'))), 120000);
+      const closeCheck = window.setInterval(() => {
+        if (popup.closed) finish(() => reject(new ApiError('The social sign-in window was closed before completion.')));
+      }, 500);
+    });
+  }
+
+  async requestSocialEmailOtp(ticket: string, email: string): Promise<{ email: string; expires_in: number; resend_after: number }> {
+    const response = await firstValueFrom(this.api.post<{ email: string; expires_in: number; resend_after: number }>(
+      '/api/v1/auth/oauth/email/send',
+      { ticket, email },
+      { withCredentials: true },
+    ));
+    this.assertSuccess(response, 'Unable to send the verification code.');
+    if (!response.data || Array.isArray(response.data)) throw new ApiError('The verification response was incomplete.');
+    return response.data;
+  }
+
+  async verifySocialEmailOtp(ticket: string, email: string, code: string): Promise<AuthUser> {
+    const response = await firstValueFrom(this.api.post<AuthResponseData>(
+      '/api/v1/auth/oauth/email/verify',
+      { ticket, email, code },
       { withCredentials: true },
     ));
     const user = this.acceptAuthResponse(response);
