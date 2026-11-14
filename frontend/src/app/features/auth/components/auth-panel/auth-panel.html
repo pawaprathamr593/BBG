@@ -1,0 +1,37 @@
+<section class="auth-panel" [class.auth-panel-compact]="compact">
+  <div class="panel-heading"><span class="brand-mark">B</span><div><strong>Welcome to BBG</strong><small>Business, better connected</small></div></div>
+  @if(contextualReason){<p class="context-reason">{{contextualReason}}</p>}@else{<p class="panel-intro">{{mode()==='login'?'Sign in to continue.':'Create one account to connect across BBG.'}}</p>}
+  <h2>{{mode()==='login'?'Continue to BBG':'Join BBG'}}</h2>
+  <div class="social-grid">
+    <button type="button" class="social-button" (click)="selectProvider('Google')"><b class="google">G</b>Google</button>
+    <button type="button" class="social-button" (click)="selectProvider('Instagram')"><b class="instagram">◎</b>Instagram</button>
+    <button type="button" class="social-button" (click)="selectProvider('Facebook')"><b class="facebook">f</b>Facebook</button>
+    <button type="button" class="social-button" (click)="selectProvider('Apple')"><b>●</b>Apple</button>
+  </div>
+  @if(providerMessage()){<p class="provider-message" role="status">{{providerMessage()}}</p>}
+  @if(!credentialsVisible()){<button type="button" class="email-toggle" (click)="revealCredentials()">Or {{mode()==='login'?'sign in':'create an account'}} with email or phone</button>}
+  @else{
+    <div class="form-divider">Or continue with email or phone</div>
+    @if(error()){<p class="form-error" role="alert">{{error()}}</p>}
+    @if(mode()==='login'){
+      <form [formGroup]="loginForm" (ngSubmit)="submit()">
+        <label for="bbg-login-id">Email address or mobile number</label><input id="bbg-login-id" formControlName="identifier" autocomplete="username" placeholder="Enter email or mobile">
+        <div class="label-row"><label for="bbg-login-pw">Password</label><button type="button" class="text-action" (click)="passwordVisible.update(v=>!v)">{{passwordVisible()?'Hide':'Show'}}</button></div>
+        <input id="bbg-login-pw" [type]="passwordVisible()?'text':'password'" formControlName="password" autocomplete="current-password" placeholder="Enter password">
+        <button class="submit-button" type="submit" [disabled]="busy()">{{busy()?'Signing in…':'Sign in'}}</button>
+      </form>
+      <p class="switch-mode">New to BBG? <button type="button" (click)="setMode('register')">Create an account</button></p>
+    }@else{
+      <form [formGroup]="registerForm" (ngSubmit)="submit()">
+        <label for="bbg-reg-name">Full name</label><input id="bbg-reg-name" formControlName="full_name" autocomplete="name" placeholder="Your full name">
+        <label for="bbg-reg-email">Email address <small>(optional if mobile supplied)</small></label><input id="bbg-reg-email" formControlName="email" type="email" autocomplete="email" placeholder="name@example.com">
+        <label for="bbg-reg-mobile">Mobile number <small>(optional if email supplied)</small></label><input id="bbg-reg-mobile" formControlName="mobile" type="tel" autocomplete="tel" placeholder="Mobile number">
+        <div class="label-row"><label for="bbg-reg-pw">Create password</label><button type="button" class="text-action" (click)="passwordVisible.update(v=>!v)">{{passwordVisible()?'Hide':'Show'}}</button></div>
+        <input id="bbg-reg-pw" [type]="passwordVisible()?'text':'password'" formControlName="password" autocomplete="new-password" placeholder="At least 8 characters">
+        <button class="submit-button" type="submit" [disabled]="busy()">{{busy()?'Creating account…':'Create account'}}</button>
+      </form>
+      <p class="switch-mode">Already on BBG? <button type="button" (click)="setMode('login')">Sign in</button></p>
+    }
+  }
+  @if(compact){<button type="button" class="close-action" (click)="close.emit()" aria-label="Close">×</button>}
+</section>
