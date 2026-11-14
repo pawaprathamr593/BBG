@@ -33,6 +33,7 @@ final class SocialEmailOtpService
         $ttl = max(120, min(900, (int) $this->env('AUTH_EMAIL_OTP_TTL', '600')));
         $secret = $this->env('AUTH_ACCESS_TOKEN_SECRET');
         if (strlen($secret) < 32) {
+            $redis->del($cooldownKey);
             throw new RuntimeException('Email verification is not configured securely on this environment.');
         }
         $challenge = [
