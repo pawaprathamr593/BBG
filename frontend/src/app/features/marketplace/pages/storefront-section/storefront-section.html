@@ -95,7 +95,7 @@
             <button type="submit" [disabled]="enquirySubmitting()">{{ enquirySubmitting() ? 'Sending…' : 'Send enquiry' }}</button>
           </form>
         } @else {
-          <a class="sign-in-enquiry" [routerLink]="['/login']" [queryParams]="{ returnUrl: '/businesses/' + slug + '/contact' }">Sign in to send an enquiry</a>
+          <button type="button" class="sign-in-enquiry" (click)="promptEnquirySignIn($event, data.business.tenant_id)">Sign in to send an enquiry</button>
         }
       </section>
     }
