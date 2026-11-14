@@ -3,6 +3,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MarketplaceApiService, MarketplaceProduct } from '../../core/marketplace/marketplace-api.service';
 import { StorefrontContextService } from './storefront-context.service';
+import { StorefrontSeoService } from './storefront-seo.service';
 
 type Section='products'|'about'|'contact';
 @Component({
@@ -25,9 +26,26 @@ type Section='products'|'about'|'contact';
  `]
 })
 export class StorefrontSection implements OnInit{
- readonly context=inject(StorefrontContextService);private readonly api=inject(MarketplaceApiService);private readonly route=inject(ActivatedRoute);
+ readonly context=inject(StorefrontContextService);private readonly api=inject(MarketplaceApiService);private readonly route=inject(ActivatedRoute);private readonly seo=inject(StorefrontSeoService);
  readonly section=this.route.snapshot.data['section'] as Section;readonly products=signal<MarketplaceProduct[]>([]);readonly loading=signal(true);
  get brandName():string{const d=this.context.detail();return d?.storefront.title||d?.business.business_name||'Business';}
- async ngOnInit():Promise<void>{if(this.section!=='products'){this.loading.set(false);return;}const slug=this.context.detail()?.business.business_slug;if(!slug){this.loading.set(false);return;}try{const r=await firstValueFrom(this.api.listStorefrontProducts(slug,1,48));if(r.status==='SUCCESS'&&!Array.isArray(r.data))this.products.set(r.data.items||[]);}catch{}finally{this.loading.set(false);}}
+ async ngOnInit():Promise<void>{
+  const detail=this.context.detail();const slug=detail?.business.business_slug;
+  if(!detail||!slug){this.loading.set(false);return;}
+  const name=detail.storefront.title||detail.business.business_name;
+  const path=`/store/${encodeURIComponent(slug)}/${this.section}`;
+  if(this.section==='products'){
+   try{const r=await firstValueFrom(this.api.listStorefrontProducts(slug,1,48));if(r.status==='SUCCESS'&&!Array.isArray(r.data))this.products.set(r.data.items||[]);}catch{}finally{this.loading.set(false);}
+   const description=`Browse products published by ${name}.`;
+   const schema={'@context':'https://schema.org','@type':'CollectionPage',name:`Products | ${name}`,description,url:path,mainEntity:{'@type':'ItemList',numberOfItems:this.products().length,itemListElement:this.products().map((p,index)=>({'@type':'ListItem',position:index+1,name:p.product_name,url:`${path}/${p.slug||p.public_id||p.id}`}))}};
+   this.seo.update(`Products | ${name}`,description,path,schema);
+   return;
+  }
+  this.loading.set(false);
+  const isAbout=this.section==='about';
+  const description=isAbout?(detail.storefront.description||detail.business.business_description||`Learn more about ${name}.`):`Contact ${name} using its published business contact details.`;
+  const schema={'@context':'https://schema.org','@type':isAbout?'AboutPage':'ContactPage',name:`${isAbout?'About':'Contact'} | ${name}`,description,url:path,about:{'@type':'LocalBusiness',name}};
+  this.seo.update(`${isAbout?'About':'Contact'} | ${name}`,description,path,schema);
+ }
  productRoute(p:MarketplaceProduct):string{const slug=p.slug||p.product_name.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'product';return `${slug}-${p.public_id||p.id}`;}
 }
