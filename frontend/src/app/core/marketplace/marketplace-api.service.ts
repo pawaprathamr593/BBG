@@ -168,16 +168,37 @@ export class MarketplaceApiService {
     );
   }
 
-  listStorefrontProducts(businessSlug: string, page = 1, pageSize = 24, search = ''): Observable<MarketplaceApiResponse<{
+  listStorefrontProducts(
+    businessSlug: string,
+    page = 1,
+    pageSize = 24,
+    search = '',
+    filters: {
+      category_id?: number;
+      brand?: string;
+      city?: string;
+      state?: string;
+      min_price?: number;
+      max_price?: number;
+      online_only?: boolean;
+      variants_only?: boolean;
+      with_images?: boolean;
+      sort?: 'newest' | 'popular' | 'nearby' | 'price_low' | 'price_high' | 'name';
+      latitude?: number;
+      longitude?: number;
+    } = {},
+  ): Observable<MarketplaceApiResponse<{
     business_slug: string; items: MarketplaceProduct[];
+    sort?: string; sort_basis?: string; timestamp_note?: string;
     pagination: { page: number; page_size: number; total: number };
   }>> {
     return this.http.post<MarketplaceApiResponse<{
       business_slug: string; items: MarketplaceProduct[];
+      sort?: string; sort_basis?: string; timestamp_note?: string;
       pagination: { page: number; page_size: number; total: number };
     }>>(
       `${this.apiBaseUrl}/api/v1/marketplace/products/list`,
-      { marketplaceParam: { actionData: { business_slug: businessSlug, page, page_size: pageSize, search } } },
+      { marketplaceParam: { actionData: { business_slug: businessSlug, ...filters, page, page_size: pageSize, search } } },
     );
   }
 
