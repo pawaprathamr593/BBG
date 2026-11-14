@@ -87,10 +87,10 @@ import { StorefrontSeoService } from './storefront-seo.service';
           <div class="section-heading">
             <div>
               <p class="eyebrow">THE COLLECTION</p>
-              <h2 id="products-heading">Shop our products</h2>
+              <h2 id="products-heading">Explore our catalogue</h2>
               <p>Explore the products and offerings currently published by {{ brandName }}.</p>
             </div>
-            <a class="view-all" [routerLink]="['/store', data.business.business_slug, 'products']">View all products <span aria-hidden="true">→</span></a>
+            <a class="view-all" [routerLink]="['/store', data.business.business_slug, 'products']">View full catalogue <span aria-hidden="true">→</span></a>
           </div>
 
           @if (categories().length > 1) {
@@ -140,7 +140,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
           } @else {
             <div class="empty-products">
               <span aria-hidden="true">⌕</span>
-              <div><h3>Products will appear here</h3><p>{{ brandName }} has not published any products to this storefront yet. Please check back later or contact the business.</p></div>
+              <div><h3>Catalogue coming soon</h3><p>{{ brandName }} has not published any products or service offerings to this storefront yet. Please check back later or contact the business.</p></div>
               <a [routerLink]="['/store', data.business.business_slug, 'contact']">Contact the business →</a>
             </div>
           }
@@ -386,7 +386,7 @@ export class StorefrontHome {
   }
 
   whatsappUrl(phone: string): string {
-    return 'https://wa.me/' + phone.replace(/\\D/g, '');
+    return 'https://wa.me/' + phone.replace(/\D/g, '');
   }
 
   hasDirections(data: MarketplaceBusinessDetail): boolean {
