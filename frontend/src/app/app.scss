@@ -46,6 +46,7 @@
 .sign-in-link,.register-link { display:inline-flex; min-height:40px; align-items:center; justify-content:center; padding:0 17px; border:1px solid var(--brand); border-radius:9px; font-size:.83rem; font-weight:700; text-decoration:none; }
 .sign-in-link { color:var(--brand); background:transparent; }.register-link { color:#171d19; background:var(--accent); border-color:var(--accent); }
 .sign-in-link:hover { background:var(--brand-soft); }.register-link:hover { background:#ffe95b; }
+.auth-trigger { font-family:inherit; cursor:pointer; }
 .nav-user { color:var(--text-primary); font-size:.82rem; font-weight:650; }.sign-out-button { cursor:pointer; }
 .menu-toggle { display:none; }
 .site-footer { flex-shrink:0; margin-top:auto; display:flex; align-items:center; justify-content:space-between; gap:25px; min-height:86px; padding:18px max(28px,calc((100vw - 1400px)/2)); color:#fff; background:#171d19; }
