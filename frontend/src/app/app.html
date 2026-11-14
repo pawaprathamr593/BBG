@@ -17,6 +17,7 @@
         <a class="nav-link" routerLink="/businesses" routerLinkActive="is-active" (click)="closeMenu()">Businesses</a>
         <a class="nav-link" routerLink="/products" routerLinkActive="is-active" (click)="closeMenu()">Products</a>
         <a class="nav-link" routerLink="/promotions" routerLinkActive="is-active" (click)="closeMenu()">Promotions</a>
+        @if (auth.isAuthenticated()) { <a class="nav-link" routerLink="/dashboard" routerLinkActive="is-active" (click)="closeMenu()">Dashboard</a> }
         <a class="nav-link" routerLink="/about" routerLinkActive="is-active" (click)="closeMenu()">About</a>
       </nav>
 
