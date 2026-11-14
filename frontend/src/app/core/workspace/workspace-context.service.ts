@@ -63,6 +63,7 @@ export class WorkspaceContextService {
         this.tenants.set([]);
         this.permissions.set([]);
         this.activeTenantId.set(null);
+        this.initialization = undefined;
         return;
       }
       if (!this.auth.user()) await this.auth.loadProfile();
