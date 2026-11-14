@@ -626,6 +626,7 @@ export class StorefrontSection {
     this.sort = value;
     this.queryPage = 1;
     this.filterNotice.set('');
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1 }, queryParamsHandling: 'merge' });
     if (value === 'nearby') {
       this.requestLocation();
       return;
