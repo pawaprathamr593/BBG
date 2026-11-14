@@ -3,6 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../core/auth/auth.service';
+import { AuthPromptService } from '../../../../core/auth/auth-prompt.service';
 import { SeoService } from '../../../../core/seo/seo.service';
 import { MarketplaceBusinessDetail, MarketplaceList, MarketplaceProduct, MarketplacePromotion } from '../../models/marketplace.models';
 import { MarketplaceService } from '../../services/marketplace.service';
@@ -22,6 +23,7 @@ export class StorefrontSection implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   protected readonly auth = inject(AuthService);
+  private readonly authPrompt = inject(AuthPromptService);
   private readonly enquiryService = inject(StorefrontEnquiryService);
   private readonly seo = inject(SeoService);
   protected readonly section = this.route.snapshot.data['storefrontSection'] as StorefrontSectionKey;
@@ -47,6 +49,17 @@ export class StorefrontSection implements OnInit {
   };
 
   ngOnInit(): void { void this.load(); }
+
+  protected promptEnquirySignIn(event: MouseEvent, tenantId: number): void {
+    const anchor = event.currentTarget;
+    if (anchor instanceof HTMLElement) {
+      this.authPrompt.open(
+        'Sign in to send an enquiry and keep track of your conversation with this business.',
+        anchor,
+        () => this.submitEnquiry(tenantId),
+      );
+    }
+  }
 
   protected async submitEnquiry(tenantId: number): Promise<void> {
     if (!this.auth.isAuthenticated()) {
