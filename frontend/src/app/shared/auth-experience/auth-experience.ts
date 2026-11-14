@@ -1,13 +1,13 @@
 import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { SocialAuthIntent, SocialProvider } from '../../core/auth/auth.models';
 
 @Component({
   selector: 'app-auth-experience',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule],
   templateUrl: './auth-experience.html',
   styleUrl: './auth-experience.scss',
 })
