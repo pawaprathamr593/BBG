@@ -220,7 +220,7 @@ final class OAuthController
         $payload = json_encode($message, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
         $html = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BBG sign-in</title></head>'
             . '<body><p>Returning to BBG…</p><script>(function(){var target=' . $origin . ';var message=' . $payload . ';'
-            . 'if(window.opener){window.opener.postMessage(message,target);window.close();}'
+            . 'if(window.opener){window.opener.postMessage(message,target);window.setTimeout(function(){window.close();},200);}'
             . 'else{document.body.textContent="You can close this window and return to BBG.";}})();</script></body></html>';
         return $responses->createResponse($status)
             ->withHeader('Content-Type', 'text/html; charset=utf-8')
