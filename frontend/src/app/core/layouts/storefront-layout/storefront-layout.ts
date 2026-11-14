@@ -4,12 +4,13 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {MarketplaceBusinessDetail} from '../../../features/marketplace/models/marketplace.models';
 import {AuthService} from '../../auth/auth.service';
 import {AuthPrompt} from '../../auth/auth-prompt/auth-prompt';
+import {AuthPromptService} from '../../auth/auth-prompt.service';
 import {MarketplaceService} from '../../../features/marketplace/services/marketplace.service';
 import {SeoService} from '../../seo/seo.service';
 import {ThemeService} from '../../theme/theme.service';
 @Component({selector:'app-storefront-layout',imports:[RouterLink,RouterLinkActive,RouterOutlet,AuthPrompt],templateUrl:'./storefront-layout.html',styleUrl:'./storefront-layout.scss'})
 export class StorefrontLayout implements OnInit{
- private readonly route=inject(ActivatedRoute);private readonly router=inject(Router);private readonly destroyRef=inject(DestroyRef);private readonly marketplace=inject(MarketplaceService);private readonly seo=inject(SeoService);private readonly themeService=inject(ThemeService);
+ private readonly route=inject(ActivatedRoute);private readonly router=inject(Router);private readonly destroyRef=inject(DestroyRef);private readonly marketplace=inject(MarketplaceService);private readonly seo=inject(SeoService);private readonly themeService=inject(ThemeService);private readonly authPrompt=inject(AuthPromptService);
  protected readonly auth=inject(AuthService);protected readonly detail=signal<MarketplaceBusinessDetail|null>(null);protected readonly loading=signal(true);protected readonly error=signal('');protected readonly year=new Date().getFullYear();protected readonly slug=signal('');
  ngOnInit():void{this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params=>{this.slug.set(params.get('businessSlug')??'');this.detail.set(null);void this.loadBusiness();});}
  protected async loadBusiness():Promise<void>{
@@ -24,5 +25,6 @@ export class StorefrontLayout implements OnInit{
  protected get brandName():string{const data=this.detail();return data?.storefront.title||data?.business.business_name||'Business storefront';}
  protected get brandInitial():string{return this.brandName.slice(0,1).toUpperCase();}
  protected get loginReturnUrl():string{return this.router.url;}
+ protected openCartAuth(event:MouseEvent):void{const anchor=event.currentTarget;if(anchor instanceof HTMLElement)this.authPrompt.open('Please sign in to view your business cart.',anchor,()=>this.router.navigate(['/businesses',this.slug(),'cart']).then(()=>undefined));}
  protected async signOut():Promise<void>{const returnUrl=this.router.url;try{await this.auth.logout();}finally{await this.router.navigateByUrl(returnUrl);}}
 }
