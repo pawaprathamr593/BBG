@@ -11,6 +11,7 @@
   @if(providerMessage()){<p class="provider-message" role="status">{{providerMessage()}}</p>}
   @if(emailOtpMode()){
     <div class="social-email-verification">
+      @if(error()){<p class="form-error" role="alert">{{error()}}</p>}
       <h3>Verify your email</h3>
       <p>BBG needs a verified email to connect this social account to your central account.</p>
       <label for="bbg-social-email">Email address</label>
