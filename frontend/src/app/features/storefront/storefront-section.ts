@@ -1,5 +1,6 @@
-import { Component, effect, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { Component, DestroyRef, effect, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MarketplaceApiService, MarketplaceBusinessDetail, MarketplaceProduct } from '../../core/marketplace/marketplace-api.service';
 import { StorefrontContextService } from './storefront-context.service';
@@ -81,11 +82,22 @@ type Section = 'products' | 'about' | 'contact';
               </div>
               @if (totalPages > 1) {
                 <nav class="pagination" aria-label="Product pages">
-                  <button type="button" [disabled]="pagination().page <= 1 || loading()" (click)="changePage(pagination().page - 1)">← Previous</button>
+                  @if (pagination().page > 1) {
+                    <a [routerLink]="[]" [queryParams]="{ page: pagination().page - 1, q: searchTerm().trim() || null }">← Previous</a>
+                  } @else { <span class="page-disabled">← Previous</span> }
                   <span>Page <strong>{{ pagination().page }}</strong> of {{ totalPages }}</span>
-                  <button type="button" [disabled]="pagination().page >= totalPages || loading()" (click)="changePage(pagination().page + 1)">Next →</button>
+                  @if (pagination().page < totalPages) {
+                    <a [routerLink]="[]" [queryParams]="{ page: pagination().page + 1, q: searchTerm().trim() || null }">Next →</a>
+                  } @else { <span class="page-disabled">Next →</span> }
                 </nav>
               }
+            } @else if (loadError()) {
+              <div class="empty-state" role="alert">
+                <span class="empty-icon" aria-hidden="true">!</span>
+                <h2>Catalogue temporarily unavailable</h2>
+                <p>{{ loadError() }}</p>
+                <button class="reset-button" type="button" (click)="changePage(pagination().page)">Try again</button>
+              </div>
             } @else {
               <div class="empty-state">
                 <span class="empty-icon" aria-hidden="true">⌕</span>
@@ -249,8 +261,8 @@ type Section = 'products' | 'about' | 'contact';
     .product-bottom>span{color:var(--text-secondary);font-size:.74rem}
     .product-bottom small{color:var(--text-muted);font-size:.55rem;font-weight:850;letter-spacing:.1em}
     .pagination{display:flex;align-items:center;justify-content:center;gap:25px;margin-top:36px}
-    .pagination button{min-width:112px;min-height:42px;padding:0 13px;border:1px solid var(--border);border-radius:6px;background:var(--surface-card);color:var(--text-primary);font-size:.77rem;font-weight:700;cursor:pointer}
-    .pagination button:disabled{opacity:.4;cursor:not-allowed}
+    .pagination a,.pagination .page-disabled{display:inline-flex;min-width:112px;min-height:42px;align-items:center;justify-content:center;padding:0 13px;border:1px solid var(--border);border-radius:6px;background:var(--surface-card);color:var(--text-primary);font-size:.77rem;font-weight:700;text-decoration:none}
+    .pagination .page-disabled{opacity:.4}
     .pagination>span{color:var(--text-secondary);font-size:.76rem}.pagination strong{color:var(--text-primary)}
     .empty-state{display:flex;min-height:310px;align-items:center;flex-direction:column;justify-content:center;padding:35px 20px;border:1px dashed var(--border);border-radius:10px;text-align:center}
     .empty-icon{display:grid;width:54px;height:54px;place-items:center;border-radius:50%;background:var(--brand-soft);color:var(--brand-strong);font-size:1.8rem}
@@ -320,6 +332,8 @@ export class StorefrontSection {
   readonly context = inject(StorefrontContextService);
   private readonly api = inject(MarketplaceApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly seo = inject(StorefrontSeoService);
 
   readonly section = this.route.snapshot.data['section'] as Section;
@@ -328,6 +342,9 @@ export class StorefrontSection {
   readonly searchTerm = signal('');
   readonly pagination = signal({ page: 1, page_size: 12, total: 0 });
   readonly skeletons = [1, 2, 3, 4, 5, 6, 7, 8];
+  readonly loadError = signal('');
+  private queryPage = 1;
+  private querySearch = '';
 
   get brandName(): string {
     const detail = this.context.detail();
@@ -349,6 +366,18 @@ export class StorefrontSection {
   private initializedSlug = '';
 
   constructor() {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const page = Math.max(1, Number(params.get('page')) || 1);
+      const search = params.get('q') || '';
+      const changed = page !== this.queryPage || search !== this.querySearch;
+      this.queryPage = page;
+      this.querySearch = search;
+      this.searchTerm.set(search);
+      if (changed && this.context.detail() && this.section === 'products') {
+        void this.loadProducts(page, search);
+      }
+    });
+
     effect(() => {
       const detail = this.context.detail();
       if (!detail) return;
@@ -365,7 +394,7 @@ export class StorefrontSection {
     const path = '/store/' + encodeURIComponent(slug) + '/' + this.section;
 
     if (this.section === 'products') {
-      await this.loadProducts(1);
+      await this.loadProducts(this.queryPage, this.querySearch);
       const description = 'Browse products published by ' + name + '. View product information and contact the business for details.';
       const items = this.products().map((product, index) => ({
         '@type': 'ListItem',
@@ -410,28 +439,42 @@ export class StorefrontSection {
 
   submitSearch(event: Event): void {
     event.preventDefault();
-    void this.loadProducts(1);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: 1, q: this.searchTerm().trim() || null },
+      queryParamsHandling: 'merge',
+    });
   }
 
   clearSearch(): void {
     this.searchTerm.set('');
-    void this.loadProducts(1);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: 1, q: null },
+      queryParamsHandling: 'merge',
+    });
   }
 
   changePage(page: number): void {
     if (page < 1 || page > this.totalPages || this.loading()) return;
-    void this.loadProducts(page);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page, q: this.searchTerm().trim() || null },
+      queryParamsHandling: 'merge',
+    });
   }
 
-  async loadProducts(page: number): Promise<void> {
+  async loadProducts(page: number, search = this.searchTerm()): Promise<void> {
     const slug = this.context.detail()?.business.business_slug;
     if (!slug) {
       this.loading.set(false);
       return;
     }
     this.loading.set(true);
+    this.loadError.set('');
+    this.searchTerm.set(search);
     try {
-      const response = await firstValueFrom(this.api.listStorefrontProducts(slug, page, 12, this.searchTerm().trim()));
+      const response = await firstValueFrom(this.api.listStorefrontProducts(slug, page, 12, search.trim()));
       if (response.status === 'SUCCESS' && !Array.isArray(response.data)) {
         this.products.set(response.data.items || []);
         this.pagination.set(response.data.pagination || { page, page_size: 12, total: (response.data.items || []).length });
@@ -442,6 +485,7 @@ export class StorefrontSection {
     } catch {
       this.products.set([]);
       this.pagination.set({ page: 1, page_size: 12, total: 0 });
+      this.loadError.set('We could not load the product catalogue. Please try again.');
     } finally {
       this.loading.set(false);
     }
