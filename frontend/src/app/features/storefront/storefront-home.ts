@@ -31,7 +31,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
             </div>
             <p class="hero-description">{{ data.storefront.description || data.business.business_description || 'Explore this business storefront and get in touch for products, services and more information.' }}</p>
             <div class="hero-actions">
-              <a class="primary-button" [routerLink]="['/store', data.business.business_slug, 'products']">Explore products <span aria-hidden="true">↗</span></a>
+              <a class="primary-button" [routerLink]="['/store', data.business.business_slug, 'products']">Explore catalogue <span aria-hidden="true">↗</span></a>
               <a class="secondary-button" [routerLink]="['/store', data.business.business_slug, 'contact']">Contact the store</a>
               <button class="share-button" type="button" (click)="shareStore()" aria-label="Share this store">↗ <span>Share store</span></button>
             </div>
@@ -47,6 +47,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
           <div class="hero-decoration" aria-hidden="true"><span>00</span><i></i><b>DISCOVER</b></div>
         </section>
 
+        @if (data.business.business_phone || (data.storefront.whatsapp_enabled && data.business.whatsapp_number) || hasDirections(data) || data.business.business_email) {
         <section class="quick-actions" aria-label="Quick store actions">
           @if (data.business.business_phone) {
             <a [href]="'tel:' + data.business.business_phone"><span class="quick-icon" aria-hidden="true">☎</span><span><strong>Call store</strong><small>{{ data.business.business_phone }}</small></span></a>
@@ -61,6 +62,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
             <a [href]="'mailto:' + data.business.business_email"><span class="quick-icon" aria-hidden="true">✉</span><span><strong>Email store</strong><small>{{ data.business.business_email }}</small></span></a>
           }
         </section>
+        }
 
         @if (promotions().length) {
           <section class="promotion-ticker" aria-label="Current store promotions">
@@ -254,7 +256,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
     .story-copy>p:not(.eyebrow){margin:10px 0 14px;color:var(--text-secondary);font-size:.8rem;line-height:1.8;white-space:pre-line}
     .story-copy a{color:var(--brand-strong);font-size:.72rem;font-weight:700;text-decoration:none}
     .product-skeleton{display:flex;flex-direction:column;gap:11px;padding:10px;border:1px solid var(--border);border-radius:9px;background:var(--surface-card)}
-    .product-skeleton span{height:195px;border-radius:5px;background:var(--surface-subtle)}
+    .product-skeleton span{aspect-ratio:1/1;border-radius:5px;background:var(--surface-subtle)}
     .product-skeleton i{height:9px;border-radius:5px;background:var(--surface-subtle)}
     .product-skeleton i:nth-of-type(2){width:65%}
     .product-skeleton b{width:40%;height:13px;margin-top:5px;border-radius:5px;background:var(--surface-subtle)}
