@@ -150,6 +150,95 @@ final readonly class AuthDao
         return $resArr;
     }
 
+    public function getUserIdentity(ConnectionInterface $connection, string $provider, string $subject): array
+    {
+        $resArr = $this->initialResponse();
+        try {
+            $row = $connection->createCommand(
+                "SELECT id, user_id, provider, provider_subject, provider_email, status
+                 FROM USER_IDENTITIES
+                 WHERE provider = :provider AND provider_subject = :subject
+                 LIMIT 1",
+                [':provider' => $provider, ':subject' => $subject],
+            )->queryOne();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = is_array($row) ? $row : [];
+        } catch (Throwable $exception) {
+            $this->logException('getUserIdentity', $exception);
+            $resArr = $this->exceptionResponse('Unable to resolve the external sign-in identity.');
+        }
+        return $resArr;
+    }
+
+    public function getUserByEmail(ConnectionInterface $connection, string $email): array
+    {
+        $resArr = $this->initialResponse();
+        try {
+            $row = $connection->createCommand(
+                "SELECT id, full_name, email, mobile, password_hash, profile_image, email_verified_on, account_status, status
+                 FROM USERS WHERE LOWER(email) = :email AND status = 'A' LIMIT 1",
+                [':email' => strtolower($email)],
+            )->queryOne();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = is_array($row) ? $row : [];
+        } catch (Throwable $exception) {
+            $this->logException('getUserByEmail', $exception);
+            $resArr = $this->exceptionResponse('Unable to resolve the email address.');
+        }
+        return $resArr;
+    }
+
+    public function insertUserIdentity(
+        ConnectionInterface $connection,
+        int $userId,
+        string $provider,
+        string $subject,
+        ?string $providerEmail,
+    ): array {
+        $resArr = $this->initialResponse();
+        try {
+            $connection->createCommand(
+                "INSERT INTO USER_IDENTITIES
+                    (user_id, provider, provider_subject, provider_email, linked_on, status, created_by, updated_by)
+                 VALUES
+                    (:user_id, :provider, :provider_subject, :provider_email, CURRENT_TIMESTAMP, 'A', :created_by, :updated_by)",
+                [
+                    ':user_id' => $userId,
+                    ':provider' => $provider,
+                    ':provider_subject' => $subject,
+                    ':provider_email' => $providerEmail,
+                    ':created_by' => $userId,
+                    ':updated_by' => $userId,
+                ],
+            )->execute();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['id' => (int) $connection->getLastInsertId()];
+        } catch (Throwable $exception) {
+            $this->logException('insertUserIdentity', $exception);
+            $resArr = $this->exceptionResponse('Unable to link the external sign-in identity.');
+        }
+        return $resArr;
+    }
+
+    public function markUserEmailVerified(ConnectionInterface $connection, int $userId, string $verifiedOn): array
+    {
+        $resArr = $this->initialResponse();
+        try {
+            $connection->createCommand(
+                "UPDATE USERS SET email_verified_on = COALESCE(email_verified_on, :verified_on),
+                    updated_by = :updated_by, updated_on = CURRENT_TIMESTAMP
+                 WHERE id = :id AND status = 'A'",
+                [':verified_on' => $verifiedOn, ':updated_by' => $userId, ':id' => $userId],
+            )->execute();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['id' => $userId];
+        } catch (Throwable $exception) {
+            $this->logException('markUserEmailVerified', $exception);
+            $resArr = $this->exceptionResponse('Unable to update email verification status.');
+        }
+        return $resArr;
+    }
+
     public function getUserById(ConnectionInterface $connection, int $userId): array
     {
         $resArr = $this->initialResponse();
@@ -173,20 +262,22 @@ final readonly class AuthDao
         string $fullName,
         ?string $email,
         ?string $mobile,
-        string $passwordHash,
+        ?string $passwordHash,
+        ?string $emailVerifiedOn = null,
     ): array {
         $resArr = $this->initialResponse();
         try {
             $connection->createCommand(
                 "INSERT INTO USERS
-                    (full_name, email, mobile, password_hash, account_status, status, created_by, updated_by)
+                    (full_name, email, mobile, password_hash, email_verified_on, account_status, status, created_by, updated_by)
                  VALUES
-                    (:full_name, :email, :mobile, :password_hash, 'ACTIVE', 'A', NULL, NULL)",
+                    (:full_name, :email, :mobile, :password_hash, :email_verified_on, 'ACTIVE', 'A', NULL, NULL)",
                 [
                     ':full_name' => $fullName,
                     ':email' => $email,
                     ':mobile' => $mobile,
                     ':password_hash' => $passwordHash,
+                    ':email_verified_on' => $emailVerifiedOn,
                 ],
             )->execute();
             $resArr['status'] = 'SUCCESS';
