@@ -46,6 +46,14 @@ export class WorkspaceContextService {
     this.persistActiveWorkspace(tenantId);
   }
 
+  clear(): void {
+    this.tenants.set([]);
+    this.permissions.set([]);
+    this.activeTenantId.set(null);
+    this.initialization = undefined;
+    this.persistActiveWorkspace(null);
+  }
+
   private async loadContext(): Promise<void> {
     this.loading.set(true);
     this.error.set('');
