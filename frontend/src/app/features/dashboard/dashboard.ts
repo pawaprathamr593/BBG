@@ -1,20 +1,305 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../core/auth/auth.service';
+import { DashboardApiService, DashboardPermission, DashboardTenant } from '../../core/dashboard/dashboard-api.service';
+
+interface DashboardModule {
+  code: string;
+  title: string;
+  description: string;
+  permission: string;
+  icon: string;
+  scope: 'PLATFORM' | 'TENANT' | 'GLOBAL';
+}
 
 @Component({
   selector: 'app-dashboard',
-  template: `<div class="dashboard-view"><section class="welcome-section">
-    <div><p class="eyebrow">BUSINESS MANAGEMENT &amp; MARKETPLACE PLATFORM</p><h1>A clearer view of your business.</h1><p class="welcome-copy">BBG brings business operations and marketplace experiences together in one connected platform. Your workspace foundation is being prepared.</p></div>
-    <div class="welcome-art" aria-hidden="true"><div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div><div class="art-core"><span>B</span></div><div class="art-node node-one"></div><div class="art-node node-two"></div><div class="art-node node-three"></div></div>
-  </section>
-  <section class="status-section" aria-labelledby="foundation-title">
-    <div class="section-heading"><div><p class="eyebrow">GETTING STARTED</p><h2 id="foundation-title">Your platform foundation</h2></div><span class="status-pill"><span></span> Foundation stage</span></div>
-    <div class="foundation-grid">
-      <article class="foundation-card"><span class="card-icon icon-backend">01</span><div><h3>Backend foundation</h3><p>Yii 3 architecture and environment-aware database configuration.</p><span class="card-state">In progress</span></div></article>
-      <article class="foundation-card"><span class="card-icon icon-frontend">02</span><div><h3>Responsive frontend</h3><p>A mobile-first Angular application shell and shared design foundation.</p><span class="card-state">In progress</span></div></article>
-      <article class="foundation-card"><span class="card-icon icon-deploy">03</span><div><h3>Deployment readiness</h3><p>Separate local and production configuration for a future live domain.</p><span class="card-state">Prepared</span></div></article>
-    </div>
-  </section>
-  <section class="bottom-note"><div class="note-symbol">i</div><div><strong>Workspace preview</strong><p>This screen is a foundation placeholder. Business workflows and live data will be added only after their requirements and API contracts are approved.</p></div></section></div>`,
-  styles: [':host{display:block}'],
+  standalone: true,
+  imports: [RouterLink],
+  template: `
+    <main class="workspace">
+      <section class="workspace-heading">
+        <div>
+          <p class="eyebrow">BBG WORKSPACE</p>
+          <h1>Good {{ greeting() }}, {{ firstName() }}.</h1>
+          <p class="heading-copy">Your work, tools and business activity in one place.</p>
+        </div>
+        <div class="heading-actions">
+          @if (tenants().length) {
+            <label class="context-picker">
+              <span>Workspace context</span>
+              <select [value]="selectedTenantId() ?? ''" (change)="onTenantChange($event)">
+                <option value="">Personal / platform</option>
+                @for (tenant of tenants(); track tenant.id) {
+                  <option [value]="tenant.id">{{ tenant.tenant_name }}</option>
+                }
+              </select>
+            </label>
+          }
+          <a class="market-link" routerLink="/">Visit marketplace <span aria-hidden="true">↗</span></a>
+        </div>
+      </section>
+
+      @if (loading()) {
+        <section class="loading-panel" role="status"><span class="loader"></span><div><strong>Preparing your workspace</strong><p>Checking your roles and available permissions…</p></div></section>
+      } @else if (error()) {
+        <section class="message-panel error-panel" role="alert"><strong>We couldn’t load your workspace.</strong><p>{{ error() }}</p><button type="button" (click)="reload()">Try again</button></section>
+      } @else {
+        <section class="context-banner">
+          <div class="context-symbol" aria-hidden="true">{{ selectedTenant() ? '⌂' : '◎' }}</div>
+          <div class="context-copy">
+            <span>{{ selectedTenant() ? 'ACTIVE BUSINESS WORKSPACE' : 'PERSONAL & PLATFORM CONTEXT' }}</span>
+            <strong>{{ selectedTenant()?.tenant_name ?? 'Your BBG account' }}</strong>
+            <p>{{ selectedTenant() ? 'Workspace access is limited to your assigned tenant permissions.' : 'Select a business workspace to view its tools and assigned access.' }}</p>
+          </div>
+          <div class="role-list">
+            @for (role of roleCodes(); track role) { <span class="role-chip">{{ roleLabel(role) }}</span> }
+            @if (!roleCodes().length) { <span class="role-chip muted">No assigned roles in this context</span> }
+          </div>
+        </section>
+
+        @if (summaryLoading()) {
+          <div class="summary-loading">Loading available activity…</div>
+        } @else if (summaryError()) {
+          <div class="summary-notice">{{ summaryError() }}</div>
+        } @else if (summaryCards().length) {
+          <section class="metrics-grid" aria-label="Workspace summary">
+            @for (metric of summaryCards(); track metric.label) {
+              <article class="metric-card">
+                <span class="metric-icon">{{ metric.icon }}</span>
+                <div><strong>{{ metric.value }}</strong><span>{{ metric.label }}</span></div>
+              </article>
+            }
+          </section>
+        }
+
+        <section class="modules-section">
+          <div class="section-heading">
+            <div><p class="eyebrow">YOUR ACCESS</p><h2>Workspace modules</h2><p>Modules are shown only when your current context grants the required permission.</p></div>
+            <span class="module-count">{{ visibleModules().length }} available</span>
+          </div>
+
+          @if (visibleModules().length) {
+            <div class="module-grid">
+              @for (module of visibleModules(); track module.code) {
+                <article class="module-card">
+                  <div class="module-top"><span class="module-icon">{{ module.icon }}</span><span class="access-indicator"><i></i> Access granted</span></div>
+                  <h3>{{ module.title }}</h3>
+                  <p>{{ module.description }}</p>
+                  <div class="module-foot"><span>{{ module.permission }}</span><span aria-hidden="true">✓</span></div>
+                </article>
+              }
+            </div>
+          } @else {
+            <div class="empty-modules">
+              <span class="empty-icon">⌑</span>
+              <h3>No modules assigned in this context</h3>
+              <p>Your account is active, but there are no module permissions to display here. Choose a business workspace or contact its administrator.</p>
+            </div>
+          }
+        </section>
+
+        @if (tenants().length && !selectedTenant()) {
+          <section class="workspace-hint">
+            <div><strong>You have {{ tenants().length }} business workspace{{ tenants().length === 1 ? '' : 's' }}.</strong><p>Choose a workspace above to load its tenant-specific roles and modules. BBG never selects a tenant automatically.</p></div>
+            <span aria-hidden="true">→</span>
+          </section>
+        }
+      }
+    </main>
+  `,
+  styles: [`
+    :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
+    .workspace{width:min(1360px,100%);margin:0 auto;padding:48px 34px 76px}
+    .workspace-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:30px}
+    .eyebrow{margin:0 0 10px;color:var(--brand);font-size:.69rem;font-weight:800;letter-spacing:.14em}
+    h1{margin:0;font-size:clamp(2rem,4vw,3rem);line-height:1.12;letter-spacing:-.055em}
+    .heading-copy{margin:12px 0 0;color:var(--text-secondary);font-size:.98rem}
+    .heading-actions{display:flex;align-items:flex-end;gap:12px}
+    .context-picker{display:grid;gap:6px;min-width:210px;color:var(--text-secondary);font-size:.72rem;font-weight:700}
+    select{height:42px;padding:0 34px 0 12px;color:var(--text-primary);background:var(--surface-card);border:1px solid var(--border);border-radius:9px;font:inherit;font-size:.82rem}
+    .market-link{display:inline-flex;height:42px;align-items:center;gap:10px;padding:0 15px;color:#fff;background:var(--brand);border-radius:9px;font-size:.8rem;font-weight:750;text-decoration:none;white-space:nowrap}
+    .context-banner{display:flex;align-items:center;gap:18px;padding:22px 24px;background:var(--surface-card);border:1px solid var(--border);border-radius:16px;box-shadow:0 5px 22px rgba(20,35,26,.035)}
+    .context-symbol{display:grid;flex:0 0 48px;width:48px;height:48px;place-items:center;color:var(--brand);background:var(--brand-soft);border-radius:13px;font-size:1.5rem}
+    .context-copy{display:grid;gap:4px;min-width:180px;flex:1}
+    .context-copy>span{color:var(--text-secondary);font-size:.63rem;font-weight:800;letter-spacing:.12em}
+    .context-copy strong{font-size:1.05rem}.context-copy p{margin:0;color:var(--text-secondary);font-size:.78rem}
+    .role-list{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:7px}
+    .role-chip{padding:7px 10px;color:var(--brand);background:var(--brand-soft);border:1px solid color-mix(in srgb,var(--brand) 18%,transparent);border-radius:7px;font-size:.68rem;font-weight:800}
+    .role-chip.muted{color:var(--text-secondary);background:var(--surface-subtle);border-color:var(--border)}
+    .metrics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:18px}
+    .metric-card{display:flex;align-items:center;gap:14px;min-height:102px;padding:18px;background:var(--surface-card);border:1px solid var(--border);border-radius:13px}
+    .metric-icon{display:grid;flex:0 0 42px;width:42px;height:42px;place-items:center;background:var(--surface-subtle);border-radius:11px;font-size:1.15rem}
+    .metric-card div{display:grid;gap:3px}.metric-card strong{font-size:1.55rem;letter-spacing:-.04em}.metric-card div span{color:var(--text-secondary);font-size:.75rem}
+    .modules-section{margin-top:42px}.section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:18px}
+    .section-heading .eyebrow{margin-bottom:7px}.section-heading h2{margin:0;font-size:1.55rem;letter-spacing:-.035em}.section-heading p:not(.eyebrow){margin:7px 0 0;color:var(--text-secondary);font-size:.82rem}
+    .module-count{padding:7px 10px;color:var(--text-secondary);background:var(--surface-subtle);border:1px solid var(--border);border-radius:8px;font-size:.72rem;font-weight:750;white-space:nowrap}
+    .module-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+    .module-card{min-height:190px;padding:20px;background:var(--surface-card);border:1px solid var(--border);border-radius:14px;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+    .module-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--brand) 38%,var(--border));box-shadow:0 10px 26px rgba(20,35,26,.06)}
+    .module-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.module-icon{display:grid;width:42px;height:42px;place-items:center;color:var(--brand);background:var(--brand-soft);border-radius:11px;font-size:1.2rem}
+    .access-indicator{display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:.65rem;font-weight:700}.access-indicator i{width:7px;height:7px;background:#2e9c67;border-radius:50%}
+    .module-card h3{margin:17px 0 6px;font-size:1rem}.module-card p{min-height:38px;margin:0;color:var(--text-secondary);font-size:.78rem;line-height:1.55}
+    .module-foot{display:flex;justify-content:space-between;gap:12px;margin-top:17px;padding-top:12px;color:var(--text-secondary);border-top:1px solid var(--border);font-size:.63rem;font-weight:750}.module-foot span:last-child{color:#2e9c67}
+    .empty-modules,.loading-panel,.message-panel{padding:38px 24px;text-align:center;background:var(--surface-card);border:1px solid var(--border);border-radius:14px}
+    .empty-icon{display:grid;width:48px;height:48px;place-items:center;margin:0 auto 12px;color:var(--brand);background:var(--brand-soft);border-radius:13px;font-size:1.5rem}
+    .empty-modules h3{margin:0 0 8px;font-size:1rem}.empty-modules p{max-width:510px;margin:0 auto;color:var(--text-secondary);font-size:.82rem;line-height:1.6}
+    .loading-panel{display:flex;align-items:center;justify-content:center;gap:15px;text-align:left}.loading-panel p,.message-panel p{margin:5px 0 0;color:var(--text-secondary);font-size:.82rem}
+    .loader{width:25px;height:25px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
+    .message-panel button{margin-top:15px;padding:9px 14px;color:#fff;background:var(--brand);border:0;border-radius:8px;font-weight:700;cursor:pointer}
+    .error-panel{border-color:#d88a83}.summary-loading,.summary-notice{margin-top:16px;padding:13px 16px;color:var(--text-secondary);background:var(--surface-subtle);border-radius:9px;font-size:.78rem}
+    .workspace-hint{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:24px;padding:17px 20px;background:var(--surface-subtle);border:1px solid var(--border);border-radius:12px}
+    .workspace-hint strong{font-size:.82rem}.workspace-hint p{margin:5px 0 0;color:var(--text-secondary);font-size:.76rem}.workspace-hint>span{color:var(--brand);font-size:1.25rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:900px){.metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.context-banner{align-items:flex-start;flex-wrap:wrap}.role-list{justify-content:flex-start;width:100%;padding-left:66px}}
+    @media(max-width:650px){.workspace{padding:32px 17px 54px}.workspace-heading{align-items:flex-start;flex-direction:column}.heading-actions{align-items:stretch;flex-direction:column;width:100%}.context-picker{width:100%}.context-picker select{width:100%}.market-link{justify-content:center}.context-banner{padding:18px}.context-copy{min-width:calc(100% - 70px)}.role-list{padding-left:0}.metrics-grid{gap:9px}.metric-card{min-height:88px;padding:12px;gap:9px}.metric-icon{width:35px;height:35px;flex-basis:35px}.metric-card strong{font-size:1.25rem}.metric-card div span{font-size:.68rem}.modules-section{margin-top:32px}.module-grid{grid-template-columns:1fr}.module-card{min-height:170px}.section-heading{align-items:flex-start}.workspace-hint{align-items:flex-start}}
+  `],
 })
-export class Dashboard {}
+export class Dashboard implements OnInit {
+  private readonly auth = inject(AuthService);
+  private readonly api = inject(DashboardApiService);
+  private readonly router = inject(Router);
+
+  readonly loading = signal(true);
+  readonly summaryLoading = signal(false);
+  readonly error = signal('');
+  readonly summaryError = signal('');
+  readonly tenants = signal<DashboardTenant[]>([]);
+  readonly selectedTenantId = signal<number | null>(null);
+  readonly permissions = signal<DashboardPermission[]>([]);
+  readonly summary = signal<Record<string, string | number | null> | null>(null);
+
+  readonly selectedTenant = computed(() => this.tenants().find((tenant) => tenant.id === this.selectedTenantId()) ?? null);
+  readonly roleCodes = computed(() => [...new Set(this.permissions().map((permission) => permission.role_code))]);
+  readonly firstName = computed(() => (this.auth.user()?.full_name || 'there').trim().split(/\\s+/)[0]);
+  readonly greeting = computed(() => {
+    const hour = new Date().getHours();
+    return hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
+  });
+
+  private readonly modules: DashboardModule[] = [
+    { code: 'catalogue', title: 'Product catalogue', description: 'Manage products, categories, variants and product media for your business.', permission: 'CATALOGUE_MANAGE', icon: '▦', scope: 'TENANT' },
+    { code: 'business', title: 'Business profile', description: 'Maintain your business information and public storefront profile.', permission: 'BUSINESS_PROFILE_MANAGE', icon: '⌂', scope: 'TENANT' },
+    { code: 'customers', title: 'Customers', description: 'View and manage customer relationships within this business.', permission: 'CUSTOMERS_MANAGE', icon: '♙', scope: 'TENANT' },
+    { code: 'sales', title: 'Sales & enquiries', description: 'Review incoming enquiries and manage sales conversations.', permission: 'ENQUIRIES_MANAGE', icon: '↗', scope: 'TENANT' },
+    { code: 'orders', title: 'Order management', description: 'Process, update and track orders for this business.', permission: 'ORDERS_MANAGE', icon: '▤', scope: 'TENANT' },
+    { code: 'payments', title: 'Payments', description: 'Review payment activity and related business records.', permission: 'PAYMENTS_VIEW', icon: '₹', scope: 'TENANT' },
+    { code: 'promotions', title: 'Promotions', description: 'Create and manage business promotions and campaigns.', permission: 'PROMOTIONS_MANAGE', icon: '✳', scope: 'TENANT' },
+    { code: 'subscriptions', title: 'Subscriptions', description: 'Review the business subscription and plan entitlements.', permission: 'SUBSCRIPTIONS_MANAGE', icon: '◇', scope: 'TENANT' },
+    { code: 'members', title: 'Team & access', description: 'View team membership and assigned workspace access.', permission: 'TENANT_MEMBERS_VIEW', icon: '♧', scope: 'TENANT' },
+    { code: 'analytics', title: 'Business analytics', description: 'Review the analytics available to your business role.', permission: 'ANALYTICS_VIEW', icon: '▥', scope: 'TENANT' },
+    { code: 'platform-users', title: 'Platform users', description: 'Manage BBG platform user accounts and account status.', permission: 'PLATFORM_USERS_MANAGE', icon: '♙', scope: 'PLATFORM' },
+    { code: 'business-approval', title: 'Business approvals', description: 'Review business applications and approval workflows.', permission: 'BUSINESS_APPROVE', icon: '✓', scope: 'PLATFORM' },
+    { code: 'subscription-approval', title: 'Subscription approvals', description: 'Review and process platform subscription requests.', permission: 'SUBSCRIPTIONS_APPROVE', icon: '◇', scope: 'PLATFORM' },
+    { code: 'categories', title: 'Marketplace categories', description: 'Manage the categories used across the BBG marketplace.', permission: 'CATEGORIES_MANAGE', icon: '▦', scope: 'PLATFORM' },
+    { code: 'moderation', title: 'Marketplace moderation', description: 'Review reports and moderate marketplace content.', permission: 'MODERATION_MANAGE', icon: '⚑', scope: 'PLATFORM' },
+    { code: 'system-health', title: 'System health', description: 'View operational health information available to platform staff.', permission: 'SYSTEM_HEALTH_VIEW', icon: '⌁', scope: 'PLATFORM' },
+    { code: 'consumer-orders', title: 'My orders', description: 'View and track orders placed using your BBG customer account.', permission: 'CONSUMER_ORDERS_VIEW', icon: '▤', scope: 'GLOBAL' },
+    { code: 'consumer-profile', title: 'My customer account', description: 'Manage your personal marketplace profile and saved details.', permission: 'CONSUMER_PROFILE_MANAGE', icon: '♙', scope: 'GLOBAL' },
+  ];
+
+  async ngOnInit(): Promise<void> {
+    await this.reload();
+  }
+
+  async reload(): Promise<void> {
+    this.loading.set(true);
+    this.error.set('');
+    try {
+      const restored = await this.auth.restoreSession();
+      if (!restored) {
+        await this.router.navigate(['/login'], { queryParams: { returnUrl: '/dashboard' } });
+        return;
+      }
+      if (!this.auth.user()) await this.auth.loadProfile();
+      const [tenants, permissions] = await Promise.all([
+        this.api.getMyTenants(),
+        this.api.getPermissions(0),
+      ]);
+      this.tenants.set(tenants);
+      this.selectedTenantId.set(null);
+      this.permissions.set(permissions);
+      this.summary.set(null);
+      this.summaryError.set('');
+      this.loading.set(false);
+      if (permissions.some((permission) => permission.role_code === 'CONSUMER' && permission.scope_type === 'GLOBAL')) {
+        await this.loadConsumerSummary();
+      }
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+      this.loading.set(false);
+    }
+  }
+
+  async onTenantChange(event: Event): Promise<void> {
+    const value = (event.target as HTMLSelectElement).value;
+    const tenantId = value ? Number(value) : null;
+    if (tenantId !== null && (!Number.isInteger(tenantId) || !this.tenants().some((tenant) => tenant.id === tenantId))) return;
+    this.selectedTenantId.set(tenantId);
+    this.summary.set(null);
+    this.summaryError.set('');
+    this.loading.set(true);
+    try {
+      this.permissions.set(await this.api.getPermissions(tenantId ?? 0));
+      this.loading.set(false);
+      if (tenantId !== null && this.permissions().some((permission) => permission.permission_code === 'TENANT_MEMBERS_VIEW')) {
+        await this.loadTenantSummary(tenantId);
+      } else if (tenantId === null && this.permissions().some((permission) => permission.role_code === 'CONSUMER' && permission.scope_type === 'GLOBAL')) {
+        await this.loadConsumerSummary();
+      }
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+      this.loading.set(false);
+    }
+  }
+
+  private async loadConsumerSummary(): Promise<void> {
+    this.summaryLoading.set(true);
+    try {
+      this.summary.set(await this.api.getConsumerSummary());
+    } catch (error) {
+      this.summaryError.set(this.auth.errorMessage(error));
+    } finally {
+      this.summaryLoading.set(false);
+    }
+  }
+
+  private async loadTenantSummary(tenantId: number): Promise<void> {
+    this.summaryLoading.set(true);
+    try {
+      this.summary.set(await this.api.getTenantSummary(tenantId));
+    } catch (error) {
+      this.summaryError.set(this.auth.errorMessage(error));
+    } finally {
+      this.summaryLoading.set(false);
+    }
+  }
+
+  readonly visibleModules = computed(() => {
+    const permissions = new Set(this.permissions().map((permission) => permission.permission_code));
+    return this.modules.filter((module) => permissions.has(module.permission));
+  });
+
+  readonly summaryCards = computed(() => {
+    const data = this.summary();
+    if (!data) return [];
+    if (this.selectedTenantId() !== null) {
+      return [
+        { label: 'Products', value: data['total_products'] ?? 0, icon: '▦' },
+        { label: 'Pending orders', value: data['pending_orders'] ?? 0, icon: '▤' },
+        { label: 'Open enquiries', value: data['open_enquiries'] ?? 0, icon: '↗' },
+        { label: 'Published promotions', value: data['published_promotions'] ?? 0, icon: '✳' },
+      ];
+    }
+    return [
+      { label: 'My orders', value: data['total_orders'] ?? 0, icon: '▤' },
+      { label: 'Active orders', value: data['active_orders'] ?? 0, icon: '↗' },
+      { label: 'Paid orders', value: data['paid_orders'] ?? 0, icon: '₹' },
+      { label: 'Open enquiries', value: data['open_enquiries'] ?? 0, icon: '✉' },
+    ];
+  });
+
+  roleLabel(role: string): string {
+    return role.toLowerCase().split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
+  }
+}
