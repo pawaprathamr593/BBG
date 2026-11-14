@@ -283,9 +283,7 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
     } catch (error) {
       this.logoutError.set(this.auth.errorMessage(error));
     } finally {
-      this.workspace.tenants.set([]);
-      this.workspace.permissions.set([]);
-      this.workspace.activeTenantId.set(null);
+      this.workspace.clear();
       this.close();
       await this.router.navigateByUrl(destination);
       this.loggingOut.set(false);
