@@ -3,6 +3,7 @@ import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, Ro
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/auth/auth.service';
+import { ThemeService } from '../../core/theme/theme.service';
 import { StorefrontContextService } from './storefront-context.service';
 import { StorefrontSeoService } from './storefront-seo.service';
 
@@ -26,10 +27,6 @@ interface StorefrontNavItem {
           <a routerLink="/businesses">Browse businesses</a>
         </main>
       } @else if (context.detail(); as data) {
-        <div class="store-announcement">
-          <span class="announcement-dot" aria-hidden="true"></span>
-          <span>Welcome to the official {{ brandName }} store</span>
-        </div>
         <header class="store-header">
           <div class="header-inner">
             <a class="brand" [routerLink]="['/store', slug]" aria-label="Visit {{ brandName }} home" (click)="closeMenu()">
@@ -55,6 +52,15 @@ interface StorefrontNavItem {
                   routerLinkActive="active" (click)="closeMenu()">{{ item.label }}</a>
               }
             </nav>
+            <button class="store-theme-toggle" type="button" (click)="toggleTheme()"
+              [attr.aria-label]="theme.mode() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'"
+              [attr.title]="theme.mode() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'">
+              @if (theme.mode() === 'light') {
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg>
+              } @else {
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.6 8.6 0 1 0 20.2 15.2Z"></path></svg>
+              }
+            </button>
             <a class="account" [routerLink]="['/store', slug, 'login']" [queryParams]="{ returnUrl: currentUrl }">
               <span class="account-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none"><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
@@ -116,42 +122,43 @@ interface StorefrontNavItem {
     </div>`,
   styles: [`
     :host { display:block; min-height:100%; }
-    .store-shell { --store-accent:#176b4a; --store-accent-dark:#104b35; --store-accent-soft:#eaf4ee; --store-ink:#17251d; display:flex; min-height:100dvh; flex-direction:column; background:#fff; color:var(--store-ink); }
-    .store-announcement { display:flex; min-height:32px; align-items:center; justify-content:center; gap:9px; padding:6px 16px; background:var(--store-accent-dark); color:#f4faf6; font-size:.72rem; font-weight:600; letter-spacing:.035em; text-align:center; }
-    .announcement-dot { width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:#a9d6b9; box-shadow:0 0 0 3px #ffffff18; }
-    .store-header { position:relative; z-index:30; width:100%; border-bottom:1px solid #edf0ed; background:rgba(255,255,255,.97); box-shadow:0 5px 22px #17251d08; }
+    .store-shell { --store-accent:var(--brand); --store-accent-dark:var(--brand-strong); --store-accent-soft:var(--brand-soft); --store-ink:var(--text-primary); display:flex; min-height:100dvh; flex-direction:column; background:var(--surface-page); color:var(--store-ink); }
+    .store-header { position:relative; z-index:30; width:100%; border-bottom:1px solid var(--border); background:var(--surface-header); box-shadow:0 5px 22px #17251d08; }
     .header-inner { display:flex; width:min(100% - 48px,1280px); min-height:88px; align-items:center; justify-content:space-between; gap:28px; margin:0 auto; }
     .brand { display:flex; min-width:205px; align-items:center; gap:12px; color:var(--store-ink); text-decoration:none; }
     .brand img,.brand-mark { width:48px; height:48px; flex:0 0 48px; border:1px solid #e8eee9; border-radius:14px; object-fit:cover; }
     .brand-mark { display:grid; place-items:center; border-color:var(--store-accent-soft); background:var(--store-accent-soft); color:var(--store-accent); font-size:1.2rem; font-weight:800; }
     .brand-copy { display:flex; min-width:0; flex-direction:column; gap:4px; }
-    .brand-name { overflow:hidden; color:#17251d; font-size:1.02rem; font-weight:800; line-height:1.2; text-overflow:ellipsis; white-space:nowrap; }
-    .brand-caption { color:#829087; font-size:.59rem; font-weight:750; letter-spacing:.14em; }
+    .brand-name { overflow:hidden; color:var(--text-primary); font-size:1.02rem; font-weight:800; line-height:1.2; text-overflow:ellipsis; white-space:nowrap; }
+    .brand-caption { color:var(--text-muted); font-size:.59rem; font-weight:750; letter-spacing:.14em; }
     .store-nav { display:flex; flex:1; align-items:center; justify-content:center; gap:5px; }
-    .store-nav a { position:relative; padding:12px 16px; border-radius:9px; color:#59675e; font-size:.87rem; font-weight:650; text-decoration:none; transition:background .18s ease,color .18s ease; }
+    .store-nav a { position:relative; padding:12px 16px; border-radius:9px; color:var(--text-secondary); font-size:.87rem; font-weight:650; text-decoration:none; transition:background .18s ease,color .18s ease; }
     .store-nav a:hover,.store-nav a.active { background:var(--store-accent-soft); color:var(--store-accent-dark); }
     .store-nav a.active::after { position:absolute; right:16px; bottom:5px; left:16px; height:2px; border-radius:2px; background:var(--store-accent); content:""; }
-    .account { display:inline-flex; min-height:44px; flex:0 0 auto; align-items:center; justify-content:center; gap:9px; padding:0 17px; border:1px solid #dce6df; border-radius:11px; background:#fff; color:#24372b; font-size:.84rem; font-weight:700; text-decoration:none; transition:border-color .18s ease,background .18s ease,color .18s ease,transform .18s ease; }
+    .store-theme-toggle { display:grid; width:42px; height:42px; flex:0 0 42px; place-items:center; border:1px solid var(--border); border-radius:50%; background:var(--surface-subtle); color:var(--text-primary); cursor:pointer; }
+    .store-theme-toggle svg { width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .account { display:inline-flex; min-height:44px; flex:0 0 auto; align-items:center; justify-content:center; gap:9px; padding:0 17px; border:1px solid var(--border); border-radius:11px; background:var(--surface-card); color:var(--text-primary); font-size:.84rem; font-weight:700; text-decoration:none; transition:border-color .18s ease,background .18s ease,color .18s ease,transform .18s ease; }
     .account:hover { transform:translateY(-1px); border-color:var(--store-accent); background:var(--store-accent-soft); color:var(--store-accent-dark); }
     .account-icon { display:inline-flex; width:17px; height:17px; }
     .account-icon svg { width:100%; height:100%; }
     .store-menu-toggle { display:none; }
     #storefront-content { display:block; min-width:0; flex:1 0 auto; }
-    .state { max-width:760px; margin:50px auto; padding:42px 24px; color:#66736a; text-align:center; }
-    .state.error { color:#202923; }
+    .state { max-width:760px; margin:50px auto; padding:42px 24px; color:var(--text-secondary); text-align:center; }
+    .state.error { color:var(--text-primary); }
     .state a { color:var(--store-accent); }
-    .store-footer { margin-top:auto; padding:58px max(24px,calc((100vw - 1280px)/2)) 0; background:#102b20; color:#c1d0c6; }
+    .store-footer { --footer-text:#c4cbc6; --footer-muted:#b4c5ba; --footer-subtle:#9fb3a6; margin-top:auto; padding:58px max(24px,calc((100vw - 1280px)/2)) 0; background:#171d19; color:var(--footer-text); }
+    :host-context(html[data-theme='dark']) .store-footer { background:#101713; }
     .footer-main { display:grid; grid-template-columns:minmax(280px,1.7fr) minmax(140px,.7fr) minmax(220px,1fr); gap:64px; max-width:1280px; margin:0 auto; padding-bottom:48px; }
     .footer-brand { display:inline-flex; align-items:center; gap:12px; margin-bottom:17px; color:#fff; font-size:1.1rem; font-weight:800; text-decoration:none; }
     .footer-brand img,.footer-brand-mark { width:42px; height:42px; flex:0 0 42px; border:1px solid #ffffff26; border-radius:12px; object-fit:cover; }
     .footer-brand-mark { display:grid; place-items:center; background:#ffffff14; color:#d8eee0; font-size:1.05rem; }
-    .footer-brand-block p { max-width:430px; margin:0 0 18px; color:#b4c5ba; font-size:.88rem; line-height:1.8; }
-    .footer-brand-block address { display:grid; gap:4px; color:#9fb3a6; font-size:.8rem; font-style:normal; line-height:1.6; }
+    .footer-brand-block p { max-width:430px; margin:0 0 18px; color:var(--footer-muted); font-size:.88rem; line-height:1.8; }
+    .footer-brand-block address { display:grid; gap:4px; color:var(--footer-subtle); font-size:.8rem; font-style:normal; line-height:1.6; }
     .footer-column { display:flex; flex-direction:column; align-items:flex-start; gap:13px; }
     .footer-column h2 { margin:4px 0 8px; color:#fff; font-size:.85rem; font-weight:750; letter-spacing:.07em; text-transform:uppercase; }
-    .footer-column > a:not(.contact-link) { color:#b4c5ba; font-size:.86rem; text-decoration:none; transition:color .16s ease,transform .16s ease; }
+    .footer-column > a:not(.contact-link) { color:var(--footer-muted); font-size:.86rem; text-decoration:none; transition:color .16s ease,transform .16s ease; }
     .footer-column > a:hover { transform:translateX(2px); color:#fff; }
-    .contact-link { display:flex; max-width:100%; align-items:flex-start; gap:11px; color:#b4c5ba; font-size:.84rem; line-height:1.5; overflow-wrap:anywhere; text-decoration:none; transition:color .16s ease; }
+    .contact-link { display:flex; max-width:100%; align-items:flex-start; gap:11px; color:var(--footer-muted); font-size:.84rem; line-height:1.5; overflow-wrap:anywhere; text-decoration:none; transition:color .16s ease; }
     .contact-link:hover { color:#fff; }
     .contact-icon { display:inline-grid; width:25px; height:25px; flex:0 0 25px; place-items:center; border:1px solid #ffffff20; border-radius:8px; color:#c8e4d2; font-size:.8rem; }
     .footer-bottom { display:flex; min-height:66px; align-items:center; justify-content:space-between; gap:18px; border-top:1px solid #ffffff1c; color:#91a99a; font-size:.75rem; }
@@ -169,12 +176,12 @@ interface StorefrontNavItem {
       .footer-main { grid-template-columns:minmax(220px,1.4fr) 1fr 1fr; gap:32px; }
     }
     @media(max-width:640px) {
-      .store-announcement { min-height:30px; font-size:.66rem; }
       .header-inner { width:calc(100% - 28px); min-height:74px; gap:9px; }
       .brand { gap:9px; }
       .brand img,.brand-mark { width:40px; height:40px; flex-basis:40px; border-radius:11px; }
       .brand-name { max-width:160px; font-size:.9rem; }
       .brand-caption { font-size:.52rem; }
+      .store-theme-toggle { width:37px; height:37px; flex-basis:37px; }
       .account { min-height:40px; gap:6px; padding:0 10px; font-size:.76rem; }
       .account-icon { width:15px; height:15px; }
       .store-menu-toggle { width:39px; height:39px; flex-basis:39px; }
@@ -205,6 +212,7 @@ export class StorefrontLayout implements OnInit {
 
   readonly context = inject(StorefrontContextService);
   readonly auth = inject(AuthService);
+  readonly theme = inject(ThemeService);
   slug = '';
   currentUrl = '';
   menuOpen = false;
@@ -227,6 +235,7 @@ export class StorefrontLayout implements OnInit {
 
   toggleMenu(): void { this.menuOpen = !this.menuOpen; }
   closeMenu(): void { this.menuOpen = false; }
+  toggleTheme(): void { this.theme.toggle(); }
 
   ngOnInit(): void {
     this.router.events.pipe(
