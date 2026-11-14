@@ -509,4 +509,3 @@ export class MarketplaceHome implements OnInit {
   }
 }
 
-|-$/g, '') || 'product'; }
