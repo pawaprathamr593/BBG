@@ -191,6 +191,10 @@ export class ProductDirectory implements OnInit {
   private readonly api = inject(MarketplaceApiService);
   private readonly route = inject(ActivatedRoute);
 
+  protected slugifyProduct(value: string): string {
+    return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
+  }
+
   protected query = '';
   protected sort: ProductSort = 'newest';
   protected readonly filtersOpen = signal(false);
@@ -422,4 +426,3 @@ export class ProductDirectory implements OnInit {
   }
 }
 
-function slugifyProduct(value: string): string { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product'; }
