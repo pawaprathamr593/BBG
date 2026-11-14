@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
-import { DashboardApiService, DashboardPermission, DashboardTenant } from '../../core/dashboard/dashboard-api.service';
+import { DashboardApiService } from '../../core/dashboard/dashboard-api.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
 
 interface DashboardModule {
@@ -243,7 +243,9 @@ export class Dashboard implements OnInit {
       this.summary.set(null);
       this.summaryError.set('');
       this.loading.set(false);
-      if (permissions.some((permission) => permission.role_code === 'CONSUMER' && permission.scope_type === 'GLOBAL')) {
+      if (this.selectedTenantId() !== null && permissions.some((permission) => permission.permission_code === 'TENANT_MEMBERS_VIEW')) {
+        await this.loadTenantSummary(this.selectedTenantId()!);
+      } else if (permissions.some((permission) => permission.role_code === 'CONSUMER' && permission.scope_type === 'GLOBAL')) {
         await this.loadConsumerSummary();
       }
     } catch (error) {
