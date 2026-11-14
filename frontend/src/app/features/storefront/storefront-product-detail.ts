@@ -207,7 +207,6 @@ export class StorefrontProductDetail implements OnInit {
 
       const value = response.data as MarketplaceProductDetail;
       this.detail.set(value);
-      this.detail.set(value);
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Unable to load this product.');
     } finally {
