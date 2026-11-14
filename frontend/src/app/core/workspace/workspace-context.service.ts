@@ -50,6 +50,8 @@ export class WorkspaceContextService {
     this.tenants.set([]);
     this.permissions.set([]);
     this.activeTenantId.set(null);
+    this.loading.set(false);
+    this.error.set('');
     this.initialization = undefined;
     this.persistActiveWorkspace(null);
   }
