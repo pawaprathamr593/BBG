@@ -1,7 +1,7 @@
 import { Component, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { MarketplaceApiService, MarketplaceProduct } from '../../core/marketplace/marketplace-api.service';
+import { MarketplaceApiService, MarketplaceBusinessDetail, MarketplaceProduct } from '../../core/marketplace/marketplace-api.service';
 import { StorefrontContextService } from './storefront-context.service';
 import { StorefrontSeoService } from './storefront-seo.service';
 
@@ -250,7 +250,7 @@ export class StorefrontHome {
       name: name + ' | Official Storefront',
       description,
       url: this.seo.canonicalUrl(path),
-      about: { '@type': 'LocalBusiness', name },
+      about: this.businessSchema(detail),
     });
 
     try {
@@ -265,10 +265,39 @@ export class StorefrontHome {
     }
   }
 
+  private businessSchema(data: MarketplaceBusinessDetail): Record<string, unknown> {
+    const address = data.business.address;
+    const location = data.business.location;
+    return {
+      '@type': 'LocalBusiness',
+      '@id': this.seo.canonicalUrl(pathForBusiness(data.business.business_slug)) + '#business',
+      name: data.storefront.title || data.business.business_name,
+      description: data.storefront.description || data.business.business_description || undefined,
+      url: this.seo.canonicalUrl(pathForBusiness(data.business.business_slug)),
+      ...(data.business.business_phone ? { telephone: data.business.business_phone } : {}),
+      ...(data.business.business_email ? { email: data.business.business_email } : {}),
+      ...(address ? {
+        address: {
+          '@type': 'PostalAddress',
+          ...(address.address_line_1 ? { streetAddress: [address.address_line_1, address.address_line_2].filter(Boolean).join(', ') } : {}),
+          ...(address.city ? { addressLocality: address.city } : {}),
+          ...(address.state ? { addressRegion: address.state } : {}),
+          ...(address.postal_code ? { postalCode: address.postal_code } : {}),
+          ...(address.country_code ? { addressCountry: address.country_code } : {}),
+        },
+      } : {}),
+      ...(location?.latitude != null && location?.longitude != null ? {
+        geo: { '@type': 'GeoCoordinates', latitude: location.latitude, longitude: location.longitude },
+      } : {}),
+    };
+  }
+
   productRoute(product: MarketplaceProduct): string {
     return (product.slug || slugify(product.product_name)) + '-' + (product.public_id || product.id);
   }
 }
+
+function pathForBusiness(slug: string): string { return '/store/' + encodeURIComponent(slug); }
 
 function slugify(value: string): string {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
