@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { DashboardApiService } from '../../core/dashboard/dashboard-api.service';
@@ -176,7 +176,7 @@ export class Dashboard implements OnInit {
   constructor() {
     effect(() => {
       const tenantId = this.workspace.activeTenantId();
-      const permissions = this.workspace.permissions();
+      const permissions = untracked(() => this.workspace.permissions());
       if (!this.activeContextObserved) {
         this.activeContextObserved = true;
         return;
