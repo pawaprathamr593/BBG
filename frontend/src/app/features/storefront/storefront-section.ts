@@ -790,3 +790,5 @@ export class StorefrontSection {
         geo: { '@type': 'GeoCoordinates', latitude: location.latitude, longitude: location.longitude },
       } : {}),
     };
+  }
+}
