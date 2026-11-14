@@ -5,6 +5,7 @@ import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from './core/auth/auth.service';
 import { AuthPopupComponent } from './shared/auth-popup/auth-popup';
+import { ThemeService } from './core/theme/theme.service';
 
 @Component({
   imports: [RouterLink, RouterLinkActive, RouterOutlet, AuthPopupComponent],
@@ -14,7 +15,7 @@ import { AuthPopupComponent } from './shared/auth-popup/auth-popup';
 })
 export class App {
   protected readonly menuOpen = signal(false);
-  protected readonly theme = signal<'light' | 'dark'>('light');
+  protected readonly theme = inject(ThemeService);
   protected readonly currentYear = new Date().getFullYear();
   protected readonly auth = inject(AuthService);
   protected readonly isStorefrontRoute = signal(false);
@@ -44,9 +45,7 @@ export class App {
   }
 
   protected toggleTheme(): void {
-    const nextTheme = this.theme() === 'light' ? 'dark' : 'light';
-    this.theme.set(nextTheme);
-    document.documentElement.setAttribute('data-theme', nextTheme);
+    this.theme.toggle();
   }
 
   protected async signOut(): Promise<void> {
