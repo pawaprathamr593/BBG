@@ -11,36 +11,38 @@ import { StorefrontSeoService } from './storefront-seo.service';
   template: `
     @if (context.detail(); as data) {
       <main class="home-page">
-        <section class="shop-hero" aria-labelledby="storefront-title">
+        <section class="page-hero home-hero" aria-labelledby="storefront-title">
+          @if (data.business.cover_image_path) {
+            <img class="home-cover" [src]="data.business.cover_image_path" [alt]="brandName + ' storefront cover'" fetchpriority="high" />
+          }
+          <div class="home-shade" aria-hidden="true"></div>
           <div class="hero-inner">
-            <div class="hero-copy">
-              <p class="eyebrow">{{ data.business.category_name || 'OFFICIAL STORE' }}</p>
-              <h1 id="storefront-title">Welcome to <span>{{ brandName }}</span></h1>
-              <p class="hero-description">{{ data.storefront.description || data.business.business_description || 'Browse our products and contact us for more information.' }}</p>
-              <div class="hero-actions">
-                <a class="primary-button" [routerLink]="['/store', data.business.business_slug, 'products']">Shop all products <span aria-hidden="true">↗</span></a>
-                <a class="secondary-button" [routerLink]="['/store', data.business.business_slug, 'contact']">Contact us</a>
-              </div>
-              <div class="hero-assurances">
-                <span><i aria-hidden="true">✓</i> Official business storefront</span>
-                @if (data.storefront.accept_online_orders) { <span><i aria-hidden="true">✓</i> Online orders accepted</span> }
-                @if (data.business.city || data.business.state) { <span><i aria-hidden="true">⌖</i> {{ data.business.city }}{{ data.business.city && data.business.state ? ', ' : '' }}{{ data.business.state }}</span> }
+            <p class="eyebrow"><span>OFFICIAL STOREFRONT</span><i></i> {{ data.business.category_name || 'DISCOVER OUR BUSINESS' }}</p>
+            <div class="store-identity">
+              @if (data.business.logo_path) {
+                <img class="store-logo" [src]="data.business.logo_path" [alt]="brandName + ' logo'" />
+              } @else {
+                <span class="store-logo-fallback" aria-hidden="true">{{ brandName.slice(0, 1).toUpperCase() }}</span>
+              }
+              <div class="identity-copy">
+                <span class="identity-caption">WELCOME TO</span>
+                <h1 id="storefront-title">{{ brandName }}<b>.</b></h1>
               </div>
             </div>
-            <div class="hero-visual">
-              @if (data.business.cover_image_path) {
-                <img class="cover-image" [src]="data.business.cover_image_path" [alt]="brandName + ' storefront'" fetchpriority="high" />
-              } @else {
-                <div class="brand-visual">
-                  @if (data.business.logo_path) { <img [src]="data.business.logo_path" [alt]="brandName + ' logo'" /> }
-                  @else { <span class="brand-initial">{{ brandName.slice(0, 1).toUpperCase() }}</span> }
-                  <span class="brand-visual-name">{{ brandName }}</span>
-                  <span class="brand-visual-caption">SHOP THE COLLECTION</span>
-                </div>
+            <p class="hero-description">{{ data.storefront.description || data.business.business_description || 'Explore this business storefront and get in touch for products, services and more information.' }}</p>
+            <div class="hero-actions">
+              <a class="primary-button" [routerLink]="['/store', data.business.business_slug, 'products']">Explore products <span aria-hidden="true">↗</span></a>
+              <a class="secondary-button" [routerLink]="['/store', data.business.business_slug, 'contact']">Contact the store</a>
+            </div>
+            <div class="hero-meta">
+              <span><i aria-hidden="true">✓</i> Official BBG storefront</span>
+              @if (data.storefront.accept_online_orders) { <span><i aria-hidden="true">✓</i> Online orders available</span> }
+              @if (data.business.city || data.business.state) {
+                <span><i aria-hidden="true">⌖</i> {{ data.business.city }}{{ data.business.city && data.business.state ? ', ' : '' }}{{ data.business.state }}</span>
               }
-              <span class="visual-caption">WELCOME / {{ brandName }}</span>
             </div>
           </div>
+          <div class="hero-decoration" aria-hidden="true"><span>00</span><i></i><b>DISCOVER</b></div>
         </section>
 
         <section class="shopping-benefits" aria-label="Store information">
@@ -112,30 +114,34 @@ import { StorefrontSeoService } from './storefront-seo.service';
   styles: [`
     :host{display:block;color:var(--text-primary);background:var(--surface-page)}
     .home-page{overflow:hidden;background:var(--surface-page)}
-    .shop-hero{background:linear-gradient(115deg,var(--surface-page) 0%,var(--brand-soft) 100%);border-bottom:1px solid var(--border)}
-    .hero-inner{display:grid;width:min(100% - 64px,1160px);min-height:440px;grid-template-columns:minmax(0,1.05fr) minmax(320px,.85fr);align-items:center;gap:clamp(35px,6vw,80px);margin:0 auto;padding:58px 0}
-    .hero-copy{max-width:610px}
-    .eyebrow{margin:0 0 13px;color:var(--brand-strong);font-size:.64rem;font-weight:650;letter-spacing:.13em}
-    .hero-copy h1{max-width:620px;margin:0;color:var(--text-primary);font-size:clamp(2.3rem,4.8vw,4.2rem);font-weight:620;letter-spacing:-.065em;line-height:1.08;text-wrap:balance}
-    .hero-copy h1 span{color:var(--brand-strong)}
-    .hero-description{max-width:560px;margin:19px 0 0;color:var(--text-secondary);font-size:.96rem;line-height:1.8}
+    .page-hero{position:relative;isolation:isolate;display:flex;min-height:400px;align-items:center;overflow:hidden;background:radial-gradient(ellipse at 83% 20%,#397653 0%,transparent 36%),linear-gradient(115deg,#123e2b,#0e2b1e);color:#fff}
+    .home-cover,.home-shade{position:absolute;z-index:-1;inset:0;width:100%;height:100%}
+    .home-cover{object-fit:cover;opacity:.36}
+    .home-shade{background:linear-gradient(90deg,#0d2e20f5 0%,#123e2bd9 55%,#123e2b72 100%)}
+    .hero-inner{width:min(100% - 64px,1160px);margin:0 auto;padding:66px 0}
+    .eyebrow{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:0 0 22px;color:#d5e5da;font-size:.66rem;font-weight:800;letter-spacing:.16em}
+    .eyebrow i{width:25px;height:1px;background:var(--accent)}
+    .store-identity{display:flex;align-items:center;gap:19px}
+    .store-logo,.store-logo-fallback{width:82px;height:82px;flex:0 0 82px;border:2px solid #ffffffa6;border-radius:50%;background:#ffffff18;object-fit:cover;box-shadow:0 8px 28px #061c1240}
+    .store-logo-fallback{display:grid;place-items:center;color:#fff;font-size:2rem;font-weight:650}
+    .identity-copy{min-width:0}
+    .identity-caption{display:block;margin-bottom:5px;color:#d5e5da;font-size:.62rem;font-weight:750;letter-spacing:.18em}
+    .hero-inner h1{max-width:900px;margin:0;color:#fff;font-size:clamp(3.2rem,7vw,5.7rem);font-weight:760;letter-spacing:-.075em;line-height:1.02;overflow-wrap:anywhere}
+    .hero-inner h1>b{color:var(--accent)}
+    .hero-description{max-width:670px;margin:20px 0 0;color:#dce8df;font-size:1rem;line-height:1.8}
     .hero-actions{display:flex;flex-wrap:wrap;gap:11px;margin-top:27px}
-    .primary-button,.secondary-button{display:inline-flex;min-height:47px;align-items:center;justify-content:center;gap:20px;padding:0 17px;border-radius:6px;font-size:.78rem;font-weight:650;text-decoration:none;transition:background .18s ease,border-color .18s ease,transform .18s ease}
-    .primary-button{background:var(--brand);color:#fff;border:1px solid var(--brand)}
+    .primary-button,.secondary-button{display:inline-flex;min-height:47px;align-items:center;justify-content:center;gap:20px;padding:0 17px;border-radius:5px;font-size:.78rem;font-weight:750;text-decoration:none;transition:background .18s ease,border-color .18s ease,transform .18s ease}
+    .primary-button{border:1px solid var(--brand);background:var(--brand);color:#fff}
     :host-context(html[data-theme="dark"]) .primary-button{color:#17251c}
+    .secondary-button{border:1px solid #ffffff70;background:#ffffff12;color:#fff}
     .primary-button:hover,.secondary-button:hover{transform:translateY(-2px)}
-    .secondary-button{background:var(--surface-card);color:var(--text-primary);border:1px solid var(--border)}
-    .hero-assurances{display:flex;flex-wrap:wrap;gap:11px 19px;margin-top:28px;color:var(--text-secondary);font-size:.69rem}
-    .hero-assurances span{display:inline-flex;align-items:center;gap:6px}
-    .hero-assurances i{color:var(--brand-strong);font-style:normal;font-weight:800}
-    .hero-visual{position:relative;display:grid;min-height:315px;place-items:center;overflow:hidden;border:1px solid var(--border);border-radius:12px;background:var(--surface-card);box-shadow:0 18px 45px #1d392510}
-    .cover-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-    .brand-visual{display:flex;width:100%;min-height:315px;align-items:center;flex-direction:column;justify-content:center;gap:14px;padding:30px;background:radial-gradient(circle at 50% 42%,var(--brand-soft),transparent 55%),var(--surface-card)}
-    .brand-visual img{width:90px;height:90px;object-fit:contain}
-    .brand-initial{display:grid;width:94px;height:94px;place-items:center;border-radius:50%;background:var(--brand-soft);color:var(--brand-strong);font-size:3rem;font-weight:600}
-    .brand-visual-name{color:var(--text-primary);font-size:1.2rem;font-weight:600}
-    .brand-visual-caption{color:var(--text-muted);font-size:.57rem;font-weight:700;letter-spacing:.15em}
-    .visual-caption{position:absolute;right:14px;bottom:13px;padding:7px 10px;border:1px solid var(--border);border-radius:4px;background:var(--surface-card);color:var(--text-secondary);font-size:.56rem;letter-spacing:.1em}
+    .secondary-button:hover{background:#ffffff24;border-color:#fff}
+    .hero-meta{display:flex;flex-wrap:wrap;gap:10px 20px;margin-top:28px;color:#dce8df;font-size:.7rem}
+    .hero-meta span{display:inline-flex;align-items:center;gap:7px}
+    .hero-meta i{color:var(--accent);font-style:normal;font-weight:850}
+    .hero-decoration{position:absolute;right:max(32px,calc((100vw - 1160px)/2));bottom:42px;display:flex;align-items:center;gap:12px;color:#d1e1d6;font-size:.58rem;font-weight:800;letter-spacing:.15em;writing-mode:vertical-rl}
+    .hero-decoration>span{color:var(--accent);font-size:.8rem}
+    .hero-decoration>i{width:1px;height:55px;background:#ffffff7a}
     .shopping-benefits{display:grid;width:min(100% - 64px,1160px);grid-template-columns:repeat(3,minmax(0,1fr));gap:15px;margin:0 auto;padding:25px 0;border-bottom:1px solid var(--border)}
     .shopping-benefits>div{display:flex;align-items:center;gap:12px;padding:4px 12px}
     .benefit-icon{display:grid;width:38px;height:38px;flex:0 0 38px;place-items:center;border-radius:50%;background:var(--brand-soft);color:var(--brand-strong);font-size:1rem}
@@ -180,7 +186,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
     .store-contact p:last-child{margin:0;color:var(--text-secondary);font-size:.78rem;line-height:1.6}
     .store-contact>a{display:inline-flex;min-height:43px;align-items:center;justify-content:space-between;gap:20px;padding:0 14px;border:1px solid var(--border);border-radius:5px;background:var(--surface-card);color:var(--text-primary);font-size:.72rem;font-weight:650;text-decoration:none;white-space:nowrap}
     @media(max-width:1000px){.product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero-inner{grid-template-columns:minmax(0,1fr) minmax(260px,.8fr);gap:28px}}
-    @media(max-width:650px){.hero-inner,.shopping-benefits,.products-section{width:calc(100% - 36px)}.hero-inner{grid-template-columns:1fr;gap:24px;padding:38px 0}.hero-copy h1{font-size:2.65rem}.hero-description{font-size:.88rem}.hero-visual,.brand-visual{min-height:230px}.hero-assurances{gap:9px 13px}.shopping-benefits{grid-template-columns:1fr;gap:9px;padding:18px 0}.shopping-benefits>div{padding:3px 0}.products-section{padding:46px 0 55px}.section-heading{align-items:flex-start;flex-direction:column;gap:13px}.product-grid{gap:11px}.product-image{min-height:150px}.product-initial{font-size:4.5rem}.product-details{padding:12px}.product-details h3{font-size:.82rem}.product-details>p{font-size:.68rem}.product-purchase>span{font-size:.6rem}.store-contact{align-items:flex-start;flex-direction:column;padding:30px 18px}.store-contact>a{width:100%}.empty-products{align-items:flex-start;flex-direction:column;padding:20px}.empty-products>a{margin-left:0}}
+    @media(max-width:650px){.hero-inner,.shopping-benefits,.products-section{width:calc(100% - 40px)}.hero-inner{padding:52px 0}.store-identity{align-items:flex-start;gap:13px}.store-logo,.store-logo-fallback{width:62px;height:62px;flex-basis:62px}.identity-caption{font-size:.55rem}.hero-inner h1{font-size:clamp(2.65rem,11vw,4rem)}.hero-description{font-size:.88rem}.hero-meta{gap:9px 13px}.hero-decoration{right:18px;bottom:24px}.shopping-benefits{grid-template-columns:1fr;gap:9px;padding:18px 0}.shopping-benefits>div{padding:3px 0}.products-section{padding:46px 0 55px}.section-heading{align-items:flex-start;flex-direction:column;gap:13px}.product-grid{gap:11px}.product-image{min-height:150px}.product-initial{font-size:4.5rem}.product-details{padding:12px}.product-details h3{font-size:.82rem}.product-details>p{font-size:.68rem}.product-purchase>span{font-size:.6rem}.store-contact{align-items:flex-start;flex-direction:column;padding:30px 18px}.store-contact>a{width:100%}.empty-products{align-items:flex-start;flex-direction:column;padding:20px}.empty-products>a{margin-left:0}}
     @media(max-width:390px){.product-grid{grid-template-columns:1fr}.product-image{min-height:205px}.product-initial{font-size:5.5rem}}
     @media(prefers-reduced-motion:reduce){.primary-button,.secondary-button,.product-card{transition:none}.primary-button:hover,.secondary-button:hover,.product-card:hover{transform:none}}
   `],
