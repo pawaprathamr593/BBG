@@ -4,6 +4,7 @@ export const routes: Routes = [
   { path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard), title: 'Workspace Dashboard | BBG' },
   {
     path: '',
+    pathMatch: 'full',
     loadComponent: () => import('./features/marketplace/home/marketplace-home').then((m) => m.MarketplaceHome),
     title: 'BBG | Discover Businesses & Products',
   },
