@@ -3,6 +3,9 @@ name: bbg
 services:
   php:
     image: bbc-php:8.4
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
     container_name: bbg-php
     working_dir: /var/www/html
     volumes:
@@ -15,6 +18,11 @@ services:
       DB_NAME: ${MYSQL_DATABASE:-bbg}
       DB_USER: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      AUTH_EMAIL_OTP_TTL: ${AUTH_EMAIL_OTP_TTL:-600}
+      AUTH_EMAIL_OTP_MAX_ATTEMPTS: ${AUTH_EMAIL_OTP_MAX_ATTEMPTS:-5}
+      AUTH_EMAIL_OTP_RESEND_COOLDOWN: ${AUTH_EMAIL_OTP_RESEND_COOLDOWN:-60}
       AUTH_ACCESS_TOKEN_SECRET: ${AUTH_ACCESS_TOKEN_SECRET:-}
       AUTH_ACCESS_TOKEN_TTL: ${AUTH_ACCESS_TOKEN_TTL:-900}
       AUTH_REFRESH_TOKEN_TTL: ${AUTH_REFRESH_TOKEN_TTL:-2592000}
@@ -34,6 +42,21 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: bbg-redis
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - bbg-network
     restart: unless-stopped
 
   nginx:
