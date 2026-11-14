@@ -10,7 +10,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
   imports: [AuthExperienceComponent],
   template: `
     <main class="storefront-auth">
-      <app-auth-experience [brandName]="brandName" />
+      <app-auth-experience [brandName]="brandName" [reason]="'Sign in to continue with ' + brandName + '.'" />
     </main>
   `,
   styles: [`
