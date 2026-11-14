@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
@@ -52,7 +52,7 @@ import { BusinessRegistrationApiService } from '../../core/business/business-reg
     @media(max-width:620px){.registration-page{padding:24px 12px 48px}.registration-card{padding:22px 17px;border-radius:14px}.field-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.back-link{margin-bottom:26px}}
   `],
 })
-export class BusinessRegistration {
+export class BusinessRegistration implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(BusinessRegistrationApiService);
   private readonly auth = inject(AuthService);
@@ -73,6 +73,19 @@ export class BusinessRegistration {
     state: ['', [Validators.required, Validators.maxLength(100)]],
     postal_code: ['', [Validators.required, Validators.maxLength(15)]],
   });
+
+  async ngOnInit(): Promise<void> {
+    try {
+      if (!await this.auth.restoreSession()) {
+        await this.router.navigate(['/']);
+        return;
+      }
+      if (!this.auth.user()) await this.auth.loadProfile();
+      if (await this.api.getMyApplication()) await this.router.navigate(['/workspace']);
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    }
+  }
 
   updateSlug(): void {
     const name = this.form.controls.business_name.value;
