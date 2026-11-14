@@ -49,9 +49,4 @@ export class App {
   protected toggleTheme(): void {
     this.theme.toggle();
   }
-
-  protected async signOut(): Promise<void> {
-    await this.auth.logout();
-    await this.router.navigateByUrl('/login');
-  }
 }
