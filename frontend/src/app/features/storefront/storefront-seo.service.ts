@@ -8,6 +8,11 @@ export class StorefrontSeoService {
   private readonly meta = inject(Meta);
   private readonly document = inject(DOCUMENT);
 
+  canonicalUrl(path: string): string {
+    const origin = this.document.location?.origin;
+    return origin ? new URL(path, origin).toString() : path;
+  }
+
   update(
     title: string,
     description: string,
@@ -16,8 +21,7 @@ export class StorefrontSeoService {
     robots = 'index,follow,max-image-preview:large',
   ): void {
     const cleanDescription = description.replace(/\s+/g, ' ').trim().slice(0, 200);
-    const origin = this.document.location?.origin;
-    const canonical = origin ? new URL(path, origin).toString() : path;
+    const canonical = this.canonicalUrl(path);
 
     this.title.setTitle(title);
     this.meta.updateTag({ name: 'description', content: cleanDescription });
