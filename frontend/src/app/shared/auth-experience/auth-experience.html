@@ -7,7 +7,7 @@
   }
   <div class="auth-heading">
     @if (presentation === 'page') {
-      <span class="auth-mark" aria-hidden="true">B</span>
+      <span class="auth-mark" aria-hidden="true">{{ brandName.slice(0, 1).toUpperCase() }}</span>
       <p class="eyebrow">{{ activeMode() === 'login' ? 'WELCOME BACK' : 'JOIN THE COMMUNITY' }}</p>
     }
     <h1>{{ presentation === 'popup' ? 'Continue with BBG' : (activeMode() === 'login' ? 'Sign in to BBG' : 'Create your BBG account') }}</h1>
@@ -89,12 +89,12 @@
 
   <p class="mode-switch">
     @if (activeMode() === 'login') {
-      New to BBG? <button type="button" (click)="switchMode('register')">Create an account</button>
+      New here? <button type="button" (click)="switchMode('register')">Create an account</button>
     } @else {
       Already have an account? <button type="button" (click)="switchMode('login')">Sign in</button>
     }
   </p>
   @if (presentation === 'page') {
-    <p class="security-note"><span aria-hidden="true">✓</span> Secure authentication by BBG</p>
+    <p class="security-note"><span aria-hidden="true">✓</span> Secure authentication</p>
   }
 </section>
