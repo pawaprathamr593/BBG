@@ -5,7 +5,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/auth/auth.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { StorefrontContextService } from './storefront-context.service';
-import { StorefrontSeoService } from './storefront-seo.service';
 
 interface StorefrontNavItem {
   label: string;
@@ -208,7 +207,6 @@ export class StorefrontLayout implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
-  private readonly seo = inject(StorefrontSeoService);
 
   readonly context = inject(StorefrontContextService);
   readonly auth = inject(AuthService);
@@ -249,32 +247,7 @@ export class StorefrontLayout implements OnInit {
       this.currentUrl = this.router.url;
       this.closeMenu();
 
-      void this.context.load(slug).then(() => {
-        const detail = this.context.detail();
-        if (!detail) return;
-        const name = detail.storefront.title || detail.business.business_name;
-        const description = detail.storefront.description || detail.business.business_description || `Explore products and services from ${name}.`;
-        const path = `/store/${encodeURIComponent(slug)}`;
-        this.seo.update(`${name} | Official Store`, description, path, {
-          '@context': 'https://schema.org',
-          '@type': 'LocalBusiness',
-          name,
-          description,
-          url: this.seo.canonicalUrl(path),
-          ...(detail.business.business_phone ? { telephone: detail.business.business_phone } : {}),
-          ...(detail.business.business_email ? { email: detail.business.business_email } : {}),
-          ...(detail.business.address ? {
-            address: {
-              '@type': 'PostalAddress',
-              ...(detail.business.address.address_line_1 ? { streetAddress: detail.business.address.address_line_1 } : {}),
-              ...(detail.business.address.city ? { addressLocality: detail.business.address.city } : {}),
-              ...(detail.business.address.state ? { addressRegion: detail.business.address.state } : {}),
-              ...(detail.business.address.postal_code ? { postalCode: detail.business.address.postal_code } : {}),
-              ...(detail.business.address.country_code ? { addressCountry: detail.business.address.country_code } : {}),
-            },
-          } : {}),
-        });
-      });
+      void this.context.load(slug);
     });
   }
 }
