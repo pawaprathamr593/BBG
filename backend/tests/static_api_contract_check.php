@@ -12,8 +12,8 @@ if ($routes === false) {
 
 preg_match_all("~Route::post\\('(/api/v1/[^']+)'\\)~", $routes, $routeMatches);
 $routePaths = $routeMatches[1] ?? [];
-if (count($routePaths) !== 122 || count(array_unique($routePaths)) !== 122) {
-    fwrite(STDERR, 'Expected 122 unique POST API routes; found ' . count($routePaths) . ".\n");
+if (count($routePaths) !== 125 || count(array_unique($routePaths)) !== 125) {
+    fwrite(STDERR, 'Expected 125 unique POST API routes; found ' . count($routePaths) . ".\n");
     exit(1);
 }
 
@@ -71,6 +71,48 @@ foreach ($dispatchMarkers as $module => $marker) {
     }
 }
 
+$oauthController = file_get_contents($root . '/src/Modules/Api/V1/Controllers/OAuthController.php');
+$oauthProviderService = file_get_contents($root . '/src/Utils/OAuthProviderService.php');
+$socialOtpService = file_get_contents($root . '/src/Services/Implementations/SocialEmailOtpService.php');
+$authService = file_get_contents($root . '/src/Services/Implementations/AuthServices.php');
+$authDao = file_get_contents($root . '/src/Dao/AuthDao.php');
+$oauthRoutes = [
+    '/api/v1/auth/oauth/google/start',
+    '/api/v1/auth/oauth/google/callback',
+    '/api/v1/auth/oauth/apple/start',
+    '/api/v1/auth/oauth/apple/callback',
+    '/api/v1/auth/oauth/facebook/start',
+    '/api/v1/auth/oauth/facebook/callback',
+    '/api/v1/auth/oauth/instagram/start',
+    '/api/v1/auth/oauth/instagram/callback',
+    '/api/v1/auth/oauth/email/send',
+    '/api/v1/auth/oauth/email/verify',
+];
+foreach ($oauthRoutes as $oauthRoute) {
+    if (!str_contains($routes, $oauthRoute)) {
+        fwrite(STDERR, "Social authentication route missing: {$oauthRoute}.\\n");
+        exit(1);
+    }
+}
+if (
+    $oauthController === false
+    || $oauthProviderService === false
+    || $socialOtpService === false
+    || $authService === false
+    || $authDao === false
+    || !str_contains($oauthProviderService, 'completeGoogle')
+    || !str_contains($oauthProviderService, 'completeApple')
+    || !str_contains($oauthProviderService, 'completeFacebook')
+    || !str_contains($oauthProviderService, 'completeInstagram')
+    || !str_contains($oauthController, 'actionVerifyEmailOtp')
+    || !str_contains($socialOtpService, 'hash_hmac')
+    || !str_contains($authService, 'manageSocialLogin')
+    || !str_contains($authDao, 'INSERT INTO USER_IDENTITIES')
+) {
+    fwrite(STDERR, "Social OAuth, email OTP or USER_IDENTITIES linking contract is incomplete.\\n");
+    exit(1);
+}
+
 $subscriptionService = file_get_contents($root . '/src/Services/Implementations/SubscriptionServices.php');
 $subscriptionController = file_get_contents($root . '/src/Modules/Api/V1/Controllers/SubscriptionController.php');
 if (
@@ -87,4 +129,4 @@ if (
     exit(1);
 }
 
-echo "Static API contract checks passed: 122 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers and subscription proof S3 flow.\n";
+echo "Static API contract checks passed: 125 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, social OAuth/email OTP and subscription proof S3 flow.\n";
