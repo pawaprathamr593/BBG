@@ -193,6 +193,7 @@ export class Dashboard implements OnInit {
     { code: 'subscription-approval', title: 'Subscription approvals', description: 'Review and process platform subscription requests.', permission: 'SUBSCRIPTIONS_APPROVE', icon: '◇', scope: 'PLATFORM' },
     { code: 'categories', title: 'Marketplace categories', description: 'Manage the categories used across the BBG marketplace.', permission: 'CATEGORIES_MANAGE', icon: '▦', scope: 'PLATFORM' },
     { code: 'moderation', title: 'Marketplace moderation', description: 'Review reports and moderate marketplace content.', permission: 'MODERATION_MANAGE', icon: '⚑', scope: 'PLATFORM' },
+    { code: 'platform-analytics', title: 'Platform analytics', description: 'View approved platform-wide analytics metrics.', permission: 'ANALYTICS_VIEW', icon: '▥', scope: 'PLATFORM' },
     { code: 'system-health', title: 'System health', description: 'View operational health information available to platform staff.', permission: 'SYSTEM_HEALTH_VIEW', icon: '⌁', scope: 'PLATFORM' },
   ];
 
