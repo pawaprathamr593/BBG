@@ -197,12 +197,16 @@ final class OAuthProviderService
             'input_token' => $accessToken, 'access_token' => $config['client_id'] . '|' . $config['client_secret'],
         ], '', '&', PHP_QUERY_RFC3986));
         $data = $debug['data'] ?? [];
-        if (!is_array($data) || empty($data['is_valid']) || (string) ($data['app_id'] ?? '') !== $config['client_id']) {
+        if (!is_array($data) || empty($data['is_valid']) || (string) ($data['app_id'] ?? '') !== $config['client_id']
+            || empty($data['user_id'])) {
             throw new RuntimeException('Facebook access token could not be validated for this BBG app.');
         }
         $profile = $this->getJson('https://graph.facebook.com/me?' . http_build_query([
             'fields' => 'id,name,email,picture.type(large)', 'access_token' => $accessToken,
         ], '', '&', PHP_QUERY_RFC3986));
+        if (!hash_equals((string) $data['user_id'], (string) ($profile['id'] ?? ''))) {
+            throw new RuntimeException('Facebook token subject did not match the returned profile.');
+        }
         return $this->identity('FACEBOOK', $profile['id'] ?? '', $profile['email'] ?? null,
             false, (string) ($profile['name'] ?? ''), $profile['picture']['data']['url'] ?? null);
     }
@@ -275,7 +279,10 @@ final class OAuthProviderService
             $base = rtrim($this->env('BBG_API_BASE_URL', 'http://localhost:8080'), '/');
             $uri = $base . '/api/v1/auth/oauth/' . strtolower($provider) . '/callback';
         }
-        if (!str_starts_with($uri, 'https://') && !str_starts_with($uri, 'http://localhost')) {
+        $parts = parse_url($uri);
+        $secureUri = is_array($parts) && ($parts['scheme'] ?? '') === 'https' && !empty($parts['host']);
+        $localUri = is_array($parts) && ($parts['scheme'] ?? '') === 'http' && ($parts['host'] ?? '') === 'localhost';
+        if (!$secureUri && !$localUri) {
             throw new RuntimeException('OAuth redirect URI must use HTTPS (localhost is allowed for development).');
         }
         return $uri;
@@ -288,9 +295,11 @@ final class OAuthProviderService
         $audiences = is_array($aud) ? $aud : [$aud];
         if (!in_array((string) ($claims['iss'] ?? ''), $issuers, true)
             || !in_array($audience, $audiences, true)
+            || (count($audiences) > 1 && (string) ($claims['azp'] ?? '') !== $audience)
+            || !isset($claims['sub'], $claims['exp'], $claims['iat'], $claims['nonce'])
             || (int) ($claims['exp'] ?? 0) <= $now
-            || !isset($claims['iat'])
             || (int) ($claims['iat'] ?? 0) > $now + 60
+            || (isset($claims['nbf']) && (int) $claims['nbf'] > $now + 60)
             || !hash_equals($nonce, (string) ($claims['nonce'] ?? ''))
         ) {
             throw new RuntimeException('The provider identity token failed issuer, audience, expiry or nonce validation.');
@@ -312,7 +321,9 @@ final class OAuthProviderService
         $jwks = $this->getJson($jwksUrl);
         $jwk = null;
         foreach (($jwks['keys'] ?? []) as $key) {
-            if (($key['kid'] ?? '') === $header['kid'] && ($key['kty'] ?? '') === 'RSA') {
+            if (($key['kid'] ?? '') === $header['kid'] && ($key['kty'] ?? '') === 'RSA'
+                && (!isset($key['use']) || $key['use'] === 'sig')
+                && (!isset($key['alg']) || $key['alg'] === 'RS256')) {
                 $jwk = $key;
                 break;
             }
