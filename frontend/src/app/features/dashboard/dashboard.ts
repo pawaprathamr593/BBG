@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { DashboardApiService } from '../../core/dashboard/dashboard-api.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
+import { BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
 
 interface DashboardModule {
   code: string;
@@ -160,6 +161,7 @@ export class Dashboard implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly api = inject(DashboardApiService);
   private readonly workspace = inject(WorkspaceContextService);
+  private readonly businessApi = inject(BusinessRegistrationApiService);
   private readonly router = inject(Router);
 
   readonly loading = signal(true);
@@ -236,6 +238,16 @@ export class Dashboard implements OnInit {
       }
       if (!this.auth.user()) await this.auth.loadProfile();
       await this.workspace.initialize();
+      const ownerTenant = this.workspace.tenants().find((tenant) =>
+        (tenant.role_codes ?? '').split(',').map((role) => role.trim()).includes('TENANT_OWNER'),
+      );
+      if (ownerTenant) {
+        const application = await this.businessApi.getMyApplication(ownerTenant.id);
+        if (application && application.approval_status !== 'APPROVED') {
+          await this.router.navigate(['/workspace']);
+          return;
+        }
+      }
       const permissions = this.workspace.permissions();
       this.tenants.set(this.workspace.tenants());
       this.selectedTenantId.set(this.workspace.activeTenantId());
