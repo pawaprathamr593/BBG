@@ -30,8 +30,8 @@
         }
       </button>
       @if (!auth.isAuthenticated()) {
-        <a class="sign-in-link" routerLink="/login">Sign in</a>
-        <a class="register-link" routerLink="/register">Register</a>
+        <button class="sign-in-link auth-trigger" type="button" (click)="openSignIn($event)">Sign in</button>
+        <button class="register-link auth-trigger" type="button" (click)="openRegistration($event)">Register</button>
       } @else {
         <span class="nav-user">{{ auth.user()?.full_name }}</span>
         <button class="sign-in-link sign-out-button" type="button" (click)="signOut()">Sign out</button>
@@ -58,3 +58,4 @@
     <span class="copyright">© {{ currentYear }} BBG</span>
   </footer>
 </div>
+<app-auth-popup />
