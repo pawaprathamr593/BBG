@@ -95,6 +95,46 @@ final class OAuthProviderService
         };
     }
 
+    public function storePendingIdentity(array $identity): string
+    {
+        $ticket = bin2hex(random_bytes(32));
+        $this->redis()->setex('bbg:oauth:pending:' . hash('sha256', $ticket), 600, json_encode($identity, JSON_THROW_ON_ERROR));
+        return $ticket;
+    }
+
+    public function getPendingIdentity(string $ticket): ?array
+    {
+        if ($ticket === '' || strlen($ticket) > 128) return null;
+        $value = $this->redis()->get('bbg:oauth:pending:' . hash('sha256', $ticket));
+        if (!is_string($value)) return null;
+        $identity = json_decode($value, true);
+        return is_array($identity) ? $identity : null;
+    }
+
+    public function consumePendingIdentity(string $ticket): ?array
+    {
+        $key = 'bbg:oauth:pending:' . hash('sha256', $ticket);
+        $redis = $this->redis();
+        $value = $redis->get($key);
+        if (!is_string($value)) return null;
+        $redis->del($key);
+        $identity = json_decode($value, true);
+        return is_array($identity) ? $identity : null;
+    }
+
+    public function frontendOrigin(): string
+    {
+        $url = $this->env('BBG_FRONTEND_URL', 'http://localhost:4200');
+        $parts = parse_url($url);
+        if (!is_array($parts) || !isset($parts['scheme'], $parts['host'])
+            || !in_array($parts['scheme'], ['https', 'http'], true)
+            || ($parts['scheme'] !== 'https' && $parts['host'] !== 'localhost')
+        ) {
+            throw new RuntimeException('BBG_FRONTEND_URL must be HTTPS (localhost is allowed for development).');
+        }
+        return $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '');
+    }
+
     public function frontendCallbackUrl(): string
     {
         return rtrim($this->env('BBG_FRONTEND_URL', 'http://localhost:4200'), '/') . '/auth/callback';
