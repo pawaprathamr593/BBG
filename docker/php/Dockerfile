@@ -31,6 +31,7 @@ RUN apt-get install -y \
     php8.4-intl \
     php8.4-bcmath \
     php8.4-opcache \
+    php8.4-redis \
     composer \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
