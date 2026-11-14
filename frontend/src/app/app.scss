@@ -63,3 +63,4 @@
   .site-footer { align-items:flex-start; flex-direction:column; gap:16px; padding:23px 18px; }.footer-brand { flex-wrap:wrap; }.footer-links { gap:10px 0; }.footer-links a:first-child { padding-left:0; }.copyright { padding-top:2px; }
 }
 @media(max-width:420px) { .brand-wordmark { font-size:1.5rem; }.topbar-actions { gap:5px; }.sign-in-link,.register-link { padding:0 8px; }.theme-toggle { width:33px; height:33px; } }
+\n/* Storefront routes are a separate public-site experience, not part of the BBG platform shell. */\n.app-shell.storefront-mode { background: transparent; }\n.app-shell.storefront-mode > .route-content { min-height: 100dvh; }\n
