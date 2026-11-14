@@ -26,7 +26,7 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
           } @else {
             <h2>Business approved</h2><p>Your business registration is approved. Opening your business workspace…</p>
           }
-          <div class="business-summary"><span><small>Business</small><strong>{{ business.business_name }}</strong></span><span><small>Registration status</small><strong>{{ statusLabel(business.approval_status) }}</strong></span><span><small>Location</small><strong>{{ [business.city, business.state].filter(Boolean).join(', ') || 'Not provided' }}</strong></span></div>
+          <div class="business-summary"><span><small>Business</small><strong>{{ business.business_name }}</strong></span><span><small>Registration status</small><strong>{{ statusLabel(business.approval_status) }}</strong></span><span><small>Location</small><strong>{{ locationLabel(business) }}</strong></span></div>
           <button class="market-button" type="button" (click)="visitMarketplace()">Visit marketplace <span aria-hidden="true">↗</span></button>
         </section>
       }
@@ -83,6 +83,10 @@ export class BusinessWorkspace implements OnInit {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  locationLabel(business: BusinessApplication): string {
+    return [business.city, business.state].filter((part): part is string => !!part).join(', ') || 'Not provided';
   }
 
   statusLabel(status: string): string {
