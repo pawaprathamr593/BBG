@@ -1,5 +1,8 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth.service';
+import { AuthDialogService } from '../../../core/auth/auth-dialog.service';
+import { BusinessRegistrationApiService } from '../../../core/business/business-registration-api.service';
 import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, MarketplaceProduct, MarketplacePromotion, MarketplaceHomeStats } from '../../../core/marketplace/marketplace-api.service';
 
 @Component({
@@ -21,6 +24,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12h14M12.5 5.5 19 12l-6.5 6.5"></path></svg>
             </button>
           </form>
+          <button class="business-register-button" type="button" (click)="startBusinessRegistration($event)">Register your business <span aria-hidden="true">→</span></button>
           <div class="hero-links" aria-label="Quick links">
             <span>Start exploring</span>
             <a routerLink="/products">Products</a>
@@ -245,7 +249,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
           <h2 id="entrepreneur-title">Have a business to grow?</h2>
           <p>Create your business presence and connect with the BBG community.</p>
         </div>
-        <a routerLink="/register">Get started <span aria-hidden="true">→</span></a>
+        <button class="entrepreneur-register-button" type="button" (click)="startBusinessRegistration($event)">Register your business <span aria-hidden="true">→</span></button>
       </section>
     </main>
   `,
@@ -266,6 +270,8 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
     .marketplace-search button:hover { background:#ffe95b; transform:translateX(2px); }
     .marketplace-search button svg { width:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
     .search-notice { margin:10px 0 0; color:#fff; font-size:.78rem; }
+    .business-register-button { display:inline-flex; align-items:center; gap:15px; margin-top:19px; padding:13px 20px; color:#171d19; background:#f5d928; border:0; border-radius:999px; font:inherit; font-size:.84rem; font-weight:800; cursor:pointer; box-shadow:0 10px 24px rgba(5,28,18,.16); transition:transform .18s ease,background .18s ease; }
+    .business-register-button:hover { background:#ffeb5c; transform:translateY(-1px); }
     .hero-links { display:flex; align-items:center; flex-wrap:wrap; gap:11px; margin-top:14px; color:rgba(255,255,255,.82); font-size:.76rem; }
     .hero-links span { font-weight:700; color:#fff; }
     .hero-links a { color:inherit; text-decoration:none; }
@@ -323,7 +329,8 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
     .promotion-action { position:relative; z-index:2; display:inline-flex; align-items:center; gap:15px; padding:13px 20px; color:#171d19; background:#f5d928; border-radius:999px; font-size:.82rem; font-weight:750; text-decoration:none; white-space:nowrap; transition:background .18s ease,transform .18s ease; }.promotion-action:hover { background:#ffeb5c; transform:translateY(-1px); }
     .entrepreneur-callout { display:flex; align-items:center; justify-content:space-between; gap:20px; width:min(1400px,calc(100% - 64px)); margin:28px auto 0; padding:26px 30px; background:var(--surface-subtle); border:1px solid var(--border); border-radius:15px; }
     .entrepreneur-callout h2 { font-size:1.2rem; }.entrepreneur-callout p:not(.section-kicker) { margin:6px 0 0; color:var(--text-secondary); font-size:.83rem; }
-    .entrepreneur-callout > a { display:inline-flex; align-items:center; gap:12px; padding:12px 18px; color:#fff; background:#174d35; border-radius:9px; font-size:.82rem; font-weight:700; text-decoration:none; white-space:nowrap; }
+    .entrepreneur-register-button { display:inline-flex; align-items:center; gap:12px; padding:12px 18px; color:#fff; background:#174d35; border:0; border-radius:9px; font:inherit; font-size:.82rem; font-weight:750; cursor:pointer; white-space:nowrap; }
+    .entrepreneur-register-button:hover { background:#236442; }
     .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
     @media(max-width:900px) { .hero { grid-template-columns:1fr .55fr; }.hero-copy { padding-left:32px; }.hero-visual { min-height:360px; }.hero-stripe { display:none; }.city-back { right:-30%; }.city-front { right:-5%; } }
     @media(max-width:680px) {
@@ -383,6 +390,10 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
 })
 export class MarketplaceHome implements OnInit {
   private readonly marketplaceApi = inject(MarketplaceApiService);
+  private readonly auth = inject(AuthService);
+  private readonly authDialog = inject(AuthDialogService);
+  private readonly businessApi = inject(BusinessRegistrationApiService);
+  private readonly router = inject(Router);
 
   protected readonly loading = signal(true);
   protected readonly loadError = signal('');
@@ -396,6 +407,26 @@ export class MarketplaceHome implements OnInit {
   protected readonly promotions = signal<MarketplacePromotion[]>([]);
   protected readonly homeStats = signal<MarketplaceHomeStats | null>(null);
   protected readonly statLabels = ['Businesses registered', 'Platform users', 'Products listed', 'Orders completed'];
+
+  protected async startBusinessRegistration(event: Event): Promise<void> {
+    const anchor = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+    if (await this.auth.restoreSession()) {
+      await this.continueBusinessRegistration();
+      return;
+    }
+    await this.authDialog.requireAuthentication(
+      'Sign in to register your business',
+      anchor,
+      () => this.continueBusinessRegistration(),
+      'login',
+    );
+  }
+
+  private async continueBusinessRegistration(): Promise<void> {
+    if (!this.auth.user()) await this.auth.loadProfile();
+    const application = await this.businessApi.getMyApplication();
+    await this.router.navigate([application ? '/workspace' : '/business/register']);
+  }
 
   protected slugifyProduct(value: string): string {
     return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
