@@ -57,7 +57,9 @@ import { StorefrontSeoService } from './storefront-seo.service';
           @if (hasDirections(data)) {
             <a [href]="directionsUrl(data)" target="_blank" rel="noopener noreferrer"><span class="quick-icon" aria-hidden="true">⌖</span><span><strong>Directions</strong><small>{{ data.business.city || data.business.state || 'Find the store' }}</small></span></a>
           }
-          <span class="quick-status"><i aria-hidden="true"></i><span><strong>Store information</strong><small>Contact details published by the business</small></span></span>
+          @if (data.business.business_email) {
+            <a [href]="'mailto:' + data.business.business_email"><span class="quick-icon" aria-hidden="true">✉</span><span><strong>Email store</strong><small>{{ data.business.business_email }}</small></span></a>
+          }
         </section>
 
         @if (promotions().length) {
@@ -104,10 +106,11 @@ import { StorefrontSeoService } from './storefront-seo.service';
             <div class="product-grid" aria-label="Loading products">
               @for (item of skeletons; track item) { <div class="product-skeleton"><span></span><i></i><i></i><b></b></div> }
             </div>
-          } @else if (filteredProducts().length) {
-            <div class="product-grid">
-              @for (product of filteredProducts(); track product.id; let index = $index) {
-                <a class="product-card" [routerLink]="['/store', data.business.business_slug, 'products', productRoute(product)]">
+          } @else if (products().length) {
+            @if (filteredProducts().length) {
+              <div class="product-grid">
+                @for (product of filteredProducts(); track product.id; let index = $index) {
+                  <a class="product-card" [routerLink]="product.offering_type === 'SERVICE' ? ['/store', data.business.business_slug, 'contact'] : ['/store', data.business.business_slug, 'products', productRoute(product)]" [queryParams]="product.offering_type === 'SERVICE' ? { subject: 'Service enquiry: ' + product.product_name } : null">
                   <div class="product-image" [class.image-alt]="index % 2 === 1">
                     <span class="category-tag">{{ product.offering_type === 'SERVICE' ? 'SERVICE' : (product.category_name || 'PRODUCT') }}</span>
                     <span class="product-initial">{{ product.product_name.slice(0, 1).toUpperCase() }}</span>
@@ -129,9 +132,9 @@ import { StorefrontSeoService } from './storefront-seo.service';
                     </div>
                   </div>
                 </a>
-              }
-            </div>
-            @if (!filteredProducts().length && selectedCategory() !== 'all') {
+                }
+              </div>
+            } @else {
               <div class="empty-products"><span aria-hidden="true">⌕</span><div><h3>No offerings in this category</h3><p>Choose another category to explore the catalogue.</p></div><button type="button" class="empty-filter-action" (click)="selectCategory('all')">Show all</button></div>
             }
           } @else {
@@ -200,10 +203,9 @@ import { StorefrontSeoService } from './storefront-seo.service';
     .share-button{display:inline-flex;min-height:43px;align-items:center;gap:9px;padding:0 13px;border:1px solid #ffffff70;border-radius:5px;background:#ffffff12;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer}
     .share-feedback{margin:10px 0 0;color:#e2eee5;font-size:.72rem}
     .quick-actions{display:flex;width:min(100% - 64px,1160px);flex-wrap:wrap;gap:10px;margin:18px auto 0}
-    .quick-actions>a,.quick-status{display:flex;min-width:190px;flex:1;align-items:center;gap:11px;padding:13px 15px;border:1px solid var(--border);border-radius:8px;background:var(--surface-card);color:var(--text-primary);text-decoration:none}
+    .quick-actions>a{display:flex;min-width:190px;flex:1;align-items:center;gap:11px;padding:13px 15px;border:1px solid var(--border);border-radius:8px;background:var(--surface-card);color:var(--text-primary);text-decoration:none}
     .quick-icon{display:grid;width:35px;height:35px;flex:0 0 35px;place-items:center;border-radius:50%;background:var(--brand-soft);color:var(--brand-strong)}
     .quick-actions strong,.quick-actions small{display:block}.quick-actions strong{font-size:.74rem;font-weight:650}.quick-actions small{margin-top:3px;color:var(--text-secondary);font-size:.65rem}
-    .quick-status i{width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:var(--text-muted)}
     .promotion-ticker{display:flex;width:min(100% - 64px,1160px);align-items:center;gap:15px;margin:17px auto 0;padding:13px 16px;border:1px solid color-mix(in srgb,var(--brand) 22%,var(--border));border-radius:7px;background:var(--brand-soft)}
     .promo-label{flex:0 0 auto;color:var(--brand-strong);font-size:.61rem;font-weight:850;letter-spacing:.12em}
     .promo-copy{display:flex;min-width:0;flex:1;flex-wrap:wrap;align-items:baseline;gap:5px 12px}.promo-copy strong{font-size:.78rem}.promo-copy span{color:var(--text-secondary);font-size:.72rem}
@@ -262,7 +264,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
     .store-contact p:last-child{margin:0;color:var(--text-secondary);font-size:.78rem;line-height:1.6}
     .store-contact>a{display:inline-flex;min-height:43px;align-items:center;justify-content:space-between;gap:20px;padding:0 14px;border:1px solid var(--border);border-radius:5px;background:var(--surface-card);color:var(--text-primary);font-size:.72rem;font-weight:650;text-decoration:none;white-space:nowrap}
     @media(max-width:1000px){.product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero-inner{grid-template-columns:minmax(0,1fr) minmax(260px,.8fr);gap:28px}}
-    @media(max-width:650px){.hero-inner,.shopping-benefits,.products-section,.quick-actions,.promotion-ticker,.merchant-story{width:calc(100% - 40px)}.hero-inner{padding:52px 0}.store-identity{align-items:flex-start;gap:13px}.store-logo,.store-logo-fallback{width:62px;height:62px;flex-basis:62px}.identity-caption{font-size:.55rem}.hero-inner h1{font-size:clamp(2.65rem,11vw,4rem)}.hero-description{font-size:.88rem}.hero-meta{gap:9px 13px}.hero-decoration{right:18px;bottom:24px}.quick-actions>a,.quick-status{min-width:100%}.promotion-ticker{align-items:flex-start;flex-direction:column;gap:7px}.merchant-story{padding:20px}.shopping-benefits{grid-template-columns:1fr;gap:9px;padding:18px 0}.shopping-benefits>div{padding:3px 0}.products-section{padding:46px 0 55px}.section-heading{align-items:flex-start;flex-direction:column;gap:13px}.product-grid{gap:11px}.product-image{min-height:150px}.product-initial{font-size:4.5rem}.product-details{padding:12px}.product-details h3{font-size:.82rem}.product-details>p{font-size:.68rem}.product-purchase>span{font-size:.6rem}.store-contact{align-items:flex-start;flex-direction:column;padding:30px 18px}.store-contact>a{width:100%}.empty-products{align-items:flex-start;flex-direction:column;padding:20px}.empty-products>a{margin-left:0}}
+    @media(max-width:650px){.hero-inner,.shopping-benefits,.products-section,.quick-actions,.promotion-ticker,.merchant-story{width:calc(100% - 40px)}.hero-inner{padding:52px 0}.store-identity{align-items:flex-start;gap:13px}.store-logo,.store-logo-fallback{width:62px;height:62px;flex-basis:62px}.identity-caption{font-size:.55rem}.hero-inner h1{font-size:clamp(2.65rem,11vw,4rem)}.hero-description{font-size:.88rem}.hero-meta{gap:9px 13px}.hero-decoration{right:18px;bottom:24px}.quick-actions>a{min-width:100%}.promotion-ticker{align-items:flex-start;flex-direction:column;gap:7px}.merchant-story{padding:20px}.shopping-benefits{grid-template-columns:1fr;gap:9px;padding:18px 0}.shopping-benefits>div{padding:3px 0}.products-section{padding:46px 0 55px}.section-heading{align-items:flex-start;flex-direction:column;gap:13px}.product-grid{gap:11px}.product-image{min-height:150px}.product-initial{font-size:4.5rem}.product-details{padding:12px}.product-details h3{font-size:.82rem}.product-details>p{font-size:.68rem}.product-purchase>span{font-size:.6rem}.store-contact{align-items:flex-start;flex-direction:column;padding:30px 18px}.store-contact>a{width:100%}.empty-products{align-items:flex-start;flex-direction:column;padding:20px}.empty-products>a{margin-left:0}}
     @media(max-width:390px){.product-grid{grid-template-columns:1fr}.product-image{min-height:205px}.product-initial{font-size:5.5rem}}
     @media(prefers-reduced-motion:reduce){.primary-button,.secondary-button,.product-card{transition:none}.primary-button:hover,.secondary-button:hover,.product-card:hover{transform:none}}
   `],
