@@ -43,9 +43,8 @@ type ProductFilterKey = keyof ProductFilterValues;
                 <h2 id="catalogue-heading">Find what you're looking for.</h2>
               </div>
               <form class="search-form" role="search" (submit)="submitSearch($event)">
-                <label class="visually-hidden" for="storefront-product-search">Search products</label>
                 <span class="search-icon" aria-hidden="true">⌕</span>
-                <input id="storefront-product-search" type="search" [value]="searchTerm()" (input)="updateSearch($event)" placeholder="Search products..." autocomplete="off" />
+                <input id="storefront-product-search" type="search" aria-label="Search products" [value]="searchTerm()" (input)="updateSearch($event)" placeholder="Search products..." autocomplete="off" />
                 @if (searchTerm()) {
                   <button class="clear-search" type="button" aria-label="Clear search" (click)="clearSearch()">×</button>
                 }
@@ -62,10 +61,6 @@ type ProductFilterKey = keyof ProductFilterValues;
                     <option value="name">Name: A to Z</option>
                   </select>
                 </label>
-                <button class="filter-trigger" type="button" (click)="setFiltersOpen(true)">
-                  <span aria-hidden="true">☷</span> Filters
-                  @if (activeFilterCount()) { <b>{{ activeFilterCount() }}</b> }
-                </button>
               </div>
             </div>
 
@@ -197,8 +192,7 @@ type ProductFilterKey = keyof ProductFilterValues;
                 <div class="location-note"><span aria-hidden="true">⌖</span><div><strong>Business location</strong><p>{{ data.business.city }}{{ data.business.city && data.business.state ? ', ' : '' }}{{ data.business.state }}{{ data.business.postal_code ? ' ' + data.business.postal_code : '' }}</p></div></div>
               }
             </div>
-            <aside class="about-aside">
-              <p class="section-label">STOREFRONT DETAILS</p>
+            <aside class="about-aside">              <p class="section-label">STOREFRONT DETAILS</p>
               <div class="detail-row"><span>Business category</span><strong>{{ data.business.category_name || 'Not specified' }}</strong></div>
               <div class="detail-row"><span>Product catalogue</span><strong>Publicly browsable</strong></div>
               <div class="detail-row"><span>Prices</span><strong>{{ data.storefront.show_prices ? 'Displayed on products' : 'Available on enquiry' }}</strong></div>
@@ -397,8 +391,7 @@ type ProductFilterKey = keyof ProductFilterValues;
     .address-panel{align-self:start;padding:27px;border:1px solid var(--border);border-radius:9px;background:var(--surface-card)}
     .address-panel-top{display:flex;align-items:center;gap:12px}
     .address-icon{display:grid;width:40px;height:40px;place-items:center;border-radius:50%;background:var(--brand-soft);color:var(--brand-strong);font-size:1.2rem}
-    .address-panel-top .section-label{margin:0}
-    .address-panel h2{margin:22px 0 13px;font-size:1.3rem;letter-spacing:-.04em}
+    .address-panel-top .section-label{margin:0}    .address-panel h2{margin:22px 0 13px;font-size:1.3rem;letter-spacing:-.04em}
     .address-panel address{display:grid;gap:5px;color:var(--text-secondary);font-size:.85rem;font-style:normal;line-height:1.6}
     .directions-link{display:flex;min-height:43px;align-items:center;justify-content:space-between;margin-top:24px;padding:0 13px;border:1px solid var(--border);border-radius:5px;color:var(--brand-strong);font-size:.77rem;font-weight:800;text-decoration:none}
     .address-unavailable{color:var(--text-secondary);font-size:.8rem;line-height:1.6}
@@ -597,8 +590,7 @@ export class StorefrontSection {
       case 'variantsOnly': next.variantsOnly = false; break;
       case 'withImages': next.withImages = false; break;
     }
-    this.appliedFilters.set(next);
-    this.draftFilters = { ...next };
+    this.appliedFilters.set(next);    this.draftFilters = { ...next };
     this.queryPage = 1;
     void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1 }, queryParamsHandling: 'merge' });
     void this.loadProducts(1, this.searchTerm());
@@ -798,5 +790,3 @@ export class StorefrontSection {
         geo: { '@type': 'GeoCoordinates', latitude: location.latitude, longitude: location.longitude },
       } : {}),
     };
-  }
-}
