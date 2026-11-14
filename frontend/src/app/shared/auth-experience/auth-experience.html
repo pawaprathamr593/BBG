@@ -1,13 +1,22 @@
 <section class="auth-experience" [class.auth-page-mode]="presentation === 'page'" [class.auth-popup-mode]="presentation === 'popup'">
+  @if (presentation === 'popup') {
+    <p class="popup-reason" role="note">Sign in required for this action</p>
+  }
   <div class="auth-heading">
-    <span class="auth-mark" aria-hidden="true">B</span>
-    <p class="eyebrow">{{ activeMode() === 'login' ? 'WELCOME BACK' : 'JOIN THE COMMUNITY' }}</p>
-    <h1>{{ activeMode() === 'login' ? 'Sign in to BBG' : 'Create your BBG account' }}</h1>
-    <p class="intro">{{ reason || (activeMode() === 'login' ? 'Continue discovering businesses, products and opportunities.' : 'One account to discover, connect and grow.') }}</p>
+    @if (presentation === 'page') {
+      <span class="auth-mark" aria-hidden="true">B</span>
+      <p class="eyebrow">{{ activeMode() === 'login' ? 'WELCOME BACK' : 'JOIN THE COMMUNITY' }}</p>
+    }
+    <h1>{{ presentation === 'popup' ? 'Continue with BBG' : (activeMode() === 'login' ? 'Sign in to BBG' : 'Create your BBG account') }}</h1>
+    @if (presentation === 'page') {
+      <p class="intro">{{ reason || (activeMode() === 'login' ? 'Continue discovering businesses, products and opportunities.' : 'One account to discover, connect and grow.') }}</p>
+    }
   </div>
 
   <div class="social-area">
-    <p class="section-label">{{ activeMode() === 'login' ? 'Continue with' : 'Create an account with' }}</p>
+    @if (presentation === 'page') {
+      <p class="section-label">{{ activeMode() === 'login' ? 'Continue with' : 'Create an account with' }}</p>
+    }
     <div class="social-grid">
       <button type="button" class="social-button" (click)="selectProvider('GOOGLE')" [disabled]="busy() || !providerEnabled('GOOGLE')" aria-label="Continue with Google">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.35 12.23c0-.72-.06-1.42-.18-2.09H12v3.96h5.24a4.48 4.48 0 0 1-1.94 2.94v2.45h3.14c1.84-1.7 2.91-4.2 2.91-7.26Z"/><path fill="#34A853" d="M12 21.6c2.63 0 4.84-.87 6.45-2.35l-3.14-2.45c-.87.58-1.98.93-3.31.93-2.54 0-4.7-1.71-5.47-4.02H3.29v2.53A9.74 9.74 0 0 0 12 21.6Z"/><path fill="#FBBC05" d="M6.53 13.71a5.85 5.85 0 0 1 0-3.42V7.76H3.29a9.73 9.73 0 0 0 0 8.48l3.24-2.53Z"/><path fill="#EA4335" d="M12 6.27c1.43 0 2.71.49 3.72 1.46l2.79-2.79C16.83 3.36 14.63 2.4 12 2.4a9.74 9.74 0 0 0-8.71 5.36l3.24 2.53C7.3 7.98 9.46 6.27 12 6.27Z"/></svg>
@@ -27,7 +36,9 @@
       </button>
     </div>
     @if (providerNotice()) { <p class="muted-notice" role="status">{{ providerNotice() }}</p> }
-    <p class="provider-footnote">Instagram sign-in is available for supported Business and Creator accounts.</p>
+    @if (presentation === 'page') {
+      <p class="provider-footnote">Instagram sign-in is available for supported Business and Creator accounts.</p>
+    }
   </div>
 
   <div class="separator"><span>OR</span></div>
@@ -80,5 +91,7 @@
       Already have an account? <button type="button" (click)="switchMode('login')">Sign in</button>
     }
   </p>
-  <p class="security-note"><span aria-hidden="true">✓</span> Secure authentication by BBG</p>
+  @if (presentation === 'page') {
+    <p class="security-note"><span aria-hidden="true">✓</span> Secure authentication by BBG</p>
+  }
 </section>
