@@ -1,16 +1,21 @@
-import { Component, DestroyRef, effect, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { MarketplaceApiService, MarketplaceBusinessDetail, MarketplaceProduct } from '../../core/marketplace/marketplace-api.service';
+import { MarketplaceApiService, MarketplaceBusinessDetail, MarketplaceCategory, MarketplaceProduct } from '../../core/marketplace/marketplace-api.service';
+import { FilterDrawer } from '../../shared/filter-drawer/filter-drawer';
 import { StorefrontContextService } from './storefront-context.service';
 import { StorefrontSeoService } from './storefront-seo.service';
 
 type Section = 'products' | 'about' | 'contact';
+type ProductSort = 'newest' | 'popular' | 'nearby' | 'price_low' | 'price_high' | 'name';
+type ProductFilterValues = { categoryId: string; brand: string; city: string; state: string; minPrice: number | null; maxPrice: number | null; onlineOnly: boolean; variantsOnly: boolean; withImages: boolean };
+type ProductFilterKey = keyof ProductFilterValues;
 
 @Component({
   selector: 'app-storefront-section',
-  imports: [RouterLink],
+  imports: [FormsModule, RouterLink, FilterDrawer],
   template: `
     @if (context.detail(); as data) {
       <main class="page-shell">
@@ -46,8 +51,61 @@ type Section = 'products' | 'about' | 'contact';
                 }
                 <button class="search-button" type="submit" [disabled]="loading()">Search</button>
               </form>
+              <div class="catalogue-tools">
+                <label class="sort-control"><span>Sort by</span>
+                  <select name="store-sort" [ngModel]="sort" (ngModelChange)="sortChanged($event)">
+                    <option value="newest">Newly added</option>
+                    <option value="popular">Most popular</option>
+                    <option value="nearby">Nearby first</option>
+                    <option value="price_low">Price: low to high</option>
+                    <option value="price_high">Price: high to low</option>
+                    <option value="name">Name: A to Z</option>
+                  </select>
+                </label>
+                <button class="filter-trigger" type="button" (click)="setFiltersOpen(true)">
+                  <span aria-hidden="true">☷</span> Filters
+                  @if (activeFilterCount()) { <b>{{ activeFilterCount() }}</b> }
+                </button>
+              </div>
             </div>
 
+            @if (activeFilterChips().length) {
+              <div class="active-filters" aria-label="Applied filters">
+                <span class="active-filter-caption">Applied filters</span>
+                @for (chip of activeFilterChips(); track chip.key) {
+                  <button class="filter-chip" type="button" (click)="removeFilter(chip.key)">{{ chip.label }} <span aria-hidden="true">×</span></button>
+                }
+                <button class="clear-active-filters" type="button" (click)="clearFilters()">Clear all</button>
+              </div>
+            }
+
+            <app-filter-drawer
+              [open]="filtersOpen()"
+              [activeCount]="activeFilterCount()"
+              (openChange)="setFiltersOpen($event)"
+              (apply)="applyFilters()"
+              (reset)="resetDraftFilters()">
+              <form class="drawer-filters" aria-label="Advanced product filters">
+                @if (filterNotice()) { <p class="drawer-notice" role="alert">{{ filterNotice() }}</p> }
+                <div class="filter-field">
+                  <label for="store-product-category">Category</label>
+                  <select id="store-product-category" name="category" [(ngModel)]="draftFilters.categoryId">
+                    <option value="">All product categories</option>
+                    @for (category of categories(); track category.id) { <option [value]="category.id">{{ category.category_name }}</option> }
+                  </select>
+                </div>
+                <div class="filter-field"><label for="store-product-brand">Brand</label><input id="store-product-brand" name="brand" [(ngModel)]="draftFilters.brand" placeholder="Any brand" /></div>
+                <div class="filter-field"><label for="store-product-city">City</label><input id="store-product-city" name="city" [(ngModel)]="draftFilters.city" placeholder="Any city" /></div>
+                <div class="filter-field"><label for="store-product-state">State</label><input id="store-product-state" name="state" [(ngModel)]="draftFilters.state" placeholder="Any state" /></div>
+                <div class="filter-field"><label for="store-product-min-price">Minimum price (₹)</label><input id="store-product-min-price" name="minPrice" type="number" min="0" step="0.01" [(ngModel)]="draftFilters.minPrice" placeholder="No minimum" /></div>
+                <div class="filter-field"><label for="store-product-max-price">Maximum price (₹)</label><input id="store-product-max-price" name="maxPrice" type="number" min="0" step="0.01" [(ngModel)]="draftFilters.maxPrice" placeholder="No maximum" /></div>
+                <label class="check-field"><input type="checkbox" name="onlineOnly" [(ngModel)]="draftFilters.onlineOnly" /><span>Businesses accepting online orders only</span></label>
+                <label class="check-field"><input type="checkbox" name="variantsOnly" [(ngModel)]="draftFilters.variantsOnly" /><span>Variant products only</span></label>
+                <label class="check-field"><input type="checkbox" name="withImages" [(ngModel)]="draftFilters.withImages" /><span>Products with images</span></label>
+              </form>
+            </app-filter-drawer>
+
+            @if (filterNotice()) { <p class="filter-notice" role="status">{{ filterNotice() }}</p> }
             @if (loading()) {
               <div class="catalogue-grid" aria-label="Loading products">
                 @for (item of skeletons; track item) { <div class="product-skeleton"><span></span><i></i><i></i><b></b></div> }
@@ -56,6 +114,7 @@ type Section = 'products' | 'about' | 'contact';
               <p class="results-summary" aria-live="polite">
                 Showing {{ resultStart }}–{{ resultEnd }} of {{ pagination().total }} {{ pagination().total === 1 ? 'result' : 'results' }}
                 @if (searchTerm().trim()) { <span>for “{{ searchTerm().trim() }}”</span> }
+                @if (sort === 'nearby') { <span> · sorted by distance</span> }
               </p>
               <div class="catalogue-grid">
                 @for (product of products(); track product.id; let index = $index) {
@@ -69,6 +128,8 @@ type Section = 'products' | 'about' | 'contact';
                     <div class="product-info">
                       <div class="product-title-row"><h3>{{ product.product_name }}</h3><span aria-hidden="true">↗</span></div>
                       @if (product.brand_name) { <span class="product-brand">{{ product.brand_name }}</span> }
+                      @if (sort === 'nearby' && product.distance_km !== undefined) { <span class="product-meta">{{ product.distance_km }} km away</span> }
+                      @if (sort === 'popular' && product.popularity) { <span class="product-meta">{{ product.popularity.engagements }} views and likes</span> }
                       <p>{{ product.description || 'View product information and contact the business for details.' }}</p>
                       <div class="product-bottom">
                         @if (data.storefront.show_prices && product.selling_price !== undefined) {
@@ -343,6 +404,32 @@ export class StorefrontSection {
   readonly pagination = signal({ page: 1, page_size: 12, total: 0 });
   readonly skeletons = [1, 2, 3, 4, 5, 6, 7, 8];
   readonly loadError = signal('');
+  readonly categories = signal<MarketplaceCategory[]>([]);
+  readonly filtersOpen = signal(false);
+  readonly filterNotice = signal('');
+  readonly appliedFilters = signal<ProductFilterValues>(this.defaultFilters());
+  draftFilters: ProductFilterValues = this.defaultFilters();
+  sort: ProductSort = 'newest';
+  readonly activeFilterChips = computed(() => {
+    const filters = this.appliedFilters();
+    const chips: { key: ProductFilterKey; label: string }[] = [];
+    if (filters.categoryId) {
+      const category = this.categories().find((item) => String(item.id) === filters.categoryId);
+      chips.push({ key: 'categoryId', label: category?.category_name ?? 'Category selected' });
+    }
+    if (filters.brand.trim()) chips.push({ key: 'brand', label: 'Brand: ' + filters.brand.trim() });
+    if (filters.city.trim()) chips.push({ key: 'city', label: 'City: ' + filters.city.trim() });
+    if (filters.state.trim()) chips.push({ key: 'state', label: 'State: ' + filters.state.trim() });
+    if (filters.minPrice !== null) chips.push({ key: 'minPrice', label: 'Min: ' + this.formatPrice(filters.minPrice) });
+    if (filters.maxPrice !== null) chips.push({ key: 'maxPrice', label: 'Max: ' + this.formatPrice(filters.maxPrice) });
+    if (filters.onlineOnly) chips.push({ key: 'onlineOnly', label: 'Online orders' });
+    if (filters.variantsOnly) chips.push({ key: 'variantsOnly', label: 'Variants' });
+    if (filters.withImages) chips.push({ key: 'withImages', label: 'With images' });
+    return chips;
+  });
+  readonly activeFilterCount = computed(() => this.activeFilterChips().length);
+  private latitude: number | undefined;
+  private longitude: number | undefined;
   private queryPage = 1;
   private querySearch = '';
 
@@ -366,6 +453,13 @@ export class StorefrontSection {
   private initializedSlug = '';
 
   constructor() {
+    this.api.listPublicProductCategories().subscribe({
+      next: (response) => {
+        if (response.status === 'SUCCESS' && response.data && !Array.isArray(response.data)) this.categories.set(response.data.items ?? []);
+      },
+      error: () => this.categories.set([]),
+    });
+
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const page = Math.max(1, Number(params.get('page')) || 1);
       const search = params.get('q') || '';
@@ -434,6 +528,123 @@ export class StorefrontSection {
     });
   }
 
+  private defaultFilters(): ProductFilterValues {
+    return { categoryId: '', brand: '', city: '', state: '', minPrice: null, maxPrice: null, onlineOnly: false, variantsOnly: false, withImages: false };
+  }
+
+  setFiltersOpen(open: boolean): void {
+    this.draftFilters = { ...this.appliedFilters() };
+    if (open) this.filterNotice.set('');
+    this.filtersOpen.set(open);
+  }
+
+  applyFilters(): void {
+    if (this.draftFilters.minPrice !== null && this.draftFilters.maxPrice !== null
+      && this.draftFilters.minPrice > this.draftFilters.maxPrice) {
+      this.filterNotice.set('Minimum price cannot be greater than maximum price.');
+      return;
+    }
+    this.filterNotice.set('');
+    this.appliedFilters.set({ ...this.draftFilters });
+    this.filtersOpen.set(false);
+    this.queryPage = 1;
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1 }, queryParamsHandling: 'merge' });
+    if (this.sort === 'nearby' && (this.latitude === undefined || this.longitude === undefined)) {
+      this.requestLocation();
+      return;
+    }
+    void this.loadProducts(1, this.searchTerm());
+  }
+
+  resetDraftFilters(): void {
+    this.draftFilters = this.defaultFilters();
+    this.filterNotice.set('');
+  }
+
+  removeFilter(key: ProductFilterKey): void {
+    const next = { ...this.appliedFilters() };
+    switch (key) {
+      case 'categoryId': next.categoryId = ''; break;
+      case 'brand': next.brand = ''; break;
+      case 'city': next.city = ''; break;
+      case 'state': next.state = ''; break;
+      case 'minPrice': next.minPrice = null; break;
+      case 'maxPrice': next.maxPrice = null; break;
+      case 'onlineOnly': next.onlineOnly = false; break;
+      case 'variantsOnly': next.variantsOnly = false; break;
+      case 'withImages': next.withImages = false; break;
+    }
+    this.appliedFilters.set(next);
+    this.draftFilters = { ...next };
+    this.queryPage = 1;
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1 }, queryParamsHandling: 'merge' });
+    void this.loadProducts(1, this.searchTerm());
+  }
+
+  clearFilters(): void {
+    this.appliedFilters.set(this.defaultFilters());
+    this.draftFilters = this.defaultFilters();
+    this.filterNotice.set('');
+    this.queryPage = 1;
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1 }, queryParamsHandling: 'merge' });
+    void this.loadProducts(1, this.searchTerm());
+  }
+
+  clearAllFilters(): void {
+    this.sort = 'newest';
+    this.latitude = undefined;
+    this.longitude = undefined;
+    this.clearFilters();
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1, q: null }, queryParamsHandling: 'merge' });
+    this.searchTerm.set('');
+    void this.loadProducts(1, '');
+  }
+
+  sortChanged(value: ProductSort): void {
+    this.sort = value;
+    this.queryPage = 1;
+    this.filterNotice.set('');
+    if (value === 'nearby') {
+      this.requestLocation();
+      return;
+    }
+    this.latitude = undefined;
+    this.longitude = undefined;
+    void this.loadProducts(1, this.searchTerm());
+  }
+
+  private requestLocation(): void {
+    if (!navigator.geolocation) {
+      this.sort = 'newest';
+      this.filterNotice.set('Your browser does not support location access. Showing newly added products instead.');
+      void this.loadProducts(1, this.searchTerm());
+      return;
+    }
+    this.loading.set(true);
+    this.filterNotice.set('Allow location access to sort products by distance.');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.latitude = position.coords.latitude;
+        this.longitude = position.coords.longitude;
+        this.filterNotice.set('Showing products nearest to your current location. Location is used only for this search.');
+        void this.loadProducts(1, this.searchTerm());
+      },
+      () => {
+        this.sort = 'newest';
+        this.latitude = undefined;
+        this.longitude = undefined;
+        this.filterNotice.set('Location access was unavailable. Showing newly added products; you can still filter by city or state.');
+        void this.loadProducts(1, this.searchTerm());
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  }
+
+  private formatPrice(value: number | string): string {
+    const amount = Number(value);
+    return Number.isFinite(amount) ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount) : 'Price unavailable';
+  }
+
   updateSearch(event: Event): void {
     this.searchTerm.set((event.target as HTMLInputElement).value);
   }
@@ -475,7 +686,23 @@ export class StorefrontSection {
     this.loadError.set('');
     this.searchTerm.set(search);
     try {
-      const response = await firstValueFrom(this.api.listStorefrontProducts(slug, page, 12, search.trim()));
+      const applied = this.appliedFilters();
+      const filters = {
+        ...(applied.categoryId ? { category_id: Number(applied.categoryId) } : {}),
+        brand: applied.brand.trim(),
+        city: applied.city.trim(),
+        state: applied.state.trim(),
+        ...(applied.minPrice !== null ? { min_price: applied.minPrice } : {}),
+        ...(applied.maxPrice !== null ? { max_price: applied.maxPrice } : {}),
+        online_only: applied.onlineOnly,
+        variants_only: applied.variantsOnly,
+        with_images: applied.withImages,
+        sort: this.sort,
+        ...(this.sort === 'nearby' && this.latitude !== undefined && this.longitude !== undefined
+          ? { latitude: this.latitude, longitude: this.longitude }
+          : {}),
+      };
+      const response = await firstValueFrom(this.api.listStorefrontProducts(slug, page, 12, search.trim(), filters));
       if (response.status === 'SUCCESS' && !Array.isArray(response.data)) {
         this.products.set(response.data.items || []);
         this.pagination.set(response.data.pagination || { page, page_size: 12, total: (response.data.items || []).length });
