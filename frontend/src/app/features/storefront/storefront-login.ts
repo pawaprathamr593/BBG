@@ -15,7 +15,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
   `,
   styles: [`
     :host { display:block; min-height:100%; }
-    .storefront-auth { display:grid; min-height:65vh; place-items:center; padding:28px 16px 56px; background:#fbfcfb; }
+    .storefront-auth { display:grid; min-height:65vh; place-items:center; padding:clamp(28px,5vw,56px) 16px; background:var(--surface-page); color:var(--text-primary); }
   `],
 })
 export class StorefrontLogin {
