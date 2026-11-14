@@ -119,7 +119,6 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         $items = array_map(fn (array $row): array => $this->publicBusiness($row, false), $rows['data']);
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = [
-            ...($businessSlug !== null ? ['business_slug' => $businessSlug] : []),
             'items' => $items,
             'pagination' => [
                 'page' => $page,
@@ -291,6 +290,7 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         };
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = [
+            ...($businessSlug !== null ? ['business_slug' => $businessSlug] : []),
             'items' => $items,
             'sort' => $sort,
             'sort_basis' => $sortBasis,
