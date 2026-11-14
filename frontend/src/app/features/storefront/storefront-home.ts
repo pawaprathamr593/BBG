@@ -249,7 +249,7 @@ export class StorefrontHome {
       '@type': 'WebPage',
       name: name + ' | Official Storefront',
       description,
-      url: path,
+      url: this.seo.canonicalUrl(path),
       about: { '@type': 'LocalBusiness', name },
     });
 
