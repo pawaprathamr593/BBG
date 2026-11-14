@@ -73,11 +73,10 @@ final class OAuthProviderService
 
         $redis = $this->redis();
         $stateKey = 'bbg:oauth:state:' . hash('sha256', $state);
-        $stored = $redis->get($stateKey);
+        $stored = $redis->getDel($stateKey);
         if (!is_string($stored)) {
             throw new RuntimeException('OAuth state has expired or has already been used.');
         }
-        $redis->del($stateKey);
         $stateData = json_decode($stored, true);
         if (!is_array($stateData) || ($stateData['provider'] ?? '') !== $provider) {
             throw new RuntimeException('OAuth state does not match the selected provider.');
@@ -115,9 +114,8 @@ final class OAuthProviderService
     {
         $key = 'bbg:oauth:pending:' . hash('sha256', $ticket);
         $redis = $this->redis();
-        $value = $redis->get($key);
+        $value = $redis->getDel($key);
         if (!is_string($value)) return null;
-        $redis->del($key);
         $identity = json_decode($value, true);
         return is_array($identity) ? $identity : null;
     }
@@ -291,6 +289,7 @@ final class OAuthProviderService
         if (!in_array((string) ($claims['iss'] ?? ''), $issuers, true)
             || !in_array($audience, $audiences, true)
             || (int) ($claims['exp'] ?? 0) <= $now
+            || !isset($claims['iat'])
             || (int) ($claims['iat'] ?? 0) > $now + 60
             || !hash_equals($nonce, (string) ($claims['nonce'] ?? ''))
         ) {
