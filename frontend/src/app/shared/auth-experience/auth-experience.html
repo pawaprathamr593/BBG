@@ -31,9 +31,9 @@
   </div>
 
   <div class="separator"><span>OR</span></div>
-  <button class="email-entry" type="button" (click)="revealEmailForm()" [attr.aria-expanded]="emailFormVisible()">
-    {{ emailFormVisible() ? 'Continue with email or phone' : (activeMode() === 'login' ? 'Or sign in with email or phone' : 'Or create an account with email or phone') }}
-    <span aria-hidden="true">→</span>
+  <button class="email-entry" type="button" (click)="toggleEmailForm()" [attr.aria-expanded]="emailFormVisible()">
+    {{ emailFormVisible() ? 'Back to social sign-in' : (activeMode() === 'login' ? 'Or sign in with email or phone' : 'Or create an account with email or phone') }}
+    <span aria-hidden="true">{{ emailFormVisible() ? '←' : '→' }}</span>
   </button>
 
   @if (emailFormVisible()) {
