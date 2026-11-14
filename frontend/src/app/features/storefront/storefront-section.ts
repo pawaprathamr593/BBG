@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MarketplaceApiService, MarketplaceBusinessDetail, MarketplaceProduct } from '../../core/marketplace/marketplace-api.service';
@@ -316,7 +316,7 @@ type Section = 'products' | 'about' | 'contact';
     @media(prefers-reduced-motion:reduce){.product-card,.contact-card{transition:none}.product-card:hover,.contact-card:hover{transform:none}}
   \`],
 })
-export class StorefrontSection implements OnInit {
+export class StorefrontSection {
   readonly context = inject(StorefrontContextService);
   private readonly api = inject(MarketplaceApiService);
   private readonly route = inject(ActivatedRoute);
@@ -346,14 +346,21 @@ export class StorefrontSection implements OnInit {
     return Math.min(this.pagination().page * this.pagination().page_size, this.pagination().total);
   }
 
-  async ngOnInit(): Promise<void> {
-    const detail = this.context.detail();
-    const slug = detail?.business.business_slug;
-    if (!detail || !slug) {
-      this.loading.set(false);
-      return;
-    }
+  private initializedSlug = '';
 
+  constructor() {
+    effect(() => {
+      const detail = this.context.detail();
+      if (!detail) return;
+      const slug = detail.business.business_slug;
+      if (!slug || this.initializedSlug === slug) return;
+      this.initializedSlug = slug;
+      void this.initializeSection(detail);
+    });
+  }
+
+  private async initializeSection(detail: MarketplaceBusinessDetail): Promise<void> {
+    const slug = detail.business.business_slug;
     const name = detail.storefront.title || detail.business.business_name;
     const path = '/store/' + encodeURIComponent(slug) + '/' + this.section;
 
@@ -377,6 +384,7 @@ export class StorefrontSection implements OnInit {
           numberOfItems: this.pagination().total,
           itemListElement: items,
         },
+        about: this.businessSchema(detail),
       });
       return;
     }
@@ -386,14 +394,13 @@ export class StorefrontSection implements OnInit {
     const description = isAbout
       ? (detail.storefront.description || detail.business.business_description || 'Learn more about ' + name + ' and its published business information.')
       : 'Contact ' + name + ' using its published business contact details and business address.';
-    const business = this.businessSchema(detail);
     this.seo.update((isAbout ? 'About ' : 'Contact ') + name + ' | Official Storefront', description, path, {
       '@context': 'https://schema.org',
       '@type': isAbout ? 'AboutPage' : 'ContactPage',
       name: (isAbout ? 'About ' : 'Contact ') + name,
       description,
       url: path,
-      mainEntity: business,
+      mainEntity: this.businessSchema(detail),
     });
   }
 
