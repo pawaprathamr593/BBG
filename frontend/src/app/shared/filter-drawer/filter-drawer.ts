@@ -65,7 +65,7 @@ import {
   `,
   styles: [`
     :host{display:contents}
-    .filter-fab{position:fixed;z-index:60;inset-inline-end:max(20px,env(safe-area-inset-right));inset-block-end:max(22px,env(safe-area-inset-bottom));display:inline-flex;min-width:58px;min-height:54px;align-items:center;justify-content:center;gap:9px;padding:0 17px;color:#17231b;background:#f5d928;border:1px solid #e5ca17;border-radius:999px;box-shadow:0 8px 28px rgba(16,42,27,.24);font:inherit;font-size:.82rem;font-weight:850;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease}
+    .filter-fab{position:fixed;z-index:29;inset-inline-end:max(20px,env(safe-area-inset-right));inset-block-end:max(22px,env(safe-area-inset-bottom));display:inline-flex;min-width:58px;min-height:54px;align-items:center;justify-content:center;gap:9px;padding:0 17px;color:#17231b;background:#f5d928;border:1px solid #e5ca17;border-radius:999px;box-shadow:0 8px 28px rgba(16,42,27,.24);font:inherit;font-size:.82rem;font-weight:850;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease}
     .filter-fab:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(16,42,27,.3)}
     .filter-fab:focus-visible,.drawer-close:focus-visible,.drawer-footer button:focus-visible{outline:3px solid color-mix(in srgb,#174d35 45%,transparent);outline-offset:3px}
     .filter-fab svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
