@@ -1,61 +1,65 @@
-<div class="app-shell">
-  <header class="topbar">
-    <a class="brand" routerLink="/" aria-label="BBG home" (click)="closeMenu()">
-      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-      <span class="brand-wordmark">BBG</span>
-    </a>
+<div class="app-shell" [class.storefront-mode]="isStorefrontRoute()">
+  @if (!isStorefrontRoute()) {
+    <header class="topbar">
+      <a class="brand" routerLink="/" aria-label="BBG home" (click)="closeMenu()">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="brand-wordmark">BBG</span>
+      </a>
 
-    <button class="menu-toggle" type="button" [attr.aria-expanded]="menuOpen()"
-      aria-controls="primary-navigation" aria-label="Toggle navigation" (click)="toggleMenu()">
-      <span></span><span></span><span></span>
-    </button>
-
-    <nav id="primary-navigation" class="primary-nav" [class.is-open]="menuOpen()" aria-label="Primary navigation">
-      <a class="nav-link" routerLink="/" routerLinkActive="is-active"
-        [routerLinkActiveOptions]="{ exact: true }" (click)="closeMenu()">Home</a>
-      <a class="nav-link" routerLink="/businesses" routerLinkActive="is-active" (click)="closeMenu()">Businesses</a>
-      <a class="nav-link" routerLink="/products" routerLinkActive="is-active" (click)="closeMenu()">Products</a>
-      <a class="nav-link" routerLink="/promotions" routerLinkActive="is-active" (click)="closeMenu()">Promotions</a>
-      <a class="nav-link" routerLink="/about" routerLinkActive="is-active" (click)="closeMenu()">About</a>
-    </nav>
-
-    <div class="topbar-actions">
-      <button class="theme-toggle" type="button" (click)="toggleTheme()"
-        [attr.aria-label]="theme() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'"
-        [attr.title]="theme() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'">
-        @if (theme() === 'light') {
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg>
-        } @else {
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.6 8.6 0 1 0 20.2 15.2Z"></path></svg>
-        }
+      <button class="menu-toggle" type="button" [attr.aria-expanded]="menuOpen()"
+        aria-controls="primary-navigation" aria-label="Toggle navigation" (click)="toggleMenu()">
+        <span></span><span></span><span></span>
       </button>
-      @if (!auth.isAuthenticated()) {
-        <a class="sign-in-link" routerLink="/login" (click)="closeMenu()">Sign in</a>
-        <a class="register-link" routerLink="/register" (click)="closeMenu()">Sign up</a>
-      } @else {
-        <span class="nav-user">{{ auth.user()?.full_name }}</span>
-        <button class="sign-in-link sign-out-button" type="button" (click)="signOut()">Sign out</button>
-      }
-    </div>
-  </header>
+
+      <nav id="primary-navigation" class="primary-nav" [class.is-open]="menuOpen()" aria-label="Primary navigation">
+        <a class="nav-link" routerLink="/" routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: true }" (click)="closeMenu()">Home</a>
+        <a class="nav-link" routerLink="/businesses" routerLinkActive="is-active" (click)="closeMenu()">Businesses</a>
+        <a class="nav-link" routerLink="/products" routerLinkActive="is-active" (click)="closeMenu()">Products</a>
+        <a class="nav-link" routerLink="/promotions" routerLinkActive="is-active" (click)="closeMenu()">Promotions</a>
+        <a class="nav-link" routerLink="/about" routerLinkActive="is-active" (click)="closeMenu()">About</a>
+      </nav>
+
+      <div class="topbar-actions">
+        <button class="theme-toggle" type="button" (click)="toggleTheme()"
+          [attr.aria-label]="theme() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'"
+          [attr.title]="theme() === 'light' ? 'Switch to dark theme' : 'Switch to light theme'">
+          @if (theme() === 'light') {
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg>
+          } @else {
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.6 8.6 0 1 0 20.2 15.2Z"></path></svg>
+          }
+        </button>
+        @if (!auth.isAuthenticated()) {
+          <a class="sign-in-link" routerLink="/login" (click)="closeMenu()">Sign in</a>
+          <a class="register-link" routerLink="/register" (click)="closeMenu()">Sign up</a>
+        } @else {
+          <span class="nav-user">{{ auth.user()?.full_name }}</span>
+          <button class="sign-in-link sign-out-button" type="button" (click)="signOut()">Sign out</button>
+        }
+      </div>
+    </header>
+  }
 
   <div class="route-content">
     <router-outlet />
   </div>
 
-  <footer class="site-footer" id="about">
-    <div class="footer-brand">
-      <a class="brand footer-logo" routerLink="/" aria-label="BBG home">
-        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-        <span class="brand-wordmark">BBG</span>
-      </a>
-      <span class="footer-tagline">Build · Grow · Connect</span>
-    </div>
-    <nav class="footer-links" aria-label="Footer navigation">
-      <a routerLink="/about">About</a><a href="/#about">Help</a><a href="/#about">Contact us</a>
-      <a href="/#about">Privacy policy</a><a href="/#about">Terms of service</a>
-    </nav>
-    <span class="copyright">© {{ currentYear }} BBG</span>
-  </footer>
+  @if (!isStorefrontRoute()) {
+    <footer class="site-footer" id="about">
+      <div class="footer-brand">
+        <a class="brand footer-logo" routerLink="/" aria-label="BBG home">
+          <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span class="brand-wordmark">BBG</span>
+        </a>
+        <span class="footer-tagline">Build · Grow · Connect</span>
+      </div>
+      <nav class="footer-links" aria-label="Footer navigation">
+        <a routerLink="/about">About</a><a href="/#about">Help</a><a href="/#about">Contact us</a>
+        <a href="/#about">Privacy policy</a><a href="/#about">Terms of service</a>
+      </nav>
+      <span class="copyright">© {{ currentYear }} BBG</span>
+    </footer>
+  }
 </div>
 <app-auth-popup />
