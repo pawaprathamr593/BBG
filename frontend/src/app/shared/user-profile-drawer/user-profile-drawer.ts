@@ -129,8 +129,8 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
     .profile-trigger:hover{transform:translateY(-1px);border-color:var(--brand)}
     .profile-trigger img{width:100%;height:100%;object-fit:cover}
     .profile-trigger:focus-visible,.drawer-close:focus-visible,.workspace-option:focus-visible,.theme-options button:focus-visible,.logout-button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 42%,transparent);outline-offset:3px}
-    .profile-backdrop{position:fixed;z-index:1000;inset:0;background:rgba(12,22,16,.48);backdrop-filter:blur(2px)}
-    .profile-drawer{position:fixed;z-index:1001;inset-block:0;inset-inline-end:0;display:flex;width:clamp(20rem,34vw,30rem);max-width:100vw;height:100vh;height:100dvh;flex-direction:column;overflow:hidden;border-inline-start:1px solid var(--border);background:var(--surface-card);color:var(--text-primary);box-shadow:-18px 0 50px rgba(0,0,0,.18);animation:profile-drawer-in .2s ease-out}
+    .profile-backdrop{position:fixed;z-index:1000;inset:var(--bbg-header-height,76px) 0 0;background:rgba(15,23,42,.42)}
+    .profile-drawer{position:fixed;z-index:1001;inset-block:var(--bbg-header-height,76px) 0;inset-inline-end:0;display:flex;width:clamp(18rem,22vw,24rem);max-width:100vw;height:auto;flex-direction:column;overflow:hidden;border-inline-start:1px solid var(--border);background:var(--surface-card);color:var(--text-primary);box-shadow:-18px 0 50px rgba(0,0,0,.18);animation:profile-drawer-in .2s ease-out}
     .drawer-header{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:16px;padding:22px 24px 18px;border-bottom:1px solid var(--border)}
     .drawer-eyebrow{margin:0 0 4px;color:var(--text-secondary);font-size:.62rem;font-weight:850;letter-spacing:.15em}
     .drawer-header h2{margin:0;font-size:1.35rem;letter-spacing:-.04em}
@@ -159,7 +159,7 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
     .logout-button:disabled{opacity:.6;cursor:wait}
     @keyframes profile-drawer-in{from{opacity:.75;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
     @media(min-width:768px) and (max-width:1023.98px){.profile-drawer{width:min(80vw,27.5rem)}}
-    @media(max-width:767.98px){.profile-trigger{width:39px;height:39px}.profile-drawer{inset:0;width:100%;max-width:100%;height:100vh;height:100dvh;border:0;box-shadow:none;animation:profile-drawer-in .16s ease-out}.drawer-header{padding:calc(14px + env(safe-area-inset-top)) 18px 14px}.drawer-body{padding:18px}.drawer-footer{padding:12px 18px calc(12px + env(safe-area-inset-bottom))}}
+    @media(max-width:767.98px){.profile-trigger{width:39px;height:39px}.profile-drawer{inset-block:var(--bbg-header-height,66px) 0;inset-inline:0;width:100%;max-width:100%;height:auto;border:0;box-shadow:none;animation:profile-drawer-in .16s ease-out}.drawer-header{padding:calc(14px + env(safe-area-inset-top)) 18px 14px}.drawer-body{padding:18px}.drawer-footer{padding:12px 18px calc(12px + env(safe-area-inset-bottom))}}
     @media(prefers-reduced-motion:reduce){.profile-trigger,.profile-drawer{transition:none;animation:none}}
   `],
 })
