@@ -50,7 +50,7 @@ export class AuthService {
     if (typeof window === 'undefined') throw new ApiError('Social sign-in is only available in a browser.');
     const base = environment.apiBaseUrl || window.location.origin;
     const apiOrigin = new URL(base, window.location.origin).origin;
-    const popupUrl = `${base.replace(/\\/$/, '')}/api/v1/auth/oauth/${provider}/start`;
+    const popupUrl = `${base.replace(/\/$/, '')}/api/v1/auth/oauth/${provider}/start`;
     const popup = window.open(popupUrl, 'bbg-social-sign-in', 'popup=yes,width=520,height=680,resizable=yes,scrollbars=yes');
     if (!popup) throw new ApiError('Your browser blocked the sign-in window. Allow pop-ups for BBG and try again.');
 
