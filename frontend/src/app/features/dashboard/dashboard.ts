@@ -171,7 +171,7 @@ export class Dashboard implements OnInit {
 
   readonly selectedTenant = computed(() => this.tenants().find((tenant) => tenant.id === this.selectedTenantId()) ?? null);
   readonly roleCodes = computed(() => [...new Set(this.permissions().map((permission) => permission.role_code))]);
-  readonly firstName = computed(() => (this.auth.user()?.full_name || 'there').trim().split(/\\s+/)[0]);
+  readonly firstName = computed(() => (this.auth.user()?.full_name || 'there').trim().split(/\s+/)[0]);
   readonly greeting = computed(() => {
     const hour = new Date().getHours();
     return hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
