@@ -54,6 +54,7 @@ final readonly class AuthServices implements IAuthServices
 
         $actionData = $authParam['actionData'];
         return match ($authParam['actionType']) {
+            'socialLogin' => $this->manageSocialLogin($actionData),
             'register' => $this->manageRegistration($actionData),
             'login' => $this->manageLogin($actionData),
             'refresh' => $this->manageRefreshSession($actionData),
@@ -62,6 +63,108 @@ final readonly class AuthServices implements IAuthServices
             'updateProfile' => $this->manageUserProfile($actionData),
             default => $this->failed('Unsupported authentication management action.'),
         };
+    }
+
+    private function manageSocialLogin(array $actionData): array
+    {
+        $provider = strtoupper(trim((string) ($actionData['provider'] ?? '')));
+        $subject = trim((string) ($actionData['subject'] ?? ''));
+        $email = strtolower(trim((string) ($actionData['email'] ?? '')));
+        $emailVerified = filter_var($actionData['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $fullName = trim((string) ($actionData['name'] ?? ''));
+        $providerEmail = $email !== '' ? $email : null;
+
+        if (!in_array($provider, ['GOOGLE', 'APPLE', 'FACEBOOK', 'INSTAGRAM'], true)
+            || $subject === '' || strlen($subject) > 190
+            || ($email !== '' && (filter_var($email, FILTER_VALIDATE_EMAIL) === false || strlen($email) > 190))
+        ) {
+            return $this->failed('The external sign-in identity is invalid.');
+        }
+
+        try {
+            $this->tokenService->assertConfigured();
+            $identityResult = $this->authDao->getUserIdentity($this->connection, $provider, $subject);
+            if ($identityResult['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($identityResult, 'AuthServices::manageSocialLogin');
+            }
+            if ($identityResult['data'] !== []) {
+                if (($identityResult['data']['status'] ?? '') !== 'A') {
+                    return $this->failed('This external sign-in identity is inactive. Contact BBG support.');
+                }
+                $userResult = $this->authDao->getUserById($this->connection, (int) $identityResult['data']['user_id']);
+                if ($userResult['status'] !== 'SUCCESS' || $userResult['data'] === []
+                    || ($userResult['data']['account_status'] ?? '') !== 'ACTIVE'
+                ) {
+                    return $this->failed('The linked BBG account is inactive or unavailable.');
+                }
+                return $this->createSession((int) $userResult['data']['id'], $this->publicUser($userResult['data']), true, $actionData);
+            }
+
+            if (!$emailVerified || $email === '') {
+                return [
+                    'status' => 'EMAIL_REQUIRED',
+                    'msgArr' => ['Verify an email address to finish connecting this sign-in method.'],
+                    'data' => ['provider' => $provider, 'email' => $providerEmail],
+                ];
+            }
+
+            $transaction = $this->connection->beginTransaction();
+            try {
+                $userResult = $this->authDao->getUserByEmail($this->connection, $email);
+                if ($userResult['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($userResult, 'AuthServices::manageSocialLogin');
+                }
+
+                if ($userResult['data'] !== []) {
+                    $user = $userResult['data'];
+                    if (($user['account_status'] ?? '') !== 'ACTIVE') {
+                        $transaction->rollBack();
+                        return $this->failed('The BBG account associated with this email is inactive.');
+                    }
+                    $userId = (int) $user['id'];
+                    if (empty($user['email_verified_on'])) {
+                        $verified = $this->authDao->markUserEmailVerified($this->connection, $userId, $this->utcNow());
+                        if ($verified['status'] !== 'SUCCESS') {
+                            $transaction->rollBack();
+                            return $this->propagateFailure($verified, 'AuthServices::manageSocialLogin');
+                        }
+                    }
+                } else {
+                    $inserted = $this->authDao->insertUser(
+                        $this->connection,
+                        $fullName !== '' ? mb_substr($fullName, 0, 150) : 'BBG Customer',
+                        $email,
+                        null,
+                        null,
+                        $this->utcNow(),
+                    );
+                    if ($inserted['status'] !== 'SUCCESS') {
+                        $transaction->rollBack();
+                        return $this->propagateFailure($inserted, 'AuthServices::manageSocialLogin');
+                    }
+                    $userId = (int) $inserted['data']['id'];
+                }
+
+                $linked = $this->authDao->insertUserIdentity($this->connection, $userId, $provider, $subject, $providerEmail);
+                if ($linked['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($linked, 'AuthServices::manageSocialLogin');
+                }
+                $transaction->commit();
+            } catch (Throwable $exception) {
+                if ($transaction->isActive()) $transaction->rollBack();
+                throw $exception;
+            }
+
+            $userResult = $this->authDao->getUserById($this->connection, $userId);
+            if ($userResult['status'] !== 'SUCCESS' || $userResult['data'] === []) {
+                return $this->failed('The BBG account was linked, but its profile could not be loaded. Sign in again.');
+            }
+            return $this->createSession($userId, $this->publicUser($userResult['data']), true, $actionData);
+        } catch (Throwable $exception) {
+            return $this->exception('manageSocialLogin', $exception);
+        }
     }
 
     private function manageRegistration(array $actionData): array
