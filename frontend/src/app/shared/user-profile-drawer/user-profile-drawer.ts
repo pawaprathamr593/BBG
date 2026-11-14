@@ -62,8 +62,8 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
           } @else if (workspace.tenants().length || workspace.permissions().length) {
             <section class="drawer-section">
               <div class="section-heading">
-                <h3>Switch workspace</h3>
-                <span>{{ workspace.tenants().length }} available</span>
+                <h3>Workspace &amp; context</h3>
+                <span>{{ workspace.tenants().length }} business workspaces</span>
               </div>
               <button class="workspace-option" type="button"
                 [class.is-active]="workspace.activeTenantId() === null"
