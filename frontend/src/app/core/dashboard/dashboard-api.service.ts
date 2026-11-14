@@ -7,7 +7,7 @@ import { AuthService } from '../auth/auth.service';
 export interface DashboardPermission {
   role_code: string;
   scope_type: 'PLATFORM' | 'TENANT' | 'GLOBAL' | string;
-  permission_code: string;
+  permission_code: string | null;
   module_code: string;
 }
 
