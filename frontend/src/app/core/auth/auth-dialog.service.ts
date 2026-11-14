@@ -36,9 +36,10 @@ export class AuthDialogService {
     onAuthenticated?: () => void | Promise<void>,
   ): void {
     this.pendingAction = onAuthenticated ?? null;
-    const width = Math.min(400, window.innerWidth - 24);
-    const height = Math.min(650, window.innerHeight - 32);
-    const gap = 12;
+    // Reserve enough room for the compact social-first popup and its email form.
+    const width = Math.min(340, window.innerWidth - 24);
+    const height = Math.min(360, window.innerHeight - 32);
+    const gap = 10;
     let top = Math.max(16, (window.innerHeight - height) / 2);
     let left = Math.max(12, (window.innerWidth - width) / 2);
     let placement: AuthDialogState['placement'] = 'bottom';
