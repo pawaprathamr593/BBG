@@ -1,5 +1,6 @@
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/auth/auth.service';
 import { StorefrontContextService } from './storefront-context.service';
@@ -50,7 +51,7 @@ interface StorefrontNavItem {
             }
           </nav>
 
-          <a class="account" routerLink="/login" [queryParams]="{ returnUrl: currentUrl }">
+          <a class="account" [routerLink]="['/store', slug, 'login']" [queryParams]="{ returnUrl: currentUrl }">
             {{ auth.isAuthenticated() ? 'My account' : 'Sign in' }}
           </a>
         </header>
@@ -67,7 +68,7 @@ interface StorefrontNavItem {
               <address>
                 @if (address.address_line_1) { <span>{{ address.address_line_1 }}</span> }
                 @if (address.address_line_2) { <span>{{ address.address_line_2 }}</span> }
-                <span>{{ [address.city, address.state, address.postal_code].filter(Boolean).join(', ') }}</span>
+                <span>{{ address.city }}{{ address.city && address.state ? ', ' : '' }}{{ address.state }}{{ address.postal_code ? ' ' + address.postal_code : '' }}</span>
                 @if (address.country_code) { <span>{{ address.country_code }}</span> }
               </address>
             }
@@ -183,6 +184,11 @@ export class StorefrontLayout implements OnInit {
   closeMenu(): void { this.menuOpen = false; }
 
   ngOnInit(): void {
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((event) => { this.currentUrl = event.urlAfterRedirects; });
+
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const slug = params.get('businessSlug') || '';
       this.slug = slug;
