@@ -281,7 +281,7 @@ export class StorefrontHome {
   readonly selectedCategory = signal('all');
   readonly shareFeedback = signal('');
   readonly categories = computed(() => [...new Set(this.products().map(item => item.category_name).filter((value): value is string => !!value))].sort((a, b) => a.localeCompare(b)));
-  readonly filteredProducts = computed(() => this.selectedCategory() === 'all' ? this.products() : this.products().filter(item => item.category_name === this.selectedCategory()));
+  readonly filteredProducts = computed(() => (this.selectedCategory() === 'all' ? this.products() : this.products().filter(item => item.category_name === this.selectedCategory())).slice(0, 8));
   readonly skeletons = [1, 2, 3, 4, 5, 6, 7, 8];
 
   get brandName(): string {
@@ -323,7 +323,7 @@ export class StorefrontHome {
     });
 
     const [productResult, promotionResult] = await Promise.allSettled([
-      firstValueFrom(this.api.listStorefrontProducts(slug, 1, 8, '', { sort: 'newest' })),
+      firstValueFrom(this.api.listStorefrontProducts(slug, 1, 50, '', { sort: 'newest' })),
       firstValueFrom(this.api.getStorefrontPromotions(slug, 1, 3)),
     ]);
     if (productResult.status === 'fulfilled' && productResult.value.status === 'SUCCESS' && !Array.isArray(productResult.value.data)) {
