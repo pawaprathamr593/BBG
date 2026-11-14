@@ -21,7 +21,7 @@ export const routes: Routes = [
       { path: 'products/:productSlug', loadComponent: () => import('./features/storefront/storefront-product-detail').then((m) => m.StorefrontProductDetail), title: 'Product details | BBG' },
       { path: 'about', loadComponent: () => import('./features/storefront/storefront-section').then((m) => m.StorefrontSection), data: { section: 'about' }, title: 'About the business | BBG' },
       { path: 'contact', loadComponent: () => import('./features/storefront/storefront-section').then((m) => m.StorefrontSection), data: { section: 'contact' }, title: 'Contact the business | BBG' },
-      { path: 'login', redirectTo: '/login' },
+      { path: 'login', loadComponent: () => import('./features/storefront/storefront-login').then((m) => m.StorefrontLogin), title: 'Sign in | Storefront' },
     ],
   },
   {
