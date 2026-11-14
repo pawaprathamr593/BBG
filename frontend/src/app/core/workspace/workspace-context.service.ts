@@ -95,7 +95,9 @@ export class WorkspaceContextService {
 
   private readActiveWorkspace(): number | null {
     try {
-      const raw = this.document.defaultView?.sessionStorage.getItem(ACTIVE_WORKSPACE_KEY);
+      const userId = this.auth.user()?.user_id;
+      if (!userId) return null;
+      const raw = this.document.defaultView?.sessionStorage.getItem(`${ACTIVE_WORKSPACE_KEY}.${userId}`);
       if (!raw) return null;
       const value = Number(raw);
       return Number.isInteger(value) && value > 0 ? value : null;
@@ -106,10 +108,12 @@ export class WorkspaceContextService {
 
   private persistActiveWorkspace(tenantId: number | null): void {
     try {
+      const userId = this.auth.user()?.user_id;
       const storage = this.document.defaultView?.sessionStorage;
-      if (!storage) return;
-      if (tenantId === null) storage.removeItem(ACTIVE_WORKSPACE_KEY);
-      else storage.setItem(ACTIVE_WORKSPACE_KEY, String(tenantId));
+      if (!storage || !userId) return;
+      const key = `${ACTIVE_WORKSPACE_KEY}.${userId}`;
+      if (tenantId === null) storage.removeItem(key);
+      else storage.setItem(key, String(tenantId));
     } catch {
       // Workspace selection still works for the current application session
       // when browser storage is unavailable.
