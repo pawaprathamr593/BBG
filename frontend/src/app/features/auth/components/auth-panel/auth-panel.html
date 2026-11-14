@@ -9,6 +9,7 @@
     <button type="button" class="social-button" (click)="selectProvider('Apple')" [disabled]="busy()"><b>●</b>Apple</button>
   </div>
   @if(providerMessage()){<p class="provider-message" role="status">{{providerMessage()}}</p>}
+  @if(error() && !emailOtpMode() && !credentialsVisible()){<p class="form-error" role="alert">{{error()}}</p>}
   @if(emailOtpMode()){
     <div class="social-email-verification">
       @if(error()){<p class="form-error" role="alert">{{error()}}</p>}
