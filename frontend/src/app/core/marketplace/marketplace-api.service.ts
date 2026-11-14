@@ -202,6 +202,19 @@ export class MarketplaceApiService {
     );
   }
 
+  getStorefrontPromotions(businessSlug: string, page = 1, pageSize = 5): Observable<MarketplaceApiResponse<{
+    items: MarketplacePromotion[];
+    pagination: { page: number; page_size: number; total: number };
+  }>> {
+    return this.http.post<MarketplaceApiResponse<{
+      items: MarketplacePromotion[];
+      pagination: { page: number; page_size: number; total: number };
+    }>>(
+      `${this.apiBaseUrl}/api/v1/marketplace/promotions/list`,
+      { marketplaceParam: { actionData: { business_slug: businessSlug, page, page_size: pageSize } } },
+    );
+  }
+
   getStorefrontProduct(businessSlug: string, publicProductId: string): Observable<MarketplaceApiResponse<MarketplaceProductDetail>> {
     return this.http.post<MarketplaceApiResponse<MarketplaceProductDetail>>(
       `${this.apiBaseUrl}/api/v1/marketplace/products/detail`,
