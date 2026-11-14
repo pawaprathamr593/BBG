@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { DashboardApiService, DashboardPermission, DashboardTenant } from '../../core/dashboard/dashboard-api.service';
@@ -166,10 +166,32 @@ export class Dashboard implements OnInit {
   readonly summaryLoading = signal(false);
   readonly error = signal('');
   readonly summaryError = signal('');
-  readonly tenants = signal<DashboardTenant[]>([]);
-  readonly selectedTenantId = signal<number | null>(null);
-  readonly permissions = signal<DashboardPermission[]>([]);
+  readonly tenants = this.workspace.tenants;
+  readonly selectedTenantId = this.workspace.activeTenantId;
+  readonly permissions = this.workspace.permissions;
   readonly summary = signal<Record<string, string | number | null> | null>(null);
+
+  private activeContextObserved = false;
+
+  constructor() {
+    effect(() => {
+      const tenantId = this.workspace.activeTenantId();
+      const permissions = this.workspace.permissions();
+      if (!this.activeContextObserved) {
+        this.activeContextObserved = true;
+        return;
+      }
+      this.selectedTenantId.set(tenantId);
+      this.permissions.set(permissions);
+      this.summary.set(null);
+      this.summaryError.set('');
+      if (tenantId !== null && permissions.some((permission) => permission.permission_code === 'TENANT_MEMBERS_VIEW')) {
+        void this.loadTenantSummary(tenantId);
+      } else if (tenantId === null && permissions.some((permission) => permission.role_code === 'CONSUMER' && permission.scope_type === 'GLOBAL')) {
+        void this.loadConsumerSummary();
+      }
+    });
+  }
 
   readonly selectedTenant = computed(() => this.tenants().find((tenant) => tenant.id === this.selectedTenantId()) ?? null);
   readonly roleCodes = computed(() => [...new Set(this.permissions().map((permission) => permission.role_code))]);
@@ -243,11 +265,7 @@ export class Dashboard implements OnInit {
       this.permissions.set(this.workspace.permissions());
       this.tenants.set(this.workspace.tenants());
       this.loading.set(false);
-      if (tenantId !== null && this.permissions().some((permission) => permission.permission_code === 'TENANT_MEMBERS_VIEW')) {
-        await this.loadTenantSummary(tenantId);
-      } else if (tenantId === null && this.permissions().some((permission) => permission.role_code === 'CONSUMER' && permission.scope_type === 'GLOBAL')) {
-        await this.loadConsumerSummary();
-      }
+      // Summary refresh follows the shared active-workspace signal.
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
       this.loading.set(false);
