@@ -50,7 +50,7 @@ export class AuthPanel{
  }
  async verifySocialEmailOtp():Promise<void>{
   const email=this.socialEmail().trim(),code=this.socialOtp().trim(),ticket=this.pendingSocialTicket();
-  if(!ticket||!email||!/^\\d{6}$/.test(code)){this.error.set('Enter the six-digit code sent to your email.');return;}
+  if(!ticket||!email||!/^\d{6}$/.test(code)){this.error.set('Enter the six-digit code sent to your email.');return;}
   this.otpBusy.set(true);this.error.set('');
   try{this.authenticated.emit(await this.auth.verifySocialEmailOtp(ticket,email,code));this.emailOtpMode.set(false);}
   catch(e){this.error.set(this.auth.errorMessage(e));}finally{this.otpBusy.set(false);}
