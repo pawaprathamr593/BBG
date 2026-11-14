@@ -70,7 +70,7 @@ import {
     .filter-fab:focus-visible,.drawer-close:focus-visible,.drawer-footer button:focus-visible{outline:3px solid color-mix(in srgb,#174d35 45%,transparent);outline-offset:3px}
     .filter-fab svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
     .filter-count{display:grid;min-width:21px;height:21px;place-items:center;padding:0 5px;color:#fff;background:#174d35;border-radius:999px;font-size:.68rem;font-weight:850}
-    .filter-backdrop{position:fixed;z-index:1000;inset:var(--bbg-header-height,76px) 0 0;background:rgba(15,23,42,.42)}
+    .filter-backdrop{position:fixed;z-index:1000;inset:0;background:rgba(15,23,42,.42)}
     .filter-drawer{position:fixed;z-index:1001;inset-block:var(--bbg-header-height,76px) 0;inset-inline-end:0;display:flex;width:clamp(18rem,22vw,24rem);max-width:100vw;height:auto;flex-direction:column;overflow:hidden;color:var(--text-primary);background:var(--surface-card);border-inline-start:1px solid var(--border);box-shadow:-18px 0 50px rgba(0,0,0,.18);animation:drawer-in .2s ease-out}
     .drawer-header{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:16px;padding:22px 24px 18px;border-bottom:1px solid var(--border)}
     .drawer-eyebrow{margin:0 0 4px;color:var(--text-secondary);font-size:.62rem;font-weight:850;letter-spacing:.15em}
