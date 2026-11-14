@@ -8,7 +8,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
 @Component({
   selector: 'app-storefront-product-detail',
   imports: [RouterLink],
-  template: \`
+  template: `
     @if (loading()) {
       <main class="loading-state" role="status"><span class="loader"></span><p>Loading product information…</p></main>
     } @else if (error()) {
@@ -88,8 +88,8 @@ import { StorefrontSeoService } from './storefront-seo.service';
         </section>
       </main>
     }
-  \`,
-  styles: [\`
+  `,
+  styles: [`
     :host{display:block;color:var(--text-primary);background:var(--surface-page)}
     .product-page{width:min(100% - 64px,1160px);min-height:65vh;margin:0 auto;padding:32px 0 82px}
     .breadcrumbs{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:30px;color:var(--text-muted);font-size:.72rem}
@@ -138,7 +138,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
     @media(max-width:850px){.product-layout{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:30px}.product-visual{min-height:400px}.visual-orbit{width:270px;height:270px}}
     @media(max-width:650px){.product-page{width:calc(100% - 36px);padding-top:22px;padding-bottom:55px}.breadcrumbs{margin-bottom:20px}.product-layout{grid-template-columns:1fr;gap:25px}.product-visual{min-height:310px}.visual-monogram{font-size:9rem}.visual-orbit{width:230px;height:230px}.product-copy h1{font-size:2.7rem}.more-info{align-items:flex-start;flex-direction:column;margin-top:55px;padding:25px}.more-info>a{width:100%;justify-content:space-between}}
     @media(prefers-reduced-motion:reduce){.loader{animation:none}}
-  \`],
+  `],
 })
 export class StorefrontProductDetail implements OnInit {
   readonly context = inject(StorefrontContextService);
