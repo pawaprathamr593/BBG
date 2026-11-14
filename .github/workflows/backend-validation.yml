@@ -4,11 +4,13 @@ on:
   push:
     branches:
       - feature/auth-foundation
+      - feature/frontend-development
       - fix/bbg-seven-layer-audit
   pull_request:
     branches:
       - main
       - feature/auth-foundation
+      - feature/frontend-development
 
 jobs:
   php-syntax:
