@@ -185,7 +185,7 @@ export class StorefrontProductDetail implements OnInit {
         name: product.product_name,
         description,
         sku: product.product_code,
-        url: path,
+        url: this.seo.canonicalUrl(path),
         ...(product.brand_name ? { brand: { '@type': 'Brand', name: product.brand_name } } : {}),
         ...(showPrice ? {
           offers: {
