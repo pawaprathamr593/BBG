@@ -33,7 +33,6 @@ type ProductFilterKey = keyof ProductFilterValues;
                 }
               </div>
             </div>
-            <div class="hero-decoration" aria-hidden="true"><span>01</span><i></i><b>DISCOVER</b></div>
           </section>
 
           <section class="catalogue content-wrap" aria-labelledby="catalogue-heading">
@@ -213,7 +212,6 @@ type ProductFilterKey = keyof ProductFilterValues;
               <h1 id="page-title">Let's talk<span>.</span></h1>
               <p>Have a question about a product or want to know more? Choose the best way to reach {{ brandName }} below.</p>
             </div>
-            <div class="hero-decoration" aria-hidden="true"><span>03</span><i></i><b>CONNECT</b></div>
           </section>
 
           <section class="contact-content content-wrap">
@@ -273,9 +271,6 @@ type ProductFilterKey = keyof ProductFilterValues;
     .hero-inner h1>span{color:#d7e8dc}
     .hero-inner h1>b,.products-hero h1>span,.contact-hero h1>span{color:var(--accent)}
     .hero-inner>p:last-child{max-width:670px;margin:0;color:#dce8df;font-size:1rem;line-height:1.8}
-    .hero-decoration{position:absolute;right:max(32px,calc((100vw - 1160px)/2));bottom:46px;display:flex;align-items:center;gap:12px;color:#d1e1d6;font-size:.58rem;font-weight:800;letter-spacing:.15em;writing-mode:vertical-rl}
-    .hero-decoration>span{color:var(--accent);font-size:.8rem}
-    .hero-decoration>i{width:1px;height:55px;background:#ffffff7a}
     .products-hero{min-height:330px}
     .about-hero{min-height:400px}
     .about-cover,.about-shade{position:absolute;z-index:-1;inset:0;width:100%;height:100%}
@@ -400,7 +395,7 @@ type ProductFilterKey = keyof ProductFilterValues;
     .bottom-actions{display:flex;flex-direction:column;gap:13px;min-width:205px}
     .bottom-actions a{display:flex;align-items:center;justify-content:space-between;gap:15px;color:var(--brand-strong);font-size:.8rem;font-weight:800;text-decoration:none}
     @media(max-width:1000px){.catalogue-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.catalogue-toolbar{align-items:flex-start;flex-direction:column}.search-form{width:100%}.about-content,.contact-content{gap:38px}.about-content{grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr)}.contact-content{grid-template-columns:minmax(0,1fr) minmax(260px,.75fr)}}
-    @media(max-width:700px){.content-wrap,.hero-inner,.cta-inner,.bottom-inner{width:calc(100% - 40px)}.catalogue-tools{width:100%;justify-content:space-between}.sort-control{flex:1}.sort-control select{width:100%;max-width:none}.drawer-filters{grid-template-columns:1fr}.drawer-filters .check-field{grid-column:auto}.page-hero{min-height:300px}.hero-inner{padding:62px 0}.hero-inner h1{font-size:clamp(3rem,13vw,4.6rem)}.hero-decoration{right:18px;bottom:24px}.catalogue{padding-top:48px;padding-bottom:65px}.catalogue-toolbar{align-items:stretch;flex-direction:column}.search-form{width:100%}.catalogue-grid{gap:12px}.product-art{min-height:150px}.art-monogram{font-size:4.5rem}.product-info{padding:12px}.product-info>p{font-size:.7rem}.product-title-row h3{font-size:.85rem}.product-bottom small{display:none}.pagination{gap:10px}.pagination button{min-width:94px}.about-content,.contact-content{grid-template-columns:1fr;gap:35px;padding-top:55px;padding-bottom:62px}.business-identity{margin:20px 0 32px}.about-aside{padding:21px}.cta-inner,.bottom-inner{align-items:flex-start;flex-direction:column;justify-content:center;padding:40px 0}.cta-button{width:100%;justify-content:space-between}.contact-methods{grid-template-columns:1fr 1fr}.address-panel{padding:22px}.bottom-actions{width:100%}}
+    @media(max-width:700px){.content-wrap,.hero-inner,.cta-inner,.bottom-inner{width:calc(100% - 40px)}.catalogue-tools{width:100%;justify-content:space-between}.sort-control{flex:1}.sort-control select{width:100%;max-width:none}.drawer-filters{grid-template-columns:1fr}.drawer-filters .check-field{grid-column:auto}.page-hero{min-height:300px}.hero-inner{padding:62px 0}.hero-inner h1{font-size:clamp(3rem,13vw,4.6rem)}.catalogue{padding-top:48px;padding-bottom:65px}.catalogue-toolbar{align-items:stretch;flex-direction:column}.search-form{width:100%}.catalogue-grid{gap:12px}.product-art{min-height:150px}.art-monogram{font-size:4.5rem}.product-info{padding:12px}.product-info>p{font-size:.7rem}.product-title-row h3{font-size:.85rem}.product-bottom small{display:none}.pagination{gap:10px}.pagination button{min-width:94px}.about-content,.contact-content{grid-template-columns:1fr;gap:35px;padding-top:55px;padding-bottom:62px}.business-identity{margin:20px 0 32px}.about-aside{padding:21px}.cta-inner,.bottom-inner{align-items:flex-start;flex-direction:column;justify-content:center;padding:40px 0}.cta-button{width:100%;justify-content:space-between}.contact-methods{grid-template-columns:1fr 1fr}.address-panel{padding:22px}.bottom-actions{width:100%}}
     @media(max-width:420px){.catalogue-grid{grid-template-columns:1fr}.product-art{min-height:210px}.art-monogram{font-size:5.7rem}.contact-methods{grid-template-columns:1fr}.contact-card{min-height:145px}.pagination{flex-wrap:wrap}.hero-decoration{display:none}}
     @media(prefers-reduced-motion:reduce){.product-card,.contact-card{transition:none}.product-card:hover,.contact-card:hover{transform:none}}
   `],
