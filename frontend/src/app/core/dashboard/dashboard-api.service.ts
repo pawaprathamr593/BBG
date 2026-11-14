@@ -1,0 +1,87 @@
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { API_BASE_URL } from '../config/api-base-url';
+import { AuthService } from '../auth/auth.service';
+
+export interface DashboardPermission {
+  role_code: string;
+  scope_type: 'PLATFORM' | 'TENANT' | 'GLOBAL' | string;
+  permission_code: string;
+  module_code: string;
+}
+
+export interface DashboardTenant {
+  id: number;
+  tenant_code: string;
+  tenant_name: string;
+  tenant_type: string;
+  tenant_status: string;
+  membership_status: string;
+  role_codes: string | null;
+}
+
+export interface DashboardApiResponse<T> {
+  status: 'SUCCESS' | 'FAILED' | 'EXCEPTION';
+  msgArr: string[];
+  data: T | [];
+}
+
+@Injectable({ providedIn: 'root' })
+export class DashboardApiService {
+  private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
+  private readonly apiBaseUrl = inject(API_BASE_URL);
+
+  private get headers(): HttpHeaders {
+    return new HttpHeaders({ Authorization: `Bearer ${this.auth.accessToken() ?? ''}` });
+  }
+
+  async getPermissions(tenantId = 0): Promise<DashboardPermission[]> {
+    const response = await firstValueFrom(this.http.post<DashboardApiResponse<{ tenant_id: number | null; permissions: DashboardPermission[] }>>(
+      `${this.apiBaseUrl}/api/v1/auth/permissions`,
+      { authParam: { actionType: 'getPermissions', actionData: { tenant_id: tenantId } } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to load access permissions.');
+    }
+    return response.data.permissions ?? [];
+  }
+
+  async getMyTenants(): Promise<DashboardTenant[]> {
+    const response = await firstValueFrom(this.http.post<DashboardApiResponse<{ items: DashboardTenant[] }>>(
+      `${this.apiBaseUrl}/api/v1/tenants/mine/list`,
+      { tenantParam: { actionType: 'listMyTenants', actionData: { page: 1, page_size: 50 } } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to load your business workspaces.');
+    }
+    return response.data.items ?? [];
+  }
+
+  async getConsumerSummary(): Promise<Record<string, number>> {
+    const response = await firstValueFrom(this.http.post<DashboardApiResponse<Record<string, number>>>(
+      `${this.apiBaseUrl}/api/v1/dashboard/consumer/summary`,
+      { dashboardParam: { actionData: {} } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Consumer summary is unavailable.');
+    }
+    return response.data;
+  }
+
+  async getTenantSummary(tenantId: number): Promise<Record<string, string | number | null>> {
+    const response = await firstValueFrom(this.http.post<DashboardApiResponse<Record<string, string | number | null>>>(
+      `${this.apiBaseUrl}/api/v1/dashboard/entrepreneur/summary`,
+      { dashboardParam: { actionData: { tenant_id: tenantId } } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Business summary is unavailable for this workspace.');
+    }
+    return response.data;
+  }
+}
