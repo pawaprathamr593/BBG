@@ -392,6 +392,7 @@ export class StorefrontSection {
     const slug = detail.business.business_slug;
     const name = detail.storefront.title || detail.business.business_name;
     const path = '/store/' + encodeURIComponent(slug) + '/' + this.section;
+    const canonicalUrl = this.seo.canonicalUrl(path);
 
     if (this.section === 'products') {
       await this.loadProducts(this.queryPage, this.querySearch);
@@ -400,14 +401,14 @@ export class StorefrontSection {
         '@type': 'ListItem',
         position: index + 1,
         name: product.product_name,
-        url: path + '/' + this.productRoute(product),
+        url: canonicalUrl + '/' + this.productRoute(product),
       }));
       this.seo.update('Products | ' + name, description, path, {
         '@context': 'https://schema.org',
         '@type': 'CollectionPage',
         name: 'Products | ' + name,
         description,
-        url: path,
+        url: canonicalUrl,
         mainEntity: {
           '@type': 'ItemList',
           numberOfItems: this.pagination().total,
@@ -428,7 +429,7 @@ export class StorefrontSection {
       '@type': isAbout ? 'AboutPage' : 'ContactPage',
       name: (isAbout ? 'About ' : 'Contact ') + name,
       description,
-      url: path,
+      url: canonicalUrl,
       mainEntity: this.businessSchema(detail),
     });
   }
