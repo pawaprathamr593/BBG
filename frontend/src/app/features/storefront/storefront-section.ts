@@ -522,8 +522,10 @@ export class StorefrontSection {
     const address = data.business.address;
     const location = data.business.location;
     return {
-      '@type': 'LocalBusiness',
+      '@type': address ? 'LocalBusiness' : 'Organization',
+      '@id': this.seo.canonicalUrl('/store/' + encodeURIComponent(data.business.business_slug)) + '#business',
       name: data.storefront.title || data.business.business_name,
+      url: this.seo.canonicalUrl('/store/' + encodeURIComponent(data.business.business_slug)),
       description: data.storefront.description || data.business.business_description || undefined,
       ...(data.business.business_phone ? { telephone: data.business.business_phone } : {}),
       ...(data.business.business_email ? { email: data.business.business_email } : {}),
