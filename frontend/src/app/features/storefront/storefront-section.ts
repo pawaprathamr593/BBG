@@ -96,7 +96,7 @@ type Section = 'products' | 'about' | 'contact';
                 <span class="empty-icon" aria-hidden="true">!</span>
                 <h2>Catalogue temporarily unavailable</h2>
                 <p>{{ loadError() }}</p>
-                <button class="reset-button" type="button" (click)="changePage(pagination().page)">Try again</button>
+                <button class="reset-button" type="button" (click)="loadProducts(pagination().page, searchTerm())">Try again</button>
               </div>
             } @else {
               <div class="empty-state">
@@ -481,6 +481,7 @@ export class StorefrontSection {
       } else {
         this.products.set([]);
         this.pagination.set({ page: 1, page_size: 12, total: 0 });
+        this.loadError.set('The product catalogue is currently unavailable. Please try again.');
       }
     } catch {
       this.products.set([]);
