@@ -1,5 +1,5 @@
 :host { display:block; min-height:100dvh; }
-.app-shell { display:flex; flex-direction:column; min-height:100dvh; background:var(--surface-page); }
+.app-shell { --bbg-header-height:76px; display:flex; flex-direction:column; min-height:100dvh; background:var(--surface-page); }
 /* Keep every routed page in normal document flow, starting immediately
    below the header. The route area and page host grow vertically on short
    pages so the footer reaches the viewport bottom without centering content. */
@@ -54,6 +54,7 @@
 .footer-tagline { color:#c4cbc6; font-size:.75rem; }.footer-links { display:flex; align-items:center; flex-wrap:wrap; gap:0; }.footer-links a { padding:0 13px; color:#e2e7e3; border-right:1px solid #68716b; font-size:.75rem; text-decoration:none; }.footer-links a:last-child { border:0; }.footer-links a:hover { color:#f5d928; }.copyright { color:#aeb8b1; font-size:.72rem; white-space:nowrap; }
 @media(max-width:1000px) { .topbar { padding:0 22px; }.primary-nav { gap:13px; }.nav-link { font-size:.82rem; }.site-footer { padding:18px 22px; }.footer-links a { padding:0 8px; } }
 @media(max-width:760px) {
+  .app-shell { --bbg-header-height:66px; }
   .topbar { min-height:66px; padding:0 16px; }.brand-mark { width:34px; height:34px; }.brand-wordmark { font-size:1.7rem; }
   .menu-toggle { display:grid; width:39px; height:39px; align-content:center; justify-items:center; gap:5px; margin-left:auto; background:transparent; border:1px solid var(--border); border-radius:9px; }
   .menu-toggle span { width:17px; height:2px; background:var(--text-primary); border-radius:2px; }
@@ -62,8 +63,9 @@
   .topbar-actions { gap:7px; margin-left:10px; }.theme-toggle { width:36px; height:36px; }.sign-in-link,.register-link { min-height:36px; padding:0 10px; font-size:.75rem; }
   .site-footer { align-items:flex-start; flex-direction:column; gap:16px; padding:23px 18px; }.footer-brand { flex-wrap:wrap; }.footer-links { gap:10px 0; }.footer-links a:first-child { padding-left:0; }.copyright { padding-top:2px; }
 }
+@media(max-width:640px) { .app-shell.storefront-mode { --bbg-header-height:74px; } }
 @media(max-width:420px) { .brand-wordmark { font-size:1.5rem; }.topbar-actions { gap:5px; }.sign-in-link,.register-link { padding:0 8px; }.theme-toggle { width:33px; height:33px; } }
 
 /* Storefront routes are a separate public-site experience, not part of the BBG platform shell. */
-.app-shell.storefront-mode { background: transparent; }
+.app-shell.storefront-mode { --bbg-header-height:88px; background: transparent; }
 .app-shell.storefront-mode > .route-content { min-height: 100dvh; }
