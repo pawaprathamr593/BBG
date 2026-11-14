@@ -7,6 +7,8 @@ export class AuthPrompt{
  private readonly element=inject(ElementRef<HTMLElement>);
  protected async onAuthenticated():Promise<void>{await this.promptService.complete();}
  @HostListener('document:keydown.escape') protected onEscape():void{if(this.promptService.prompt())this.promptService.close();}
+ @HostListener('window:resize') protected onViewportResize():void{this.promptService.reposition();}
+ @HostListener('window:scroll') protected onViewportScroll():void{this.promptService.reposition();}
  @HostListener('document:pointerdown',['$event']) protected onOutsidePointer(event:PointerEvent):void{
   if(!this.promptService.prompt())return;const target=event.target;
   if(target instanceof Node&&!this.element.nativeElement.contains(target))this.promptService.close();
