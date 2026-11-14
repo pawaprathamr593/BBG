@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, effect, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { AuthExperienceComponent } from '../../shared/auth-experience/auth-experience';
 import { StorefrontContextService } from './storefront-context.service';
@@ -18,7 +18,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
     .storefront-auth { display:grid; min-height:65vh; place-items:center; padding:28px 16px 56px; background:#fbfcfb; }
   `],
 })
-export class StorefrontLogin implements OnInit {
+export class StorefrontLogin {
   private readonly context = inject(StorefrontContextService);
   private readonly seo = inject(StorefrontSeoService);
   private readonly slug = inject(ActivatedRoute).parent?.snapshot.paramMap.get('businessSlug') || '';
@@ -28,9 +28,13 @@ export class StorefrontLogin implements OnInit {
     return detail?.storefront.title || detail?.business.business_name || 'Business';
   }
 
-  ngOnInit(): void {
-    const title = `Sign in | ${this.brandName}`;
-    const description = `Sign in to your customer account at ${this.brandName}.`;
-    this.seo.update(title, description, `/store/${encodeURIComponent(this.slug)}/login`, undefined, 'noindex,follow');
-  }
-}
+  constructor() {
+    effect(() => {
+      const detail = this.context.detail();
+      if (!detail) return;
+      const name = detail.storefront.title || detail.business.business_name;
+      const title = 'Sign in | ' + name;
+      const description = 'Sign in to your customer account at ' + name + '.';
+      this.seo.update(title, description, '/store/' + encodeURIComponent(this.slug) + '/login', undefined, 'noindex,follow');
+    });
+  }}
