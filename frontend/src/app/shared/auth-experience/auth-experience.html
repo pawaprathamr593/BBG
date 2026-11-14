@@ -10,7 +10,7 @@
       <span class="auth-mark" aria-hidden="true">{{ brandName.slice(0, 1).toUpperCase() }}</span>
       <p class="eyebrow">{{ activeMode() === 'login' ? 'WELCOME BACK' : 'JOIN THE COMMUNITY' }}</p>
     }
-    <h1>{{ presentation === 'popup' ? 'Continue with BBG' : (activeMode() === 'login' ? 'Sign in to BBG' : 'Create your BBG account') }}</h1>
+    <h1>{{ presentation === 'popup' ? 'Continue with BBG' : (activeMode() === 'login' ? 'Sign in to ' + brandName : 'Create your ' + brandName + ' account') }}</h1>
     @if (presentation === 'page') {
       <p class="intro">{{ reason || (activeMode() === 'login' ? 'Continue discovering businesses, products and opportunities.' : 'One account to discover, connect and grow.') }}</p>
     }
