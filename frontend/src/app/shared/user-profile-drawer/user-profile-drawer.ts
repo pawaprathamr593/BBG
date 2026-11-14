@@ -276,7 +276,7 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
     this.loggingOut.set(true);
     this.logoutError.set('');
     const path = this.document.defaultView?.location.pathname ?? '';
-    const storefrontMatch = path.match(/^\\/store\\/([^/]+)/);
+    const storefrontMatch = path.match(/^\/store\/([^/]+)/);
     const destination = storefrontMatch ? `/store/${storefrontMatch[1]}/login` : '/login';
     try {
       await this.auth.logout();
