@@ -40,6 +40,8 @@ export interface MarketplaceBusiness {
 
 export interface MarketplaceProduct {
   id: number;
+  /** Optional discriminator for a future unified product/service offering feed. Existing product API responses default to PRODUCT. */
+  offering_type?: 'PRODUCT' | 'SERVICE';
   public_id?: string;
   slug?: string;
   product_code: string;
