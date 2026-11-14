@@ -9,33 +9,180 @@ import { StorefrontSeoService } from './storefront-seo.service';
   selector: 'app-storefront-home',
   imports: [RouterLink],
   template: `
+    @if (context.detail(); as data) {
+      <main class="home-page">
+        <section class="shop-hero" aria-labelledby="storefront-title">
+          <div class="hero-inner">
+            <div class="hero-copy">
+              <p class="eyebrow">{{ data.business.category_name || 'OFFICIAL STORE' }}</p>
+              <h1 id="storefront-title">Welcome to <span>{{ brandName }}</span></h1>
+              <p class="hero-description">{{ data.storefront.description || data.business.business_description || 'Browse our products and contact us for more information.' }}</p>
+              <div class="hero-actions">
+                <a class="primary-button" [routerLink]="['/store', data.business.business_slug, 'products']">Shop all products <span aria-hidden="true">↗</span></a>
+                <a class="secondary-button" [routerLink]="['/store', data.business.business_slug, 'contact']">Contact us</a>
+              </div>
+              <div class="hero-assurances">
+                <span><i aria-hidden="true">✓</i> Official business storefront</span>
+                @if (data.storefront.accept_online_orders) { <span><i aria-hidden="true">✓</i> Online orders accepted</span> }
+                @if (data.business.city || data.business.state) { <span><i aria-hidden="true">⌖</i> {{ data.business.city }}{{ data.business.city && data.business.state ? ', ' : '' }}{{ data.business.state }}</span> }
+              </div>
+            </div>
+            <div class="hero-visual">
+              @if (data.business.cover_image_path) {
+                <img class="cover-image" [src]="data.business.cover_image_path" [alt]="brandName + ' storefront'" fetchpriority="high" />
+              } @else {
+                <div class="brand-visual">
+                  @if (data.business.logo_path) { <img [src]="data.business.logo_path" [alt]="brandName + ' logo'" /> }
+                  @else { <span class="brand-initial">{{ brandName.slice(0, 1).toUpperCase() }}</span> }
+                  <span class="brand-visual-name">{{ brandName }}</span>
+                  <span class="brand-visual-caption">SHOP THE COLLECTION</span>
+                </div>
+              }
+              <span class="visual-caption">WELCOME / {{ brandName }}</span>
+            </div>
+          </div>
+        </section>
 
-    @if(context.detail();as data){
-      <section class="hero">
-        @if(data.business.cover_image_path){<img class="cover" [src]="data.business.cover_image_path" [alt]="brandName + ' cover image'"/>}
-        <div class="hero-copy"><p class="eyebrow">{{data.business.category_name||'BBG BUSINESS STOREFRONT'}}</p><h1>{{brandName}}</h1>
-          <p>{{data.storefront.description||data.business.business_description||'Explore our products and connect with our team.'}}</p>
-          <div class="actions"><a class="primary" [routerLink]="['/store',data.business.business_slug,'products']">Explore products</a><a class="secondary" [routerLink]="['/store',data.business.business_slug,'contact']">Contact business</a></div>
-          <div class="meta">@if(data.business.city||data.business.state){<span>{{data.business.city}}{{data.business.city&&data.business.state?', ':''}}{{data.business.state}}</span>}@if(data.storefront.accept_online_orders){<span>Online orders available</span>}</div>
-        </div>
-      </section>
-      <section class="featured"><div class="section-head"><div><p class="eyebrow">THE CATALOGUE</p><h2>Featured products</h2></div><a [routerLink]="['/store',data.business.business_slug,'products']">View all products →</a></div>
-        @if(loading()){<p class="state" role="status">Loading products…</p>}
-        @else if(products().length){<div class="grid">@for(product of products();track product.id){<a class="product" [routerLink]="['/store',data.business.business_slug,'products',productRoute(product)]"><span class="art">{{product.product_name.slice(0,1).toUpperCase()}}</span>@if(product.category_name){<small>{{product.category_name}}</small>}<strong>{{product.product_name}}</strong><span class="description">{{product.description||'View product details'}}</span>@if(data.storefront.show_prices&&product.selling_price!==undefined){<b>{{data.storefront.currency||''}} {{product.selling_price}}</b>}@else{<em>Contact for pricing</em>}</a>}</div>}
-        @else{<div class="empty"><h3>Products coming soon</h3><p>This business has not published products yet.</p></div>}
-      </section>
+        <section class="shopping-benefits" aria-label="Store information">
+          <div><span class="benefit-icon" aria-hidden="true">◇</span><span><strong>Shop directly</strong><small>Explore products from {{ brandName }}</small></span></div>
+          <div><span class="benefit-icon" aria-hidden="true">↗</span><span><strong>Talk to the business</strong><small>Get product and pricing information</small></span></div>
+          @if (data.storefront.accept_online_orders) {
+            <div><span class="benefit-icon" aria-hidden="true">✓</span><span><strong>Online ordering</strong><small>This storefront accepts online orders</small></span></div>
+          } @else {
+            <div><span class="benefit-icon" aria-hidden="true">⌖</span><span><strong>Find the business</strong><small>{{ data.business.city || data.business.state || 'Contact details available' }}</small></span></div>
+          }
+        </section>
+
+        <section id="featured-products" class="products-section" aria-labelledby="products-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">THE COLLECTION</p>
+              <h2 id="products-heading">Shop our products</h2>
+              <p>Browse the products currently published by {{ brandName }}.</p>
+            </div>
+            <a class="view-all" [routerLink]="['/store', data.business.business_slug, 'products']">View all products <span aria-hidden="true">→</span></a>
+          </div>
+
+          @if (loading()) {
+            <div class="product-grid" aria-label="Loading products">
+              @for (item of skeletons; track item) { <div class="product-skeleton"><span></span><i></i><i></i><b></b></div> }
+            </div>
+          } @else if (products().length) {
+            <div class="product-grid">
+              @for (product of products(); track product.id; let index = $index) {
+                <a class="product-card" [routerLink]="['/store', data.business.business_slug, 'products', productRoute(product)]">
+                  <div class="product-image" [class.image-alt]="index % 2 === 1">
+                    <span class="category-tag">{{ product.category_name || 'PRODUCT' }}</span>
+                    <span class="product-initial">{{ product.product_name.slice(0, 1).toUpperCase() }}</span>
+                  </div>
+                  <div class="product-details">
+                    @if (product.brand_name) { <span class="product-brand">{{ product.brand_name }}</span> }
+                    <h3>{{ product.product_name }}</h3>
+                    <p>{{ product.description || 'View product details and contact the business for more information.' }}</p>
+                    <div class="product-purchase">
+                      @if (data.storefront.show_prices && product.selling_price !== undefined) {
+                        <strong>{{ data.storefront.currency || '' }} {{ product.selling_price }}</strong>
+                      } @else { <strong class="enquire-price">Enquire for price</strong> }
+                      <span>View details <b aria-hidden="true">→</b></span>
+                    </div>
+                  </div>
+                </a>
+              }
+            </div>
+          } @else {
+            <div class="empty-products">
+              <span aria-hidden="true">⌕</span>
+              <div><h3>Products will appear here</h3><p>{{ brandName }} has not published any products to this storefront yet. Please check back later or contact the business.</p></div>
+              <a [routerLink]="['/store', data.business.business_slug, 'contact']">Contact the business →</a>
+            </div>
+          }
+        </section>
+
+        <section class="store-contact">
+          <div>
+            <p class="eyebrow">NEED A HAND?</p>
+            <h2>Looking for something in particular?</h2>
+            <p>Get in touch with {{ brandName }} for product details, availability or pricing.</p>
+          </div>
+          <a [routerLink]="['/store', data.business.business_slug, 'contact']">Contact the store <span aria-hidden="true">↗</span></a>
+        </section>
+      </main>
     }
   `,
   styles: [`
-
-    :host{display:block}.hero{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;min-height:360px;padding:70px max(24px,calc((100vw - 1120px)/2));background:linear-gradient(120deg,var(--brand-strong),var(--brand));color:#fff}.cover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.2;z-index:-1}.hero-copy{max-width:720px}.eyebrow{margin:0 0 12px;color:#f1f6f2;font-size:.7rem;font-weight:800;letter-spacing:.16em}.hero h1{margin:0 0 16px;font-size:clamp(2.2rem,6vw,4.3rem);line-height:1.02;letter-spacing:-.05em}.hero p:not(.eyebrow){max-width:620px;line-height:1.7;color:#e0eee5}.actions{display:flex;gap:12px;flex-wrap:wrap;margin:26px 0}.actions a{padding:12px 17px;border-radius:9px;text-decoration:none;font-weight:750;font-size:.85rem}.primary{background:var(--surface-card);color:var(--text-primary)}.secondary{border:1px solid #ffffff80;color:#fff}.meta{display:flex;gap:20px;flex-wrap:wrap;color:#e0eee5;font-size:.78rem}
-    .featured{max-width:1120px;margin:auto;padding:54px 24px 70px}.section-head{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:22px}.section-head .eyebrow{color:#63816f}.section-head h2{margin:0;font-size:clamp(1.6rem,4vw,2.2rem)}.section-head>a{color:var(--brand-strong);font-weight:700;text-decoration:none;font-size:.85rem}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.product{display:flex;flex-direction:column;gap:9px;padding:14px;border:1px solid var(--border);border-radius:15px;background:var(--surface-card);color:var(--text-primary);text-decoration:none}.art{display:grid;place-items:center;aspect-ratio:4/3;border-radius:10px;background:linear-gradient(135deg,#e8f1eb,#f5eebd);color:var(--brand-strong);font-size:2.5rem;font-weight:850}.product small{color:var(--text-muted)}.product strong{font-size:1rem}.description{display:-webkit-box;overflow:hidden;-webkit-line-clamp:2;-webkit-box-orient:vertical;color:var(--text-secondary);font-size:.82rem;line-height:1.5}.product b{margin-top:auto;color:var(--brand-strong)}.product em{color:var(--text-secondary);font-size:.8rem}.empty,.state{padding:38px 20px;text-align:center;color:var(--text-secondary);border:1px dashed var(--border);border-radius:14px}.empty h3{color:var(--text-primary)}@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){.grid{grid-template-columns:1fr}.section-head{align-items:start;flex-direction:column}.hero{min-height:330px;padding-top:48px;padding-bottom:48px}}
-  
-    :host{color:var(--text-primary);background:var(--surface-page)}
-    .hero{background:linear-gradient(120deg,var(--brand-strong),var(--brand));}
-    .primary{background:var(--surface-card);color:var(--text-primary)}
-    .art{background:linear-gradient(135deg,var(--brand-soft),var(--surface-subtle));color:var(--brand-strong)}
-    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+    :host{display:block;color:var(--text-primary);background:var(--surface-page)}
+    .home-page{overflow:hidden;background:var(--surface-page)}
+    .shop-hero{background:linear-gradient(115deg,var(--surface-page) 0%,var(--brand-soft) 100%);border-bottom:1px solid var(--border)}
+    .hero-inner{display:grid;width:min(100% - 64px,1160px);min-height:440px;grid-template-columns:minmax(0,1.05fr) minmax(320px,.85fr);align-items:center;gap:clamp(35px,6vw,80px);margin:0 auto;padding:58px 0}
+    .hero-copy{max-width:610px}
+    .eyebrow{margin:0 0 13px;color:var(--brand-strong);font-size:.64rem;font-weight:650;letter-spacing:.13em}
+    .hero-copy h1{max-width:620px;margin:0;color:var(--text-primary);font-size:clamp(2.3rem,4.8vw,4.2rem);font-weight:620;letter-spacing:-.065em;line-height:1.08;text-wrap:balance}
+    .hero-copy h1 span{color:var(--brand-strong)}
+    .hero-description{max-width:560px;margin:19px 0 0;color:var(--text-secondary);font-size:.96rem;line-height:1.8}
+    .hero-actions{display:flex;flex-wrap:wrap;gap:11px;margin-top:27px}
+    .primary-button,.secondary-button{display:inline-flex;min-height:47px;align-items:center;justify-content:center;gap:20px;padding:0 17px;border-radius:6px;font-size:.78rem;font-weight:650;text-decoration:none;transition:background .18s ease,border-color .18s ease,transform .18s ease}
+    .primary-button{background:var(--brand);color:#fff;border:1px solid var(--brand)}
+    :host-context(html[data-theme="dark"]) .primary-button{color:#17251c}
+    .primary-button:hover,.secondary-button:hover{transform:translateY(-2px)}
+    .secondary-button{background:var(--surface-card);color:var(--text-primary);border:1px solid var(--border)}
+    .hero-assurances{display:flex;flex-wrap:wrap;gap:11px 19px;margin-top:28px;color:var(--text-secondary);font-size:.69rem}
+    .hero-assurances span{display:inline-flex;align-items:center;gap:6px}
+    .hero-assurances i{color:var(--brand-strong);font-style:normal;font-weight:800}
+    .hero-visual{position:relative;display:grid;min-height:315px;place-items:center;overflow:hidden;border:1px solid var(--border);border-radius:12px;background:var(--surface-card);box-shadow:0 18px 45px #1d392510}
+    .cover-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .brand-visual{display:flex;width:100%;min-height:315px;align-items:center;flex-direction:column;justify-content:center;gap:14px;padding:30px;background:radial-gradient(circle at 50% 42%,var(--brand-soft),transparent 55%),var(--surface-card)}
+    .brand-visual img{width:90px;height:90px;object-fit:contain}
+    .brand-initial{display:grid;width:94px;height:94px;place-items:center;border-radius:50%;background:var(--brand-soft);color:var(--brand-strong);font-size:3rem;font-weight:600}
+    .brand-visual-name{color:var(--text-primary);font-size:1.2rem;font-weight:600}
+    .brand-visual-caption{color:var(--text-muted);font-size:.57rem;font-weight:700;letter-spacing:.15em}
+    .visual-caption{position:absolute;right:14px;bottom:13px;padding:7px 10px;border:1px solid var(--border);border-radius:4px;background:var(--surface-card);color:var(--text-secondary);font-size:.56rem;letter-spacing:.1em}
+    .shopping-benefits{display:grid;width:min(100% - 64px,1160px);grid-template-columns:repeat(3,minmax(0,1fr));gap:15px;margin:0 auto;padding:25px 0;border-bottom:1px solid var(--border)}
+    .shopping-benefits>div{display:flex;align-items:center;gap:12px;padding:4px 12px}
+    .benefit-icon{display:grid;width:38px;height:38px;flex:0 0 38px;place-items:center;border-radius:50%;background:var(--brand-soft);color:var(--brand-strong);font-size:1rem}
+    .shopping-benefits>div>span:last-child{display:flex;flex-direction:column;gap:4px}
+    .shopping-benefits strong{font-size:.75rem;font-weight:620}
+    .shopping-benefits small{color:var(--text-secondary);font-size:.66rem;line-height:1.4}
+    .products-section{width:min(100% - 64px,1160px);margin:0 auto;padding:66px 0 78px}
+    .section-heading{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:24px}
+    .section-heading .eyebrow{margin-bottom:7px}
+    .section-heading h2{margin:0;color:var(--text-primary);font-size:clamp(1.65rem,3vw,2.35rem);font-weight:590;letter-spacing:-.05em}
+    .section-heading>div>p:last-child{margin:8px 0 0;color:var(--text-secondary);font-size:.82rem}
+    .view-all{display:inline-flex;align-items:center;gap:12px;color:var(--brand-strong);font-size:.75rem;font-weight:650;text-decoration:none;white-space:nowrap}
+    .product-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:17px}
+    .product-card{min-width:0;overflow:hidden;border:1px solid var(--border);border-radius:9px;background:var(--surface-card);color:var(--text-primary);text-decoration:none;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+    .product-card:hover{transform:translateY(-3px);border-color:var(--brand);box-shadow:0 12px 28px #1d392510}
+    .product-image{position:relative;display:grid;min-height:205px;place-items:center;overflow:hidden;background:linear-gradient(145deg,#edf3ee,#dbe8de);color:#315d47}
+    .product-image.image-alt{background:linear-gradient(145deg,#f6f2dc,#e9e3bd);color:#665c26}
+    .category-tag{position:absolute;top:12px;left:12px;max-width:80%;overflow:hidden;padding:6px 8px;border:1px solid currentColor;border-radius:3px;background:#ffffffb8;color:inherit;font-size:.55rem;font-weight:650;letter-spacing:.08em;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}
+    .product-initial{font-size:5.8rem;font-weight:500;letter-spacing:-.09em;opacity:.8}
+    .product-details{padding:15px}
+    .product-brand{display:block;margin-bottom:5px;color:var(--text-muted);font-size:.66rem}
+    .product-details h3{overflow:hidden;margin:0;color:var(--text-primary);font-size:.9rem;font-weight:620;letter-spacing:-.02em;text-overflow:ellipsis}
+    .product-details>p{display:-webkit-box;min-height:40px;overflow:hidden;margin:9px 0 13px;color:var(--text-secondary);font-size:.71rem;line-height:1.6;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+    .product-purchase{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:11px;border-top:1px solid var(--border)}
+    .product-purchase>strong{color:var(--brand-strong);font-size:.82rem;font-weight:650}
+    .product-purchase .enquire-price{font-size:.72rem}
+    .product-purchase>span{color:var(--text-secondary);font-size:.66rem}
+    .product-purchase b{color:var(--brand-strong)}
+    .empty-products{display:flex;align-items:center;gap:18px;padding:26px;border:1px dashed var(--border);border-radius:9px;background:var(--surface-card)}
+    .empty-products>span{display:grid;width:46px;height:46px;flex:0 0 46px;place-items:center;border-radius:50%;background:var(--brand-soft);color:var(--brand-strong);font-size:1.4rem}
+    .empty-products h3{margin:0 0 5px;font-size:.95rem;font-weight:600}
+    .empty-products p{margin:0;color:var(--text-secondary);font-size:.76rem;line-height:1.6}
+    .empty-products>a{margin-left:auto;color:var(--brand-strong);font-size:.72rem;font-weight:650;text-decoration:none;white-space:nowrap}
+    .product-skeleton{display:flex;flex-direction:column;gap:11px;padding:10px;border:1px solid var(--border);border-radius:9px;background:var(--surface-card)}
+    .product-skeleton span{height:195px;border-radius:5px;background:var(--surface-subtle)}
+    .product-skeleton i{height:9px;border-radius:5px;background:var(--surface-subtle)}
+    .product-skeleton i:nth-of-type(2){width:65%}
+    .product-skeleton b{width:40%;height:13px;margin-top:5px;border-radius:5px;background:var(--surface-subtle)}
+    .store-contact{display:flex;align-items:center;justify-content:space-between;gap:25px;padding:38px max(32px,calc((100vw - 1160px)/2));background:var(--brand-soft)}
+    .store-contact .eyebrow{margin-bottom:8px}
+    .store-contact h2{margin:0 0 7px;font-size:clamp(1.35rem,2.7vw,1.9rem);font-weight:590;letter-spacing:-.04em}
+    .store-contact p:last-child{margin:0;color:var(--text-secondary);font-size:.78rem;line-height:1.6}
+    .store-contact>a{display:inline-flex;min-height:43px;align-items:center;justify-content:space-between;gap:20px;padding:0 14px;border:1px solid var(--border);border-radius:5px;background:var(--surface-card);color:var(--text-primary);font-size:.72rem;font-weight:650;text-decoration:none;white-space:nowrap}
+    @media(max-width:1000px){.product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero-inner{grid-template-columns:minmax(0,1fr) minmax(260px,.8fr);gap:28px}}
+    @media(max-width:650px){.hero-inner,.shopping-benefits,.products-section{width:calc(100% - 36px)}.hero-inner{grid-template-columns:1fr;gap:24px;padding:38px 0}.hero-copy h1{font-size:2.65rem}.hero-description{font-size:.88rem}.hero-visual,.brand-visual{min-height:230px}.hero-assurances{gap:9px 13px}.shopping-benefits{grid-template-columns:1fr;gap:9px;padding:18px 0}.shopping-benefits>div{padding:3px 0}.products-section{padding:46px 0 55px}.section-heading{align-items:flex-start;flex-direction:column;gap:13px}.product-grid{gap:11px}.product-image{min-height:150px}.product-initial{font-size:4.5rem}.product-details{padding:12px}.product-details h3{font-size:.82rem}.product-details>p{font-size:.68rem}.product-purchase>span{font-size:.6rem}.store-contact{align-items:flex-start;flex-direction:column;padding:30px 18px}.store-contact>a{width:100%}.empty-products{align-items:flex-start;flex-direction:column;padding:20px}.empty-products>a{margin-left:0}}
+    @media(max-width:390px){.product-grid{grid-template-columns:1fr}.product-image{min-height:205px}.product-initial{font-size:5.5rem}}
+    @media(prefers-reduced-motion:reduce){.primary-button,.secondary-button,.product-card{transition:none}.primary-button:hover,.secondary-button:hover,.product-card:hover{transform:none}}
   `],
 })
 export class StorefrontHome {
@@ -44,6 +191,7 @@ export class StorefrontHome {
   private readonly seo = inject(StorefrontSeoService);
   readonly products = signal<MarketplaceProduct[]>([]);
   readonly loading = signal(true);
+  readonly skeletons = [1, 2, 3, 4, 5, 6, 7, 8];
 
   get brandName(): string {
     const detail = this.context.detail();
@@ -72,7 +220,7 @@ export class StorefrontHome {
     }
 
     const name = detail.storefront.title || detail.business.business_name;
-    const description = detail.storefront.description || detail.business.business_description || 'Explore products and connect with ' + name + ' through its official BBG storefront.';
+    const description = detail.storefront.description || detail.business.business_description || 'Browse products and contact ' + name + ' through its official BBG storefront.';
     const path = '/store/' + encodeURIComponent(slug);
     this.seo.update(name + ' | Official Storefront', description, path, {
       '@context': 'https://schema.org',
@@ -98,14 +246,12 @@ export class StorefrontHome {
   private businessSchema(data: MarketplaceBusinessDetail): Record<string, unknown> {
     const address = data.business.address;
     const location = data.business.location;
-    const slug = data.business.business_slug;
-    const path = '/store/' + encodeURIComponent(slug);
     return {
       '@type': address ? 'LocalBusiness' : 'Organization',
-      '@id': this.seo.canonicalUrl(path) + '#business',
+      '@id': this.seo.canonicalUrl(pathForBusiness(data.business.business_slug)) + '#business',
       name: data.storefront.title || data.business.business_name,
       description: data.storefront.description || data.business.business_description || undefined,
-      url: this.seo.canonicalUrl(path),
+      url: this.seo.canonicalUrl(pathForBusiness(data.business.business_slug)),
       ...(data.business.business_phone ? { telephone: data.business.business_phone } : {}),
       ...(data.business.business_email ? { email: data.business.business_email } : {}),
       ...(address ? {
@@ -128,6 +274,8 @@ export class StorefrontHome {
     return (product.slug || slugify(product.product_name)) + '-' + (product.public_id || product.id);
   }
 }
+
+function pathForBusiness(slug: string): string { return '/store/' + encodeURIComponent(slug); }
 
 function slugify(value: string): string {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
