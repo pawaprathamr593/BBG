@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, effect, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MarketplaceApiService, MarketplaceProductDetail } from '../../core/marketplace/marketplace-api.service';
@@ -23,7 +23,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
 
         <article class="product-layout">
           <div class="visual-column">
-            <div class="product-visual" [class.visual-alt]="data.product.category_name?.length % 2 === 0">
+            <div class="product-visual" [class.visual-alt]="(data.product.category_name?.length || 0) % 2 === 0">
               <span class="visual-kicker">{{ data.product.category_name || 'PRODUCT DETAILS' }}</span>
               <span class="visual-monogram">{{ data.product.product_name.slice(0, 1).toUpperCase() }}</span>
               <span class="visual-orbit"></span>
@@ -151,6 +151,40 @@ export class StorefrontProductDetail implements OnInit {
   readonly error = signal('');
   readonly slug = this.route.parent?.snapshot.paramMap.get('businessSlug') || '';
 
+  constructor() {
+    effect(() => {
+      const value = this.detail();
+      const business = this.context.detail();
+      if (!value || !business) return;
+
+      const product = value.product;
+      const businessName = business.storefront.title || business.business.business_name;
+      const description = product.description || 'Explore ' + product.product_name + ' from ' + businessName + '. Contact the business for further information.';
+      const routeSlug = this.route.snapshot.paramMap.get('productSlug') || '';
+      const path = '/store/' + encodeURIComponent(this.slug) + '/products/' + routeSlug;
+      const currency = business.storefront.currency;
+      const showPrice = business.storefront.show_prices && product.selling_price !== undefined && !!currency;
+
+      this.seo.update(product.product_name + ' | ' + businessName, description, path, {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: product.product_name,
+        description,
+        sku: product.product_code,
+        url: this.seo.canonicalUrl(path),
+        ...(product.brand_name ? { brand: { '@type': 'Brand', name: product.brand_name } } : {}),
+        ...(showPrice ? {
+          offers: {
+            '@type': 'Offer',
+            price: String(product.selling_price),
+            priceCurrency: currency,
+            seller: { '@type': 'Organization', name: businessName },
+          },
+        } : {}),
+      });
+    });
+  }
+
   get businessName(): string {
     const data = this.context.detail();
     return data?.storefront.title || data?.business.business_name || 'Business';
@@ -173,28 +207,7 @@ export class StorefrontProductDetail implements OnInit {
 
       const value = response.data as MarketplaceProductDetail;
       this.detail.set(value);
-      const product = value.product;
-      const description = product.description || 'Explore ' + product.product_name + ' from ' + this.businessName + '. Contact the business for further information.';
-      const path = '/store/' + encodeURIComponent(this.slug) + '/products/' + routeSlug;
-      const currency = this.context.detail()?.storefront.currency;
-      const showPrice = this.context.detail()?.storefront.show_prices && product.selling_price !== undefined && !!currency;
-
-      this.seo.update(product.product_name + ' | ' + this.businessName, description, path, {
-        '@context': 'https://schema.org',
-        '@type': 'Product',
-        name: product.product_name,
-        description,
-        sku: product.product_code,
-        url: this.seo.canonicalUrl(path),
-        ...(product.brand_name ? { brand: { '@type': 'Brand', name: product.brand_name } } : {}),
-        ...(showPrice ? {
-          offers: {
-            '@type': 'Offer',
-            price: String(product.selling_price),
-            priceCurrency: currency,
-          },
-        } : {}),
-      });
+      this.detail.set(value);
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Unable to load this product.');
     } finally {
