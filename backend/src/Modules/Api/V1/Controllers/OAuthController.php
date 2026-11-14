@@ -16,24 +16,36 @@ use Throwable;
 
 final class OAuthController
 {
-    public function actionStartGoogle(OAuthProviderService $oauth, ResponseFactoryInterface $responses): ResponseInterface
-    {
-        return $this->redirect($oauth, 'GOOGLE', $responses);
+    public function actionStartGoogle(
+        OAuthProviderService $oauth,
+        ResponseFactoryInterface $responses,
+        StreamFactoryInterface $streams,
+    ): ResponseInterface {
+        return $this->redirect($oauth, 'GOOGLE', $responses, $streams);
     }
 
-    public function actionStartApple(OAuthProviderService $oauth, ResponseFactoryInterface $responses): ResponseInterface
-    {
-        return $this->redirect($oauth, 'APPLE', $responses);
+    public function actionStartApple(
+        OAuthProviderService $oauth,
+        ResponseFactoryInterface $responses,
+        StreamFactoryInterface $streams,
+    ): ResponseInterface {
+        return $this->redirect($oauth, 'APPLE', $responses, $streams);
     }
 
-    public function actionStartFacebook(OAuthProviderService $oauth, ResponseFactoryInterface $responses): ResponseInterface
-    {
-        return $this->redirect($oauth, 'FACEBOOK', $responses);
+    public function actionStartFacebook(
+        OAuthProviderService $oauth,
+        ResponseFactoryInterface $responses,
+        StreamFactoryInterface $streams,
+    ): ResponseInterface {
+        return $this->redirect($oauth, 'FACEBOOK', $responses, $streams);
     }
 
-    public function actionStartInstagram(OAuthProviderService $oauth, ResponseFactoryInterface $responses): ResponseInterface
-    {
-        return $this->redirect($oauth, 'INSTAGRAM', $responses);
+    public function actionStartInstagram(
+        OAuthProviderService $oauth,
+        ResponseFactoryInterface $responses,
+        StreamFactoryInterface $streams,
+    ): ResponseInterface {
+        return $this->redirect($oauth, 'INSTAGRAM', $responses, $streams);
     }
 
     public function actionCallbackGoogle(
@@ -122,14 +134,23 @@ final class OAuthController
         }
     }
 
-    private function redirect(OAuthProviderService $oauth, string $provider, ResponseFactoryInterface $responses): ResponseInterface
-    {
+    private function redirect(
+        OAuthProviderService $oauth,
+        string $provider,
+        ResponseFactoryInterface $responses,
+        StreamFactoryInterface $streams,
+    ): ResponseInterface {
         try {
             return $responses->createResponse(302)->withHeader('Location', $oauth->authorizationUrl($provider));
         } catch (Throwable) {
-            return $responses->createResponse(503)
-                ->withHeader('Content-Type', 'text/plain; charset=utf-8')
-                ->withBody((new \HttpSoft\Message\StreamFactory())->createStream('This social sign-in provider is not configured.'));
+            try {
+                return $this->popupMessage($responses, $streams, $oauth, [
+                    'type' => 'BBG_OAUTH_ERROR',
+                    'message' => $provider . ' sign-in is not configured or is temporarily unavailable.',
+                ], 503);
+            } catch (Throwable) {
+                return $responses->createResponse(503)->withHeader('Cache-Control', 'no-store');
+            }
         }
     }
 
@@ -226,6 +247,8 @@ final class OAuthController
             ->withHeader('Content-Type', 'text/html; charset=utf-8')
             ->withHeader('Cache-Control', 'no-store')
             ->withHeader('Referrer-Policy', 'no-referrer')
+            ->withHeader('X-Content-Type-Options', 'nosniff')
+            ->withHeader('Content-Security-Policy', "default-src 'none'; script-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'")
             ->withBody($streams->createStream($html));
     }
 
