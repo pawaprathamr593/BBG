@@ -194,8 +194,6 @@ export class Dashboard implements OnInit {
     { code: 'categories', title: 'Marketplace categories', description: 'Manage the categories used across the BBG marketplace.', permission: 'CATEGORIES_MANAGE', icon: '▦', scope: 'PLATFORM' },
     { code: 'moderation', title: 'Marketplace moderation', description: 'Review reports and moderate marketplace content.', permission: 'MODERATION_MANAGE', icon: '⚑', scope: 'PLATFORM' },
     { code: 'system-health', title: 'System health', description: 'View operational health information available to platform staff.', permission: 'SYSTEM_HEALTH_VIEW', icon: '⌁', scope: 'PLATFORM' },
-    { code: 'consumer-orders', title: 'My orders', description: 'View and track orders placed using your BBG customer account.', permission: 'CONSUMER_ORDERS_VIEW', icon: '▤', scope: 'GLOBAL' },
-    { code: 'consumer-profile', title: 'My customer account', description: 'Manage your personal marketplace profile and saved details.', permission: 'CONSUMER_PROFILE_MANAGE', icon: '♙', scope: 'GLOBAL' },
   ];
 
   async ngOnInit(): Promise<void> {
@@ -277,7 +275,9 @@ export class Dashboard implements OnInit {
 
   readonly visibleModules = computed(() => {
     const permissions = new Set(this.permissions().map((permission) => permission.permission_code));
-    return this.modules.filter((module) => permissions.has(module.permission));
+    const activeScope = this.selectedTenantId() === null ? ['PLATFORM', 'GLOBAL'] : ['TENANT'];
+    return this.modules.filter((module) => activeScope.includes(module.scope) && permissions.has(module.permission)
+      && this.permissions().some((permission) => permission.permission_code === module.permission && permission.scope_type === module.scope));
   });
 
   readonly summaryCards = computed(() => {
