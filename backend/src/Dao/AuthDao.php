@@ -84,8 +84,8 @@ final readonly class AuthDao
                 "SELECT DISTINCT r.role_code, r.scope_type, p.permission_code, p.module_code
                  FROM USER_ROLE_ASSIGNMENTS ura
                  INNER JOIN ROLES r ON r.id = ura.role_id AND r.status = 'A'
-                 INNER JOIN ROLE_PERMISSIONS rp ON rp.role_id = r.id AND rp.status = 'A'
-                 INNER JOIN PERMISSIONS p ON p.id = rp.permission_id AND p.status = 'A'
+                 LEFT JOIN ROLE_PERMISSIONS rp ON rp.role_id = r.id AND rp.status = 'A'
+                 LEFT JOIN PERMISSIONS p ON p.id = rp.permission_id AND p.status = 'A'
                  WHERE ura.user_id = :user_id AND ura.status = 'A'
                     AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
                     AND (
