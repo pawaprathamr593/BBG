@@ -16,20 +16,23 @@
     @if(mode()==='login'){
       <form [formGroup]="loginForm" (ngSubmit)="submit()">
         <label for="bbg-login-id">Email address or mobile number</label><input id="bbg-login-id" formControlName="identifier" autocomplete="username" placeholder="Enter email or mobile">
-        <div class="label-row"><label for="bbg-login-pw">Password</label><button type="button" class="text-action" (click)="passwordVisible.update(v=>!v)">{{passwordVisible()?'Hide':'Show'}}</button></div>
+        <div class="label-row"><label for="bbg-login-pw">Password</label><button type="button" class="text-action" (click)="togglePasswordVisibility()">{{passwordVisible()?'Hide':'Show'}}</button></div>
         <input id="bbg-login-pw" [type]="passwordVisible()?'text':'password'" formControlName="password" autocomplete="current-password" placeholder="Enter password">
         <button class="submit-button" type="submit" [disabled]="busy()">{{busy()?'Signing in…':'Sign in'}}</button>
       </form>
+      <button type="button" class="text-action forgot-action" (click)="requestPasswordReset()">Forgot password?</button>
+      <button type="button" class="email-toggle" (click)="backToSocial()">Back to social sign-in</button>
       <p class="switch-mode">New to BBG? <button type="button" (click)="setMode('register')">Create an account</button></p>
     }@else{
       <form [formGroup]="registerForm" (ngSubmit)="submit()">
         <label for="bbg-reg-name">Full name</label><input id="bbg-reg-name" formControlName="full_name" autocomplete="name" placeholder="Your full name">
         <label for="bbg-reg-email">Email address <small>(optional if mobile supplied)</small></label><input id="bbg-reg-email" formControlName="email" type="email" autocomplete="email" placeholder="name@example.com">
         <label for="bbg-reg-mobile">Mobile number <small>(optional if email supplied)</small></label><input id="bbg-reg-mobile" formControlName="mobile" type="tel" autocomplete="tel" placeholder="Mobile number">
-        <div class="label-row"><label for="bbg-reg-pw">Create password</label><button type="button" class="text-action" (click)="passwordVisible.update(v=>!v)">{{passwordVisible()?'Hide':'Show'}}</button></div>
+        <div class="label-row"><label for="bbg-reg-pw">Create password</label><button type="button" class="text-action" (click)="togglePasswordVisibility()">{{passwordVisible()?'Hide':'Show'}}</button></div>
         <input id="bbg-reg-pw" [type]="passwordVisible()?'text':'password'" formControlName="password" autocomplete="new-password" placeholder="At least 8 characters">
         <button class="submit-button" type="submit" [disabled]="busy()">{{busy()?'Creating account…':'Create account'}}</button>
       </form>
+      <button type="button" class="email-toggle" (click)="backToSocial()">Back to social sign-in</button>
       <p class="switch-mode">Already on BBG? <button type="button" (click)="setMode('login')">Sign in</button></p>
     }
   }
