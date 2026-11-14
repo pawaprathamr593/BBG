@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MarketplaceApiService, MarketplaceProduct } from '../../core/marketplace/marketplace-api.service';
@@ -207,7 +207,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
     @media(prefers-reduced-motion:reduce){.button,.text-link span,.product-card,.outline-link{transition:none}.button:hover,.product-card:hover{transform:none}}
   \`],
 })
-export class StorefrontHome implements OnInit {
+export class StorefrontHome {
   readonly context = inject(StorefrontContextService);
   private readonly api = inject(MarketplaceApiService);
   private readonly seo = inject(StorefrontSeoService);
@@ -220,7 +220,20 @@ export class StorefrontHome implements OnInit {
     return detail?.storefront.title || detail?.business.business_name || 'Storefront';
   }
 
-  async ngOnInit(): Promise<void> {
+  private initializedSlug = '';
+
+  constructor() {
+    effect(() => {
+      const detail = this.context.detail();
+      if (!detail) return;
+      const slug = detail.business.business_slug;
+      if (!slug || this.initializedSlug === slug) return;
+      this.initializedSlug = slug;
+      void this.initializeStorefront();
+    });
+  }
+
+  private async initializeStorefront(): Promise<void> {
     const detail = this.context.detail();
     const slug = detail?.business.business_slug;
     if (!detail || !slug) {
