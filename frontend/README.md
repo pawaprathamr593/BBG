@@ -1,59 +1,58 @@
-# DarkStoreFrontend
+# BBG Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.5.
+Angular 22 application for the BBG Business Management & Marketplace Platform.
 
-## Development server
+## Requirements
 
-To start a local development server, run:
+- Node.js 22
+- npm compatible with the committed lockfile (the repository uses npm 11)
 
-```bash
-ng serve
-```
+## Local development
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+1. Start the Yii 3 API so it is reachable at `http://localhost:8080`.
+2. From this directory, install dependencies and start Angular:
 
 ```bash
-ng generate component component-name
+npm ci
+npm start
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+3. Open `http://localhost:4200/`.
+
+The development environment uses a relative API base URL. Angular's development server reads `proxy.conf.json` and forwards requests matching `/api/**` to `http://localhost:8080`. Keep the API base URL relative in `src/environments/environment.ts`; do not hard-code the backend origin there. This keeps browser API requests same-origin and avoids local CORS preflight failures without changing endpoint paths, methods, request envelopes, cookies or CSRF headers.
+
+If the backend uses another local port, update the proxy target. The proxy is for `ng serve` only. The production environment also uses relative API paths and expects the deployment web server/reverse proxy to forward `/api` to Yii. If a deployment deliberately uses different origins, configure credentialed CORS in the backend with an explicit allowed origin; wildcard origins are incompatible with credentialed refresh-cookie requests.
+
+## Build
 
 ```bash
-ng generate --help
+npm run build
 ```
 
-## Building
+The default build is the production build. Output is written under `dist/`.
 
-To build the project run:
+## Unit tests
+
+Run tests in watch mode:
 
 ```bash
-ng build
+npm test
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Run once, as CI does:
 
 ```bash
-ng test
+npm test -- --watch=false
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+## Sitemap
 
 ```bash
-ng e2e
+npm run generate:sitemap
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+The sitemap generator requires the public origin and API configuration documented in `docs/frontend-implementation-notes.md`.
 
-## Additional Resources
+## Validation tooling
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+The repository currently defines build, unit-test and sitemap scripts. It does not yet define an npm lint script or an end-to-end test runner; do not use `ng e2e` until an E2E framework and configuration are added.

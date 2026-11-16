@@ -19,7 +19,7 @@ describe('StorefrontEnquiryService', () => {
 
   it('sends a customer enquiry to the existing endpoint with tenant and message fields', async () => {
     const result = service.create(17, 'Product question', 'Please share the available sizes.');
-    const request = http.expectOne('http://localhost:8080/api/v1/enquiries/create');
+    const request = http.expectOne('/api/v1/enquiries/create');
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({
       enquiryParam: {

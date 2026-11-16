@@ -1,5 +1,6 @@
 export const environment = {
   production: false,
   appName: 'BBG',
-  apiBaseUrl: 'http://localhost:8080',
+  // Keep browser requests same-origin; ng serve proxies /api/** to the Yii API.
+  apiBaseUrl: '',
 } as const;

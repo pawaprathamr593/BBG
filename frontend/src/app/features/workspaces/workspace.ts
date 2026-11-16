@@ -51,6 +51,7 @@ export class Workspace implements OnInit {
   protected readonly tenantOptions = signal<TenantOption[]>([]);
   protected readonly selectedTenantId = signal<number | null>(null);
   protected readonly tenantLoading = signal(false);
+  private requestSequence = 0;
 
   protected get accountName(): string {
     return this.auth.user()?.full_name || 'Signed in';
@@ -113,6 +114,7 @@ export class Workspace implements OnInit {
     const tenantId = Number(target.value);
     if (!Number.isInteger(tenantId) || tenantId < 1) {
       this.selectedTenantId.set(null);
+      this.clearWorkspaceResponse();
       await this.auth.loadPermissions(0).catch(() => undefined);
       return;
     }
@@ -123,8 +125,7 @@ export class Workspace implements OnInit {
     if (!this.tenantOptions().some((tenant) => tenant.id === tenantId)) return;
     this.tenantLoading.set(true);
     this.selectedTenantId.set(null);
-    this.error.set('');
-    this.notice.set('');
+    this.clearWorkspaceResponse();
     try {
       await this.auth.loadPermissions(tenantId);
       this.selectedTenantId.set(tenantId);
@@ -141,29 +142,23 @@ export class Workspace implements OnInit {
   }
 
   protected selectSection(section: WorkspaceSection): void {
+    this.clearWorkspaceResponse();
     this.activeSectionId.set(section.id);
     this.activeAction.set(section.actions[0] ?? null);
-    this.result.set(null);
-    this.hasResult.set(false);
-    this.error.set('');
-    this.notice.set('');
-    this.payload.set('{}');
     const first = section.actions[0];
     if (first && !first.requiresPayload) void this.run(first);
   }
 
   protected selectAction(action: WorkspaceAction): void {
+    this.clearWorkspaceResponse();
     this.activeAction.set(action);
-    this.result.set(null);
-    this.hasResult.set(false);
-    this.error.set('');
-    this.notice.set('');
-    this.payload.set('{}');
     if (!action.requiresPayload) void this.run(action);
   }
 
   protected async run(action = this.activeAction()): Promise<void> {
     if (!action || this.loading()) return;
+    const requestId = ++this.requestSequence;
+    const requestTenantId = action.tenantScoped ? this.selectedTenantId() : null;
     this.loading.set(true);
     this.result.set(null);
     this.hasResult.set(false);
@@ -187,14 +182,31 @@ export class Workspace implements OnInit {
         data = { ...data, tenant_id: tenantId };
       }
       const response = await this.api.execute(action, data);
+      if (requestId !== this.requestSequence) return;
+      if (action.tenantScoped && this.selectedTenantId() !== requestTenantId) return;
       this.result.set(response);
       this.hasResult.set(true);
       this.notice.set(`${action.label} completed successfully.`);
     } catch (cause) {
+      if (requestId !== this.requestSequence) return;
       this.error.set(cause instanceof ApiError || cause instanceof Error ? cause.message : 'The request could not be completed.');
     } finally {
-      this.loading.set(false);
+      if (requestId === this.requestSequence) this.loading.set(false);
     }
+  }
+
+  private invalidateActiveRequest(): void {
+    this.requestSequence += 1;
+    this.loading.set(false);
+  }
+
+  private clearWorkspaceResponse(): void {
+    this.invalidateActiveRequest();
+    this.result.set(null);
+    this.hasResult.set(false);
+    this.error.set('');
+    this.notice.set('');
+    this.payload.set('{}');
   }
 
   protected isRecord(value: unknown): value is Record<string, unknown> {

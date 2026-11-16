@@ -10,7 +10,7 @@
 - Each business has a separate customer cart. The cart page supports quantity updates, item removal, clearing and checkout with the backend-required shipping-address fields. Checkout confirmation explicitly shows the order as UNPAID; no payment is collected or implied.
 - Storefront customer sign-in/registration returns to the originating storefront. Signed-in storefront customers can open their account and sign out.
 - Authentication route guards restore the rotating refresh-token session before deciding access.
-- Entrepreneur workspace loads the user's active tenant memberships and provides a business selector. Tenant-scoped actions receive the selected tenant_id automatically, while the backend remains responsible for membership, permission and resource checks.
+- Entrepreneur workspace loads the user's active tenant memberships and provides a business selector. Tenant-scoped actions receive the selected tenant_id automatically, while the backend remains responsible for membership, permission and resource checks. Switching business context clears the previous response/payload state and invalidates in-flight requests so a late response cannot repopulate data from the previous tenant.
 - Permission context retains platform permissions while replacing the active tenant permission snapshot. The platform-admin route is protected by verified PLATFORM scope; navigation does not expose admin links to users without that verified scope.
 - Light/dark/system theme preference is supported across public, authentication, storefront and workspace layouts.
 - Route metadata, canonical URLs, Open Graph metadata, private-route noindex directives and JSON-LD are managed centrally. Storefront pages use public business details; product and promotion pages use their existing public API data.
@@ -30,6 +30,12 @@ The management workspace uses the registered backend routes and module envelopes
 
 No backend endpoint, DTO, database table, authentication policy, permission seed, tenant policy or business rule was changed by this frontend work.
 
+## Local API development
+
+The development environment uses a same-origin API base (`apiBaseUrl: ''`). Running `npm start` attaches `proxy.conf.json` to the Angular development server; requests under `/api/**` are forwarded to `http://localhost:8080`. Keep the Yii API running at that address. This avoids browser CORS preflights during local development without changing API paths, methods, request envelopes, cookies or CSRF headers.
+
+The proxy is development-only. The production environment also uses relative API paths and expects the deployment web server/reverse proxy to forward `/api` to Yii. If a deployment intentionally uses different origins, configure credentialed CORS in the backend with an explicit allowed origin; do not use `Access-Control-Allow-Origin: *` with refresh cookies.
+
 ## PWA cache policy
 
 The service worker caches only the static application shell, approved /assets/ and /icons/ files, and hashed application bundles. Requests with query strings, API paths and URL paths containing authentication, token, payment, proof, admin, tenant, upload or media markers are excluded. No runtime caching of API responses, user profiles, tenant records, order state or payment information is enabled. The worker does not force immediate activation over an existing open application; the updated worker takes control after the previous worker's clients close.
@@ -44,10 +50,10 @@ The service worker caches only the static application shell, approved /assets/ a
 
 ## Verification
 
-GitHub Actions run 43394793634 completed successfully on 13 November 2026:
+GitHub Actions Frontend validation run 43561809920 completed successfully on 14 November 2026 for commit `4ced0488c8b753c496fe2275cd536ff1ffb27264`:
 - npm ci: passed
 - Sitemap generator syntax check: passed
 - Angular production build: passed
-- Unit tests: passed, 6 test files and 15 tests
+- Unit tests: passed
 
 The build has non-blocking component stylesheet budget warnings, including the storefront cart and existing business directory/home styles. Browser accessibility review, Lighthouse/SEO audit, end-to-end user journeys, real-device PWA install/offline testing and production URL verification remain outstanding. No merge or deployment was performed.

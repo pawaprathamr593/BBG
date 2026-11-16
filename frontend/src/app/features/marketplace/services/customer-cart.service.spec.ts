@@ -19,7 +19,7 @@ describe('CustomerCartService', () => {
 
   it('loads a cart for one business using the cartParam envelope', async () => {
     const result = service.getCart(42);
-    const request = http.expectOne('http://localhost:8080/api/v1/cart/get');
+    const request = http.expectOne('/api/v1/cart/get');
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({
       cartParam: { actionType: 'getCart', actionData: { tenant_id: 42 } },
@@ -31,7 +31,7 @@ describe('CustomerCartService', () => {
 
   it('adds a selected product variant and quantity without sending a client price', async () => {
     const result = service.addItem(42, 8, 2, 3);
-    const request = http.expectOne('http://localhost:8080/api/v1/cart/add');
+    const request = http.expectOne('/api/v1/cart/add');
     expect(request.request.body).toEqual({
       cartParam: {
         actionType: 'addItem',
@@ -44,7 +44,7 @@ describe('CustomerCartService', () => {
 
   it('clears the active cart and receives its cart identifier', async () => {
     const result = service.clearCart(42);
-    const request = http.expectOne('http://localhost:8080/api/v1/cart/clear');
+    const request = http.expectOne('/api/v1/cart/clear');
     expect(request.request.body).toEqual({
       cartParam: { actionType: 'clearCart', actionData: { tenant_id: 42 } },
     });
@@ -61,7 +61,7 @@ describe('CustomerCartService', () => {
       country_code: 'IN',
     };
     const result = service.checkout(42, shipping);
-    const request = http.expectOne('http://localhost:8080/api/v1/cart/checkout');
+    const request = http.expectOne('/api/v1/cart/checkout');
     expect(request.request.body).toEqual({
       cartParam: { actionType: 'checkout', actionData: { tenant_id: 42, shipping_address: shipping } },
     });

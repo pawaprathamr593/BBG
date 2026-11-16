@@ -19,7 +19,7 @@ describe('MarketplaceService', () => {
 
   it('uses the registered POST route and marketplace action envelope for home summary', async () => {
     const resultPromise = service.getHomeSummary();
-    const request = http.expectOne('http://localhost:8080/api/v1/marketplace/home');
+    const request = http.expectOne('/api/v1/marketplace/home');
 
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({
@@ -40,7 +40,7 @@ describe('MarketplaceService', () => {
       state: 'Maharashtra',
       category_id: 4,
     });
-    const request = http.expectOne('http://localhost:8080/api/v1/marketplace/businesses/list');
+    const request = http.expectOne('/api/v1/marketplace/businesses/list');
 
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({

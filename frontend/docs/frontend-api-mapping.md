@@ -2,17 +2,22 @@
 
 **Target branch:** `feature/frontend-development`  
 **Repository:** `pawaprathamr593/BBG`  
-**Audit date:** 13 November 2026  
+**Audit date:** 16 November 2026  
 **Status:** Initial repository-backed mapping; runtime verification and final permission/payload contracts remain open.
 
 ## 1. Source authority and audit notes
 
-- The prompt names `backend_architecture.md`, but that exact file was not present in the supplied conversation files or at the repository root during this audit.
-- The supplied `BBG_Backend_Architecture_v1.0.md` is a backend architecture baseline. It explicitly leaves exact API path naming, action payload schemas, public response pagination/filter contracts, permission catalogue and several workflow rules pending.
+- The `backend_architecture.md` architecture/requirements specification is available in the user's Library as a draft, and `BBG_Backend_Architecture_v1.0.md` was also supplied in the project context. Neither is checked into this repository. Both leave some API payload, permission and workflow decisions open; checked-in backend routes/controllers/services remain the authority for implemented behavior.
 - Therefore, exact paths and methods below are taken from the checked-in `backend/config/common/routes.php` on `feature/frontend-development`, and controller dispatch mappings are taken from the corresponding controller source.
 - All listed routes are registered as **POST** routes. Registration does not, by itself, prove that every underlying service action is complete or operational.
 - The backend's internal/public response currently uses `{ status, msgArr, data }` with `SUCCESS | FAILED | EXCEPTION`; exact per-endpoint data DTOs are not yet defined consistently.
 - The frontend now includes a shared API client, auth/session infrastructure, scoped permission bootstrap, public marketplace API adapter and authenticated Consumer, Entrepreneur and Platform Administrator workspace shells. Workspace actions use the module envelope verified in each controller. Exact per-action DTO fields remain unconfirmed for several modules; the UI therefore accepts caller-supplied JSON for writes and does not invent field names.
+
+### Local development API origin
+
+The Angular development environment uses a relative API base URL. `ng serve` loads `frontend/proxy.conf.json` and forwards `/api/**` to `http://localhost:8080`. This is a development-server proxy, not a backend CORS policy and not an API contract change.
+
+The checked-in Yii web middleware stack currently contains content negotiation, error handling, request parsing, routing and not-found handling, but no CORS middleware. The API route catalogue registers POST endpoints; a browser cross-origin `OPTIONS` preflight therefore needs CORS handling before routing if the frontend and API are deployed on different origins. Production currently expects same-origin API routing through the web-server reverse proxy. If cross-origin production hosting is selected, implement explicit credentialed CORS in the backend and allow only approved origins.
 
 ## 2. Frontend-to-backend mapping
 
@@ -42,7 +47,7 @@
 **Existing frontend DTOs:** LoginRequest, RegisterRequest, AuthResponseData, AuthUser and the permission context/record DTOs. Permission records are returned as role_code, scope_type, permission_code and module_code; the context contains tenant_id and permissions.  
 **Missing/uncertain:** profile-update DTO and final error field mapping.  
 **Authentication:** login/register public; refresh/logout cookie-based; profile/logout-all bearer-token protected.  
-**Provider login:** Google/Facebook/Instagram routes and callback contract are not present; do not render active provider login buttons yet.
+**Provider login:** the backend route catalogue registers provider start/callback routes for Google, Apple, Facebook and Instagram, plus email OTP send/verify routes. The frontend contains popup and email OTP orchestration. Provider credentials, callback URLs, account-linking behavior and live end-to-end verification remain environment-dependent; route registration alone does not make provider sign-in production-ready.
 
 ### API-USER — user profile and account management
 

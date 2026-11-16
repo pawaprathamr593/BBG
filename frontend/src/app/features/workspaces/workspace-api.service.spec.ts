@@ -24,7 +24,7 @@ describe('WorkspaceApiService', () => {
       envelope: 'dashboardParam',
       actionType: 'getConsumerDashboard',
     }, {});
-    const request = http.expectOne('http://localhost:8080/api/v1/dashboard/consumer/summary');
+    const request = http.expectOne('/api/v1/dashboard/consumer/summary');
 
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({
@@ -44,7 +44,7 @@ describe('WorkspaceApiService', () => {
       actionType: 'addItem',
       requiresPayload: true,
     }, payload);
-    const request = http.expectOne('http://localhost:8080/api/v1/cart/add');
+    const request = http.expectOne('/api/v1/cart/add');
 
     expect(request.request.body).toEqual({
       cartParam: { actionType: 'addItem', actionData: payload },
@@ -60,7 +60,7 @@ describe('WorkspaceApiService', () => {
       envelope: 'adminParam',
       actionType: 'listPlatformUsers',
     }, {});
-    const request = http.expectOne('http://localhost:8080/api/v1/admin/users/list');
+    const request = http.expectOne('/api/v1/admin/users/list');
     request.flush({ status: 'FAILED', msgArr: ['Not authorized.'], data: [] }, { status: 400, statusText: 'Bad Request' });
 
     await expect(requestPromise).rejects.toThrow();
