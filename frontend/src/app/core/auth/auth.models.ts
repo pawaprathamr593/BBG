@@ -4,6 +4,7 @@ export interface AuthUser {
   email: string | null;
   mobile: string | null;
   profile_image?: string | null;
+  has_password?: boolean;
 }
 
 export interface AuthResponseData {
