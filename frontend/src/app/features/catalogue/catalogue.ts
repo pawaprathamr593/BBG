@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
 import { CatalogueApiService, CatalogueCategory, CatalogueProduct, CatalogueUnit, ProductMedia } from './catalogue-api.service';
@@ -62,7 +63,7 @@ const emptyProduct = (): ProductForm => ({
           <div class="products-panel">
             <div class="panel-heading">
               <div><h2>Products</h2><p>Search and maintain your product listings.</p></div>
-              <span class="count-pill">{{ products().length }} shown</span>
+              <span class="count-pill">{{ filteredProducts().length }} shown</span>
             </div>
             <div class="toolbar">
               <label class="search-box"><span aria-hidden="true">⌕</span><input type="search" placeholder="Search by product name or code" [ngModel]="search()" (ngModelChange)="search.set($event)" (keyup.enter)="loadProducts()"></label>
@@ -78,7 +79,7 @@ const emptyProduct = (): ProductForm => ({
                 <table>
                   <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Status</th><th class="actions-heading">Actions</th></tr></thead>
                   <tbody>
-                    @for (product of products(); track product.id) {
+                    @for (product of filteredProducts(); track product.id) {
                       <tr>
                         <td><div class="product-cell">@if (product.primary_image_url) { <img [src]="product.primary_image_url" [alt]="product.product_name"> } @else { <span class="product-placeholder">▧</span> }<div><strong>{{ product.product_name }}</strong><small>{{ product.product_code }}@if (product.brand_name) { · {{ product.brand_name }} }</small></div></div></td>
                         <td>{{ product.category_name || 'Uncategorised' }}</td>
@@ -199,6 +200,8 @@ const emptyProduct = (): ProductForm => ({
 export class Catalogue implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly workspace = inject(WorkspaceContextService);
   private readonly api = inject(CatalogueApiService);
 
@@ -231,6 +234,8 @@ export class Catalogue implements OnInit {
   readonly units = signal<CatalogueUnit[]>([]);
   readonly totalProducts = signal(0);
   readonly search = signal('');
+  readonly filterStatus = signal('');
+  readonly filteredProducts = computed(() => this.products().filter((product) => !this.filterStatus() || product.publication_status === this.filterStatus()));
   readonly showForm = signal(false);
   readonly editingId = signal<number | null>(null);
   form = emptyProduct();
@@ -253,7 +258,17 @@ export class Catalogue implements OnInit {
         this.loading.set(false);
         return;
       }
+      this.search.set(this.route.snapshot.queryParamMap.get('search') ?? '');
+      this.filterStatus.set(this.route.snapshot.queryParamMap.get('status') ?? '');
       await this.load();
+      this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+        const nextSearch = params.get('search') ?? '';
+        const nextStatus = params.get('status') ?? '';
+        const searchChanged = nextSearch !== this.search();
+        this.search.set(nextSearch);
+        this.filterStatus.set(nextStatus);
+        if (searchChanged && this.tenantId() && this.canManage()) void this.loadProducts();
+      });
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
       this.loading.set(false);
