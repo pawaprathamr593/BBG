@@ -1,7 +1,8 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { MarketplaceApiService, MarketplacePromotion } from '../../../core/marketplace/marketplace-api.service';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-promotion-feed',
   template: `
     <main class="page">
