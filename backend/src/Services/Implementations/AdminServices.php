@@ -7,6 +7,7 @@ namespace App\Services\Implementations;
 use App\Dao\AdminDao;
 use App\Services\Interfaces\IAdminServices;
 use App\Services\Interfaces\IAuthServices;
+use App\Utils\AwsS3Storage;
 use DateTimeImmutable;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -18,6 +19,7 @@ final readonly class AdminServices implements IAdminServices
         private ConnectionInterface $db,
         private AdminDao $dao,
         private IAuthServices $authServices,
+        private AwsS3Storage $s3Storage,
         private LoggerInterface $logger,
     ) {}
 
@@ -50,6 +52,9 @@ final readonly class AdminServices implements IAdminServices
                     break;
                 case 'listPendingSubscriptions':
                     $resArr = $this->getPendingSubscriptions($actionData);
+                    break;
+                case 'getCurrentPaymentQrConfig':
+                    $resArr = $this->getCurrentPaymentQrConfig($actionData);
                     break;
                 case 'getSubscriptionForReview':
                     $resArr = $this->getSubscriptionForReview($actionData);
@@ -126,6 +131,12 @@ final readonly class AdminServices implements IAdminServices
                     break;
                 case 'rejectSubscription':
                     $resArr = $this->manageSubscriptionDecision($actionData, false);
+                    break;
+                case 'generatePaymentQrUploadUrl':
+                    $resArr = $this->generatePaymentQrUploadUrl($actionData);
+                    break;
+                case 'savePaymentQrConfig':
+                    $resArr = $this->savePaymentQrConfig($actionData);
                     break;
                 case 'createCategory':
                     $resArr = $this->manageCategory($actionData, 'create');
@@ -360,6 +371,108 @@ final readonly class AdminServices implements IAdminServices
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = ['subscription' => $subscription['data'], 'proofs' => $proofs['data'], 'review_history' => $history['data']];
         return $resArr;
+    }
+
+    private function getCurrentPaymentQrConfig(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'SUBSCRIPTIONS_APPROVE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::getCurrentPaymentQrConfig');
+        }
+        $result = $this->dao->getActivePaymentQrConfig($this->db);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'AdminServices::getCurrentPaymentQrConfig');
+        }
+        if ($result['data'] !== []) {
+            $result['data']['qr_url'] = $this->s3Storage->createDownloadUrl((string) $result['data']['qr_file_path']);
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = $result['data'];
+        return $resArr;
+    }
+
+    private function generatePaymentQrUploadUrl(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'SUBSCRIPTIONS_APPROVE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::generatePaymentQrUploadUrl');
+        }
+        $fileName = $this->requiredText($actionData['original_file_name'] ?? '', 255);
+        $mimeType = strtolower($this->requiredText($actionData['mime_type'] ?? '', 100) ?? '');
+        $fileSize = $this->positiveInt($actionData['file_size_bytes'] ?? null);
+        $extensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+        if ($fileName === null || !isset($extensions[$mimeType]) || $fileSize === null
+            || $fileSize > $this->s3Storage->getMaxUploadBytes()) {
+            $resArr['msgArr'][] = 'A valid QR image (JPG, PNG or WEBP) up to 10 MB is required.';
+            return $resArr;
+        }
+        $key = 'platform/payment-qr/' . bin2hex(random_bytes(16)) . '.' . $extensions[$mimeType];
+        $upload = $this->s3Storage->createUploadUrl($key, $mimeType);
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
+            'upload_url' => $upload['url'], 'object_key' => $key, 'method' => 'PUT',
+            'headers' => ['Content-Type' => $mimeType], 'expires_in' => $upload['expires_in'],
+        ];
+        return $resArr;
+    }
+
+    private function savePaymentQrConfig(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'SUBSCRIPTIONS_APPROVE');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::savePaymentQrConfig');
+        }
+        $payee = $this->requiredText($actionData['payee_name'] ?? '', 150);
+        $upi = $this->requiredText($actionData['upi_id'] ?? '', 150);
+        $path = $this->requiredText($actionData['qr_file_path'] ?? '', 500);
+        $instructions = $this->nullableText($actionData['payment_instructions'] ?? null, 1000);
+        if ($payee === null || $upi === null || $path === null
+            || preg_match('/^platform\/payment-qr\/[a-f0-9]{32}\.(jpg|png|webp)$/D', $path) !== 1
+            || !preg_match('/^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+$/', $upi)) {
+            $resArr['msgArr'][] = 'Valid payee_name, UPI ID and server-issued QR image path are required.';
+            return $resArr;
+        }
+        try {
+            $stored = $this->s3Storage->headObject($path);
+            $mime = strtolower((string) ($stored['ContentType'] ?? ''));
+            $bytes = (int) ($stored['ContentLength'] ?? 0);
+            $signature = $this->s3Storage->getObjectPrefix($path);
+            $valid = match ($mime) {
+                'image/jpeg' => str_starts_with($signature, "\xFF\xD8\xFF"),
+                'image/png' => str_starts_with($signature, "\x89PNG\r\n\x1A\n"),
+                'image/webp' => str_starts_with($signature, 'RIFF') && substr($signature, 8, 4) === 'WEBP',
+                default => false,
+            };
+            if (!$valid || $bytes < 1 || $bytes > $this->s3Storage->getMaxUploadBytes()
+                || pathinfo($path, PATHINFO_EXTENSION) !== match ($mime) {
+                    'image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', default => '',
+                }) {
+                $resArr['msgArr'][] = 'The uploaded QR image failed storage verification.';
+                return $resArr;
+            }
+        } catch (Throwable $exception) {
+            $this->logger->warning('Platform payment QR verification failed.', ['exception' => $exception]);
+            $resArr['msgArr'][] = 'The uploaded QR image could not be verified in storage.';
+            return $resArr;
+        }
+        $transaction = $this->db->beginTransaction();
+        try {
+            $result = $this->dao->insertPaymentQrConfig(
+                $this->db, $payee, $upi, $path, $instructions, (int) $context['data']['user_id'],
+            );
+            if ($result['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($result, 'AdminServices::savePaymentQrConfig');
+            }
+            $transaction->commit();
+            return $result;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) $transaction->rollBack();
+            throw $exception;
+        }
     }
 
     private function getActiveSubscriptions(array $actionData): array
