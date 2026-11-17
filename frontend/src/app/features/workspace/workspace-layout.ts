@@ -313,8 +313,8 @@ export class WorkspaceLayout implements OnInit, AfterViewChecked, OnDestroy {
 
   toggleFilterDrawer(): void {
     const next = !this.filterDrawerOpen();
-    this.filterDrawerOpen.set(next);
     if (next) {
+      this.filterDrawerOpen.set(true);
       this.previousBodyOverflow = this.document.body.style.overflow;
       this.draftFilters.set({...this.activeFilters()});
       this.document.body.style.overflow = 'hidden';
