@@ -67,6 +67,7 @@ export class WorkspaceContextService {
       if (!restored) {
         this.tenants.set([]);
         this.permissions.set([]);
+        this.platformPermissions.set([]);
         this.activeTenantId.set(null);
         this.initialization = undefined;
         return;
