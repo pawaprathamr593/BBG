@@ -195,9 +195,12 @@ final readonly class AdminDao
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->one($db, "SELECT ts.*, t.tenant_name, p.plan_code, p.plan_name, p.billing_cycle,
-            p.description AS plan_description, bp.business_name, bp.business_slug, bp.business_email,
-            bp.business_phone, bp.whatsapp_number, bp.address_line_1, bp.address_line_2,
-            bp.city, bp.state, bp.postal_code, bp.country_code, bp.approval_status AS business_approval_status,
+            p.description AS plan_description, t.tenant_code, t.tenant_type, t.tenant_status,
+            bp.business_name, bp.business_slug, bp.business_description, bp.primary_category_id,
+            bp.business_email, bp.business_phone, bp.whatsapp_number, bp.logo_path, bp.cover_image_path,
+            bp.address_line_1, bp.address_line_2, bp.city, bp.state, bp.postal_code, bp.country_code,
+            bp.latitude, bp.longitude, bp.approval_status AS business_approval_status,
+            bp.publication_status AS business_publication_status, bp.rejection_reason AS business_rejection_reason,
             instructions.config_version AS payment_qr_version, instructions.payee_name AS payment_payee_name,
             instructions.upi_id AS payment_upi_id, instructions.qr_file_path AS payment_qr_file_path,
             instructions.payment_instructions
