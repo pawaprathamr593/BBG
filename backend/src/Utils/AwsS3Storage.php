@@ -122,4 +122,9 @@ final class AwsS3Storage
     {
         return max(1024, (int) (getenv('AWS_S3_MAX_UPLOAD_BYTES') ?: 10485760));
     }
+
+    public function getMaxMediaUploadBytes(): int
+    {
+        return min(524288000, max(1024, (int) (getenv('AWS_S3_MEDIA_MAX_UPLOAD_BYTES') ?: 104857600)));
+    }
 }
