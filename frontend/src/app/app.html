@@ -1,4 +1,4 @@
-<div class="app-shell" [class.storefront-mode]="isStorefrontRoute()">
+<div class="app-shell" [class.storefront-mode]="isStorefrontRoute()" [class.workspace-mode]="isWorkspaceRoute()">
   @if (!isStorefrontRoute()) {
     <header class="topbar">
       <a class="brand" routerLink="/" aria-label="BBG home" (click)="closeMenu()">
