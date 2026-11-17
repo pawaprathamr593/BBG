@@ -18,7 +18,7 @@ final readonly class PromotionDao
         return $this->one($db, "SELECT ts.id
             FROM TENANT_SUBSCRIPTIONS ts
             INNER JOIN PLAN_ENTITLEMENTS pe ON pe.plan_id = ts.plan_id
-                AND pe.entitlement_code = 'PROMOTION_MANAGEMENT'
+                AND pe.entitlement_code = 'PROMOTION_MANAGEMENT' AND pe.value_type = 'BOOLEAN'
                 AND UPPER(pe.entitlement_value) IN ('1', 'TRUE', 'YES')
                 AND pe.status = 'A'
             WHERE ts.tenant_id = :tenant_id AND ts.subscription_status = 'ACTIVE'
@@ -47,6 +47,9 @@ final readonly class PromotionDao
             INNER JOIN PLAN_ENTITLEMENTS pe ON pe.plan_id = ts.plan_id
                 AND pe.entitlement_code = 'DAILY_PROMOTION_LIMIT'
                 AND pe.value_type = 'INTEGER' AND pe.status = 'A'
+            INNER JOIN PLAN_ENTITLEMENTS pm ON pm.plan_id = ts.plan_id
+                AND pm.entitlement_code = 'PROMOTION_MANAGEMENT' AND pm.value_type = 'BOOLEAN'
+                AND UPPER(pm.entitlement_value) IN ('1', 'TRUE', 'YES') AND pm.status = 'A'
             WHERE ts.tenant_id = :tenant_id AND ts.subscription_status = 'ACTIVE'
                 AND ts.status = 'A'
                 AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
