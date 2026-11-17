@@ -7,7 +7,7 @@ import { API_BASE_URL } from '../../core/config/api-base-url';
 import { AuthService } from '../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
 
-type EnvelopeKey = 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam';
+type EnvelopeKey = 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam' | 'tenantParam' | 'dashboardParam';
 interface ApiEnvelope<T = unknown> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION'; msgArr?: string[]; data?: T | []; }
 interface DataRecord { [key: string]: unknown; }
 
@@ -202,6 +202,8 @@ export class DashboardModule implements OnInit {
     subscriptions: { title: 'Subscriptions & plans', description: 'Review available plans and the subscription history for this business.' },
     payments: { title: 'Payments', description: 'Review payment records associated with your account or business.' },
     analytics: { title: 'Analytics', description: 'Review the summary metrics available in your current workspace.' },
+    members: { title: 'Team & access', description: 'Review the members assigned to this business workspace.' },
+    'platform-analytics': { title: 'Platform analytics', description: 'Review platform-wide metrics exposed to authorized administrators.' },
     'platform-users': { title: 'Platform users', description: 'Review platform accounts and suspend or restore eligible users.' },
     'business-approval': { title: 'Business approvals', description: 'Review pending business applications and process approval decisions.' },
     'subscription-approval': { title: 'Subscription approvals', description: 'Review pending subscription requests and process decisions.' },
@@ -236,6 +238,11 @@ export class DashboardModule implements OnInit {
       const tenantId = this.workspace.activeTenantId();
       const pageData = { page: 1, page_size: 25, ...(tenantId ? { tenant_id: tenantId } : {}) };
       switch (this.section()) {
+        case 'members': {
+          if (!tenantId) return this.setUnsupported('Select a business workspace to view its team members.');
+          const data = await this.request<{items?:DataRecord[]}>('/api/v1/tenants/members/list','tenantParam','listTenantMembers',pageData);
+          this.items.set(data.items ?? []); break;
+        }
         case 'profile':
           if (!tenantId) return this.setUnsupported('Select a business workspace to view its business profile.');
           this.summary.set(await this.request<DataRecord>('/api/v1/business/profile/get','businessParam','getMyBusinessProfile',{tenant_id:tenantId}));
@@ -297,8 +304,11 @@ export class DashboardModule implements OnInit {
           }
           break;
         case 'analytics':
-          if (tenantId) this.summary.set(await this.request<DataRecord>('/api/v1/dashboard/entrepreneur/summary','dashboardParam' as EnvelopeKey,'getTenantSummary',{tenant_id:tenantId}));
-          else return this.setUnsupported('Platform analytics are available from the Platform Analytics module when your account has that permission.');
+          if (tenantId) this.summary.set(await this.request<DataRecord>('/api/v1/dashboard/entrepreneur/summary','dashboardParam','getTenantSummary',{tenant_id:tenantId}));
+          else return this.setUnsupported('Business analytics require an active business workspace.');
+          break;
+        case 'platform-analytics':
+          this.summary.set(await this.request<DataRecord>('/api/v1/admin/analytics/summary','adminParam','getAdminAnalyticsSummary'));
           break;
         case 'platform-users': {
           const data = await this.request<{items?:DataRecord[]}>('/api/v1/admin/users/list','adminParam','listPlatformUsers',{page:1,page_size:25});
