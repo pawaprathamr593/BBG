@@ -171,11 +171,10 @@ final readonly class CustomerServices implements ICustomerServices
     private function manageMyAddress(array $actionData, string $operation): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->customerContext($actionData);
+        $context = $this->personalAddressContext($actionData);
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'CustomerServices::manageMyAddress');
         }
-        $userId = (int) $context['data']['user_id'];
         $userId = (int) $context['data']['user_id'];
         $addressId = $this->positiveInt($actionData['address_id'] ?? null);
 
@@ -209,9 +208,7 @@ final readonly class CustomerServices implements ICustomerServices
                 $transaction->commit();
                 return $set;
             } catch (Throwable $exception) {
-                if ($transaction->isActive()) {
-                    $transaction->rollBack();
-                }
+                if ($transaction->isActive()) $transaction->rollBack();
                 throw $exception;
             }
         }
@@ -238,7 +235,7 @@ final readonly class CustomerServices implements ICustomerServices
         $transaction = $this->db->beginTransaction();
         try {
             if ($isDefault === 1) {
-                $clear = $this->dao->clearDefaultAddresses($this->db, $tenantId, $customerId, $userId);
+                $clear = $this->dao->clearDefaultAddresses($this->db, $userId, $userId);
                 if ($clear['status'] !== 'SUCCESS') {
                     $transaction->rollBack();
                     return $this->propagateFailure($clear, 'CustomerServices::manageMyAddress');
@@ -262,9 +259,7 @@ final readonly class CustomerServices implements ICustomerServices
             $transaction->commit();
             return $result;
         } catch (Throwable $exception) {
-            if ($transaction->isActive()) {
-                $transaction->rollBack();
-            }
+            if ($transaction->isActive()) $transaction->rollBack();
             throw $exception;
         }
     }
