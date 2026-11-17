@@ -206,9 +206,10 @@ export class WorkspaceLayout implements OnInit {
   readonly activeFilters = signal({ search: '', status: '', from: '', to: '' });
   readonly activeTenantId = this.workspace.activeTenantId;
   readonly permissions = this.workspace.permissions;
-  readonly isPlatform = computed(() => this.activeTenantId() === null && this.hasPlatformAccess());
-  readonly isPersonalContext = computed(() => this.activeTenantId() === null && !this.hasPlatformAccess());
-  readonly contextLabel = computed(() => this.activeTenantId() !== null ? 'BUSINESS WORKSPACE' : this.hasPlatformAccess() ? 'PLATFORM ADMINISTRATION' : 'MY ACCOUNT');
+  readonly activeContext = this.workspace.activeContext;
+  readonly isPlatform = computed(() => this.activeTenantId() === null && this.activeContext() === 'PLATFORM');
+  readonly isPersonalContext = computed(() => this.activeTenantId() === null && this.activeContext() === 'PERSONAL');
+  readonly contextLabel = computed(() => this.activeTenantId() !== null ? 'BUSINESS WORKSPACE' : this.isPlatform() ? 'PLATFORM ADMINISTRATION' : 'MY ACCOUNT');
   readonly overviewLabel = computed(() => this.isPersonalContext() ? 'My Account Overview' : this.isPlatform() ? 'Platform Overview' : 'Overview');
   readonly navSectionLabel = computed(() => this.isPersonalContext() ? 'MY ACCOUNT' : this.isPlatform() ? 'ADMINISTRATION' : 'BUSINESS TOOLS');
   readonly canAccessPlatform = computed(() => this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM'));
@@ -246,7 +247,7 @@ export class WorkspaceLayout implements OnInit {
     return ['ACTIVE','INACTIVE','PENDING','APPROVED','REJECTED'];
   });
   readonly visibleNavItems = computed<WorkspaceNavItem[]>(() => {
-    const scope = this.activeTenantId() === null ? (this.hasPlatformAccess() ? ['PLATFORM'] : ['GLOBAL']) : ['TENANT'];
+    const scope = this.activeTenantId() !== null ? ['TENANT'] : this.activeContext() === 'PLATFORM' ? ['PLATFORM'] : ['GLOBAL'];
     const perms = this.permissions();
     const available = (permission: string | null, itemScope: WorkspaceNavItem['scope']) => {
       if (!permission) return true;
@@ -289,7 +290,7 @@ export class WorkspaceLayout implements OnInit {
   }
 
   hasPlatformAccess(): boolean {
-    return this.permissions().some((permission) => permission.scope_type === 'PLATFORM');
+    return this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM');
   }
 
   async switchContext(event: Event): Promise<void> {
