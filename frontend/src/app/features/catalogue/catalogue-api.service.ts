@@ -58,6 +58,7 @@ export interface CatalogueProduct {
   is_variant_product: number;
   publication_status: 'DRAFT' | 'PUBLISHED';
   product_status: string;
+  primary_image_url?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
