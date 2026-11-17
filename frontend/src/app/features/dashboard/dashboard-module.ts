@@ -215,7 +215,7 @@ export class DashboardModule implements OnInit {
     const to = this.filterTo();
     return this.items().filter((item) => {
       if (search && !Object.values(item).some((value) => value !== null && typeof value !== 'object' && String(value).toLowerCase().includes(search))) return false;
-      const statusValue = ['status','order_status','payment_status','enquiry_status','publication_status','approval_status','subscription_status'].map((key) => item[key]).find((value) => value !== undefined && value !== null);
+      const statusValue = ['order_status','payment_status','enquiry_status','publication_status','approval_status','subscription_status','status'].map((key) => item[key]).find((value) => value !== undefined && value !== null);
       if (status && String(statusValue ?? '').toUpperCase() !== status) return false;
       const dateValue = ['created_on','created_at','order_date','enquiry_date','payment_date','updated_on'].map((key) => item[key]).find((value) => value !== undefined && value !== null);
       if (from || to) {
