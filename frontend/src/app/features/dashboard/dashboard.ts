@@ -64,14 +64,13 @@ interface DashboardModule {
           </section>
         }
 
-        @if (isPersonalContext()) {
+        @if (isPersonalContext() && personalShortcuts().length) {
           <section class="personal-shortcuts">
-            <div><p class="eyebrow">PERSONAL DASHBOARD</p><h2>Your activity</h2><p>Access your personal orders, enquiries, saved addresses and payments.</p></div>
+            <div><p class="eyebrow">MY ACCOUNT</p><h2>Your activity</h2><p>Access the personal services enabled for your account.</p></div>
             <div class="shortcut-grid">
-              <a routerLink="/dashboard/customers"><span>♙</span><strong>Profile & addresses</strong><small>Manage your customer details and saved addresses</small></a>
-              <a routerLink="/dashboard/orders"><span>▤</span><strong>My orders</strong><small>Track orders placed with BBG businesses</small></a>
-              <a routerLink="/dashboard/enquiries"><span>↗</span><strong>My enquiries</strong><small>Continue your business conversations</small></a>
-              <a routerLink="/dashboard/payments"><span>₹</span><strong>My payments</strong><small>Review your payment activity</small></a>
+              @for (shortcut of personalShortcuts(); track shortcut.route) {
+                <a [routerLink]="shortcut.route"><span>{{ shortcut.icon }}</span><strong>{{ shortcut.title }}</strong><small>{{ shortcut.description }}</small></a>
+              }
             </div>
           </section>
         }
@@ -199,6 +198,16 @@ export class Dashboard implements OnInit {
   readonly selectedTenant = computed(() => this.tenants().find((tenant) => tenant.id === this.selectedTenantId()) ?? null);
   readonly isPlatformContext = computed(() => this.selectedTenantId() === null && this.permissions().some((permission) => permission.scope_type === 'PLATFORM'));
   readonly isPersonalContext = computed(() => this.selectedTenantId() === null && !this.isPlatformContext());
+  readonly personalShortcuts = computed(() => {
+    const definitions = [
+      { permission: 'CUSTOMER_PROFILE_VIEW', title: 'My Profile & Addresses', description: 'Manage your details and saved delivery addresses.', icon: '♙', route: '/dashboard/customers' },
+      { permission: 'ORDERS_VIEW', title: 'My Orders', description: 'Track orders placed with BBG businesses.', icon: '▤', route: '/dashboard/orders' },
+      { permission: 'ENQUIRIES_VIEW', title: 'My Enquiries', description: 'Continue your conversations with businesses.', icon: '↗', route: '/dashboard/enquiries' },
+      { permission: 'PAYMENTS_VIEW', title: 'My Payments', description: 'Review your customer payment activity.', icon: '₹', route: '/dashboard/payments' },
+    ];
+    return definitions.filter((shortcut) => this.permissions().some((permission) =>
+      permission.role_code === 'CONSUMER' && permission.permission_code === shortcut.permission && permission.scope_type === 'GLOBAL'));
+  });
   readonly roleCodes = computed(() => [...new Set(this.permissions().map((permission) => permission.role_code))]);
   readonly firstName = computed(() => (this.auth.user()?.full_name || 'there').trim().split(/\s+/)[0]);
   readonly greeting = computed(() => {
