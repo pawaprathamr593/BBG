@@ -69,6 +69,17 @@ import { Component, input } from '@angular/core';
         @case ('receipt-text') {
           <path d="M4 3h16v18l-3-2-3 2-2-2-3 2-2-2-3 2V3Z"/><path d="M8 8h8M8 12h8M8 16h4"/>
         }
+        @case ('chart-column') {
+          <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>
+        }
+        @case ('messages-square') {
+          <path d="M21 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 21 11.5Z"/>
+          <path d="M8 10h7M8 14h5"/>
+        }
+        @case ('hand-coins') {
+          <path d="M11 11V7a2 2 0 1 1 4 0v4M15 11h3a3 3 0 0 1 3 3v1a5 5 0 0 1-5 5h-5l-5-2a2 2 0 0 1 1-4l4 1"/>
+          <path d="m2 12 4-2 5 3M4 21l-2-9"/>
+        }
         @case ('contact-round') {
           <circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/><path d="M19 8h2M20 7v2"/>
         }
