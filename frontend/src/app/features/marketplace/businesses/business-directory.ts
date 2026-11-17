@@ -188,7 +188,12 @@ export class BusinessDirectory implements OnInit {
   }
 
   protected resetDraftFilters(): void {
-    this.draftFilters = this.defaultFilters();
+    const defaults = this.defaultFilters();
+    this.draftFilters = { ...defaults };
+    this.appliedFilters.set({ ...defaults });
+    this.filtersOpen.set(false);
+    this.page.set(1);
+    this.load();
   }
 
   protected removeFilter(key: BusinessFilterKey): void {
