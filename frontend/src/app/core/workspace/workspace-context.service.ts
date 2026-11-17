@@ -35,17 +35,40 @@ export class WorkspaceContextService {
 
   async switchWorkspace(tenantId: number | null): Promise<void> {
     await this.initialize();
-    if (tenantId !== null && !this.tenants().some((tenant) => tenant.id === tenantId)) {
-      throw new Error('You do not have access to that workspace.');
+    if (tenantId === null) {
+      await this.switchToMyAccount();
+      return;
+    }
+    if (!this.tenants().some((tenant) => tenant.id === tenantId)) {
+      throw new Error('You do not have access to Business Workspace.');
     }
 
     // Fetch permissions before changing the active context. A failed or denied
     // permission request therefore cannot leave the UI in a false active state.
-    const permissions = await this.api.getPermissions(tenantId ?? 0);
+    const permissions = await this.api.getPermissions(tenantId);
     this.activeTenantId.set(tenantId);
     this.permissions.set(permissions);
-    if (tenantId === null) this.platformPermissions.set(permissions);
     this.persistActiveWorkspace(tenantId);
+  }
+
+  async switchToMyAccount(): Promise<void> {
+    await this.initialize();
+    const allPermissions = await this.api.getPermissions(0);
+    this.platformPermissions.set(allPermissions);
+    this.activeTenantId.set(null);
+    this.permissions.set(allPermissions.filter((permission) => permission.scope_type === 'GLOBAL'));
+    this.persistActiveWorkspace(null);
+  }
+
+  async switchToPlatformAdministration(): Promise<void> {
+    await this.initialize();
+    const allPermissions = await this.api.getPermissions(0);
+    const platformPermissions = allPermissions.filter((permission) => permission.scope_type === 'PLATFORM');
+    if (!platformPermissions.length) throw new Error('You do not have Platform Administration access.');
+    this.platformPermissions.set(allPermissions);
+    this.activeTenantId.set(null);
+    this.permissions.set(platformPermissions);
+    this.persistActiveWorkspace(null);
   }
 
   clear(): void {
@@ -85,8 +108,11 @@ export class WorkspaceContextService {
       const restoredTenantId = savedId !== null && tenants.some((tenant) => tenant.id === savedId)
         ? savedId
         : null;
+      const defaultScope = savedPermissions.some((permission) => permission.scope_type === 'PLATFORM')
+        ? 'PLATFORM'
+        : 'GLOBAL';
       const permissions = restoredTenantId === null
-        ? savedPermissions
+        ? savedPermissions.filter((permission) => permission.scope_type === defaultScope)
         : await this.api.getPermissions(restoredTenantId);
 
       this.activeTenantId.set(restoredTenantId);
