@@ -60,6 +60,25 @@ final readonly class CustomerDao
             LIMIT 1", [':tenant_id' => $tenantId, ':identity_id' => $identityId], 'getTenantCustomer');
     }
 
+    public function getTenantCustomers(ConnectionInterface $db, int $tenantId, int $limit, int $offset): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->many($db, "SELECT id, customer_code, display_name, mobile, email, customer_type,
+            credit_limit, opening_balance, customer_notes, customer_status, created_on
+            FROM TENANT_CUSTOMERS
+            WHERE tenant_id = :tenant_id AND customer_status <> 'DELETED' AND status = 'A'
+            ORDER BY created_on DESC, id DESC LIMIT :limit OFFSET :offset",
+            [':tenant_id' => $tenantId, ':limit' => $limit, ':offset' => $offset], 'getTenantCustomers');
+    }
+
+    public function countTenantCustomers(ConnectionInterface $db, int $tenantId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT COUNT(*) AS total FROM TENANT_CUSTOMERS
+            WHERE tenant_id = :tenant_id AND customer_status <> 'DELETED' AND status = 'A'",
+            [':tenant_id' => $tenantId], 'countTenantCustomers');
+    }
+
     public function insertTenantCustomer(ConnectionInterface $db, int $tenantId, int $identityId, int $userId, string $fullName, ?string $email, ?string $mobile): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
