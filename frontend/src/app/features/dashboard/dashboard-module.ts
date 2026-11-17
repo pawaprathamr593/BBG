@@ -19,10 +19,6 @@ interface DataRecord { [key: string]: unknown; }
     <main class="module-page">
       <header class="page-heading">
         <div>
-          @if (contextLabel() !== 'MY ACCOUNT') {
-            <p class="eyebrow">{{ contextLabel() }}</p>
-            <h1>{{ title() }}</h1>
-          }
           <p class="intro">{{ description() }}</p>
         </div>
         <div class="heading-buttons">
