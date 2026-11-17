@@ -234,6 +234,8 @@ final readonly class PromotionServices implements IPromotionServices
             'video/mp4' => ['mp4', 'VIDEO'], 'video/webm' => ['webm', 'VIDEO'],
             'audio/mpeg' => ['mp3', 'AUDIO'], 'audio/wav' => ['wav', 'AUDIO'],
             'audio/ogg' => ['ogg', 'AUDIO'], 'application/pdf' => ['pdf', 'DOCUMENT'],
+            'text/plain' => ['txt', 'DOCUMENT'], 'text/csv' => ['csv', 'DOCUMENT'],
+            'application/rtf' => ['rtf', 'DOCUMENT'],
         ];
         if ($promotionId === null || $fileName === null || !isset($supported[$mimeType])
             || $fileSize === false || $fileSize < 1 || $fileSize > $this->s3Storage->getMaxUploadBytes()) {
@@ -312,7 +314,8 @@ final readonly class PromotionServices implements IPromotionServices
             'image/jpeg' => 'IMAGE', 'image/png' => 'IMAGE', 'image/webp' => 'IMAGE', 'image/gif' => 'IMAGE',
             'video/mp4' => 'VIDEO', 'video/webm' => 'VIDEO',
             'audio/mpeg' => 'AUDIO', 'audio/wav' => 'AUDIO', 'audio/ogg' => 'AUDIO',
-            'application/pdf' => 'DOCUMENT',
+            'application/pdf' => 'DOCUMENT', 'text/plain' => 'DOCUMENT', 'text/csv' => 'DOCUMENT',
+            'application/rtf' => 'DOCUMENT',
         ];
         if (!isset($supported[$mimeType])) {
             $resArr['msgArr'][] = 'Unsupported post media type.';
@@ -348,6 +351,8 @@ final readonly class PromotionServices implements IPromotionServices
             'audio/wav' => str_starts_with($signature, 'RIFF') && substr($signature, 8, 4) === 'WAVE',
             'audio/ogg' => str_starts_with($signature, 'OggS'),
             'application/pdf' => str_starts_with($signature, '%PDF-'),
+            'text/plain', 'text/csv' => !str_contains($signature, "\\0"),
+            'application/rtf' => str_starts_with($signature, '{\\rtf'),
             default => false,
         };
     }
