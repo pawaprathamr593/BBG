@@ -656,6 +656,7 @@ export class DashboardModule implements OnInit {
     if (this.section()==='platform-users') return status==='SUSPENDED' ? [{key:'restore-user',label:'Restore account'}] : [{key:'suspend-user',label:'Suspend account',danger:true}];
     if (this.section()==='business-approval' && status==='PENDING') return [{key:'approve-business',label:'Approve'},{key:'reject-business',label:'Reject',danger:true}];
     if (this.section()==='subscription-approval' && status==='PENDING') return [{key:'approve-subscription',label:'Approve'},{key:'reject-subscription',label:'Reject',danger:true}];
+    if (this.section()==='subscriptions' && ['ACTIVE','EXPIRED'].includes(status)) return [{key:'renew-subscription',label:'Renew subscription'}];
     if (this.section()==='moderation' && status==='OPEN') return [{key:'moderate',label:'Review report'}];
     if (this.section()==='categories') return [{key:'delete-category',label:'Delete category',danger:true}];
     return [];
@@ -688,6 +689,9 @@ export class DashboardModule implements OnInit {
         if (action==='reject-business' && !reason?.trim()) return;
         path=action==='approve-business'?'/api/v1/admin/businesses/approve':'/api/v1/admin/businesses/reject'; actionType=action==='approve-business'?'approveBusiness':'rejectBusiness'; data={business_id:Number(item['business_id'] ?? item['id']),...(reason?{reason:reason.trim()}:{})}; break;
       }
+      case 'renew-subscription':
+        path='/api/v1/subscriptions/renewal/request'; key='subscriptionParam'; actionType='requestSubscriptionRenewal';
+        data={tenant_id:tenantId,subscription_id:id}; break;
       case 'approve-subscription': case 'reject-subscription': {
         const reason = action==='reject-subscription' ? window.prompt('Reason for rejecting this subscription:') : null;
         if (action==='reject-subscription' && !reason?.trim()) return;
