@@ -268,6 +268,22 @@ final readonly class CatalogueDao
             [':tenant_id' => $tenantId, ':product_id' => $productId], 'getProductMedia');
     }
 
+    public function softDeleteAllProductMedia(ConnectionInterface $db, int $tenantId, int $productId, int $userId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $affected = $db->createCommand("UPDATE PRODUCT_MEDIA SET status = 'Z', media_status = 'INACTIVE',
+                updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                WHERE tenant_id = :tenant_id AND product_id = :product_id AND status = 'A'",
+                [':user_id' => $userId, ':tenant_id' => $tenantId, ':product_id' => $productId])->execute();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['deleted_count' => $affected];
+        } catch (Throwable $exception) {
+            return $this->error('softDeleteAllProductMedia', $exception);
+        }
+        return $resArr;
+    }
+
     public function getProductMediaRecord(ConnectionInterface $db, int $tenantId, int $productId, int $mediaId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
