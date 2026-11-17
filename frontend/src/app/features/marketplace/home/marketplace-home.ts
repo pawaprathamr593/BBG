@@ -277,12 +277,17 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
     .hero-links a { color:inherit; text-decoration:none; }
     .hero-links a:hover { color:#f5d928; }
     .hero-links i { width:4px; height:4px; background:#f5d928; border-radius:50%; }
-    .marketplace-stats { display:block; width:100%; padding:22px max(24px,calc((100vw - 1400px)/2)); background:#f3f7f3; border-bottom:1px solid #e1eae3; }
+    .marketplace-stats { display:block; width:100%; padding:22px max(24px,calc((100vw - 1400px)/2)); background:var(--surface-subtle); border-bottom:1px solid var(--border); transition:background-color .2s ease,border-color .2s ease; }
     .hero-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; width:100%; margin:0; }
-    .hero-stat { display:flex; min-height:82px; flex-direction:column; justify-content:center; gap:7px; padding:15px 20px; background:#fff; border:1px solid #e0e9e2; border-radius:12px; box-shadow:0 5px 18px rgba(17,64,43,.045); }
-    .hero-stat strong { color:#174d35; font-size:clamp(1.2rem,2.1vw,1.8rem); font-weight:850; letter-spacing:-.045em; line-height:1; font-variant-numeric:tabular-nums; }
-    .hero-stat span { color:#65756a; font-size:.65rem; font-weight:650; line-height:1.3; }
-    .hero-stat-loading strong { color:#a8b5ab; }
+    .hero-stat { display:flex; min-height:82px; flex-direction:column; justify-content:center; gap:7px; padding:15px 20px; background:var(--surface-card); border:1px solid var(--border); border-radius:12px; box-shadow:0 5px 18px rgba(17,64,43,.045); transition:background-color .2s ease,border-color .2s ease,box-shadow .2s ease; }
+    .hero-stat strong { color:var(--brand); font-size:clamp(1.2rem,2.1vw,1.8rem); font-weight:850; letter-spacing:-.045em; line-height:1; font-variant-numeric:tabular-nums; }
+    .hero-stat span { color:var(--text-secondary); font-size:.7rem; font-weight:650; line-height:1.35; }
+    .hero-stat-loading strong { color:var(--text-muted); }
+    :host-context(html[data-theme="dark"]) .marketplace-stats { background:linear-gradient(110deg,#171f1a 0%,#1c2821 52%,#202d25 100%); border-bottom-color:#35483b; }
+    :host-context(html[data-theme="dark"]) .hero-stat { background:#26342b; border-color:#3a4d40; box-shadow:0 8px 22px rgba(0,0,0,.18); }
+    :host-context(html[data-theme="dark"]) .hero-stat strong { color:#f5d928; }
+    :host-context(html[data-theme="dark"]) .hero-stat span { color:#c2cec5; }
+    :host-context(html[data-theme="dark"]) .hero-stat-loading strong { color:#829487; }
     .hero-visual { position:relative; min-height:390px; overflow:hidden; background:linear-gradient(145deg,#b8d8d0 0%,#dbe8d8 48%,#f1e9c8 100%); clip-path:polygon(18% 0,100% 0,100% 100%,0 100%); }
     .visual-glow { position:absolute; top:13%; right:12%; width:220px; height:220px; background:rgba(245,217,40,.38); border-radius:50%; filter:blur(2px); }
     .visual-sun { position:absolute; top:18%; right:22%; width:88px; height:88px; background:#f5d928; border-radius:50%; box-shadow:0 0 55px rgba(245,217,40,.55); }
