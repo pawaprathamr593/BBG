@@ -43,6 +43,7 @@ final class PromotionController
             '/api/v1/promotions/mine/list' => 'listMyPromotions',
             '/api/v1/promotions/mine/detail' => 'getMyPromotion',
             '/api/v1/promotions/engagement' => 'getPromotionEngagement',
+            '/api/v1/promotions/media/list' => 'listPromotionMedia',
         ];
         $manageActions = [
             '/api/v1/promotions/create' => 'createPromotion',
@@ -50,6 +51,9 @@ final class PromotionController
             '/api/v1/promotions/delete' => 'deletePromotion',
             '/api/v1/promotions/publish' => 'publishPromotion',
             '/api/v1/promotions/unpublish' => 'unpublishPromotion',
+            '/api/v1/promotions/media/upload-url' => 'generatePromotionMediaUploadUrl',
+            '/api/v1/promotions/media/link' => 'linkPromotionMedia',
+            '/api/v1/promotions/media/delete' => 'deletePromotionMedia',
         ];
         $path = $request->getUri()->getPath();
         $action = $manage ? ($manageActions[$path] ?? '') : ($getActions[$path] ?? '');
