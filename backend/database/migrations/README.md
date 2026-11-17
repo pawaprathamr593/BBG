@@ -62,3 +62,10 @@ The 16 database tables explicitly marked future scope in the database design (su
 
 Creates `CONTENT_LIKES` and `PRODUCT_MEDIA` when they are not already present. These tables support persisted product popularity (likes) and public catalogue image/variant filtering. The migration is additive and does not alter an existing table. Review the live schema and take a backup before applying it.
 
+
+
+## 20261117_002 — Subscription payment and review workflow
+
+File: `20261117_002_subscription_payment_review_workflow.sql`
+
+Adds versioned Platform Admin UPI QR configuration, immutable per-subscription payment-instruction snapshots, and an append-only subscription review history with a legacy decision backfill. Apply after `20261117_001_global_customer_addresses.sql` on a verified local/staging database after backup. The migration is not automatically executed by the application.
