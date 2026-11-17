@@ -690,6 +690,12 @@ export class DashboardModule implements OnInit {
         promotionId = Number(result.id);
         if (!promotionId) throw new Error('The draft was created but its identifier was not returned.');
         this.draftPromotionId.set(promotionId);
+      } else {
+        await this.request('/api/v1/promotions/update','promotionParam','updatePromotion',{
+          tenant_id:tenantId,promotion_id:promotionId,post_title:this.promotionTitle().trim(),
+          post_content:this.promotionContent().trim(),
+          ...(this.promotionValidUntil() ? {valid_until:this.promotionValidUntil().replace('T',' ') + (this.promotionValidUntil().length === 16 ? ':00' : '')} : {}),
+        });
       }
       const files = this.promotionFiles();
       for (let index = 0; index < files.length; index++) {
