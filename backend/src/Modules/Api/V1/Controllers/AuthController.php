@@ -32,6 +32,7 @@ final class AuthController
             '/api/v1/auth/logout' => 'logout',
             '/api/v1/auth/logout-all' => 'logoutAll',
             '/api/v1/auth/profile/update' => 'updateProfile',
+            '/api/v1/auth/password/update' => 'setPassword',
             '/api/v1/auth/social/login' => 'socialLogin',
             '/api/v1/auth/social/link' => 'socialLink',
         ];
@@ -88,7 +89,7 @@ final class AuthController
         if (in_array($action, ['refresh', 'logout'], true)) {
             $actionData['_refreshToken'] = (string) ($cookies['bbg_refresh'] ?? '');
         }
-        if (in_array($action, ['logoutAll', 'updateProfile', 'socialLink'], true)) {
+        if (in_array($action, ['logoutAll', 'updateProfile', 'setPassword', 'socialLink'], true)) {
             $authorization = $request->getHeaderLine('Authorization');
             $actionData['_accessToken'] = str_starts_with($authorization, 'Bearer ')
                 ? trim(substr($authorization, 7))
