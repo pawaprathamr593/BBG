@@ -1,6 +1,6 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { filter, firstValueFrom, lastValueFrom, tap } from 'rxjs';
 import { API_BASE_URL } from '../../core/config/api-base-url';
 import { AuthService } from '../../core/auth/auth.service';
 
@@ -130,11 +130,19 @@ export class CatalogueApiService {
     });
   }
 
-  async uploadAndLinkProductMedia(tenantId: number, productId: number, file: File, displayOrder: number, primary: boolean): Promise<void> {
+  async uploadAndLinkProductMedia(tenantId: number, productId: number, file: File, displayOrder: number, primary: boolean, onProgress?: (progress: number) => void): Promise<void> {
     const upload = await this.createProductMediaUploadUrl(tenantId, productId, file);
-    await firstValueFrom(this.http.put(upload.upload_url, file, {
-      headers: new HttpHeaders(upload.headers ?? { 'Content-Type': file.type }), responseType: 'text',
-    }));
+    await lastValueFrom(this.http.put(upload.upload_url, file, {
+      headers: new HttpHeaders(upload.headers ?? { 'Content-Type': file.type }),
+      observe: 'events', reportProgress: true, responseType: 'text',
+    }).pipe(
+      tap((event) => {
+        if (event.type === HttpEventType.UploadProgress && event.total) {
+          onProgress?.(Math.round((event.loaded / event.total) * 100));
+        }
+      }),
+      filter((event) => event.type === HttpEventType.Response),
+    ));
     const mediaType = file.type.startsWith('image/') ? 'IMAGE'
       : file.type.startsWith('video/') ? 'VIDEO'
       : file.type.startsWith('audio/') ? 'AUDIO' : 'DOCUMENT';
