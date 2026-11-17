@@ -26,6 +26,7 @@ export class AuthExperienceComponent implements OnInit {
 
   readonly activeMode = signal<SocialAuthIntent>('login');
   readonly emailFormVisible = signal(false);
+  readonly compactLoginView = signal(false);
   readonly passwordVisible = signal(false);
   readonly busy = signal(false);
   readonly error = signal('');
@@ -58,6 +59,7 @@ export class AuthExperienceComponent implements OnInit {
   switchMode(mode: SocialAuthIntent): void {
     this.activeMode.set(mode);
     this.emailFormVisible.set(false);
+    this.compactLoginView.set(false);
     this.error.set('');
     this.recoveryNotice.set('');
     this.form.reset();
@@ -66,6 +68,19 @@ export class AuthExperienceComponent implements OnInit {
   toggleEmailForm(): void {
     this.emailFormVisible.update((visible) => !visible);
     this.error.set('');
+  }
+
+  showPasswordLogin(): void {
+    this.compactLoginView.set(true);
+    this.emailFormVisible.set(true);
+    this.error.set('');
+  }
+
+  showOtherLoginMethods(): void {
+    this.compactLoginView.set(false);
+    this.emailFormVisible.set(false);
+    this.error.set('');
+    this.recoveryNotice.set('');
   }
 
   togglePasswordVisibility(): void {
