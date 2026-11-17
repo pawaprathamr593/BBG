@@ -266,7 +266,7 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
   }
 
   personalContextLabel(): string {
-    return this.workspace.permissions().some((permission) => permission.scope_type === 'PLATFORM')
+    return this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM')
       ? 'Platform workspace'
       : 'Personal / Marketplace';
   }
