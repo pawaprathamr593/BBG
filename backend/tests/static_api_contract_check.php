@@ -13,7 +13,7 @@ if ($routes === false) {
 preg_match_all("~Route::post\\('(/api/v1/[^']+)'\\)~", $routes, $routeMatches);
 $routePaths = $routeMatches[1] ?? [];
 if (count($routePaths) !== 133 || count(array_unique($routePaths)) !== 133) {
-    fwrite(STDERR, 'Expected 129 unique POST API routes; found ' . count($routePaths) . ".\n");
+    fwrite(STDERR, 'Expected 133 unique POST API routes; found ' . count($routePaths) . ".\n");
     exit(1);
 }
 
