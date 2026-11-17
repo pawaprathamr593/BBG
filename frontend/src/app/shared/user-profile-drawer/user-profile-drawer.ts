@@ -61,15 +61,15 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
               (click)="goToMyAccount()">
               <span class="context-action-icon">◎</span>
               <span><strong>My Account</strong><small>Orders, enquiries, payments and profile</small></span>
-              @if (workspace.activeTenantId() === null) { <span class="selected-mark">✓</span> }
+              @if (isPersonalContext()) { <span class="selected-mark">✓</span> }
             </button>
-            @if (workspace.platformPermissions().some(permission => permission.scope_type === 'PLATFORM')) {
+            @if (hasPlatformAccess()) {
               <button class="context-action" type="button" [disabled]="switching()"
                 [class.is-active]="isPlatformContext()"
                 (click)="goToPlatformAdministration()">
                 <span class="context-action-icon">⚙</span>
                 <span><strong>Platform Administration</strong><small>Manage BBG platform operations</small></span>
-                @if (workspace.activeTenantId() === null && workspace.permissions().some(permission => permission.scope_type === 'PLATFORM')) { <span class="selected-mark">✓</span> }
+                @if (isPlatformContext()) { <span class="selected-mark">✓</span> }
               </button>
             }
             @if (workspace.loading()) {
@@ -177,6 +177,7 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
     && this.workspace.permissions().some((permission) => permission.scope_type === 'GLOBAL'));
   readonly isPlatformContext = computed(() => this.workspace.activeTenantId() === null
     && this.workspace.permissions().some((permission) => permission.scope_type === 'PLATFORM'));
+  readonly hasPlatformAccess = computed(() => this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM'));
 
   @ViewChild('trigger') private trigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('drawer') private drawer?: ElementRef<HTMLElement>;
