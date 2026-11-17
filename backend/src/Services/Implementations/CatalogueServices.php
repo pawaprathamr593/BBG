@@ -617,6 +617,7 @@ final readonly class CatalogueServices implements ICatalogueServices
             || $displayOrder === null || $displayOrder < 0 || $isPrimary === null
             || !in_array($mediaType, ['IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT'], true)
             || !$this->isSupportedProductMedia($mimeType, $mediaType)
+            || ($isPrimary === 1 && $mediaType !== 'IMAGE')
             || !str_starts_with($filePath, $expectedPrefix) || str_contains($filePath, '..')
             || str_starts_with($filePath, '/') || preg_match('/^[a-z]+:\/\//i', $filePath)
         ) {
