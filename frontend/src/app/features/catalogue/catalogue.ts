@@ -131,7 +131,7 @@ const emptyProduct = (): ProductForm => ({
               <section class="media-manager" aria-label="Product media">
                 <div class="media-heading"><div><strong>Product media</strong><p>Add multiple images, videos, audio clips or PDF documents.</p></div><span>{{ selectedMediaFiles().length + existingMedia().length }} files</span></div>
                 <label class="media-dropzone" (dragover)="allowMediaDrop($event)" (drop)="dropMedia($event)">
-                  <input type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,application/pdf" (change)="selectMedia($event)" [disabled]="saving() || mediaBusy()">
+                  <input type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,application/pdf,text/plain,text/csv,application/rtf" (change)="selectMedia($event)" [disabled]="saving() || mediaBusy()">
                   <span class="upload-symbol">＋</span><strong>Choose files to upload</strong><small>Images · Video · Audio · PDF. Select multiple files at once.</small>
                 </label>
                 @if (mediaError()) { <p class="form-error" role="alert">{{ mediaError() }}</p> }
@@ -355,7 +355,7 @@ export class Catalogue implements OnInit {
   }
 
   private addMediaFiles(files: File[]): void {
-    const allowed = new Set(['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','audio/mpeg','audio/wav','audio/ogg','application/pdf']);
+    const allowed = new Set(['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','audio/mpeg','audio/wav','audio/ogg','application/pdf','text/plain','text/csv','application/rtf']);
     const invalid = files.find((file) => !allowed.has(file.type) || file.size < 1 || file.size > 10 * 1024 * 1024);
     if (invalid) this.mediaError.set(`"${invalid.name}" is not a supported file or exceeds the 10 MB limit.`);
     else {
@@ -382,7 +382,7 @@ export class Catalogue implements OnInit {
   }
 
   mediaKind(mime: string): string {
-    return mime.startsWith('image/') ? 'IMAGE' : mime.startsWith('video/') ? 'VIDEO' : mime.startsWith('audio/') ? 'AUDIO' : 'PDF';
+    return mime.startsWith('image/') ? 'IMAGE' : mime.startsWith('video/') ? 'VIDEO' : mime.startsWith('audio/') ? 'AUDIO' : mime === 'application/pdf' ? 'PDF' : 'DOC';
   }
 
   formatFileSize(bytes: number): string {
