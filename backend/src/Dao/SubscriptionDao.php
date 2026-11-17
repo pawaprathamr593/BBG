@@ -107,6 +107,27 @@ final readonly class SubscriptionDao
         return $resArr;
     }
 
+    public function setRejectedSubscriptionPending(ConnectionInterface $db, int $tenantId, int $subscriptionId, int $userId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $affected = $db->createCommand("UPDATE TENANT_SUBSCRIPTIONS
+                SET subscription_status = 'PENDING', updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                WHERE id = :subscription_id AND tenant_id = :tenant_id
+                    AND subscription_status = 'REJECTED' AND status = 'A'",
+                [':user_id' => $userId, ':subscription_id' => $subscriptionId, ':tenant_id' => $tenantId])->execute();
+            if ($affected !== 1) {
+                $resArr['msgArr'][] = 'Rejected subscription could not be reopened for review.';
+                return $resArr;
+            }
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['subscription_id' => $subscriptionId, 'subscription_status' => 'PENDING'];
+        } catch (Throwable $exception) {
+            return $this->error('setRejectedSubscriptionPending', $exception);
+        }
+        return $resArr;
+    }
+
     public function getTenantSubscriptions(ConnectionInterface $db, int $tenantId, int $limit, int $offset): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
