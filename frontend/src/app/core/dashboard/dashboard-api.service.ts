@@ -59,7 +59,11 @@ export class DashboardApiService {
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
       throw new Error(response.msgArr?.join(' ') || 'Unable to load your business workspaces.');
     }
-    return response.data.items ?? [];
+    return (response.data.items ?? []).map((tenant) => ({
+      ...tenant,
+      id: Number(tenant.id),
+      tenant_name: String(tenant.tenant_name ?? '').trim(),
+    })).filter((tenant) => Number.isInteger(tenant.id) && tenant.id > 0);
   }
 
   async getConsumerSummary(): Promise<Record<string, number>> {
