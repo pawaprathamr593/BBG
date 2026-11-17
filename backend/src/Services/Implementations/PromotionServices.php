@@ -302,7 +302,7 @@ final readonly class PromotionServices implements IPromotionServices
         $displayOrder = filter_var($actionData['display_order'] ?? 0, FILTER_VALIDATE_INT);
         $expectedPrefix = 'tenants/' . $tenantId . '/posts/' . $promotionId . '/';
         if ($filePath === null || !str_starts_with($filePath, $expectedPrefix) || str_contains($filePath, '..')
-            || str_starts_with($filePath, '/') || preg_match('/^[a-z]+:///i', $filePath)
+            || str_starts_with($filePath, '/') || preg_match('#^[a-z]+://#i', $filePath)
             || $fileSize === false || $fileSize < 1 || $fileSize > $this->s3Storage->getMaxUploadBytes()
             || $displayOrder === false || $displayOrder < 0) {
             $resArr['msgArr'][] = 'Valid post-scoped media path, size and display order are required.';
