@@ -7,7 +7,8 @@ export interface AuthDialogState {
   mode: SocialAuthIntent;
   top: number;
   left: number;
-  placement: 'bottom' | 'top' | 'left' | 'right';
+  placement: 'bottom' | 'top';
+  arrowOffset: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -36,41 +37,29 @@ export class AuthDialogService {
     onAuthenticated?: () => void | Promise<void>,
   ): void {
     this.pendingAction = onAuthenticated ?? null;
-    // Reserve enough room for the compact social-first popup and its email form.
-    const width = Math.min(340, window.innerWidth - 24);
-    const height = Math.min(360, window.innerHeight - 32);
-    const gap = 10;
-    let top = Math.max(16, (window.innerHeight - height) / 2);
+    const width = Math.min(360, window.innerWidth - 24);
+    const height = Math.min(440, window.innerHeight - 24);
+    const gap = 12;
+    let top = Math.max(12, (window.innerHeight - height) / 2);
     let left = Math.max(12, (window.innerWidth - width) / 2);
     let placement: AuthDialogState['placement'] = 'bottom';
-
+    let arrowOffset = 40;
     if (anchor) {
       const rect = anchor.getBoundingClientRect();
-      left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12);
+      const centerX = rect.left + rect.width / 2;
+      left = Math.min(Math.max(12, centerX - width / 2), window.innerWidth - width - 12);
       top = rect.bottom + gap;
-
       if (top + height > window.innerHeight - 12) {
         top = rect.top - height - gap;
         placement = 'top';
       }
-
       if (top < 12) {
         top = Math.max(12, Math.min(rect.top, window.innerHeight - height - 12));
-        if (rect.right + width + gap <= window.innerWidth) {
-          left = rect.right + gap;
-          placement = 'left';
-        } else if (rect.left - width - gap >= 0) {
-          left = rect.left - width - gap;
-          placement = 'right';
-        } else {
-          top = Math.max(12, window.innerHeight - height - 12);
-          left = Math.max(12, Math.min(rect.left, window.innerWidth - width - 12));
-          placement = 'top';
-        }
+        placement = rect.bottom < window.innerHeight / 2 ? 'bottom' : 'top';
       }
+      arrowOffset = Math.min(Math.max(centerX - left, 24), width - 24);
     }
-
-    this.state.set({ reason, mode, top, left, placement });
+    this.state.set({ reason, mode, top, left, placement, arrowOffset });
   }
 
   close(): void {
