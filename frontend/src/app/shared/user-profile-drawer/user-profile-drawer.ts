@@ -174,7 +174,7 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
   readonly initials = computed(() => (this.auth.user()?.full_name || 'BBG')
     .trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join(''));
   readonly isPersonalContext = computed(() => this.workspace.activeTenantId() === null
-    && this.workspace.permissions().some((permission) => permission.scope_type === 'GLOBAL'));
+    && !this.workspace.permissions().some((permission) => permission.scope_type === 'PLATFORM'));
   readonly isPlatformContext = computed(() => this.workspace.activeTenantId() === null
     && this.workspace.permissions().some((permission) => permission.scope_type === 'PLATFORM'));
   readonly hasPlatformAccess = computed(() => this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM'));
