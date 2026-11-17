@@ -5,16 +5,6 @@ import { DashboardApiService } from '../../core/dashboard/dashboard-api.service'
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
 import { BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
 
-interface DashboardModule {
-  code: string;
-  title: string;
-  description: string;
-  permission: string;
-  icon: string;
-  scope: 'PLATFORM' | 'TENANT' | 'GLOBAL';
-  route?: string;
-  entitlement?: string;
-}
 
 @Component({
   selector: 'app-dashboard',
@@ -43,10 +33,12 @@ interface DashboardModule {
             <strong>{{ selectedTenant() ? 'Business Workspace' : isPlatformContext() ? 'BBG Platform' : 'My Account' }}</strong>
             <p>{{ isPersonalContext() ? 'Your personal orders, enquiries, payments and profile in one place.' : isPlatformContext() ? 'Manage BBG platform operations using your assigned administrator permissions.' : 'Manage your business operations using your assigned permissions.' }}</p>
           </div>
-          <div class="role-list">
-            @for (role of roleCodes(); track role) { <span class="role-chip">{{ roleLabel(role) }}</span> }
-            @if (!roleCodes().length) { <span class="role-chip muted">No assigned roles in this context</span> }
-          </div>
+          @if (!isPersonalContext()) {
+            <div class="role-list">
+              @for (role of roleCodes(); track role) { <span class="role-chip">{{ roleLabel(role) }}</span> }
+              @if (!roleCodes().length) { <span class="role-chip muted">No assigned roles in this context</span> }
+            </div>
+          }
         </section>
 
         @if (summaryLoading()) {
@@ -66,7 +58,7 @@ interface DashboardModule {
 
         @if (isPersonalContext() && personalShortcuts().length) {
           <section class="personal-shortcuts">
-            <div><p class="eyebrow">MY ACCOUNT</p><h2>Your activity</h2><p>Access the personal services enabled for your account.</p></div>
+            <div><p class="eyebrow">MY ACCOUNT</p><h2>Your activity</h2><p>View your customer activity and personal account details.</p></div>
             <div class="shortcut-grid">
               @for (shortcut of personalShortcuts(); track shortcut.route) {
                 <a [routerLink]="shortcut.route"><span>{{ shortcut.icon }}</span><strong>{{ shortcut.title }}</strong><small>{{ shortcut.description }}</small></a>
@@ -183,27 +175,6 @@ export class Dashboard implements OnInit {
     return hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
   });
 
-  private readonly modules: DashboardModule[] = [
-    { code: 'catalogue', title: 'Product catalogue', description: 'Manage products, categories, variants and product media for your business.', permission: 'CATALOGUE_MANAGE', icon: '▦', scope: 'TENANT', route: '/dashboard/catalogue', entitlement: 'PRODUCT_MANAGEMENT' },
-    { code: 'business', title: 'Business profile', description: 'Maintain your business information and public storefront profile.', permission: 'BUSINESS_PROFILE_MANAGE', icon: '⌂', scope: 'TENANT', route: '/dashboard/profile' },
-    { code: 'storefront', title: 'Public storefront', description: 'Configure and publish your public business storefront.', permission: 'BUSINESS_PROFILE_MANAGE', icon: '▣', scope: 'TENANT', route: '/dashboard/storefront' },
-    { code: 'customers', title: 'Customers', description: 'Review customer information and available customer records.', permission: 'CUSTOMERS_MANAGE', icon: '♙', scope: 'TENANT', route: '/dashboard/customers' },
-    { code: 'sales', title: 'Sales & enquiries', description: 'Review incoming enquiries and manage sales conversations.', permission: 'ENQUIRIES_MANAGE', icon: '↗', scope: 'TENANT', route: '/dashboard/enquiries' },
-    { code: 'orders', title: 'Order management', description: 'Process, update and track orders for this business.', permission: 'ORDERS_MANAGE', icon: '▤', scope: 'TENANT', route: '/dashboard/orders' },
-    { code: 'payments', title: 'Payments', description: 'Review payment activity and related business records.', permission: 'PAYMENTS_VIEW', icon: '₹', scope: 'TENANT', route: '/dashboard/payments' },
-    { code: 'promotions', title: 'Promotions', description: 'Create and manage business promotions and campaigns.', permission: 'PROMOTIONS_MANAGE', icon: '✳', scope: 'TENANT', route: '/dashboard/promotions', entitlement: 'DAILY_PROMOTION_LIMIT' },
-    { code: 'subscriptions', title: 'Subscriptions', description: 'Review the business subscription and plan entitlements.', permission: 'SUBSCRIPTIONS_MANAGE', icon: '◇', scope: 'TENANT', route: '/dashboard/subscriptions' },
-    { code: 'members', title: 'Team & access', description: 'View team membership and assigned workspace access.', permission: 'TENANT_MEMBERS_VIEW', icon: '♧', scope: 'TENANT', route: '/dashboard/members' },
-    { code: 'analytics', title: 'Business analytics', description: 'Review the analytics available to your business role.', permission: 'ANALYTICS_VIEW', icon: '▥', scope: 'TENANT', route: '/dashboard/analytics' },
-    { code: 'platform-users', title: 'Platform users', description: 'Manage BBG platform user accounts and account status.', permission: 'PLATFORM_USERS_MANAGE', icon: '♙', scope: 'PLATFORM', route: '/dashboard/platform-users' },
-    { code: 'business-approval', title: 'Business approvals', description: 'Review business applications and approval workflows.', permission: 'BUSINESS_APPROVE', icon: '✓', scope: 'PLATFORM', route: '/dashboard/business-approval' },
-    { code: 'subscription-approval', title: 'Subscription approvals', description: 'Review and process platform subscription requests.', permission: 'SUBSCRIPTIONS_APPROVE', icon: '◇', scope: 'PLATFORM', route: '/dashboard/subscription-approval' },
-    { code: 'categories', title: 'Marketplace categories', description: 'Manage the categories used across the BBG marketplace.', permission: 'CATEGORIES_MANAGE', icon: '▦', scope: 'PLATFORM', route: '/dashboard/categories' },
-    { code: 'moderation', title: 'Marketplace moderation', description: 'Review reports and moderate marketplace content.', permission: 'MODERATION_MANAGE', icon: '⚑', scope: 'PLATFORM', route: '/dashboard/moderation' },
-    { code: 'platform-analytics', title: 'Platform analytics', description: 'View approved platform-wide analytics metrics.', permission: 'ANALYTICS_VIEW', icon: '▥', scope: 'PLATFORM', route: '/dashboard/platform-analytics' },
-    { code: 'system-health', title: 'System health', description: 'View operational health information available to platform staff.', permission: 'SYSTEM_HEALTH_VIEW', icon: '⌁', scope: 'PLATFORM', route: '/dashboard/system-health' },
-  ];
-
   async ngOnInit(): Promise<void> {
     await this.reload();
   }
@@ -288,21 +259,6 @@ export class Dashboard implements OnInit {
       this.summaryLoading.set(false);
     }
   }
-
-  readonly visibleModules = computed(() => {
-    const permissions = new Set(this.permissions().map((permission) => permission.permission_code));
-    const activeScope = this.selectedTenantId() === null
-      ? (this.permissions().some((permission) => permission.scope_type === 'PLATFORM') ? ['PLATFORM'] : ['GLOBAL'])
-      : ['TENANT'];
-    const entitlements = new Map((this.selectedTenant()?.active_entitlements ?? '').split(';').filter(Boolean)
-      .map((entry) => {
-        const separator = entry.indexOf('=');
-        return separator > 0 ? [entry.slice(0, separator), entry.slice(separator + 1).toUpperCase()] as const : [entry, ''] as const;
-      }));
-    return this.modules.filter((module) => activeScope.includes(module.scope) && permissions.has(module.permission)
-      && this.permissions().some((permission) => permission.permission_code === module.permission && permission.scope_type === module.scope)
-      && (!module.entitlement || ['1', 'TRUE', 'YES'].includes(entitlements.get(module.entitlement) ?? '')));
-  });
 
   readonly summaryCards = computed(() => {
     const data = this.summary();
