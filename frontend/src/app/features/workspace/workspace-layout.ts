@@ -35,8 +35,8 @@ interface WorkspaceNavItem {
         <aside class="workspace-sidebar" [attr.aria-label]="contextLabel() + ' navigation'">
           <div class="sidebar-scroll">
             <p class="sidebar-caption" [class.visually-hidden]="sidebarCollapsed()">{{ contextLabel() }}</p>
-            <a class="nav-item overview-link" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" [attr.title]="sidebarCollapsed() ? 'Overview' : null">
-              <span class="nav-icon">▦</span><span class="nav-label">Overview</span>
+            <a class="nav-item overview-link" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" [attr.title]="sidebarCollapsed() ? overviewLabel() : null">
+              <span class="nav-icon">▦</span><span class="nav-label">{{ overviewLabel() }}</span>
             </a>
             <div class="nav-divider"></div>
             <p class="sidebar-caption" [class.visually-hidden]="sidebarCollapsed()">AVAILABLE MODULES</p>
