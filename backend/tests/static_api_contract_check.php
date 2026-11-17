@@ -129,4 +129,26 @@ if (
     exit(1);
 }
 
-echo "Static API contract checks passed: 125 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, social OAuth/email OTP and subscription proof S3 flow.\n";
+$catalogueDao = file_get_contents($root . '/src/Dao/CatalogueDao.php');
+$catalogueService = file_get_contents($root . '/src/Services/Implementations/CatalogueServices.php');
+$promotionDao = file_get_contents($root . '/src/Dao/PromotionDao.php');
+$promotionService = file_get_contents($root . '/src/Services/Implementations/PromotionServices.php');
+if (
+    $catalogueDao === false
+    || $catalogueService === false
+    || $promotionDao === false
+    || $promotionService === false
+    || !str_contains($catalogueDao, "entitlement_code = 'PRODUCT_MANAGEMENT'")
+    || !str_contains($catalogueService, 'isEntitlementEnabled')
+    || str_contains($catalogueDao, "entitlement_code = 'PRODUCT_LIMIT'")
+    || !str_contains($promotionDao, "entitlement_code = 'PROMOTION_MANAGEMENT'")
+    || !str_contains($promotionDao, "entitlement_code = 'DAILY_PROMOTION_LIMIT'")
+    || !str_contains($promotionDao, 'CONVERT_TZ')
+    || !str_contains($promotionService, 'lockTenantForPromotionPublish')
+    || !str_contains($promotionService, 'countPromotionsPublishedOnTenantLocalDay')
+) {
+    fwrite(STDERR, "Catalogue or promotion subscription entitlement enforcement does not match the BBG plan seed.\n");
+    exit(1);
+}
+
+echo "Static API contract checks passed: 125 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, social OAuth/email OTP, subscription proof S3, catalogue plan entitlement and tenant-local daily promotion limits.\n";

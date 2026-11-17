@@ -12,17 +12,17 @@ final readonly class CatalogueDao
 {
     public function __construct(private LoggerInterface $logger) {}
 
-    public function getActiveProductLimit(ConnectionInterface $db, int $tenantId): array
+    public function getActiveProductManagementEntitlement(ConnectionInterface $db, int $tenantId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->one($db, "SELECT pe.entitlement_value
             FROM TENANT_SUBSCRIPTIONS ts
             INNER JOIN PLAN_ENTITLEMENTS pe ON pe.plan_id = ts.plan_id
-                AND pe.entitlement_code = 'PRODUCT_LIMIT' AND pe.status = 'A'
+                AND pe.entitlement_code = 'PRODUCT_MANAGEMENT' AND pe.value_type = 'BOOLEAN' AND pe.status = 'A'
             WHERE ts.tenant_id = :tenant_id AND ts.subscription_status = 'ACTIVE' AND ts.status = 'A'
                 AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
                 AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
-            LIMIT 1", [':tenant_id' => $tenantId], 'getActiveProductLimit');
+            LIMIT 1", [':tenant_id' => $tenantId], 'getActiveProductManagementEntitlement');
     }
 
     public function getUnits(ConnectionInterface $db): array

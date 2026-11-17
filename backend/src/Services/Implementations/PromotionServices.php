@@ -202,21 +202,80 @@ final readonly class PromotionServices implements IPromotionServices
             return $this->dao->softDeletePromotion($this->db, $tenantId, $promotionId, $userId);
         }
         if ($operation === 'publish' || $operation === 'unpublish') {
-            if ($operation === 'publish') {
+            if ($operation === 'unpublish') {
+                return $this->dao->setPromotionPublicationStatus(
+                    $this->db, $tenantId, $promotionId, $userId, 'DRAFT',
+                );
+            }
+            if (($existing['data']['publication_status'] ?? '') === 'PUBLISHED') {
+                return ['status' => 'SUCCESS', 'msgArr' => [], 'data' => [
+                    'id' => $promotionId, 'publication_status' => 'PUBLISHED',
+                ]];
+            }
+            $validUntil = $existing['data']['valid_until'] ?? null;
+            if ($validUntil !== null && strtotime((string) $validUntil) < time()) {
+                $resArr['msgArr'][] = 'Expired promotions cannot be published.';
+                return $resArr;
+            }
+
+            $transaction = $this->db->beginTransaction();
+            try {
+                $lockedTenant = $this->dao->lockTenantForPromotionPublish($this->db, $tenantId);
+                if ($lockedTenant['status'] !== 'SUCCESS' || $lockedTenant['data'] === []) {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($lockedTenant, 'PromotionServices::manageMyPromotion');
+                }
+
                 $entitlement = $this->dao->hasPromotionEntitlement($this->db, $tenantId);
                 if ($entitlement['status'] !== 'SUCCESS' || $entitlement['data'] === []) {
-                    $resArr['msgArr'][] = 'An active subscription with PROMOTIONAL_POSTS entitlement is required to publish promotions.';
+                    $transaction->rollBack();
+                    $resArr['msgArr'][] = 'An active subscription with PROMOTION_MANAGEMENT enabled is required to publish promotions.';
                     return $resArr;
                 }
-                $validUntil = $existing['data']['valid_until'] ?? null;
-                if ($validUntil !== null && strtotime((string) $validUntil) < time()) {
-                    $resArr['msgArr'][] = 'Expired promotions cannot be published.';
+
+                $limitResult = $this->dao->getActiveDailyPromotionLimit($this->db, $tenantId);
+                if ($limitResult['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($limitResult, 'PromotionServices::manageMyPromotion');
+                }
+                $dailyLimit = filter_var($limitResult['data']['entitlement_value'] ?? null, FILTER_VALIDATE_INT);
+                if ($dailyLimit === false || $dailyLimit < 1) {
+                    $transaction->rollBack();
+                    $resArr['msgArr'][] = 'The active subscription does not include a valid DAILY_PROMOTION_LIMIT.';
                     return $resArr;
                 }
+
+                $dailyCount = $this->dao->countPromotionsPublishedOnTenantLocalDay($this->db, $tenantId);
+                if ($dailyCount['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($dailyCount, 'PromotionServices::manageMyPromotion');
+                }
+                if (empty($dailyCount['data']['tenant_now'])) {
+                    $transaction->rollBack();
+                    $resArr['msgArr'][] = 'The tenant time zone could not be resolved. Promotion publishing is temporarily unavailable.';
+                    return $resArr;
+                }
+                if ((int) ($dailyCount['data']['total'] ?? 0) >= $dailyLimit) {
+                    $transaction->rollBack();
+                    $resArr['msgArr'][] = 'The daily promotion publishing limit for this business has been reached.';
+                    return $resArr;
+                }
+
+                $published = $this->dao->setPromotionPublicationStatus(
+                    $this->db, $tenantId, $promotionId, $userId, 'PUBLISHED',
+                );
+                if ($published['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $published;
+                }
+                $transaction->commit();
+                return $published;
+            } catch (Throwable $exception) {
+                if ($transaction->isActive()) {
+                    $transaction->rollBack();
+                }
+                throw $exception;
             }
-            return $this->dao->setPromotionPublicationStatus(
-                $this->db, $tenantId, $promotionId, $userId, $operation === 'publish' ? 'PUBLISHED' : 'DRAFT',
-            );
         }
 
         $content = $this->requiredText($actionData['post_content'] ?? '', 10000);
@@ -238,7 +297,7 @@ final readonly class PromotionServices implements IPromotionServices
         if ($operation === 'create') {
             $entitlement = $this->dao->hasPromotionEntitlement($this->db, $tenantId);
             if ($entitlement['status'] !== 'SUCCESS' || $entitlement['data'] === []) {
-                $resArr['msgArr'][] = 'An active subscription with PROMOTIONAL_POSTS entitlement is required to create promotions.';
+                $resArr['msgArr'][] = 'An active subscription with PROMOTION_MANAGEMENT enabled is required to create promotions.';
                 return $resArr;
             }
             return $this->dao->insertPromotion($this->db, $tenantId, $title, $content, $validUntil, $userId);

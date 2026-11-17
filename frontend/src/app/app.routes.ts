@@ -5,6 +5,7 @@ import { PublicLayout } from './core/layouts/public-layout/public-layout';
 import { StorefrontLayout } from './core/layouts/storefront-layout/storefront-layout';
 import { permissionScopeGuard } from './core/permissions/permission.guard';
 import { adminWorkspace, consumerWorkspace, entrepreneurWorkspace } from './features/workspaces/workspace.config';
+import { UnifiedWorkspace } from './features/workspaces/unified-workspace';
 
 export const routes: Routes = [
   {
