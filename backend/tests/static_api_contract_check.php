@@ -79,6 +79,11 @@ if (
     || !str_contains($catalogueDao, 'getActiveProductEntitlements')
     || !str_contains($catalogueService, 'PRODUCT_MANAGEMENT')
     || !str_contains($catalogueService, 'PRODUCT_LIMIT')
+    || !str_contains($catalogueService, 'productMediaSignatureMatches')
+    || !str_contains($catalogueService, "'video/mp4'")
+    || !str_contains($catalogueService, "'audio/mpeg'")
+    || !str_contains($catalogueService, "'application/pdf'")
+    || !str_contains($catalogueService, "'text/csv'")
 ) {
     fwrite(STDERR, "Catalogue product-management entitlement contract is incomplete.\n");
     exit(1);
