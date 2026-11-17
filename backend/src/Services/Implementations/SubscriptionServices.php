@@ -384,10 +384,31 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             $resArr['msgArr'][] = 'A payment proof is already awaiting review.';
             return $resArr;
         }
-        return $this->dao->insertSubscriptionProof(
-            $this->db, $tenantId, $subscriptionId, $userId,
-            $this->nullableText($actionData['payment_reference'] ?? null, 120), $proofPath,
-        );
+        $transaction = $this->db->beginTransaction();
+        try {
+            $proof = $this->dao->insertSubscriptionProof(
+                $this->db, $tenantId, $subscriptionId, $userId,
+                $this->nullableText($actionData['payment_reference'] ?? null, 120), $proofPath,
+            );
+            if ($proof['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($proof, 'SubscriptionServices::manageSubscriptionProof');
+            }
+            if (($subscription['data']['subscription_status'] ?? '') === 'REJECTED') {
+                $reopened = $this->dao->setRejectedSubscriptionPending($this->db, $tenantId, $subscriptionId, $userId);
+                if ($reopened['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($reopened, 'SubscriptionServices::manageSubscriptionProof');
+                }
+            }
+            $transaction->commit();
+            return $proof;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) {
+                $transaction->rollBack();
+            }
+            throw $exception;
+        }
     }
 
     private function tenantContext(array $actionData): array
