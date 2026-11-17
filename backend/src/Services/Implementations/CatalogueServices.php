@@ -330,7 +330,39 @@ final readonly class CatalogueServices implements ICatalogueServices
                 $resArr['msgArr'][] = 'A valid product_id is required.';
                 return $resArr;
             }
-            return $this->dao->softDeleteProduct($this->db, $tenantId, $productId, $userId);
+            $media = $this->dao->getProductMedia($this->db, $tenantId, $productId);
+            if ($media['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($media, 'CatalogueServices::manageTenantProduct media lookup');
+            }
+            $deleted = $this->dao->softDeleteProduct($this->db, $tenantId, $productId, $userId);
+            if ($deleted['status'] !== 'SUCCESS') {
+                return $deleted;
+            }
+            $mediaDeleted = $this->dao->softDeleteAllProductMedia($this->db, $tenantId, $productId, $userId);
+            if ($mediaDeleted['status'] !== 'SUCCESS') {
+                $this->logger->error('Product was deleted but associated media records could not be soft-deleted.', [
+                    'tenant_id' => $tenantId, 'product_id' => $productId, 'messages' => $mediaDeleted['msgArr'] ?? [],
+                ]);
+                return $deleted;
+            }
+            foreach ($media['data'] as $mediaRow) {
+                foreach (['file_path', 'thumbnail_path'] as $pathField) {
+                    $objectKey = trim((string) ($mediaRow[$pathField] ?? ''));
+                    if ($objectKey === '') {
+                        continue;
+                    }
+                    try {
+                        $this->s3Storage->deleteObject($objectKey);
+                    } catch (Throwable $exception) {
+                        $this->logger->warning('Product media record was soft-deleted but S3 cleanup failed.', [
+                            'tenant_id' => $tenantId, 'product_id' => $productId,
+                            'media_id' => (int) ($mediaRow['id'] ?? 0), 'object_key' => $objectKey,
+                            'exception' => $exception,
+                        ]);
+                    }
+                }
+            }
+            return $deleted;
         }
         if ($operation === 'update' && $productId === null) {
             $resArr['msgArr'][] = 'A valid product_id is required.';
