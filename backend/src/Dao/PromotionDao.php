@@ -182,6 +182,65 @@ final readonly class PromotionDao
             [':tenant_id' => $tenantId, ':post_id' => $promotionId], 'getPromotionMedia');
     }
 
+    public function getPromotionMediaRecord(ConnectionInterface $db, int $tenantId, int $promotionId, int $mediaId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT id, file_path FROM POST_MEDIA
+            WHERE id = :media_id AND tenant_id = :tenant_id AND post_id = :post_id AND status = 'A' LIMIT 1",
+            [':media_id' => $mediaId, ':tenant_id' => $tenantId, ':post_id' => $promotionId],
+            'getPromotionMediaRecord');
+    }
+
+    public function insertPromotionMedia(
+        ConnectionInterface $db,
+        int $tenantId,
+        int $promotionId,
+        string $filePath,
+        string $mediaType,
+        int $displayOrder,
+        int $userId,
+    ): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $db->createCommand("INSERT INTO POST_MEDIA
+                (tenant_id, post_id, file_path, media_type, display_order, status, created_by, updated_by)
+                VALUES (:tenant_id, :post_id, :file_path, :media_type, :display_order, 'A', :user_id, :user_id)",
+                [':tenant_id' => $tenantId, ':post_id' => $promotionId, ':file_path' => $filePath,
+                 ':media_type' => $mediaType, ':display_order' => $displayOrder, ':user_id' => $userId])->execute();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['id' => (int) $db->getLastInsertId()];
+        } catch (Throwable $exception) {
+            return $this->error('insertPromotionMedia', $exception);
+        }
+        return $resArr;
+    }
+
+    public function softDeletePromotionMedia(
+        ConnectionInterface $db,
+        int $tenantId,
+        int $promotionId,
+        int $mediaId,
+        int $userId,
+    ): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $affected = $db->createCommand("UPDATE POST_MEDIA SET status = 'Z',
+                updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                WHERE id = :media_id AND tenant_id = :tenant_id AND post_id = :post_id AND status = 'A'",
+                [':user_id' => $userId, ':media_id' => $mediaId,
+                 ':tenant_id' => $tenantId, ':post_id' => $promotionId])->execute();
+            if ($affected !== 1) {
+                $resArr['msgArr'][] = 'Post media was not found.';
+                return $resArr;
+            }
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['id' => $mediaId];
+        } catch (Throwable $exception) {
+            return $this->error('softDeletePromotionMedia', $exception);
+        }
+        return $resArr;
+    }
+
     public function getPromotionEngagement(ConnectionInterface $db, int $tenantId, int $promotionId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
