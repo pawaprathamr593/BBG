@@ -1,5 +1,5 @@
 import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter, firstValueFrom, lastValueFrom, tap } from 'rxjs';
@@ -12,6 +12,7 @@ interface ApiEnvelope<T = unknown> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION';
 interface DataRecord { [key: string]: unknown; }
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-dashboard-module',
   standalone: true,
   imports: [RouterLink],
