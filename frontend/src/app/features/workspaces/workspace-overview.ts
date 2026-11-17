@@ -64,7 +64,7 @@ export class WorkspaceOverview {
     } catch (cause) {
       if (requestId === this.requestSequence) this.error.set(cause instanceof Error ? cause.message : 'Unable to load dashboard information.');
     } finally {
-      this.loading.set(false);
+      if (requestId === this.requestSequence) this.loading.set(false);
     }
   }
 
