@@ -170,6 +170,11 @@ final readonly class AdminDao
                     AND proof_latest.status = 'A'
             )
             WHERE ts.subscription_status = 'PENDING' AND ts.status = 'A'
+                AND EXISTS (
+                    SELECT 1 FROM SUBSCRIPTION_PAYMENT_PROOFS submitted
+                    WHERE submitted.tenant_id = ts.tenant_id AND submitted.subscription_id = ts.id
+                        AND submitted.review_status = 'PENDING' AND submitted.status = 'A'
+                )
             ORDER BY ts.created_on ASC, ts.id ASC LIMIT :limit OFFSET :offset",
             [':limit' => $limit, ':offset' => $offset], 'getPendingSubscriptions');
     }
@@ -177,8 +182,13 @@ final readonly class AdminDao
     public function countPendingSubscriptions(ConnectionInterface $db): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        return $this->one($db, "SELECT COUNT(*) AS total FROM TENANT_SUBSCRIPTIONS
-            WHERE subscription_status = 'PENDING' AND status = 'A'", [], 'countPendingSubscriptions');
+        return $this->one($db, "SELECT COUNT(*) AS total FROM TENANT_SUBSCRIPTIONS ts
+            WHERE ts.subscription_status = 'PENDING' AND ts.status = 'A'
+                AND EXISTS (
+                    SELECT 1 FROM SUBSCRIPTION_PAYMENT_PROOFS submitted
+                    WHERE submitted.tenant_id = ts.tenant_id AND submitted.subscription_id = ts.id
+                        AND submitted.review_status = 'PENDING' AND submitted.status = 'A'
+                )", [], 'countPendingSubscriptions');
     }
 
     public function getSubscriptionForReview(ConnectionInterface $db, int $subscriptionId): array
