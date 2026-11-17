@@ -131,6 +131,23 @@ final readonly class PromotionServices implements IPromotionServices
         if ($rows['status'] !== 'SUCCESS') {
             return $this->propagateFailure($rows, 'PromotionServices::getMyPromotions');
         }
+        foreach ($rows['data'] as &$promotionRow) {
+            $media = $this->dao->getPromotionMedia($this->db, $tenantId, (int) $promotionRow['id']);
+            $promotionRow['media'] = [];
+            if ($media['status'] === 'SUCCESS') {
+                foreach ($media['data'] as $mediaRow) {
+                    try { $mediaRow['url'] = $this->s3Storage->createDownloadUrl((string) $mediaRow['file_path']); }
+                    catch (Throwable $exception) {
+                        $this->logger->warning('Unable to create a post media download URL for promotion list.', [
+                            'promotion_id' => (int) $promotionRow['id'], 'exception' => $exception,
+                        ]);
+                        $mediaRow['url'] = null;
+                    }
+                    $promotionRow['media'][] = $mediaRow;
+                }
+            }
+        }
+        unset($promotionRow);
         $count = $this->dao->countMyPromotions($this->db, $tenantId);
         if ($count['status'] !== 'SUCCESS') {
             return $this->propagateFailure($count, 'PromotionServices::getMyPromotions');
