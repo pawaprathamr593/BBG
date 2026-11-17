@@ -54,7 +54,7 @@ interface WorkspaceNavItem {
               <span class="nav-icon">▦</span><span class="nav-label">{{ overviewLabel() }}</span>
             </a>
             <div class="nav-divider"></div>
-            <p class="sidebar-caption" [class.visually-hidden]="sidebarCollapsed()">AVAILABLE MODULES</p>
+            <p class="sidebar-caption" [class.visually-hidden]="sidebarCollapsed()">{{ navSectionLabel() }}</p>
             @for (item of visibleNavItems(); track item.route) {
               <a class="nav-item" [routerLink]="item.route" routerLinkActive="active" [attr.title]="sidebarCollapsed() ? item.label : null">
                 <span class="nav-icon">{{ item.icon }}</span><span class="nav-label">{{ item.label }}</span>
@@ -209,6 +209,7 @@ export class WorkspaceLayout implements OnInit {
   readonly isPersonalContext = computed(() => this.activeTenantId() === null && !this.hasPlatformAccess());
   readonly contextLabel = computed(() => this.activeTenantId() !== null ? 'BUSINESS WORKSPACE' : this.hasPlatformAccess() ? 'PLATFORM ADMINISTRATION' : 'MY ACCOUNT');
   readonly overviewLabel = computed(() => this.isPersonalContext() ? 'My Account Overview' : this.isPlatform() ? 'Platform Overview' : 'Overview');
+  readonly navSectionLabel = computed(() => this.isPersonalContext() ? 'MY ACCOUNT' : this.isPlatform() ? 'ADMINISTRATION' : 'BUSINESS TOOLS');
   readonly canAccessPlatform = computed(() => this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM'));
   readonly showContextSwitcher = computed(() => this.workspace.tenants().length > 0 || this.canAccessPlatform());
   readonly activeContextSelection = computed(() => this.activeTenantId() !== null
