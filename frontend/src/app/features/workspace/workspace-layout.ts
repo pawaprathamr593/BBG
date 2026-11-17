@@ -282,10 +282,13 @@ export class WorkspaceLayout implements OnInit {
       {label:'Moderation',route:'/dashboard/moderation',permission:'MODERATION_MANAGE',scope:'PLATFORM',icon:'shield-check'},
       {label:'Platform analytics',route:'/dashboard/platform-analytics',permission:'ANALYTICS_VIEW',scope:'PLATFORM',icon:'chart-column'},
       {label:'System health',route:'/dashboard/system-health',permission:'SYSTEM_HEALTH_VIEW',scope:'PLATFORM',icon:'activity'},
-      {label:'My Orders',route:'/dashboard/orders',permission:'ORDERS_VIEW',scope:'GLOBAL',icon:'receipt-text'},
-      {label:'My Enquiries',route:'/dashboard/enquiries',permission:'ENQUIRIES_VIEW',scope:'GLOBAL',icon:'messages-square'},
-      {label:'My Payments',route:'/dashboard/payments',permission:'PAYMENTS_VIEW',scope:'GLOBAL',icon:'hand-coins'},
-      {label:'My Profile & Addresses',route:'/dashboard/customers',permission:'CUSTOMER_PROFILE_VIEW',scope:'GLOBAL',icon:'contact-round'},
+      // My Account navigation is part of every authenticated consumer account.
+      // Keep these personal destinations visible even when a deployment has not
+      // seeded optional GLOBAL role-permission rows; APIs still enforce ownership.
+      {label:'My Orders',route:'/dashboard/orders',permission:null,scope:'GLOBAL',icon:'receipt-text'},
+      {label:'My Enquiries',route:'/dashboard/enquiries',permission:null,scope:'GLOBAL',icon:'messages-square'},
+      {label:'My Payments',route:'/dashboard/payments',permission:null,scope:'GLOBAL',icon:'hand-coins'},
+      {label:'My Profile & Addresses',route:'/dashboard/customers',permission:null,scope:'GLOBAL',icon:'contact-round'},
     ];
     return items.filter((item) => scope.includes(item.scope) && available(item.permission,item.scope));
   });
