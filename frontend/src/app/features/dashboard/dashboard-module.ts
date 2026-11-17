@@ -84,6 +84,19 @@ interface DataRecord { [key: string]: unknown; }
           </section>
         }
 
+        @if (section() === 'payment-qr-settings') {
+          <section class="qr-settings-card">
+            <div class="section-title"><div><p class="eyebrow">PLATFORM PAYMENT SETTINGS</p><h2>UPI payment QR</h2><p>Changing the QR affects new subscription requests only. Existing requests retain their captured payment instructions.</p></div></div>
+            @if (summary()?.['qr_url']) { <img class="payment-qr-preview" [src]="$any(summary()?.['qr_url'])" alt="Current BBG UPI payment QR"> }
+            <label>Payee name<input type="text" maxlength="150" [value]="qrPayeeName()" (input)="qrPayeeName.set(($any($event.target)).value)" placeholder="BBG account name"></label>
+            <label>UPI ID<input type="text" maxlength="150" [value]="qrUpiId()" (input)="qrUpiId.set(($any($event.target)).value)" placeholder="payments@upi"></label>
+            <label>Payment instructions<textarea rows="3" maxlength="1000" [value]="qrInstructions()" (input)="qrInstructions.set(($any($event.target)).value)" placeholder="Optional instructions for business owners"></textarea></label>
+            <label>New QR image<input type="file" accept="image/jpeg,image/png,image/webp" (change)="setPaymentQrFile($event)" [disabled]="busy()"><small>JPG, PNG or WEBP, up to 10 MB. Uploading a new QR creates a new version.</small></label>
+            @if (qrFile()) { <p class="qr-file-name">Selected: {{ qrFile()?.name }}</p> }
+            <button type="button" class="secondary-action" (click)="savePaymentQrConfig()" [disabled]="busy() || !qrPayeeName().trim() || !qrUpiId().trim() || !qrFile()">{{ busy() ? 'Saving…' : 'Save payment QR configuration' }}</button>
+          </section>
+        }
+
         @if (section() === 'subscriptions' && plans().length) {
           <section class="plans-section">
             <div class="section-title"><div><p class="eyebrow">AVAILABLE PLANS</p><h2>Choose a business plan</h2></div></div>
@@ -277,6 +290,10 @@ export class DashboardModule implements OnInit {
   readonly plans = signal<DataRecord[]>([]);
   readonly pendingPlanId = signal<number | null>(null);
   readonly proofDrafts = signal<Record<number,{objectKey:string;paymentReference:string;fileName:string}>>({});
+  readonly qrPayeeName = signal('');
+  readonly qrUpiId = signal('');
+  readonly qrInstructions = signal('');
+  readonly qrFile = signal<File | null>(null);
   readonly showPromotionComposer = signal(false);
   readonly promotionTitle = signal('');
   readonly promotionContent = signal('');
@@ -351,6 +368,7 @@ export class DashboardModule implements OnInit {
       { key: 'platform-users', label: 'Users', path: '/dashboard/platform-users' },
       { key: 'business-approval', label: 'Business reviews', path: '/dashboard/business-approval' },
       { key: 'subscription-approval', label: 'Plan reviews', path: '/dashboard/subscription-approval' },
+      { key: 'payment-qr-settings', label: 'Payment QR settings', path: '/dashboard/payment-qr-settings' },
       { key: 'moderation', label: 'Moderation', path: '/dashboard/moderation' },
       { key: 'system-health', label: 'System health', path: '/dashboard/system-health' },
       { key: 'platform-analytics', label: 'Platform analytics', path: '/dashboard/platform-analytics' },
@@ -368,7 +386,7 @@ export class DashboardModule implements OnInit {
     };
     const platformRequirements: Record<string,string> = {
       'platform-users': 'PLATFORM_USERS_MANAGE', 'business-approval': 'BUSINESS_APPROVE',
-      'subscription-approval': 'SUBSCRIPTIONS_APPROVE', moderation: 'MODERATION_MANAGE',
+      'subscription-approval': 'SUBSCRIPTIONS_APPROVE', 'payment-qr-settings': 'SUBSCRIPTIONS_APPROVE', moderation: 'MODERATION_MANAGE',
       categories: 'CATEGORIES_MANAGE', 'platform-analytics': 'ANALYTICS_VIEW', 'system-health': 'SYSTEM_HEALTH_VIEW',
     };
     return links.filter((link) => {
@@ -406,6 +424,7 @@ export class DashboardModule implements OnInit {
     'platform-users': { title: 'Platform users', description: 'Review platform accounts and suspend or restore eligible users.' },
     'business-approval': { title: 'Business approvals', description: 'Review pending business applications and process approval decisions.' },
     'subscription-approval': { title: 'Subscription approvals', description: 'Review pending subscription requests and process decisions.' },
+    'payment-qr-settings': { title: 'Payment QR settings', description: 'Manage the UPI payment QR used for new subscription requests.' },
     moderation: { title: 'Marketplace moderation', description: 'Review reported marketplace content and record moderation decisions.' },
     'system-health': { title: 'System health', description: 'Review safe operational health information exposed to platform staff.' },
   };
@@ -539,6 +558,15 @@ export class DashboardModule implements OnInit {
         case 'subscription-approval': {
           const data = await this.request<{items?:DataRecord[]}>('/api/v1/admin/subscriptions/pending/list','adminParam','listPendingSubscriptions',{page:1,page_size:25});
           this.items.set(data.items ?? []); break;
+        }
+        case 'payment-qr-settings': {
+          const data = await this.request<DataRecord>('/api/v1/admin/subscriptions/payment-qr/current','adminParam','getCurrentPaymentQrConfig');
+          this.summary.set(data);
+          this.qrPayeeName.set(String(data['payee_name'] ?? ''));
+          this.qrUpiId.set(String(data['upi_id'] ?? ''));
+          this.qrInstructions.set(String(data['payment_instructions'] ?? ''));
+          this.qrFile.set(null);
+          break;
         }
         case 'moderation': {
           const data = await this.request<{items?:DataRecord[]}>('/api/v1/admin/moderation/queue','adminParam','listModerationQueue',{page:1,page_size:25});
@@ -923,6 +951,46 @@ export class DashboardModule implements OnInit {
     try { await this.request(path,key,actionType,data); this.notice.set('Changes saved successfully.'); await this.load(); }
     catch(error) { this.error.set(this.auth.errorMessage(error)); }
     finally { this.busy.set(false); }
+  }
+
+  setPaymentQrFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    if (file && (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size < 1 || file.size > 10 * 1024 * 1024)) {
+      this.error.set('Choose a JPG, PNG or WEBP image up to 10 MB.');
+      this.qrFile.set(null);
+    } else {
+      this.error.set('');
+      this.qrFile.set(file);
+    }
+    input.value = '';
+  }
+
+  async savePaymentQrConfig(): Promise<void> {
+    const file = this.qrFile();
+    if (!file || this.busy()) return;
+    this.busy.set(true); this.error.set('');
+    try {
+      const upload = await this.request<{upload_url:string;object_key:string;headers:Record<string,string>}>(
+        '/api/v1/admin/subscriptions/payment-qr/upload-url','adminParam','generatePaymentQrUploadUrl',{
+          original_file_name:file.name,mime_type:file.type,file_size_bytes:file.size,
+        },
+      );
+      await firstValueFrom(this.http.put(upload.upload_url,file,{
+        headers:new HttpHeaders(upload.headers ?? {'Content-Type':file.type}),responseType:'text',
+      }));
+      await this.request('/api/v1/admin/subscriptions/payment-qr/save','adminParam','savePaymentQrConfig',{
+        payee_name:this.qrPayeeName().trim(),upi_id:this.qrUpiId().trim(),
+        payment_instructions:this.qrInstructions().trim(),qr_file_path:upload.object_key,
+      });
+      this.notice.set('A new payment QR configuration is active for new subscription requests.');
+      this.qrFile.set(null);
+      await this.load();
+    } catch(error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   async uploadProof(event: Event, subscription: DataRecord): Promise<void> {
