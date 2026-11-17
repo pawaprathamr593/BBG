@@ -34,28 +34,33 @@ interface WorkspaceNavItem {
           </div>
         </div>
 
-        @if (canSwitchWorkspace()) {
-          <label class="workspace-switcher">
-            <span>Switch workspace</span>
-            <select [value]="activeTenantId() ?? 'platform'" [disabled]="switching()" (change)="switchWorkspace($event)" aria-label="Switch workspace">
-              @if (hasPlatformAccess()) { <option value="platform">BBG Platform</option> }
-              @else { <option value="platform">Personal / Marketplace</option> }
-              @for (tenant of workspace.tenants(); track tenant.id) {
-                <option [value]="tenant.id">{{ tenant.tenant_name }}</option>
-              }
-            </select>
-            <span class="switch-chevron">⌄</span>
-          </label>
-        }
 
         <div class="topbar-spacer"></div>
         @if (switchError()) { <span class="switch-error" role="alert">{{ switchError() }}</span> }
         <a class="marketplace-link" routerLink="/" title="Return to marketplace"><span>↗</span><span>Marketplace</span></a>
-        <div class="desktop-profile"><app-user-profile-drawer /></div>
       </header>
 
       <div class="workspace-body">
         <aside class="workspace-sidebar" [attr.aria-label]="'Workspace navigation'">
+          <div class="sidebar-utility">
+            @if (canSwitchWorkspace()) {
+              <label class="workspace-switcher">
+                <span>Switch workspace</span>
+                <select [value]="activeTenantId() ?? 'platform'" [disabled]="switching()" (change)="switchWorkspace($event)" aria-label="Switch workspace">
+                  @if (hasPlatformAccess()) { <option value="platform">BBG Platform</option> }
+                  @else { <option value="platform">Personal / Marketplace</option> }
+                  @for (tenant of workspace.tenants(); track tenant.id) { <option [value]="tenant.id">{{ tenant.tenant_name }}</option> }
+                </select>
+                <span class="switch-chevron">⌄</span>
+              </label>
+            }
+            @if (hasPageFilters()) {
+              <button #filterTrigger class="filter-trigger sidebar-filter-trigger" type="button" (click)="toggleFilterDrawer()" [attr.aria-expanded]="filterDrawerOpen()">
+                <span>☷</span> Filters @if (activeFilterCount()) { <b>{{ activeFilterCount() }}</b> }
+              </button>
+            }
+            <div class="sidebar-profile"><app-user-profile-drawer /></div>
+          </div>
           <div class="sidebar-scroll">
             <p class="sidebar-caption" [class.visually-hidden]="sidebarCollapsed()">WORKSPACE</p>
             <a class="nav-item overview-link" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" [attr.title]="sidebarCollapsed() ? 'Overview' : null">
@@ -87,11 +92,6 @@ interface WorkspaceNavItem {
                 @else { <a [routerLink]="crumb.route">{{ crumb.label }}</a> }
               }
             </div>
-            @if (hasPageFilters()) {
-              <button #filterTrigger class="filter-trigger" type="button" (click)="toggleFilterDrawer()" [attr.aria-expanded]="filterDrawerOpen()">
-                <span>☷</span> Filters @if (activeFilterCount()) { <b>{{ activeFilterCount() }}</b> }
-              </button>
-            }
           </div>
           <section class="workspace-content" [attr.aria-label]="currentPageLabel()">
             <router-outlet />
@@ -122,6 +122,12 @@ interface WorkspaceNavItem {
             }
             <div class="mobile-profile"><app-user-profile-drawer /></div>
           </div>
+          <div class="mobile-nav-scroll">
+            <a class="mobile-nav-item" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="mobileExpanded.set(false)"><span>▦</span>Overview</a>
+            @for (item of visibleNavItems(); track item.route) {
+              <a class="mobile-nav-item" [routerLink]="item.route" routerLinkActive="active" (click)="mobileExpanded.set(false)"><span>{{ item.icon }}</span>{{ item.label }}</a>
+            }
+          </div>
         } @else {
           <div class="mobile-quick-nav">
             <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="mobileExpanded.set(false)"><span>▦</span><small>Overview</small></a>
@@ -129,13 +135,6 @@ interface WorkspaceNavItem {
               <a [routerLink]="item.route" routerLinkActive="active" (click)="mobileExpanded.set(false)"><span>{{ item.icon }}</span><small>{{ item.label }}</small></a>
             }
             <button type="button" (click)="mobileExpanded.set(true)"><span>•••</span><small>All modules</small></button>
-          </div>
-        } @else {
-          <div class="mobile-nav-scroll">
-            <a class="mobile-nav-item" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="mobileExpanded.set(false)"><span>▦</span>Overview</a>
-            @for (item of visibleNavItems(); track item.route) {
-              <a class="mobile-nav-item" [routerLink]="item.route" routerLinkActive="active" (click)="mobileExpanded.set(false)"><span>{{ item.icon }}</span>{{ item.label }}</a>
-            }
           </div>
         }
       </section>
@@ -183,6 +182,7 @@ interface WorkspaceNavItem {
     .workspace-body{display:flex;flex:1 1 auto;min-height:0;overflow:hidden}
     .workspace-sidebar{z-index:10;display:flex;width:var(--sidebar-width);flex:0 0 var(--sidebar-width);flex-direction:column;overflow:hidden;border-right:1px solid var(--border);background:var(--surface-card);transition:width .2s ease,flex-basis .2s ease}
     .sidebar-collapsed .workspace-sidebar{width:76px;flex-basis:76px}
+    .sidebar-utility{display:grid;gap:10px;padding:14px 12px;border-bottom:1px solid var(--border)}.sidebar-utility .workspace-switcher{min-width:0}.sidebar-filter-trigger{width:100%;justify-content:flex-start;min-height:38px}.sidebar-profile{display:flex;align-items:center;min-height:38px}.sidebar-profile app-user-profile-drawer{display:inline-flex}
     .sidebar-scroll{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding:20px 12px 12px}
     .sidebar-caption{margin:2px 11px 10px;color:var(--text-muted);font-size:.57rem;font-weight:850;letter-spacing:.13em;white-space:nowrap}.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
     .nav-item{display:flex;min-height:43px;align-items:center;gap:13px;margin:3px 0;padding:0 12px;border:1px solid transparent;border-radius:9px;color:var(--text-secondary);font-size:.77rem;font-weight:650;text-decoration:none;white-space:nowrap;transition:background .15s ease,color .15s ease}
@@ -196,7 +196,7 @@ interface WorkspaceNavItem {
     .breadcrumbs{display:flex;min-width:0;align-items:center;gap:9px;overflow:hidden;color:var(--text-muted);font-size:.7rem;white-space:nowrap}.breadcrumbs a{color:var(--text-secondary);text-decoration:none}.breadcrumbs a:hover{color:var(--brand)}.crumb-separator{color:var(--text-muted)}.current-crumb{overflow:hidden;color:var(--text-primary);font-weight:750;text-overflow:ellipsis}
     .filter-trigger{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-card);color:var(--text-primary);font:inherit;font-size:.7rem;font-weight:750;cursor:pointer}.filter-trigger b{display:grid;min-width:17px;height:17px;place-items:center;border-radius:50%;background:var(--brand);color:white;font-size:.6rem}
     .workspace-content{min-height:0;flex:1;overflow:auto;overscroll-behavior:contain}
-    .mobile-nav-panel,.mobile-nav-backdrop{display:none}.desktop-profile{display:flex;align-items:center}
+    .mobile-nav-panel,.mobile-nav-backdrop{display:none}.desktop-profile{display:none}
     .filter-backdrop{position:fixed;z-index:80;inset:0;background:rgba(15,23,42,.38);animation:fade-in .16s ease}
     .filter-drawer{position:fixed;z-index:81;inset:0 0 0 auto;display:flex;width:min(420px,92vw);flex-direction:column;border-left:1px solid var(--border);background:var(--surface-card);box-shadow:-16px 0 48px rgba(0,0,0,.16);animation:drawer-in .2s ease}
     .filter-drawer header{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;padding:24px;border-bottom:1px solid var(--border)}.filter-drawer header small{color:var(--brand);font-size:.59rem;font-weight:850;letter-spacing:.13em}.filter-drawer h2{margin:5px 0;font-size:1.2rem}.filter-drawer header p{margin:0;color:var(--text-secondary);font-size:.75rem}.filter-drawer header button{width:36px;height:36px;border:1px solid var(--border);border-radius:8px;background:var(--surface-subtle);color:var(--text-primary);font-size:1.35rem;cursor:pointer}
