@@ -195,6 +195,7 @@ export class DashboardModule implements OnInit {
       { key: 'profile', label: 'Business profile', path: '/dashboard/profile' },
       { key: 'storefront', label: 'Storefront', path: '/dashboard/storefront' },
       { key: 'catalogue', label: 'Catalogue', path: '/dashboard/catalogue' },
+      { key: 'members', label: 'Team & access', path: '/dashboard/members' },
       { key: 'customers', label: 'Customers', path: '/dashboard/customers' },
       { key: 'enquiries', label: 'Enquiries', path: '/dashboard/enquiries' },
       { key: 'orders', label: 'Orders', path: '/dashboard/orders' },
@@ -210,16 +211,27 @@ export class DashboardModule implements OnInit {
       { key: 'platform-analytics', label: 'Platform analytics', path: '/dashboard/platform-analytics' },
       { key: 'categories', label: 'Categories', path: '/dashboard/categories' },
     ];
-    const permissions = new Set(this.workspace.permissions().map((entry) => entry.permission_code));
+    const permissions = this.workspace.permissions();
+    const has = (code: string, scope: string) => permissions.some((entry) => entry.permission_code === code && entry.scope_type === scope);
     const activeTenant = this.workspace.activeTenantId() !== null;
+    const tenantRequirements: Record<string,string> = {
+      profile: 'BUSINESS_PROFILE_MANAGE', storefront: 'BUSINESS_PROFILE_MANAGE',
+      catalogue: 'CATALOGUE_MANAGE', customers: 'CUSTOMERS_MANAGE', enquiries: 'ENQUIRIES_MANAGE',
+      orders: 'ORDERS_MANAGE', promotions: 'PROMOTIONS_MANAGE', subscriptions: 'SUBSCRIPTIONS_MANAGE',
+      payments: 'PAYMENTS_VIEW', analytics: 'ANALYTICS_VIEW', members: 'TENANT_MEMBERS_VIEW',
+    };
+    const platformRequirements: Record<string,string> = {
+      'platform-users': 'PLATFORM_USERS_MANAGE', 'business-approval': 'BUSINESS_APPROVE',
+      'subscription-approval': 'SUBSCRIPTIONS_APPROVE', moderation: 'MODERATION_MANAGE',
+      categories: 'CATEGORIES_MANAGE', 'platform-analytics': 'ANALYTICS_VIEW', 'system-health': 'SYSTEM_HEALTH_VIEW',
+    };
     return links.filter((link) => {
-      if (link.key === 'profile' || link.key === 'storefront' || link.key === 'catalogue' || link.key === 'customers' || link.key === 'enquiries' || link.key === 'orders' || link.key === 'promotions' || link.key === 'subscriptions' || link.key === 'payments' || link.key === 'analytics') return activeTenant || ['orders','customers','enquiries','payments'].includes(link.key);
-      if (link.key === 'platform-users') return permissions.has('PLATFORM_USERS_MANAGE');
-      if (link.key === 'business-approval') return permissions.has('BUSINESS_APPROVE');
-      if (link.key === 'subscription-approval') return permissions.has('SUBSCRIPTIONS_APPROVE');
-      if (link.key === 'moderation') return permissions.has('MODERATION_MANAGE');
-      if (link.key === 'categories') return permissions.has('CATEGORIES_MANAGE');
-      return permissions.has('SYSTEM_HEALTH_VIEW');
+      if (tenantRequirements[link.key]) {
+        if (activeTenant) return has(tenantRequirements[link.key], 'TENANT');
+        return ['orders','customers','enquiries','payments'].includes(link.key);
+      }
+      const required = platformRequirements[link.key];
+      return required ? has(required, 'PLATFORM') : false;
     });
   });
 
