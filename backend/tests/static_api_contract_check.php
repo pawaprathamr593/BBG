@@ -12,7 +12,7 @@ if ($routes === false) {
 
 preg_match_all("~Route::post\\('(/api/v1/[^']+)'\\)~", $routes, $routeMatches);
 $routePaths = $routeMatches[1] ?? [];
-if (count($routePaths) !== 129 || count(array_unique($routePaths)) !== 129) {
+if (count($routePaths) !== 133 || count(array_unique($routePaths)) !== 133) {
     fwrite(STDERR, 'Expected 129 unique POST API routes; found ' . count($routePaths) . ".\n");
     exit(1);
 }
@@ -143,6 +143,32 @@ if (
     || !str_contains($promotionService, 'local calendar day')
 ) {
     fwrite(STDERR, "Tenant-local daily promotion entitlement contract is incomplete.\n");
+    exit(1);
+}
+
+$promotionController = file_get_contents($root . '/src/Modules/Api/V1/Controllers/PromotionController.php');
+$postMediaContracts = [
+    $promotionController !== false
+        && str_contains($promotionController, "'/api/v1/promotions/media/list' => 'listPromotionMedia'")
+        && str_contains($promotionController, "'/api/v1/promotions/media/upload-url' => 'generatePromotionMediaUploadUrl'")
+        && str_contains($promotionController, "'/api/v1/promotions/media/link' => 'linkPromotionMedia'")
+        && str_contains($promotionController, "'/api/v1/promotions/media/delete' => 'deletePromotionMedia'"),
+    $promotionService !== false
+        && str_contains($promotionService, 'private function generatePromotionMediaUploadUrl')
+        && str_contains($promotionService, 'private function managePromotionMedia')
+        && str_contains($promotionService, 'promotionMediaSignatureMatches')
+        && str_contains($promotionService, "tenants/' . \$tenantId . '/posts/'"),
+    $promotionDao !== false
+        && str_contains($promotionDao, 'insertPromotionMedia')
+        && str_contains($promotionDao, 'softDeletePromotionMedia')
+        && str_contains($promotionDao, 'getPromotionMediaRecord'),
+    str_contains($routes, '/api/v1/promotions/media/list')
+        && str_contains($routes, '/api/v1/promotions/media/upload-url')
+        && str_contains($routes, '/api/v1/promotions/media/link')
+        && str_contains($routes, '/api/v1/promotions/media/delete'),
+];
+if (in_array(false, $postMediaContracts, true)) {
+    fwrite(STDERR, "Post media upload, verification, persistence or route contract is incomplete.\\n");
     exit(1);
 }
 
