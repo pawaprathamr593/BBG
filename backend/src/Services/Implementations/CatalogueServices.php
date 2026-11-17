@@ -532,7 +532,7 @@ final readonly class CatalogueServices implements ICatalogueServices
         ];
 
         if ($productId === null || $fileName === null || !isset($mimeExtensions[$mimeType])
-            || $fileSize === null || $fileSize < 1 || $fileSize > $this->s3Storage->getMaxUploadBytes()) {
+            || $fileSize === null || $fileSize < 1 || $fileSize > $this->s3Storage->getMaxMediaUploadBytes()) {
             $resArr['msgArr'][] = 'Choose a supported image, video, audio or PDF file within the configured upload size limit.';
             return $resArr;
         }
@@ -674,7 +674,7 @@ final readonly class CatalogueServices implements ICatalogueServices
         $signature = $this->s3Storage->getObjectPrefix($filePath);
         $signatureValid = $this->productMediaSignatureMatches($mimeType, $signature);
         if ($actualMimeType !== $mimeType || $actualFileSize !== $fileSize
-            || $actualFileSize < 1 || $actualFileSize > $this->s3Storage->getMaxUploadBytes()
+            || $actualFileSize < 1 || $actualFileSize > $this->s3Storage->getMaxMediaUploadBytes()
             || !$signatureValid) {
             $this->s3Storage->deleteObject($filePath);
             $resArr['msgArr'][] = 'Uploaded S3 object failed image type, content signature or file size verification.';
