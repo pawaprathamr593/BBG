@@ -55,7 +55,6 @@ interface WorkspaceNavItem {
                 <span class="switch-chevron">⌄</span>
               </label>
             }
-            <div class="sidebar-profile"><app-user-profile-drawer /></div>
           </div>
           <div class="sidebar-scroll">
             <p class="sidebar-caption" [class.visually-hidden]="sidebarCollapsed()">WORKSPACE</p>
@@ -119,7 +118,6 @@ interface WorkspaceNavItem {
                 </select>
               </label>
             }
-            <div class="mobile-profile"><app-user-profile-drawer /></div>
           </div>
           <div class="mobile-nav-scroll">
             <a class="mobile-nav-item" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="mobileExpanded.set(false)"><span>▦</span>Overview</a>
