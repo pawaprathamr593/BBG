@@ -233,6 +233,7 @@ export class WorkspaceLayout implements OnInit, AfterViewChecked, OnDestroy {
   readonly filterFields = computed(() => {
     const section = this.currentSection();
     if (['orders','enquiries','payments','promotions','customers'].includes(section)) return ['search','status','from','to'];
+    if (section === 'catalogue') return ['search','status'];
     if (['profile','storefront','members','subscriptions','categories','platform-users','business-approval','subscription-approval','moderation','platform-analytics','analytics','system-health'].includes(section)) return ['search','status'];
     return [];
   });
@@ -245,6 +246,7 @@ export class WorkspaceLayout implements OnInit, AfterViewChecked, OnDestroy {
     if (s === 'promotions') return ['DRAFT','PUBLISHED','UNPUBLISHED','EXPIRED'];
     if (s === 'enquiries') return ['OPEN','IN_PROGRESS','RESPONDED','CLOSED'];
     if (s === 'customers') return ['ACTIVE','INACTIVE'];
+    if (s === 'catalogue') return ['DRAFT','PUBLISHED'];
     return ['ACTIVE','INACTIVE','PENDING','APPROVED','REJECTED'];
   });
   readonly visibleNavItems = computed<WorkspaceNavItem[]>(() => {
