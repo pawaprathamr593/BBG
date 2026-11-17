@@ -327,7 +327,15 @@ export class DashboardModule implements OnInit {
     return links.filter((link) => {
       if (tenantRequirements[link.key]) {
         if (activeTenant) return has(tenantRequirements[link.key], 'TENANT');
-        return ['orders','customers','enquiries','payments'].includes(link.key);
+        const globalPermissions: Record<string,string> = {
+          customers: 'CUSTOMER_PROFILE_VIEW',
+          enquiries: 'ENQUIRIES_VIEW',
+          orders: 'ORDERS_VIEW',
+          payments: 'PAYMENTS_VIEW',
+        };
+        const requiredGlobal = globalPermissions[link.key];
+        return !!requiredGlobal && permissions.some((entry) => entry.role_code === 'CONSUMER'
+          && entry.permission_code === requiredGlobal && entry.scope_type === 'GLOBAL');
       }
       const required = platformRequirements[link.key];
       return required ? has(required, 'PLATFORM') : false;
