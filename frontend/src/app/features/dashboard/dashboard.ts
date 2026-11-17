@@ -28,20 +28,6 @@ interface DashboardModule {
           <h1>Good {{ greeting() }}, {{ firstName() }}.</h1>
           <p class="heading-copy">Your work, tools and business activity in one place.</p>
         </div>
-        <div class="heading-actions">
-          @if (tenants().length) {
-            <label class="context-picker">
-              <span>Workspace context</span>
-              <select [value]="selectedTenantId() ?? ''" (change)="onTenantChange($event)">
-                <option value="">Personal / platform</option>
-                @for (tenant of tenants(); track tenant.id) {
-                  <option [value]="tenant.id">{{ tenant.tenant_name }}</option>
-                }
-              </select>
-            </label>
-          }
-          <a class="market-link" routerLink="/">Visit marketplace <span aria-hidden="true">↗</span></a>
-        </div>
       </section>
 
       @if (loading()) {
@@ -126,7 +112,7 @@ interface DashboardModule {
   `,
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
-    .workspace{width:min(1360px,100%);margin:0 auto;padding:48px 34px 76px}
+    .workspace{width:100%;max-width:none;box-sizing:border-box;margin:0;padding:36px 32px 60px}
     .workspace-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:30px}
     .eyebrow{margin:0 0 10px;color:var(--brand);font-size:.69rem;font-weight:800;letter-spacing:.14em}
     h1{margin:0;font-size:clamp(2rem,4vw,3rem);line-height:1.12;letter-spacing:-.055em}
