@@ -323,7 +323,9 @@ export class Dashboard implements OnInit {
 
   readonly visibleModules = computed(() => {
     const permissions = new Set(this.permissions().map((permission) => permission.permission_code));
-    const activeScope = this.selectedTenantId() === null ? ['PLATFORM', 'GLOBAL'] : ['TENANT'];
+    const activeScope = this.selectedTenantId() === null
+      ? (this.permissions().some((permission) => permission.scope_type === 'PLATFORM') ? ['PLATFORM'] : ['GLOBAL'])
+      : ['TENANT'];
     const entitlements = new Map((this.selectedTenant()?.active_entitlements ?? '').split(';').filter(Boolean)
       .map((entry) => {
         const separator = entry.indexOf('=');
