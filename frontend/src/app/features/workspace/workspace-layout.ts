@@ -206,7 +206,7 @@ export class WorkspaceLayout implements OnInit {
     return ['ACTIVE','INACTIVE','PENDING','APPROVED','REJECTED'];
   });
   readonly visibleNavItems = computed<WorkspaceNavItem[]>(() => {
-    const scope = this.activeTenantId() === null ? ['PLATFORM','GLOBAL'] : ['TENANT'];
+    const scope = this.activeTenantId() === null ? (this.hasPlatformAccess() ? ['PLATFORM'] : ['GLOBAL']) : ['TENANT'];
     const perms = this.permissions();
     const available = (permission: string | null, itemScope: WorkspaceNavItem['scope']) => {
       if (itemScope === 'GLOBAL') return !!permission && perms.some((p) => p.role_code === 'CONSUMER' && p.permission_code === permission && p.scope_type === 'GLOBAL');
@@ -250,7 +250,7 @@ export class WorkspaceLayout implements OnInit {
   }
 
   hasPlatformAccess(): boolean {
-    return this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM');
+    return this.permissions().some((permission) => permission.scope_type === 'PLATFORM');
   }
 
 
