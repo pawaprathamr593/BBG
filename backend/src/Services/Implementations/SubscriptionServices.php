@@ -127,6 +127,12 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         if ($rows['status'] !== 'SUCCESS') {
             return $this->propagateFailure($rows, 'SubscriptionServices::getMySubscriptions');
         }
+        foreach ($rows['data'] as &$subscriptionRow) {
+            if (!empty($subscriptionRow['payment_qr_file_path'])) {
+                $subscriptionRow['payment_qr_url'] = $this->s3Storage->createDownloadUrl((string) $subscriptionRow['payment_qr_file_path']);
+            }
+        }
+        unset($subscriptionRow);
         $count = $this->dao->countTenantSubscriptions($this->db, $tenantId);
         if ($count['status'] !== 'SUCCESS') {
             return $this->propagateFailure($count, 'SubscriptionServices::getMySubscriptions');
@@ -156,6 +162,9 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         }
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = $result['data'];
+        if (!empty($resArr['data']['payment_qr_file_path'])) {
+            $resArr['data']['payment_qr_url'] = $this->s3Storage->createDownloadUrl((string) $resArr['data']['payment_qr_file_path']);
+        }
         return $resArr;
     }
 
@@ -211,10 +220,39 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             $resArr['msgArr'][] = 'A subscription request is already pending for this tenant.';
             return $resArr;
         }
-        return $this->dao->insertSubscription(
-            $this->db, $tenantId, $planId, $userId,
-            (string) $plan['data']['price'], (string) $plan['data']['currency'],
-        );
+        $qrConfig = $this->dao->getActivePaymentQrConfig($this->db);
+        if ($qrConfig['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($qrConfig, 'SubscriptionServices::manageSubscriptionRequest');
+        }
+        if ($qrConfig['data'] === []) {
+            $resArr['msgArr'][] = 'Subscription payments are not configured yet. Please contact BBG support.';
+            return $resArr;
+        }
+        $transaction = $this->db->beginTransaction();
+        try {
+            $created = $this->dao->insertSubscription(
+                $this->db, $tenantId, $planId, $userId,
+                (string) $plan['data']['price'], (string) $plan['data']['currency'],
+            );
+            if ($created['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($created, 'SubscriptionServices::manageSubscriptionRequest');
+            }
+            $snapshot = $this->dao->insertSubscriptionPaymentInstructions(
+                $this->db, $tenantId, (int) $created['data']['id'], $userId, $qrConfig['data'],
+            );
+            if ($snapshot['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($snapshot, 'SubscriptionServices::manageSubscriptionRequest');
+            }
+            $transaction->commit();
+            return $created;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) {
+                $transaction->rollBack();
+            }
+            throw $exception;
+        }
     }
 
     private function generateSubscriptionProofUploadUrl(array $actionData): array
