@@ -459,7 +459,7 @@ final readonly class CatalogueServices implements ICatalogueServices
             'audio/wav' => str_starts_with($signature, 'RIFF') && substr($signature, 8, 4) === 'WAVE',
             'audio/ogg' => str_starts_with($signature, 'OggS'),
             'application/pdf' => str_starts_with($signature, '%PDF-'),
-            'text/plain', 'text/csv' => !str_contains($signature, "\\0"),
+            'text/plain', 'text/csv' => !str_contains($signature, "\0"),
             'application/rtf' => str_starts_with($signature, '{\\rtf'),
             default => false,
         };
