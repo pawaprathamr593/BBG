@@ -5,6 +5,7 @@ export const routes: Routes = [
   { path: 'workspace', loadComponent: () => import('./features/business-workspace/business-workspace').then((m) => m.BusinessWorkspace), title: 'Business registration status | BBG' },
   { path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard), title: 'Workspace Dashboard | BBG' },
   { path: 'dashboard/catalogue', loadComponent: () => import('./features/catalogue/catalogue').then((m) => m.Catalogue), title: 'Product Catalogue | BBG' },
+  { path: 'dashboard/:section', loadComponent: () => import('./features/dashboard/dashboard-module').then((m) => m.DashboardModule), title: 'Workspace module | BBG' },
   {
     path: '',
     pathMatch: 'full',
