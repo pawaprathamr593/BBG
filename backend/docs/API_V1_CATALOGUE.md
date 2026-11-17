@@ -260,7 +260,8 @@ Implementation is **not production-verified** until the PHP 8.4 workflow, clean 
 Guarded dependencies:
 - Subscription proof upload is implemented through `POST /api/v1/subscriptions/proofs/upload-url`; the client uploads directly to S3 and then calls `POST /api/v1/subscriptions/proofs/submit`. The server verifies the actual S3 object before saving proof metadata. Live S3 verification still requires configured bucket credentials and end-to-end testing.
 - Product media linking likewise expects a file reference already created by a storage/upload service. The route does not upload bytes or verify an external storage provider.
-- Gold product cap (50) and Platinum promotional-post entitlement are seeded only when matching plan codes exist. Other plan entitlements must be configured from approved commercial plan definitions.
+- Product creation and publication require an active `PRODUCT_MANAGEMENT=TRUE` entitlement. The current BBG seed enables it for Diamond and Platinum and disables it for Gold; no numeric product-count cap is defined in that seed.
+- Promotion creation/publication require `PROMOTION_MANAGEMENT=TRUE`. Publishing is limited by `DAILY_PROMOTION_LIMIT` per tenant-local calendar day (Gold: 0, Diamond: 1, Platinum: 5). The backend serializes concurrent publish operations per tenant and fails closed if the tenant time zone cannot be resolved.
 - Platform admin APIs remain unavailable until a trusted platform user is explicitly assigned the PLATFORM_ADMIN role.
 - Workspace candidates for members/roles management, invoices, expenses, cash sessions/movements and expanded reporting remain outside the approved API V1 scope; they are not future inventory/purchasing APIs, but their Phase 1 inclusion/business rules are still unapproved.
 
