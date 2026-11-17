@@ -77,14 +77,14 @@ interface DataRecord { [key: string]: unknown; }
           </section>
         }
 
-        @if (items().length) {
+        @if (filteredItems().length) {
           <section class="records-section">
             <div class="section-title">
               <div><p class="eyebrow">LIVE RECORDS</p><h2>{{ recordsHeading() }}</h2></div>
-              <span class="record-count">{{ items().length }} shown</span>
+              <span class="record-count">{{ filteredItems().length }} shown</span>
             </div>
             <div class="records-list">
-              @for (item of items(); track recordId(item, 'id')) {
+              @for (item of filteredItems(); track recordId(item, 'id')) {
                 <article class="record-card">
                   <div class="record-head">
                     <div><strong>{{ recordTitle(item) }}</strong><span>{{ recordSubtitle(item) }}</span></div>
@@ -210,6 +210,30 @@ export class DashboardModule implements OnInit {
   readonly unsupported = signal('');
   readonly unsupportedTitle = signal('This section is not available');
   readonly items = signal<DataRecord[]>([]);
+  readonly filterSearch = signal('');
+  readonly filterStatus = signal('');
+  readonly filterFrom = signal('');
+  readonly filterTo = signal('');
+  readonly filteredItems = computed(() => {
+    const search = this.filterSearch().trim().toLowerCase();
+    const status = this.filterStatus().toUpperCase();
+    const from = this.filterFrom();
+    const to = this.filterTo();
+    return this.items().filter((item) => {
+      if (search && !Object.values(item).some((value) => value !== null && typeof value !== 'object' && String(value).toLowerCase().includes(search))) return false;
+      const statusValue = ['status','order_status','payment_status','enquiry_status','publication_status','approval_status','subscription_status'].map((key) => item[key]).find((value) => value !== undefined && value !== null);
+      if (status && String(statusValue ?? '').toUpperCase() !== status) return false;
+      const dateValue = ['created_on','created_at','order_date','enquiry_date','payment_date','updated_on'].map((key) => item[key]).find((value) => value !== undefined && value !== null);
+      if (from || to) {
+        const date = dateValue ? new Date(String(dateValue)) : null;
+        if (!date || Number.isNaN(date.getTime())) return false;
+        const day = date.toISOString().slice(0,10);
+        if (from && day < from) return false;
+        if (to && day > to) return false;
+      }
+      return true;
+    });
+  });
   readonly summary = signal<DataRecord | null>(null);
   readonly plans = signal<DataRecord[]>([]);
   readonly pendingPlanId = signal<number | null>(null);
@@ -311,6 +335,12 @@ export class DashboardModule implements OnInit {
   };
 
   ngOnInit(): void {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      this.filterSearch.set(params.get('search') ?? '');
+      this.filterStatus.set(params.get('status') ?? '');
+      this.filterFrom.set(params.get('from') ?? '');
+      this.filterTo.set(params.get('to') ?? '');
+    });
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.section.set(params.get('section') ?? 'profile');
       this.notice.set('');
