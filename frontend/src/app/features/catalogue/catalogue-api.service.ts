@@ -27,6 +27,18 @@ export interface CatalogueCategory {
   display_order: number;
 }
 
+export interface ProductMedia {
+  id: number;
+  media_type: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT';
+  mime_type: string;
+  original_file_name: string;
+  file_size_bytes: number;
+  url: string | null;
+  display_order: number;
+  is_primary: number;
+  media_status: string;
+}
+
 export interface CatalogueProduct {
   id: number;
   product_code: string;
@@ -102,5 +114,38 @@ export class CatalogueApiService {
 
   deleteCategory(tenantId: number, categoryId: number): Promise<{ id: number }> {
     return this.post('categories/delete', { tenant_id: tenantId, category_id: categoryId });
+  }
+
+  async listProductMedia(tenantId: number, productId: number): Promise<ProductMedia[]> {
+    const data = await this.post<{ items: ProductMedia[] }>('products/media/list', { tenant_id: tenantId, product_id: productId });
+    return data.items ?? [];
+  }
+
+  createProductMediaUploadUrl(tenantId: number, productId: number, file: File): Promise<{
+    upload_url: string; object_key: string; method: 'PUT'; headers: Record<string, string>;
+  }> {
+    return this.post('products/media/upload-url', {
+      tenant_id: tenantId, product_id: productId, original_file_name: file.name,
+      mime_type: file.type, file_size_bytes: file.size,
+    });
+  }
+
+  async uploadAndLinkProductMedia(tenantId: number, productId: number, file: File, displayOrder: number, primary: boolean): Promise<void> {
+    const upload = await this.createProductMediaUploadUrl(tenantId, productId, file);
+    await firstValueFrom(this.http.put(upload.upload_url, file, {
+      headers: new HttpHeaders(upload.headers ?? { 'Content-Type': file.type }), responseType: 'text',
+    }));
+    const mediaType = file.type.startsWith('image/') ? 'IMAGE'
+      : file.type.startsWith('video/') ? 'VIDEO'
+      : file.type.startsWith('audio/') ? 'AUDIO' : 'DOCUMENT';
+    await this.post('products/media/link', {
+      tenant_id: tenantId, product_id: productId, file_path: upload.object_key,
+      original_file_name: file.name, mime_type: file.type, file_size_bytes: file.size,
+      media_type: mediaType, display_order: displayOrder, is_primary: primary,
+    });
+  }
+
+  deleteProductMedia(tenantId: number, productId: number, mediaId: number): Promise<{ id: number }> {
+    return this.post('products/media/delete', { tenant_id: tenantId, product_id: productId, media_id: mediaId });
   }
 }
