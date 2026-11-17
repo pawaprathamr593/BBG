@@ -231,10 +231,10 @@ export class WorkspaceLayout implements OnInit {
       {label:'Moderation',route:'/dashboard/moderation',permission:'MODERATION_MANAGE',scope:'PLATFORM',icon:'⚑'},
       {label:'Platform analytics',route:'/dashboard/platform-analytics',permission:'ANALYTICS_VIEW',scope:'PLATFORM',icon:'▥'},
       {label:'System health',route:'/dashboard/system-health',permission:'SYSTEM_HEALTH_VIEW',scope:'PLATFORM',icon:'⌁'},
-      {label:'My orders',route:'/dashboard/orders',permission:'ORDERS_VIEW',scope:'GLOBAL',icon:'▤'},
-      {label:'My enquiries',route:'/dashboard/enquiries',permission:'ENQUIRIES_VIEW',scope:'GLOBAL',icon:'↗'},
-      {label:'My payments',route:'/dashboard/payments',permission:'PAYMENTS_VIEW',scope:'GLOBAL',icon:'₹'},
-      {label:'Profile & addresses',route:'/dashboard/customers',permission:'CUSTOMER_PROFILE_VIEW',scope:'GLOBAL',icon:'♙'},
+      {label:'My Orders',route:'/dashboard/orders',permission:'ORDERS_VIEW',scope:'GLOBAL',icon:'▤'},
+      {label:'My Enquiries',route:'/dashboard/enquiries',permission:'ENQUIRIES_VIEW',scope:'GLOBAL',icon:'↗'},
+      {label:'My Payments',route:'/dashboard/payments',permission:'PAYMENTS_VIEW',scope:'GLOBAL',icon:'₹'},
+      {label:'My Profile & Addresses',route:'/dashboard/customers',permission:'CUSTOMER_PROFILE_VIEW',scope:'GLOBAL',icon:'♙'},
     ];
     return items.filter((item) => scope.includes(item.scope) && available(item.permission,item.scope));
   });
