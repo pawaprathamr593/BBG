@@ -420,6 +420,35 @@ final readonly class CatalogueServices implements ICatalogueServices
         );
     }
 
+    private function isSupportedProductMedia(string $mimeType, string $mediaType): bool
+    {
+        $types = [
+            'image/jpeg' => 'IMAGE', 'image/png' => 'IMAGE', 'image/webp' => 'IMAGE', 'image/gif' => 'IMAGE',
+            'video/mp4' => 'VIDEO', 'video/webm' => 'VIDEO',
+            'audio/mpeg' => 'AUDIO', 'audio/wav' => 'AUDIO', 'audio/ogg' => 'AUDIO',
+            'application/pdf' => 'DOCUMENT',
+        ];
+        return ($types[$mimeType] ?? null) === $mediaType;
+    }
+
+    private function productMediaSignatureMatches(string $mimeType, string $signature): bool
+    {
+        return match ($mimeType) {
+            'image/jpeg' => str_starts_with($signature, "\xFF\xD8\xFF"),
+            'image/png' => str_starts_with($signature, "\x89PNG\r\n\x1A\n"),
+            'image/webp' => str_starts_with($signature, 'RIFF') && substr($signature, 8, 4) === 'WEBP',
+            'image/gif' => str_starts_with($signature, 'GIF87a') || str_starts_with($signature, 'GIF89a'),
+            'video/mp4' => strlen($signature) >= 8 && substr($signature, 4, 4) === 'ftyp',
+            'video/webm' => str_starts_with($signature, "\x1A\x45\xDF\xA3"),
+            'audio/mpeg' => str_starts_with($signature, 'ID3')
+                || (strlen($signature) >= 2 && ord($signature[0]) === 0xFF && (ord($signature[1]) & 0xE0) === 0xE0),
+            'audio/wav' => str_starts_with($signature, 'RIFF') && substr($signature, 8, 4) === 'WAVE',
+            'audio/ogg' => str_starts_with($signature, 'OggS'),
+            'application/pdf' => str_starts_with($signature, '%PDF-'),
+            default => false,
+        };
+    }
+
     private function getProductEntitlementState(int $tenantId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
@@ -470,11 +499,22 @@ final readonly class CatalogueServices implements ICatalogueServices
         $mimeType = strtolower($this->requiredText($actionData['mime_type'] ?? '', 100) ?? '');
         $fileSize = $this->integerValue($actionData['file_size_bytes'] ?? null);
         $variantId = $this->positiveInt($actionData['variant_id'] ?? null);
-        $mimeExtensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+        $mimeExtensions = [
+            'image/jpeg' => ['extension' => 'jpg', 'media_type' => 'IMAGE'],
+            'image/png' => ['extension' => 'png', 'media_type' => 'IMAGE'],
+            'image/webp' => ['extension' => 'webp', 'media_type' => 'IMAGE'],
+            'image/gif' => ['extension' => 'gif', 'media_type' => 'IMAGE'],
+            'video/mp4' => ['extension' => 'mp4', 'media_type' => 'VIDEO'],
+            'video/webm' => ['extension' => 'webm', 'media_type' => 'VIDEO'],
+            'audio/mpeg' => ['extension' => 'mp3', 'media_type' => 'AUDIO'],
+            'audio/wav' => ['extension' => 'wav', 'media_type' => 'AUDIO'],
+            'audio/ogg' => ['extension' => 'ogg', 'media_type' => 'AUDIO'],
+            'application/pdf' => ['extension' => 'pdf', 'media_type' => 'DOCUMENT'],
+        ];
 
         if ($productId === null || $fileName === null || !isset($mimeExtensions[$mimeType])
             || $fileSize === null || $fileSize < 1 || $fileSize > $this->s3Storage->getMaxUploadBytes()) {
-            $resArr['msgArr'][] = 'A valid product_id, image file name, supported image MIME type and permitted file_size_bytes are required.';
+            $resArr['msgArr'][] = 'Choose a supported image, video, audio or PDF file within the configured upload size limit.';
             return $resArr;
         }
 
@@ -491,7 +531,7 @@ final readonly class CatalogueServices implements ICatalogueServices
 
         $key = 'tenants/' . $tenantId . '/products/' . $productId . '/'
             . ($variantId === null ? '' : 'variants/' . $variantId . '/')
-            . bin2hex(random_bytes(16)) . '.' . $mimeExtensions[$mimeType];
+            . bin2hex(random_bytes(16)) . '.' . $mimeExtensions[$mimeType]['extension'];
         $presigned = $this->s3Storage->createUploadUrl($key, $mimeType);
 
         $resArr['status'] = 'SUCCESS';
@@ -563,7 +603,7 @@ final readonly class CatalogueServices implements ICatalogueServices
         $originalName = $this->requiredText($actionData['original_file_name'] ?? '', 255);
         $mimeType = strtolower($this->requiredText($actionData['mime_type'] ?? '', 100) ?? '');
         $fileSize = $this->integerValue($actionData['file_size_bytes'] ?? null);
-        $mediaType = strtoupper($this->filterText($actionData['media_type'] ?? 'IMAGE', 20));
+        $mediaType = strtoupper($this->filterText($actionData['media_type'] ?? '', 20));
         $displayOrder = $this->integerValue($actionData['display_order'] ?? 0);
         $isPrimary = $this->booleanValue($actionData['is_primary'] ?? false);
         $variantId = $this->positiveInt($actionData['variant_id'] ?? null);
@@ -575,7 +615,8 @@ final readonly class CatalogueServices implements ICatalogueServices
         $expectedPrefix = 'tenants/' . $tenantId . '/products/' . $productId . '/';
         if ($filePath === null || $originalName === null || $fileSize === null || $fileSize < 0
             || $displayOrder === null || $displayOrder < 0 || $isPrimary === null
-            || $mediaType !== 'IMAGE' || !in_array($mimeType, ['image/jpeg', 'image/png', 'image/webp'], true)
+            || !in_array($mediaType, ['IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT'], true)
+            || !$this->isSupportedProductMedia($mimeType, $mediaType)
             || !str_starts_with($filePath, $expectedPrefix) || str_contains($filePath, '..')
             || str_starts_with($filePath, '/') || preg_match('/^[a-z]+:\/\//i', $filePath)
         ) {
@@ -611,13 +652,7 @@ final readonly class CatalogueServices implements ICatalogueServices
         $actualMimeType = strtolower((string) ($storedObject['ContentType'] ?? ''));
         $actualFileSize = (int) ($storedObject['ContentLength'] ?? 0);
         $signature = $this->s3Storage->getObjectPrefix($filePath);
-        $signatureValid = match ($mimeType) {
-            'image/jpeg' => str_starts_with($signature, "\xFF\xD8\xFF"),
-            'image/png' => str_starts_with($signature, "\x89PNG\r\n\x1A\n"),
-            'image/webp' => str_starts_with($signature, 'RIFF')
-                && substr($signature, 8, 4) === 'WEBP',
-            default => false,
-        };
+        $signatureValid = $this->productMediaSignatureMatches($mimeType, $signature);
         if ($actualMimeType !== $mimeType || $actualFileSize !== $fileSize
             || $actualFileSize < 1 || $actualFileSize > $this->s3Storage->getMaxUploadBytes()
             || !$signatureValid) {
