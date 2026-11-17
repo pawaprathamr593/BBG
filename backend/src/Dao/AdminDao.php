@@ -185,10 +185,19 @@ final readonly class AdminDao
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->one($db, "SELECT ts.*, t.tenant_name, p.plan_code, p.plan_name, p.billing_cycle,
-            p.description AS plan_description
+            p.description AS plan_description, bp.business_name, bp.business_slug, bp.business_email,
+            bp.business_phone, bp.whatsapp_number, bp.address_line_1, bp.address_line_2,
+            bp.city, bp.state, bp.postal_code, bp.country_code, bp.approval_status AS business_approval_status,
+            instructions.config_version AS payment_qr_version, instructions.payee_name AS payment_payee_name,
+            instructions.upi_id AS payment_upi_id, instructions.qr_file_path AS payment_qr_file_path,
+            instructions.payment_instructions
             FROM TENANT_SUBSCRIPTIONS ts
             INNER JOIN TENANTS t ON t.id = ts.tenant_id AND t.status = 'A'
             INNER JOIN PLANS p ON p.id = ts.plan_id AND p.status = 'A'
+            LEFT JOIN BUSINESS_PROFILES bp ON bp.tenant_id = ts.tenant_id AND bp.status = 'A'
+            LEFT JOIN TENANT_SUBSCRIPTION_PAYMENT_INSTRUCTIONS instructions
+                ON instructions.tenant_id = ts.tenant_id AND instructions.subscription_id = ts.id
+                AND instructions.status = 'A'
             WHERE ts.id = :id AND ts.status = 'A' LIMIT 1",
             [':id' => $subscriptionId], 'getSubscriptionForReview');
     }
@@ -202,6 +211,18 @@ final readonly class AdminDao
             WHERE tenant_id = :tenant_id AND subscription_id = :subscription_id AND status = 'A'
             ORDER BY submitted_on DESC, id DESC",
             [':tenant_id' => $tenantId, ':subscription_id' => $subscriptionId], 'getSubscriptionProofs');
+    }
+
+    public function getSubscriptionReviewHistory(ConnectionInterface $db, int $tenantId, int $subscriptionId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->many($db, "SELECT h.id, h.payment_proof_id, h.decision, h.review_reason,
+            h.reviewer_user_id, u.full_name AS reviewer_name, h.reviewed_on
+            FROM TENANT_SUBSCRIPTION_REVIEW_HISTORY h
+            LEFT JOIN USERS u ON u.id = h.reviewer_user_id AND u.status = 'A'
+            WHERE h.tenant_id = :tenant_id AND h.subscription_id = :subscription_id AND h.status = 'A'
+            ORDER BY h.reviewed_on DESC, h.id DESC",
+            [':tenant_id' => $tenantId, ':subscription_id' => $subscriptionId], 'getSubscriptionReviewHistory');
     }
 
     public function approveSubscription(ConnectionInterface $db, int $subscriptionId, int $tenantId, int $adminId, string $startsOn, string $endsOn): array
@@ -226,6 +247,17 @@ final readonly class AdminDao
                 WHERE tenant_id = :tenant_id AND subscription_id = :subscription_id
                     AND review_status = 'PENDING' AND status = 'A'",
                 [':admin_id' => $adminId, ':tenant_id' => $tenantId, ':subscription_id' => $subscriptionId])->execute();
+            $db->createCommand("INSERT INTO TENANT_SUBSCRIPTION_REVIEW_HISTORY
+                (tenant_id, subscription_id, payment_proof_id, decision, review_reason,
+                 reviewer_user_id, reviewed_on, status, created_by, updated_by)
+                SELECT :tenant_id, :subscription_id, proof.id, 'APPROVED', NULL,
+                    :admin_id, CURRENT_TIMESTAMP, 'A', :admin_id, :admin_id
+                FROM SUBSCRIPTION_PAYMENT_PROOFS proof
+                WHERE proof.tenant_id = :proof_tenant_id AND proof.subscription_id = :proof_subscription_id
+                    AND proof.review_status = 'APPROVED' AND proof.status = 'A'
+                ORDER BY proof.reviewed_on DESC, proof.id DESC LIMIT 1",
+                [':tenant_id' => $tenantId, ':subscription_id' => $subscriptionId, ':admin_id' => $adminId,
+                 ':proof_tenant_id' => $tenantId, ':proof_subscription_id' => $subscriptionId])->execute();
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = ['subscription_id' => $subscriptionId, 'subscription_status' => 'ACTIVE'];
         } catch (Throwable $exception) {
@@ -255,6 +287,18 @@ final readonly class AdminDao
                     AND review_status = 'PENDING' AND status = 'A'",
                 [':reason' => $reason, ':admin_id' => $adminId, ':tenant_id' => $tenantId,
                  ':subscription_id' => $subscriptionId])->execute();
+            $db->createCommand("INSERT INTO TENANT_SUBSCRIPTION_REVIEW_HISTORY
+                (tenant_id, subscription_id, payment_proof_id, decision, review_reason,
+                 reviewer_user_id, reviewed_on, status, created_by, updated_by)
+                SELECT :tenant_id, :subscription_id, proof.id, 'REJECTED', :reason,
+                    :admin_id, CURRENT_TIMESTAMP, 'A', :admin_id, :admin_id
+                FROM SUBSCRIPTION_PAYMENT_PROOFS proof
+                WHERE proof.tenant_id = :proof_tenant_id AND proof.subscription_id = :proof_subscription_id
+                    AND proof.review_status = 'REJECTED' AND proof.status = 'A'
+                ORDER BY proof.reviewed_on DESC, proof.id DESC LIMIT 1",
+                [':tenant_id' => $tenantId, ':subscription_id' => $subscriptionId, ':reason' => $reason,
+                 ':admin_id' => $adminId, ':proof_tenant_id' => $tenantId,
+                 ':proof_subscription_id' => $subscriptionId])->execute();
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = ['subscription_id' => $subscriptionId, 'subscription_status' => 'REJECTED'];
         } catch (Throwable $exception) {
