@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { SocialAuthIntent } from '../../../../core/auth/auth.models';
@@ -12,5 +12,5 @@ import { AuthExperienceComponent } from '../../../../shared/auth-experience/auth
   styleUrl: '../login/login.scss',
 })
 export class Register extends AuthExperienceComponent {
-  override mode: SocialAuthIntent = 'register';
+  override readonly mode = input<SocialAuthIntent>('register');
 }
