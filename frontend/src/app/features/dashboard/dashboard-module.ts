@@ -1,6 +1,6 @@
 import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter, firstValueFrom, lastValueFrom, tap } from 'rxjs';
 import { API_BASE_URL } from '../../core/config/api-base-url';
@@ -15,7 +15,6 @@ interface DataRecord { [key: string]: unknown; }
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-dashboard-module',
   standalone: true,
-  imports: [RouterLink],
   template: `
     <main class="module-page">
       <header class="page-heading">
