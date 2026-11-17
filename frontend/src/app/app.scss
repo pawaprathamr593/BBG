@@ -69,3 +69,4 @@
 /* Storefront routes are a separate public-site experience, not part of the BBG platform shell. */
 .app-shell.storefront-mode { --bbg-header-height:88px; background: transparent; }
 .app-shell.storefront-mode > .route-content { min-height: 100dvh; }
+\n/* Workspace has its own fixed-height application shell and navigation. */\n.app-shell.workspace-mode{height:100dvh;min-height:0;overflow:hidden}\n.app-shell.workspace-mode>.route-content{min-height:0;flex:1 1 auto;overflow:hidden}\n.app-shell.workspace-mode>.route-content>:not(router-outlet){min-height:0;flex:1 1 auto;overflow:hidden}\n
