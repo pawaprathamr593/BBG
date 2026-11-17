@@ -205,11 +205,11 @@ interface DataRecord { [key: string]: unknown; }
               @if (detail['payment_qr_file_url']) { <img class="payment-qr-preview" [src]="$any(detail['payment_qr_file_url'])" alt="Captured payment QR"> }
             }
             <h3>Payment receipts</h3>
-            @for (proof of subscriptionReviewProofs(); track proof['id']) {
+            @for (proof of subscriptionReviewProofs(); track $index) {
               <div class="review-history-row"><div><strong>{{ proof['review_status'] }}</strong><span>{{ proof['payment_reference'] || 'No payment reference' }} · {{ formatValue(proof['submitted_on']) }}</span></div>@if (proof['proof_file_url']) { <a [href]="$any(proof['proof_file_url'])" target="_blank" rel="noopener">Open receipt</a> }</div>
             } @empty { <p>No receipt submissions were found.</p> }
             <h3>Decision history</h3>
-            @for (entry of subscriptionReviewHistory(); track entry['id']) {
+            @for (entry of subscriptionReviewHistory(); track $index) {
               <div class="review-history-row"><div><strong>{{ entry['decision'] }}</strong><span>{{ entry['review_reason'] || 'No rejection reason recorded' }}</span><small>{{ entry['reviewer_name'] || 'System' }} · {{ formatValue(entry['reviewed_on']) }}</small></div></div>
             } @empty { <p>No review decisions have been recorded yet.</p> }
           </section>
