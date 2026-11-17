@@ -208,6 +208,7 @@ export class WorkspaceLayout implements OnInit {
   readonly workspaceName = computed(() => this.activeTenant()?.tenant_name ?? (this.hasPlatformAccess() ? 'BBG Platform' : 'Personal / Marketplace'));
   readonly currentPath = signal(this.router.url.split(/[?#]/,1)[0]);
   readonly currentSection = computed(() => this.currentPath().split('/').filter(Boolean).at(-1) ?? 'dashboard');
+  readonly currentPageLabel = computed(() => this.currentSection() === 'dashboard' ? 'Overview' : this.currentSection().replace(/-/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase()));
   readonly breadcrumbs = computed(() => {
     const parts = this.currentPath().split('/').filter(Boolean).slice(1);
     const labels = parts.map((part) => part === 'catalogue' ? 'Catalogue' : part.replace(/-/g,' ').replace(/\b\w/g, c => c.toUpperCase()));
