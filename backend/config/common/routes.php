@@ -121,6 +121,10 @@ return [
     Route::post('/api/v1/promotions/publish')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/publish'),
     Route::post('/api/v1/promotions/unpublish')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/unpublish'),
     Route::post('/api/v1/promotions/engagement')->action([PromotionController::class, 'actionGetPromotion'])->name('api/v1/promotions/engagement'),
+    Route::post('/api/v1/promotions/media/list')->action([PromotionController::class, 'actionGetPromotion'])->name('api/v1/promotions/media/list'),
+    Route::post('/api/v1/promotions/media/upload-url')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/media/upload-url'),
+    Route::post('/api/v1/promotions/media/link')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/media/link'),
+    Route::post('/api/v1/promotions/media/delete')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/media/delete'),
 
     Route::post('/api/v1/engagement/likes/toggle')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/likes/toggle'),
     Route::post('/api/v1/engagement/comments/list')->action([EngagementController::class, 'actionGetEngagement'])->name('api/v1/engagement/comments/list'),
