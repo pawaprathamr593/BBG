@@ -120,7 +120,7 @@ export class CatalogueWorkspace implements OnInit {
         await this.api.updateProduct(tenantId, productId, this.productForm);
         this.notice.set('Product updated.');
       } else {
-        await this.api.createProduct(tenantId, this.productForm);
+        await this.api.createProduct(tenantId, { ...this.productForm, publication_status: 'DRAFT' });
         this.notice.set('Product created.');
       }
       this.closeProductForm();
