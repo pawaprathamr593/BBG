@@ -124,6 +124,47 @@ final readonly class CustomerServices implements ICustomerServices
         return $resArr;
     }
 
+    private function getTenantCustomers(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->authServices->getAuth([
+            'actionType' => 'getProfile',
+            'actionData' => ['action' => 'getProfile', '_accessToken' => (string) ($actionData['_accessToken'] ?? '')],
+        ]);
+        if (($principal['status'] ?? 'EXCEPTION') !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'CustomerServices::getTenantCustomers');
+        }
+        $tenantId = $this->positiveInt($actionData['tenant_id'] ?? null);
+        $userId = (int) ($principal['data']['user_id'] ?? 0);
+        if ($tenantId === null || $userId < 1) {
+            $resArr['msgArr'][] = 'A valid tenant_id is required.';
+            return $resArr;
+        }
+        $permission = $this->tenantDao->hasTenantPermission($this->db, $userId, $tenantId, 'CUSTOMERS_MANAGE');
+        if ($permission['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($permission, 'CustomerServices::getTenantCustomers');
+        }
+        if ($permission['data'] === []) {
+            $resArr['msgArr'][] = 'You do not have permission to view this tenant customer directory.';
+            return $resArr;
+        }
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(100, $this->positiveInt($actionData['page_size'] ?? 25) ?? 25);
+        $rows = $this->dao->getTenantCustomers($this->db, $tenantId, $pageSize, ($page - 1) * $pageSize);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'CustomerServices::getTenantCustomers');
+        }
+        $count = $this->dao->countTenantCustomers($this->db, $tenantId);
+        if ($count['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($count, 'CustomerServices::getTenantCustomers');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['items' => $rows['data'], 'pagination' => [
+            'page' => $page, 'page_size' => $pageSize, 'total' => (int) ($count['data']['total'] ?? 0),
+        ]];
+        return $resArr;
+    }
+
     private function manageMyAddress(array $actionData, string $operation): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
