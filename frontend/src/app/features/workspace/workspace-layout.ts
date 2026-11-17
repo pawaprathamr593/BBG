@@ -21,9 +21,9 @@ interface WorkspaceNavItem {
   template: `
     <div class="workspace-shell" [class.sidebar-collapsed]="sidebarCollapsed()" [class.mobile-expanded]="mobileExpanded()">
       <header class="workspace-topbar">
-        <a class="workspace-brand" routerLink="/dashboard" aria-label="BBG workspace overview">
+        <a class="workspace-brand" routerLink="/dashboard" [attr.aria-label]="contextLabel() + ' overview'">
           <span class="brand-mark"><i></i><i></i><i></i></span>
-          <span class="brand-copy"><strong>BBG</strong><small>WORKSPACE</small></span>
+          <span class="brand-copy"><strong>BBG</strong><small>{{ contextLabel() }}</small></span>
         </a>
 
         <div class="topbar-spacer"></div>
@@ -33,34 +33,21 @@ interface WorkspaceNavItem {
       </header>
 
       <div class="workspace-body">
-        <aside class="workspace-sidebar" [attr.aria-label]="'Workspace navigation'">
-          <div class="sidebar-utility">
-            @if (canSwitchWorkspace()) {
-              <label class="workspace-switcher">
-                <span>Switch workspace</span>
-                <select [value]="activeTenantId() ?? 'platform'" [disabled]="switching()" (change)="switchWorkspace($event)" aria-label="Switch workspace">
-                  @if (hasPlatformAccess()) { <option value="platform">BBG Platform</option> }
-                  @else { <option value="platform">Personal / Marketplace</option> }
-                  @for (tenant of workspace.tenants(); track tenant.id) { <option [value]="tenant.id">{{ tenant.tenant_name }}</option> }
-                </select>
-                <span class="switch-chevron">⌄</span>
-              </label>
-            }
-          </div>
+        <aside class="workspace-sidebar" [attr.aria-label]="contextLabel() + ' navigation'">
           <div class="sidebar-scroll">
-            <p class="sidebar-caption" [class.visually-hidden]="sidebarCollapsed()">WORKSPACE</p>
+            <p class="sidebar-caption" [class.visually-hidden]="sidebarCollapsed()">{{ contextLabel() }}</p>
             <a class="nav-item overview-link" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" [attr.title]="sidebarCollapsed() ? 'Overview' : null">
               <span class="nav-icon">▦</span><span class="nav-label">Overview</span>
             </a>
             <div class="nav-divider"></div>
-            <p class="sidebar-caption" [class.visually-hidden]="sidebarCollapsed()">YOUR MODULES</p>
+            <p class="sidebar-caption" [class.visually-hidden]="sidebarCollapsed()">AVAILABLE MODULES</p>
             @for (item of visibleNavItems(); track item.route) {
               <a class="nav-item" [routerLink]="item.route" routerLinkActive="active" [attr.title]="sidebarCollapsed() ? item.label : null">
                 <span class="nav-icon">{{ item.icon }}</span><span class="nav-label">{{ item.label }}</span>
               </a>
             }
             @if (!visibleNavItems().length) {
-              <p class="sidebar-empty" [class.visually-hidden]="sidebarCollapsed()">No modules are assigned in this workspace.</p>
+              <p class="sidebar-empty" [class.visually-hidden]="sidebarCollapsed()">No modules are assigned in this area.</p>
             }
           </div>
           <button class="sidebar-collapse" type="button" (click)="sidebarCollapsed.update(v => !v)" [attr.aria-label]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'" [attr.title]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
@@ -71,7 +58,7 @@ interface WorkspaceNavItem {
         <main class="workspace-main">
           <div class="breadcrumb-row" aria-label="Breadcrumb">
             <div class="breadcrumbs">
-              <a routerLink="/dashboard">Workspace</a>
+              <a routerLink="/dashboard">{{ contextLabel() }}</a>
               @for (crumb of breadcrumbs(); track crumb.route; let last = $last) {
                 <span class="crumb-separator">/</span>
                 @if (last) { <span class="current-crumb" aria-current="page">{{ crumb.label }}</span> }
@@ -109,32 +96,20 @@ interface WorkspaceNavItem {
         </app-filter-drawer>
       }
 
-      <section class="mobile-nav-panel" [class.expanded]="mobileExpanded()" aria-label="Mobile workspace navigation">
+      <section class="mobile-nav-panel" [class.expanded]="mobileExpanded()" [attr.aria-label]="contextLabel() + ' navigation'">
         <button class="mobile-nav-handle" type="button" (click)="mobileExpanded.update(v => !v)" [attr.aria-expanded]="mobileExpanded()">
-          <span class="handle-line"></span><strong>{{ mobileExpanded() ? 'Workspace navigation' : 'Navigate workspace' }}</strong><span class="handle-chevron">{{ mobileExpanded() ? '⌄' : '⌃' }}</span>
+          <span class="handle-line"></span><strong>{{ mobileExpanded() ? contextLabel() + ' navigation' : 'Navigate ' + contextLabel() }}</strong><span class="handle-chevron">{{ mobileExpanded() ? '⌄' : '⌃' }}</span>
         </button>
         @if (mobileExpanded()) {
-          <div class="mobile-workspace-controls">
-            @if (canSwitchWorkspace()) {
-              <label class="mobile-workspace-switcher">
-                <span>Switch workspace</span>
-                <select [value]="activeTenantId() ?? 'platform'" [disabled]="switching()" (change)="switchWorkspace($event)" aria-label="Switch workspace">
-                  @if (hasPlatformAccess()) { <option value="platform">BBG Platform</option> }
-                  @else { <option value="platform">Personal / Marketplace</option> }
-                  @for (tenant of workspace.tenants(); track tenant.id) { <option [value]="tenant.id">{{ tenant.tenant_name }}</option> }
-                </select>
-              </label>
-            }
-          </div>
           <div class="mobile-nav-scroll">
-            <a class="mobile-nav-item" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="mobileExpanded.set(false)"><span>▦</span>Overview</a>
+            <a class="mobile-nav-item" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="mobileExpanded.set(false)"><span>▦</span>{{ overviewLabel() }}</a>
             @for (item of visibleNavItems(); track item.route) {
               <a class="mobile-nav-item" [routerLink]="item.route" routerLinkActive="active" (click)="mobileExpanded.set(false)"><span>{{ item.icon }}</span>{{ item.label }}</a>
             }
           </div>
         } @else {
           <div class="mobile-quick-nav">
-            <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="mobileExpanded.set(false)"><span>▦</span><small>Overview</small></a>
+            <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="mobileExpanded.set(false)"><span>▦</span><small>{{ overviewLabel() }}</small></a>
             @for (item of visibleNavItems().slice(0,3); track item.route) {
               <a [routerLink]="item.route" routerLinkActive="active" (click)="mobileExpanded.set(false)"><span>{{ item.icon }}</span><small>{{ item.label }}</small></a>
             }
@@ -205,7 +180,9 @@ export class WorkspaceLayout implements OnInit {
   readonly activeTenantId = this.workspace.activeTenantId;
   readonly permissions = this.workspace.permissions;
   readonly isPlatform = computed(() => this.activeTenantId() === null && this.hasPlatformAccess());
-  readonly workspaceName = computed(() => this.activeTenant()?.tenant_name ?? (this.hasPlatformAccess() ? 'BBG Platform' : 'Personal / Marketplace'));
+  readonly isPersonalContext = computed(() => this.activeTenantId() === null && !this.hasPlatformAccess());
+  readonly contextLabel = computed(() => this.activeTenantId() !== null ? 'BUSINESS WORKSPACE' : this.hasPlatformAccess() ? 'PLATFORM ADMINISTRATION' : 'MY ACCOUNT');
+  readonly overviewLabel = computed(() => this.isPersonalContext() ? 'My Account Overview' : this.isPlatform() ? 'Platform Overview' : 'Overview');
   readonly currentPath = signal(this.router.url.split(/[?#]/,1)[0]);
   readonly currentSection = computed(() => this.currentPath().split('/').filter(Boolean).at(-1) ?? 'dashboard');
   readonly currentPageLabel = computed(() => this.currentSection() === 'dashboard' ? 'Overview' : this.currentSection().replace(/-/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase()));
