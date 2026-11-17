@@ -192,7 +192,7 @@ interface DataRecord { [key: string]: unknown; }
             @if (subscriptionReview()?.['subscription']; as detail) {
               <h3>Business details</h3>
               <div class="review-detail-grid">
-                @for (key of ['business_name','business_email','business_phone','whatsapp_number','address_line_1','address_line_2','city','state','postal_code','country_code','business_approval_status']; track key) {
+                @for (key of ['tenant_code','tenant_type','tenant_status','business_name','business_slug','business_description','primary_category_id','business_email','business_phone','whatsapp_number','logo_path','cover_image_path','address_line_1','address_line_2','city','state','postal_code','country_code','latitude','longitude','business_approval_status','business_publication_status','business_rejection_reason']; track key) {
                   <div><span>{{ humanize(key) }}</span><strong>{{ detail[key] || '—' }}</strong></div>
                 }
               </div>
