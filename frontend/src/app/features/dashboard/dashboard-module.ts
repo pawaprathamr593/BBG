@@ -379,7 +379,7 @@ export class DashboardModule implements OnInit {
 
   readonly recordsHeading = computed(() => this.section() === 'customers' ? 'Saved addresses' : this.title());
   recordId(item: DataRecord, preferred = 'id'): number {
-    const value = item[preferred] ?? item.id ?? item.address_id ?? item.category_id ?? item.business_id ?? item.subscription_id ?? item.promotion_id ?? item.order_id ?? item.report_id ?? item.user_id;
+    const value = item[preferred] ?? item['id'] ?? item['address_id'] ?? item['category_id'] ?? item['business_id'] ?? item['subscription_id'] ?? item['promotion_id'] ?? item['order_id'] ?? item['report_id'] ?? item['user_id'];
     return Number(value ?? 0);
   }
   valueOf(item: DataRecord, keys: string[]): string { for (const key of keys) if (item[key] !== null && item[key] !== undefined && item[key] !== '') return this.formatValue(item[key]); return '—'; }
@@ -389,7 +389,7 @@ export class DashboardModule implements OnInit {
   recordSubtitle(item: DataRecord): string {
     return this.valueOf(item,['email','business_category','category_type','customer_name','created_at','created_on','order_status','enquiry_status','subscription_status']);
   }
-  statusOf(item: DataRecord): string { return String(item.approval_status ?? item.subscription_status ?? item.publication_status ?? item.order_status ?? item.enquiry_status ?? item.payment_status ?? item.report_status ?? item.account_status ?? item.status ?? ''); }
+  statusOf(item: DataRecord): string { return String(item['approval_status'] ?? item['subscription_status'] ?? item['publication_status'] ?? item['order_status'] ?? item['enquiry_status'] ?? item['payment_status'] ?? item['report_status'] ?? item['account_status'] ?? item['status'] ?? ''); }
   recordEntries(item: DataRecord): Array<{key:string;value:unknown}> {
     const hidden = new Set(['id','tenant_id','user_id','business_id','subscription_id','promotion_id','order_id','report_id','created_by','updated_by','deleted_by','password_hash','access_token','refresh_token']);
     return Object.entries(item).filter(([key,value]) => !hidden.has(key) && value !== null && typeof value !== 'object').slice(0,8).map(([key,value])=>({key,value}));
@@ -399,7 +399,7 @@ export class DashboardModule implements OnInit {
     if (this.section()==='orders' && this.workspace.activeTenantId()!==null && !['CANCELLED','COMPLETED','DELIVERED'].includes(status)) return [{key:'confirm-order',label:'Confirm order'},{key:'cancel-order',label:'Cancel order',danger:true}];
     if (this.section()==='enquiries' && this.workspace.activeTenantId()!==null && status!=='CLOSED') return [{key:'reply-enquiry',label:'Reply'},{key:'close-enquiry',label:'Close enquiry',danger:true}];
     if (this.section()==='promotions') return status==='PUBLISHED' ? [{key:'unpublish-promotion',label:'Unpublish'}] : [{key:'publish-promotion',label:'Publish'}];
-    if (this.section()==='customers' && item.address_id) return [{key:'default-address',label:'Set as default'},{key:'delete-address',label:'Delete address',danger:true}];
+    if (this.section()==='customers' && item['address_id']) return [{key:'default-address',label:'Set as default'},{key:'delete-address',label:'Delete address',danger:true}];
     if (this.section()==='platform-users') return status==='SUSPENDED' ? [{key:'restore-user',label:'Restore account'}] : [{key:'suspend-user',label:'Suspend account',danger:true}];
     if (this.section()==='business-approval' && status==='PENDING') return [{key:'approve-business',label:'Approve'},{key:'reject-business',label:'Reject',danger:true}];
     if (this.section()==='subscription-approval' && status==='PENDING') return [{key:'approve-subscription',label:'Approve'},{key:'reject-subscription',label:'Reject',danger:true}];
@@ -430,7 +430,7 @@ export class DashboardModule implements OnInit {
       case 'approve-business': case 'reject-business': {
         const reason = action==='reject-business' ? window.prompt('Reason for rejecting this application:') : null;
         if (action==='reject-business' && !reason?.trim()) return;
-        path=action==='approve-business'?'/api/v1/admin/businesses/approve':'/api/v1/admin/businesses/reject'; actionType=action==='approve-business'?'approveBusiness':'rejectBusiness'; data={business_id:Number(item.business_id ?? item.id),...(reason?{reason:reason.trim()}:{})}; break;
+        path=action==='approve-business'?'/api/v1/admin/businesses/approve':'/api/v1/admin/businesses/reject'; actionType=action==='approve-business'?'approveBusiness':'rejectBusiness'; data={business_id:Number(item['business_id'] ?? item['id']),...(reason?{reason:reason.trim()}:{})}; break;
       }
       case 'approve-subscription': case 'reject-subscription': {
         const reason = action==='reject-subscription' ? window.prompt('Reason for rejecting this subscription:') : null;
@@ -442,18 +442,18 @@ export class DashboardModule implements OnInit {
           if (!startsOn?.trim() || !endsOn?.trim()) return;
           dates = { starts_on: startsOn.trim(), ends_on: endsOn.trim() };
         }
-        path=action==='approve-subscription'?'/api/v1/admin/subscriptions/approve':'/api/v1/admin/subscriptions/reject'; actionType=action==='approve-subscription'?'approveSubscription':'rejectSubscription'; data={subscription_id:Number(item.subscription_id ?? item.id),...dates,...(reason?{reason:reason.trim()}:{})}; break;
+        path=action==='approve-subscription'?'/api/v1/admin/subscriptions/approve':'/api/v1/admin/subscriptions/reject'; actionType=action==='approve-subscription'?'approveSubscription':'rejectSubscription'; data={subscription_id:Number(item['subscription_id'] ?? item['id']),...dates,...(reason?{reason:reason.trim()}:{})}; break;
       }
       case 'default-address': case 'delete-address': {
         const remove = action==='delete-address';
         if (remove && !window.confirm('Delete this saved address?')) return;
-        path=remove?'/api/v1/customers/addresses/delete':'/api/v1/customers/addresses/default'; key='customerParam'; actionType=remove?'deleteMyAddress':'setDefaultAddress'; data={address_id:Number(item.address_id ?? item.id)}; break;
+        path=remove?'/api/v1/customers/addresses/delete':'/api/v1/customers/addresses/default'; key='customerParam'; actionType=remove?'deleteMyAddress':'setDefaultAddress'; data={address_id:Number(item['address_id'] ?? item['id'])}; break;
       }
       case 'delete-category':
         if (!window.confirm('Soft-delete this category? Categories referenced by active businesses or products cannot be deleted.')) return;
         path='/api/v1/admin/categories/delete'; actionType='deleteCategory'; data={category_id:id}; break;
       case 'moderate': {
-        const contentType=String(item.content_type ?? '').toUpperCase();
+        const contentType=String(item['content_type'] ?? '').toUpperCase();
         const actionTypeChoice=window.prompt('Enter UNPUBLISH_POST, UNPUBLISH_PRODUCT or DISMISS_REPORT:');
         if (!actionTypeChoice || !['UNPUBLISH_POST','UNPUBLISH_PRODUCT','DISMISS_REPORT'].includes(actionTypeChoice.toUpperCase())) return;
         const reason=window.prompt('Reason for this moderation decision:'); if(!reason?.trim()) return;
