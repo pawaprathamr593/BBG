@@ -76,6 +76,35 @@ final readonly class AuthDao
         return $resArr;
     }
 
+    public function updateUserPassword(ConnectionInterface $connection, int $userId, string $passwordHash): array
+    {
+        $resArr = $this->initialResponse();
+        try {
+            $affected = $connection->createCommand(
+                "UPDATE USERS SET password_hash = :password_hash,
+                    updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                 WHERE id = :id AND account_status = 'ACTIVE' AND status = 'A'",
+                [':password_hash' => $passwordHash, ':user_id' => $userId, ':id' => $userId],
+            )->execute();
+            if ($affected !== 1) {
+                $exists = $connection->createCommand(
+                    "SELECT id FROM USERS WHERE id = :id AND account_status = 'ACTIVE' AND status = 'A' LIMIT 1",
+                    [':id' => $userId],
+                )->queryOne();
+                if (!is_array($exists)) {
+                    $resArr['msgArr'][] = 'Active user account was not found.';
+                    return $resArr;
+                }
+            }
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['user_id' => $userId];
+        } catch (Throwable $exception) {
+            $this->logException('updateUserPassword', $exception);
+            $resArr = $this->exceptionResponse('Unable to update account password.');
+        }
+        return $resArr;
+    }
+
     public function getUserPermissions(ConnectionInterface $connection, int $userId, int $tenantId): array
     {
         $resArr = $this->initialResponse();
@@ -155,7 +184,7 @@ final readonly class AuthDao
         $resArr = $this->initialResponse();
         try {
             $row = $connection->createCommand(
-                "SELECT id, full_name, email, mobile, profile_image, account_status, status
+                "SELECT id, full_name, email, mobile, password_hash, profile_image, account_status, status
                  FROM USERS WHERE id = :id AND status = 'A' LIMIT 1",
                 [':id' => $userId],
             )->queryOne();
