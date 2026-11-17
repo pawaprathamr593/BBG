@@ -33,6 +33,21 @@ interface WorkspaceNavItem {
 
       <div class="workspace-body">
         <aside class="workspace-sidebar" [attr.aria-label]="contextLabel() + ' navigation'">
+          @if (showContextSwitcher()) {
+            <div class="sidebar-context-switcher">
+              <label>
+                <span>SWITCH AREA</span>
+                <select [value]="activeContextSelection()" [disabled]="contextSwitching()" (change)="switchContext($event)" aria-label="Switch account area">
+                  <option value="PERSONAL">My Account</option>
+                  @if (canAccessPlatform()) { <option value="PLATFORM">Platform Administration</option> }
+                  @for (tenant of workspace.tenants(); track tenant.id; let index = $index) {
+                    <option [value]="'BUSINESS:' + tenant.id">Business Workspace {{ index + 1 }}</option>
+                  }
+                </select>
+              </label>
+              @if (contextSwitchError()) { <span class="context-switch-error" role="alert">{{ contextSwitchError() }}</span> }
+            </div>
+          }
           <div class="sidebar-scroll">
             <p class="sidebar-caption" [class.visually-hidden]="sidebarCollapsed()">{{ contextLabel() }}</p>
             <a class="nav-item overview-link" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" [attr.title]="sidebarCollapsed() ? overviewLabel() : null">
@@ -100,6 +115,19 @@ interface WorkspaceNavItem {
           <span class="handle-line"></span><strong>{{ mobileExpanded() ? contextLabel() + ' navigation' : 'Navigate ' + contextLabel() }}</strong><span class="handle-chevron">{{ mobileExpanded() ? '⌄' : '⌃' }}</span>
         </button>
         @if (mobileExpanded()) {
+          @if (showContextSwitcher()) {
+            <div class="mobile-context-switcher">
+              <label><span>Switch area</span>
+                <select [value]="activeContextSelection()" [disabled]="contextSwitching()" (change)="switchContext($event)" aria-label="Switch account area">
+                  <option value="PERSONAL">My Account</option>
+                  @if (canAccessPlatform()) { <option value="PLATFORM">Platform Administration</option> }
+                  @for (tenant of workspace.tenants(); track tenant.id; let index = $index) {
+                    <option [value]="'BUSINESS:' + tenant.id">Business Workspace {{ index + 1 }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+          }
           <div class="mobile-nav-scroll">
             <a class="mobile-nav-item" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="mobileExpanded.set(false)"><span>▦</span>{{ overviewLabel() }}</a>
             @for (item of visibleNavItems(); track item.route) {
@@ -139,7 +167,9 @@ interface WorkspaceNavItem {
     .workspace-body{display:flex;flex:1 1 auto;min-height:0;overflow:hidden}
     .workspace-sidebar{z-index:10;display:flex;width:var(--sidebar-width);flex:0 0 var(--sidebar-width);flex-direction:column;overflow:hidden;border-right:1px solid var(--border);background:var(--surface-card);transition:width .2s ease,flex-basis .2s ease}
     .sidebar-collapsed .workspace-sidebar{width:76px;flex-basis:76px}
-    .sidebar-utility{display:grid;gap:10px;padding:14px 12px;border-bottom:1px solid var(--border)}.sidebar-utility .workspace-switcher{min-width:0}    .sidebar-scroll{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding:20px 12px 12px}
+    .sidebar-context-switcher{padding:14px 12px;border-bottom:1px solid var(--border)}.sidebar-context-switcher label{display:grid;gap:6px;color:var(--text-muted);font-size:.57rem;font-weight:850;letter-spacing:.12em}.sidebar-context-switcher select{width:100%;height:39px;min-width:0;padding:0 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.7rem;letter-spacing:0;cursor:pointer}.sidebar-context-switcher select:disabled{opacity:.6;cursor:wait}.context-switch-error{display:block;margin-top:6px;color:#c34f47;font-size:.64rem}
+    .sidebar-collapsed .sidebar-context-switcher{padding:10px 7px}.sidebar-collapsed .sidebar-context-switcher label>span{display:none}.sidebar-collapsed .sidebar-context-switcher select{padding:0 3px;font-size:.59rem}
+    .sidebar-scroll{flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding:20px 12px 12px}
     .sidebar-caption{margin:2px 11px 10px;color:var(--text-muted);font-size:.57rem;font-weight:850;letter-spacing:.13em;white-space:nowrap}.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
     .nav-item{display:flex;min-height:43px;align-items:center;gap:13px;margin:3px 0;padding:0 12px;border:1px solid transparent;border-radius:9px;color:var(--text-secondary);font-size:.77rem;font-weight:650;text-decoration:none;white-space:nowrap;transition:background .15s ease,color .15s ease}
     .nav-item:hover{background:var(--surface-subtle);color:var(--text-primary)}.nav-item.active{border-color:color-mix(in srgb,var(--brand) 22%,transparent);background:var(--brand-soft);color:var(--brand);font-weight:800}
@@ -154,7 +184,8 @@ interface WorkspaceNavItem {
     .mobile-nav-panel,.mobile-nav-backdrop{display:none}.desktop-profile{display:flex;align-items:center}
     @media(max-width:1100px){.workspace-brand{flex-basis:130px}.workspace-topbar{gap:12px;padding:0 18px}.workspace-identity{padding-left:12px}.identity-copy strong{max-width:170px}}
     .workspace-filter-fields{display:grid;grid-template-columns:1fr;gap:16px}.workspace-filter-fields .filter-field{display:grid;gap:7px;margin:0;color:var(--text-primary);font-size:.74rem;font-weight:750}.workspace-filter-fields .filter-field input,.workspace-filter-fields .filter-field select{width:100%;height:44px;box-sizing:border-box;padding:0 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.77rem}
-    @media(max-width:767.98px){.workspace-shell{--workspace-topbar:66px;--bbg-header-height:66px}.workspace-topbar{gap:10px;padding:0 14px}.workspace-brand{flex-basis:auto}.brand-copy small{display:none}.workspace-identity{min-width:0;flex:1;padding-left:12px}.identity-copy strong{max-width:190px}.workspace-switcher{min-width:150px}.workspace-switcher>span:first-child{display:none}.marketplace-link{padding:8px}.marketplace-link>span:last-child{display:none}.workspace-sidebar{display:none}.desktop-profile{display:flex;align-items:center}.breadcrumb-row{min-height:48px;flex-basis:48px;padding:0 17px}.workspace-content{padding-bottom:82px}.mobile-nav-panel{position:fixed;z-index:61;right:0;bottom:0;left:0;display:flex;max-height:66px;flex-direction:column;overflow:hidden;padding-bottom:env(safe-area-inset-bottom);border:1px solid var(--border);border-bottom:0;border-radius:18px 18px 0 0;background:var(--surface-card);box-shadow:0 -14px 44px rgba(0,0,0,.17);transition:max-height .22s ease}.mobile-nav-panel.expanded{max-height:min(62vh,540px)}.mobile-nav-handle{display:grid;min-height:66px;flex:0 0 66px;grid-template-columns:1fr auto 1fr;align-items:center;padding:6px 20px;border:0;background:transparent;color:var(--text-primary);font:inherit;cursor:pointer}.handle-line{width:35px;height:4px;justify-self:start;border-radius:5px;background:var(--border)}.mobile-nav-handle strong{font-size:.77rem}.handle-chevron{justify-self:end;color:var(--text-secondary);font-size:1.1rem}.mobile-quick-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:0 10px 12px}.mobile-quick-nav a,.mobile-quick-nav button{display:grid;min-width:0;justify-items:center;gap:5px;padding:7px 2px;border:0;border-radius:8px;background:transparent;color:var(--text-secondary);text-decoration:none;font:inherit}.mobile-quick-nav a.active{background:var(--brand-soft);color:var(--brand)}.mobile-quick-nav span{font-size:1.08rem}.mobile-quick-nav small{max-width:100%;overflow:hidden;font-size:.58rem;text-overflow:ellipsis;white-space:nowrap}.mobile-quick-nav button{cursor:pointer}.mobile-workspace-controls{display:flex;align-items:center;gap:9px;padding:0 14px 12px;border-bottom:1px solid var(--border)}.mobile-workspace-switcher{display:grid;min-width:0;flex:1;gap:4px;color:var(--text-secondary);font-size:.58rem;font-weight:800}.mobile-workspace-switcher select{width:100%;height:39px;min-width:0;padding:0 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.68rem}.mobile-filter-trigger{display:inline-flex;min-height:39px;align-items:center;gap:6px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.68rem;font-weight:750;white-space:nowrap;cursor:pointer}.mobile-filter-trigger b{display:grid;min-width:16px;height:16px;place-items:center;border-radius:50%;background:var(--brand);color:white;font-size:.58rem}.mobile-profile{display:flex;flex:0 0 auto;align-items:center}.mobile-profile app-user-profile-drawer{display:inline-flex}.mobile-nav-scroll{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;overflow:auto;padding:12px 16px 18px}.mobile-nav-item{display:flex;min-height:43px;align-items:center;gap:10px;padding:0 12px;border:1px solid var(--border);border-radius:9px;color:var(--text-secondary);font-size:.73rem;text-decoration:none}.mobile-nav-item.active{border-color:var(--brand);background:var(--brand-soft);color:var(--brand);font-weight:800}.mobile-nav-item span{width:20px;color:var(--brand);text-align:center}}
+    @media(max-width:767.98px){.workspace-shell{--workspace-topbar:66px;--bbg-header-height:66px}.workspace-topbar{gap:10px;padding:0 14px}.workspace-brand{flex-basis:auto}.brand-copy small{display:none}.workspace-identity{min-width:0;flex:1;padding-left:12px}.identity-copy strong{max-width:190px}.workspace-switcher{min-width:150px}.workspace-switcher>span:first-child{display:none}.marketplace-link{padding:8px}.marketplace-link>span:last-child{display:none}.workspace-sidebar{display:none}.desktop-profile{display:flex;align-items:center}.breadcrumb-row{min-height:48px;flex-basis:48px;padding:0 17px}.workspace-content{padding-bottom:82px}.mobile-nav-panel{position:fixed;z-index:61;right:0;bottom:0;left:0;display:flex;max-height:66px;flex-direction:column;overflow:hidden;padding-bottom:env(safe-area-inset-bottom);border:1px solid var(--border);border-bottom:0;border-radius:18px 18px 0 0;background:var(--surface-card);box-shadow:0 -14px 44px rgba(0,0,0,.17);transition:max-height .22s ease}.mobile-nav-panel.expanded{max-height:min(62vh,540px)}.mobile-nav-handle{display:grid;min-height:66px;flex:0 0 66px;grid-template-columns:1fr auto 1fr;align-items:center;padding:6px 20px;border:0;background:transparent;color:var(--text-primary);font:inherit;cursor:pointer}.handle-line{width:35px;height:4px;justify-self:start;border-radius:5px;background:var(--border)}.mobile-nav-handle strong{font-size:.77rem}.handle-chevron{justify-self:end;color:var(--text-secondary);font-size:1.1rem}.mobile-quick-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:0 10px 12px}.mobile-quick-nav a,.mobile-quick-nav button{display:grid;min-width:0;justify-items:center;gap:5px;padding:7px 2px;border:0;border-radius:8px;background:transparent;color:var(--text-secondary);text-decoration:none;font:inherit}.mobile-quick-nav a.active{background:var(--brand-soft);color:var(--brand)}.mobile-quick-nav span{font-size:1.08rem}.mobile-quick-nav small{max-width:100%;overflow:hidden;font-size:.58rem;text-overflow:ellipsis;white-space:nowrap}.mobile-quick-nav button{cursor:pointer}.mobile-workspace-controls{display:flex;align-items:center;gap:9px;padding:0 14px 12px;border-bottom:1px solid var(--border)}.mobile-workspace-switcher{display:grid;min-width:0;flex:1;gap:4px;color:var(--text-secondary);font-size:.58rem;font-weight:800}.mobile-workspace-switcher select{width:100%;height:39px;min-width:0;padding:0 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.68rem}.mobile-filter-trigger{display:inline-flex;min-height:39px;align-items:center;gap:6px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.68rem;font-weight:750;white-space:nowrap;cursor:pointer}.mobile-filter-trigger b{display:grid;min-width:16px;height:16px;place-items:center;border-radius:50%;background:var(--brand);color:white;font-size:.58rem}.mobile-profile{display:flex;flex:0 0 auto;align-items:center}.mobile-profile app-user-profile-drawer{display:inline-flex}.mobile-context-switcher{padding:0 16px 12px;border-bottom:1px solid var(--border)}.mobile-context-switcher label{display:grid;gap:5px;color:var(--text-secondary);font-size:.65rem;font-weight:800}.mobile-context-switcher select{width:100%;height:40px;padding:0 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.75rem}
+    .mobile-nav-scroll{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;overflow:auto;padding:12px 16px 18px}.mobile-nav-item{display:flex;min-height:43px;align-items:center;gap:10px;padding:0 12px;border:1px solid var(--border);border-radius:9px;color:var(--text-secondary);font-size:.73rem;text-decoration:none}.mobile-nav-item.active{border-color:var(--brand);background:var(--brand-soft);color:var(--brand);font-weight:800}.mobile-nav-item span{width:20px;color:var(--brand);text-align:center}}
 
     @media(min-width:768px) and (max-width:820px){.workspace-topbar{gap:10px;padding:0 14px}.workspace-brand{flex:0 0 112px}.brand-copy small{display:none}.workspace-identity{min-width:0;flex:1;padding-left:12px}.identity-copy strong{max-width:145px}.workspace-switcher{min-width:145px}.marketplace-link{padding:8px}.marketplace-link>span:last-child{display:none}}
     @media(max-width:540px){.workspace-topbar{gap:8px;padding:0 10px}.brand-mark{width:32px;height:32px}.brand-copy strong{font-size:1.3rem}.workspace-identity{gap:7px;padding-left:8px}.identity-icon{width:31px;height:31px;flex-basis:31px}.identity-copy small{font-size:.48rem}.identity-copy strong{max-width:115px;font-size:.7rem}.workspace-switcher{min-width:112px}.workspace-switcher select{font-size:.64rem}.marketplace-link{display:none}.mobile-nav-scroll{grid-template-columns:1fr}}
@@ -178,6 +209,13 @@ export class WorkspaceLayout implements OnInit {
   readonly isPersonalContext = computed(() => this.activeTenantId() === null && !this.hasPlatformAccess());
   readonly contextLabel = computed(() => this.activeTenantId() !== null ? 'BUSINESS WORKSPACE' : this.hasPlatformAccess() ? 'PLATFORM ADMINISTRATION' : 'MY ACCOUNT');
   readonly overviewLabel = computed(() => this.isPersonalContext() ? 'My Account Overview' : this.isPlatform() ? 'Platform Overview' : 'Overview');
+  readonly canAccessPlatform = computed(() => this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM'));
+  readonly showContextSwitcher = computed(() => this.workspace.tenants().length > 0 || this.canAccessPlatform());
+  readonly activeContextSelection = computed(() => this.activeTenantId() !== null
+    ? 'BUSINESS:' + this.activeTenantId()
+    : this.isPlatform() ? 'PLATFORM' : 'PERSONAL');
+  readonly contextSwitching = signal(false);
+  readonly contextSwitchError = signal('');
   readonly currentPath = signal(this.router.url.split(/[?#]/,1)[0]);
   readonly currentSection = computed(() => this.currentPath().split('/').filter(Boolean).at(-1) ?? 'dashboard');
   readonly currentPageLabel = computed(() => this.currentSection() === 'dashboard' ? 'Overview' : this.currentSection().replace(/-/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase()));
@@ -251,6 +289,29 @@ export class WorkspaceLayout implements OnInit {
 
   hasPlatformAccess(): boolean {
     return this.permissions().some((permission) => permission.scope_type === 'PLATFORM');
+  }
+
+  async switchContext(event: Event): Promise<void> {
+    const selection = (event.target as HTMLSelectElement).value;
+    if (this.contextSwitching() || !selection) return;
+    this.contextSwitching.set(true);
+    this.contextSwitchError.set('');
+    try {
+      if (selection === 'PERSONAL') await this.workspace.switchToMyAccount();
+      else if (selection === 'PLATFORM') await this.workspace.switchToPlatformAdministration();
+      else if (selection.startsWith('BUSINESS:')) {
+        const tenantId = Number(selection.slice('BUSINESS:'.length));
+        if (!Number.isInteger(tenantId) || !this.workspace.tenants().some((tenant) => tenant.id === tenantId)) {
+          throw new Error('That Business Workspace is not available to your account.');
+        }
+        await this.workspace.switchWorkspace(tenantId);
+      }
+      await this.router.navigateByUrl('/dashboard');
+    } catch (error) {
+      this.contextSwitchError.set(error instanceof Error ? error.message : 'Unable to switch account area.');
+    } finally {
+      this.contextSwitching.set(false);
+    }
   }
 
 
