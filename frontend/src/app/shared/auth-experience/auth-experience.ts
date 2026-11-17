@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
@@ -6,6 +6,7 @@ import { SocialAuthIntent, SocialProvider } from '../../core/auth/auth.models';
 
 @Component({
   selector: 'app-auth-experience',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [ReactiveFormsModule],
   templateUrl: './auth-experience.html',
@@ -17,12 +18,12 @@ export class AuthExperienceComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  @Input() mode: SocialAuthIntent = 'login';
-  @Input() presentation: 'page' | 'popup' = 'page';
-  @Input() reason = '';
-  @Input() brandName = 'BBG';
-  @Output() authenticated = new EventEmitter<void>();
-  @Output() dismissed = new EventEmitter<void>();
+  readonly mode = input<SocialAuthIntent>('login');
+  readonly presentation = input<'page' | 'popup'>('page');
+  readonly reason = input('');
+  readonly brandName = input('BBG');
+  readonly authenticated = output<void>();
+  readonly dismissed = output<void>();
 
   readonly activeMode = signal<SocialAuthIntent>('login');
   readonly emailFormVisible = signal(false);
@@ -42,7 +43,7 @@ export class AuthExperienceComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.activeMode.set(this.mode);
+    this.activeMode.set(this.mode());
     void this.auth.loadSocialConfig().then((config) => {
       if (!Object.values(config.providers).some((provider) => provider.enabled)) {
         this.providerNotice.set('Social sign-in is not configured yet. You can continue with email or phone.');
@@ -174,7 +175,7 @@ export class AuthExperienceComponent implements OnInit {
   }
 
   private async onAuthenticated(): Promise<void> {
-    if (this.presentation === 'popup') {
+    if (this.presentation() === 'popup') {
       this.authenticated.emit();
       return;
     }
