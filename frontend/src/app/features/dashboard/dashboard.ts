@@ -96,7 +96,7 @@ interface DashboardModule {
             <div class="empty-modules">
               <span class="empty-icon">⌑</span>
               <h3>No modules assigned in this context</h3>
-              <p>{{ isPersonalContext() ? 'Your account is active. Your personal account features are available above.' : 'Your account is active, but no modules are assigned in this area. Contact your platform or business administrator.' }}</p>
+              <p>{{ isPersonalContext() ? 'Your My Account overview is available. Personal features will appear here when the required permissions are assigned.' : 'Your account is active, but no modules are assigned in this area. Contact your platform or business administrator.' }}</p>
             </div>
           }
         </section>
