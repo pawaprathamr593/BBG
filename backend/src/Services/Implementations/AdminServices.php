@@ -364,6 +364,15 @@ final readonly class AdminServices implements IAdminServices
         if ($proofs['status'] !== 'SUCCESS') {
             return $this->propagateFailure($proofs, 'AdminServices::getSubscriptionForReview');
         }
+        foreach ($proofs['data'] as &$proof) {
+            if (!empty($proof['proof_file_path'])) {
+                $proof['proof_file_url'] = $this->s3Storage->createDownloadUrl((string) $proof['proof_file_path']);
+            }
+        }
+        unset($proof);
+        if (!empty($subscription['data']['payment_qr_file_path'])) {
+            $subscription['data']['payment_qr_file_url'] = $this->s3Storage->createDownloadUrl((string) $subscription['data']['payment_qr_file_path']);
+        }
         $history = $this->dao->getSubscriptionReviewHistory($this->db, (int) $subscription['data']['tenant_id'], $subscriptionId);
         if ($history['status'] !== 'SUCCESS') {
             return $this->propagateFailure($history, 'AdminServices::getSubscriptionForReview');
