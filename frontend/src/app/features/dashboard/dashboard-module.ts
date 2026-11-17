@@ -179,6 +179,7 @@ export class DashboardModule implements OnInit {
       { key: 'subscription-approval', label: 'Plan reviews', path: '/dashboard/subscription-approval' },
       { key: 'moderation', label: 'Moderation', path: '/dashboard/moderation' },
       { key: 'system-health', label: 'System health', path: '/dashboard/system-health' },
+      { key: 'categories', label: 'Categories', path: '/dashboard/categories' },
     ];
     const permissions = new Set(this.workspace.permissions().map((entry) => entry.permission_code));
     const activeTenant = this.workspace.activeTenantId() !== null;
@@ -188,6 +189,7 @@ export class DashboardModule implements OnInit {
       if (link.key === 'business-approval') return permissions.has('BUSINESS_APPROVE');
       if (link.key === 'subscription-approval') return permissions.has('SUBSCRIPTIONS_APPROVE');
       if (link.key === 'moderation') return permissions.has('MODERATION_MANAGE');
+      if (link.key === 'categories') return permissions.has('CATEGORIES_MANAGE');
       return permissions.has('SYSTEM_HEALTH_VIEW');
     });
   });
@@ -204,6 +206,7 @@ export class DashboardModule implements OnInit {
     analytics: { title: 'Analytics', description: 'Review the summary metrics available in your current workspace.' },
     members: { title: 'Team & access', description: 'Review the members assigned to this business workspace.' },
     'platform-analytics': { title: 'Platform analytics', description: 'Review platform-wide metrics exposed to authorized administrators.' },
+    categories: { title: 'Marketplace categories', description: 'Review the category taxonomy used by marketplace listings.' },
     'platform-users': { title: 'Platform users', description: 'Review platform accounts and suspend or restore eligible users.' },
     'business-approval': { title: 'Business approvals', description: 'Review pending business applications and process approval decisions.' },
     'subscription-approval': { title: 'Subscription approvals', description: 'Review pending subscription requests and process decisions.' },
@@ -310,6 +313,10 @@ export class DashboardModule implements OnInit {
         case 'platform-analytics':
           this.summary.set(await this.request<DataRecord>('/api/v1/admin/analytics/summary','adminParam','getAdminAnalyticsSummary'));
           break;
+        case 'categories': {
+          const data = await this.request<{items?:DataRecord[]}>('/api/v1/admin/categories/list','adminParam','listAdminCategories',{page:1,page_size:100});
+          this.items.set(data.items ?? []); break;
+        }
         case 'platform-users': {
           const data = await this.request<{items?:DataRecord[]}>('/api/v1/admin/users/list','adminParam','listPlatformUsers',{page:1,page_size:25});
           this.items.set(data.items ?? []); break;
@@ -367,6 +374,7 @@ export class DashboardModule implements OnInit {
     if (this.section()==='business-approval' && status==='PENDING') return [{key:'approve-business',label:'Approve'},{key:'reject-business',label:'Reject',danger:true}];
     if (this.section()==='subscription-approval' && status==='PENDING') return [{key:'approve-subscription',label:'Approve'},{key:'reject-subscription',label:'Reject',danger:true}];
     if (this.section()==='moderation' && status==='OPEN') return [{key:'moderate',label:'Review report'}];
+    if (this.section()==='categories') return [{key:'delete-category',label:'Delete category',danger:true}];
     return [];
   }
 
@@ -397,8 +405,18 @@ export class DashboardModule implements OnInit {
       case 'approve-subscription': case 'reject-subscription': {
         const reason = action==='reject-subscription' ? window.prompt('Reason for rejecting this subscription:') : null;
         if (action==='reject-subscription' && !reason?.trim()) return;
-        path=action==='approve-subscription'?'/api/v1/admin/subscriptions/approve':'/api/v1/admin/subscriptions/reject'; actionType=action==='approve-subscription'?'approveSubscription':'rejectSubscription'; data={subscription_id:Number(item.subscription_id ?? item.id),...(reason?{reason:reason.trim()}:{})}; break;
+        let dates: DataRecord = {};
+        if (action==='approve-subscription') {
+          const startsOn = window.prompt('Subscription start date and time (YYYY-MM-DD HH:MM:SS):');
+          const endsOn = window.prompt('Subscription end date and time (YYYY-MM-DD HH:MM:SS):');
+          if (!startsOn?.trim() || !endsOn?.trim()) return;
+          dates = { starts_on: startsOn.trim(), ends_on: endsOn.trim() };
+        }
+        path=action==='approve-subscription'?'/api/v1/admin/subscriptions/approve':'/api/v1/admin/subscriptions/reject'; actionType=action==='approve-subscription'?'approveSubscription':'rejectSubscription'; data={subscription_id:Number(item.subscription_id ?? item.id),...dates,...(reason?{reason:reason.trim()}:{})}; break;
       }
+      case 'delete-category':
+        if (!window.confirm('Soft-delete this category? Categories referenced by active businesses or products cannot be deleted.')) return;
+        path='/api/v1/admin/categories/delete'; actionType='deleteCategory'; data={category_id:id}; break;
       case 'moderate': {
         const contentType=String(item.content_type ?? '').toUpperCase();
         const actionTypeChoice=window.prompt('Enter UNPUBLISH_POST, UNPUBLISH_PRODUCT or DISMISS_REPORT:');
