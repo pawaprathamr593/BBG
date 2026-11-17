@@ -171,7 +171,7 @@ const emptyProduct = (): ProductForm => ({
   `,
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
-    .catalogue-page{width:min(1440px,100%);margin:0 auto;padding:38px 32px 72px}
+    .catalogue-page{width:100%;max-width:none;box-sizing:border-box;margin:0;padding:34px 32px 60px}
     .page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:28px}
     .back-link,.text-link{color:var(--brand);font-size:.82rem;font-weight:700;text-decoration:none}
     .eyebrow{margin:18px 0 8px;color:var(--brand);font-size:.68rem;font-weight:800;letter-spacing:.14em}
