@@ -20,13 +20,15 @@ Migration `20261117_002_subscription_payment_review_workflow.sql` adds:
 
 1. Business owner submits business registration.
 2. Business owner selects a plan and creates a subscription request.
-3. The active Platform Admin QR configuration is captured against that subscription.
-4. Owner uploads a receipt using the existing S3 proof flow.
-5. Owner explicitly submits the proof for review.
-6. Platform Admin reviews the business profile, selected plan, captured payment instructions and all receipt attempts.
-7. Approval activates the subscription. Rejection requires a reason and returns the request to the owner for correction and resubmission.
-8. Each subsequent decision is retained in the review history. Old receipts are not overwritten.
-9. Subscription expiry must suspend public visibility server-side while preserving authenticated workspace access for renewal.
+3. Platform Admin configures the current UPI payee details and uploads a QR image from **Dashboard → Payment QR settings**. Each saved QR is a new version.
+4. The active Platform Admin QR configuration is captured against that subscription. Later QR changes do not alter existing requests.
+5. Owner uploads a receipt using the existing S3 proof flow.
+6. Owner explicitly clicks **Submit for Review**. Until this action, the request is not visible in the Admin review queue.
+7. Platform Admin reviews the business profile, selected plan, captured payment instructions and all receipt attempts from the subscription detail panel.
+8. Approval activates the subscription. Rejection requires a reason and returns the request to the owner for correction and resubmission.
+9. When the owner submits a replacement receipt after rejection, the subscription returns to PENDING and re-enters the Admin queue. Previous receipts and decisions remain in history.
+10. Each subsequent decision is retained in the review history. Old receipts are not overwritten.
+11. Subscription expiry suspends public visibility server-side while preserving authenticated workspace access for renewal. The owner sees EXPIRED in subscription history and can request renewal.
 
 ## Operational safety
 
@@ -34,3 +36,18 @@ Migration `20261117_002_subscription_payment_review_workflow.sql` adds:
 - Back up the target database and apply to local/staging first.
 - Do not apply directly to production without a reviewed rollout and verification plan.
 - No live AWS resource, bucket, IAM policy, environment variable or deployment is changed by this migration.
+
+
+## API additions
+
+Platform Admin routes (all require the existing `SUBSCRIPTIONS_APPROVE` platform permission):
+
+- `POST /api/v1/admin/subscriptions/payment-qr/current` — read the current QR configuration.
+- `POST /api/v1/admin/subscriptions/payment-qr/upload-url` — create a server-issued S3 upload URL for a QR image.
+- `POST /api/v1/admin/subscriptions/payment-qr/save` — verify the uploaded image and activate a new version.
+
+The existing tenant subscription routes remain the payment request and receipt workflow. The Admin review queue now includes only requests with a payment proof in PENDING review status.
+
+## Public visibility enforcement
+
+Marketplace business, product and promotion queries require an approved business profile **and** an ACTIVE subscription whose start/end dates include the current time. This is enforced in the backend DAO queries, not only by hiding frontend links. Tenant owners retain private workspace access for subscription renewal.
