@@ -375,6 +375,8 @@ final readonly class AdminDao
             INNER JOIN TENANTS t ON t.id = ts.tenant_id AND t.status = 'A'
             INNER JOIN PLANS p ON p.id = ts.plan_id AND p.status = 'A'
             WHERE ts.subscription_status = 'ACTIVE' AND ts.status = 'A'
+                AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
+                AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
             ORDER BY ts.starts_on DESC, ts.id DESC LIMIT :limit OFFSET :offset",
             [':limit' => $limit, ':offset' => $offset], 'getActiveSubscriptions');
     }
