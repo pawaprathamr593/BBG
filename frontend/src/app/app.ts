@@ -19,7 +19,7 @@ export class App {
   protected readonly theme = inject(ThemeService);
   protected readonly currentYear = new Date().getFullYear();
   protected readonly auth = inject(AuthService);
-  protected readonly isStorefrontRoute = signal(false);
+  protected readonly isStorefrontRoute = signal(false);\n  protected readonly isWorkspaceRoute = signal(false);
   private readonly router = inject(Router);
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
@@ -34,7 +34,7 @@ export class App {
   }
 
   private syncShellWithRoute(url: string): void {
-    this.isStorefrontRoute.set(url.split(/[?#]/, 1)[0].startsWith('/store/'));
+    const path = url.split(/[?#]/, 1)[0];\n    this.isStorefrontRoute.set(path.startsWith('/store/'));\n    this.isWorkspaceRoute.set(path === '/dashboard' || path.startsWith('/dashboard/'));
     this.closeMenu();
   }
 
