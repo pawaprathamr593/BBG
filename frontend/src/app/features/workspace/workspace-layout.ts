@@ -311,7 +311,7 @@ export class WorkspaceLayout implements OnInit {
     } else this.documentScroll(false);
   }
   closeFilterDrawer(): void { this.filterDrawerOpen.set(false); this.documentScroll(false); }
-  setDraftFilter(key: keyof ReturnType<typeof this.draftFilters>, event: Event): void {
+  setDraftFilter(key: 'search' | 'status' | 'from' | 'to', event: Event): void {
     const value = (event.target as HTMLInputElement | HTMLSelectElement).value;
     this.draftFilters.update((filters) => ({...filters,[key]:value}));
   }
