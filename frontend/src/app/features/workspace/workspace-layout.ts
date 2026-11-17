@@ -26,15 +26,6 @@ interface WorkspaceNavItem {
           <span class="brand-copy"><strong>BBG</strong><small>WORKSPACE</small></span>
         </a>
 
-        <div class="workspace-identity">
-          <span class="identity-icon">{{ activeTenant() ? '⌂' : (isPlatform() ? '◈' : '◎') }}</span>
-          <div class="identity-copy">
-            <small>{{ isPlatform() ? 'PLATFORM WORKSPACE' : (activeTenant() ? 'BUSINESS WORKSPACE' : 'PERSONAL WORKSPACE') }}</small>
-            <strong>{{ workspaceName() }}</strong>
-          </div>
-        </div>
-
-
         <div class="topbar-spacer"></div>
         @if (switchError()) { <span class="switch-error" role="alert">{{ switchError() }}</span> }
         <a class="marketplace-link" routerLink="/" title="Return to marketplace"><span>↗</span><span>Marketplace</span></a>
