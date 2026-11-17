@@ -137,7 +137,11 @@ final readonly class CatalogueDao
         return $this->many($db, "SELECT p.id, p.product_code, p.product_name, p.description, p.category_id,
             pc.category_name, p.base_unit_id, u.unit_name, u.unit_symbol, p.brand_name, p.barcode,
             p.cost_price, p.selling_price, p.tax_rate, p.track_inventory, p.is_variant_product,
-            p.publication_status, p.product_status
+            p.publication_status, p.product_status,
+            (SELECT pm.file_path FROM PRODUCT_MEDIA pm
+                WHERE pm.tenant_id = p.tenant_id AND pm.product_id = p.id
+                    AND pm.media_type = 'IMAGE' AND pm.status = 'A'
+                ORDER BY pm.is_primary DESC, pm.display_order ASC, pm.id ASC LIMIT 1) AS primary_media_path
             FROM PRODUCTS p
             JOIN UNITS_OF_MEASURE u ON u.id = p.base_unit_id AND u.status = 'A'
             LEFT JOIN TENANT_PRODUCT_CATEGORIES pc ON pc.id = p.category_id
