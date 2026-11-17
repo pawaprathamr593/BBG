@@ -1,0 +1,22 @@
+<section class="overview-page">
+  <div class="page-heading">
+    <div><p class="eyebrow">BBG WORKSPACE</p><h2>{{ title() }}</h2><p>Your latest activity, returned by the BBG backend.</p></div>
+    <button type="button" class="refresh-button" (click)="load()" [disabled]="loading()">↻ Refresh</button>
+  </div>
+  @if (loading()) { <div class="state-card" role="status">Loading live workspace data…</div> }
+  @if (error()) { <div class="state-card error" role="alert">{{ error() }}</div> }
+  @if (!loading() && !error() && entries().length) {
+    <div class="metrics-grid">
+      @for (entry of entries(); track entry[0]) {
+        <article class="metric-card">
+          <span>{{ formatLabel(entry[0]) }}</span>
+          <strong>{{ formatValue(entry[1]) }}</strong>
+        </article>
+      }
+    </div>
+  } @else if (!loading() && !error() && mode() === 'BUSINESS' && !entries().length) {
+    <div class="state-card">Select an active business to load its overview.</div>
+  } @else if (!loading() && !error() && !entries().length) {
+    <div class="state-card">No dashboard activity is available yet.</div>
+  }
+</section>
