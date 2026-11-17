@@ -99,7 +99,9 @@ interface DataRecord { [key: string]: unknown; }
                     <div class="post-media-strip" aria-label="Post attachments">
                       @for (media of mediaOf(item); track media['id']) {
                         @if (media['url'] && media['media_type'] === 'IMAGE') { <img [src]="$any(media['url'])" [alt]="'Post image ' + media['id']"> }
-                        @else if (media['url']) { <a [href]="$any(media['url'])" target="_blank" rel="noopener">{{ media['media_type'] }} attachment</a> }
+                        @else if (media['url'] && media['media_type'] === 'VIDEO') { <video controls [src]="$any(media['url'])" aria-label="Post video attachment"></video> }
+                        @else if (media['url'] && media['media_type'] === 'AUDIO') { <audio controls [src]="$any(media['url'])" aria-label="Post audio attachment"></audio> }
+                        @else if (media['url']) { <a [href]="$any(media['url'])" target="_blank" rel="noopener">Open {{ media['media_type'] }} attachment</a> }
                         @else { <span>{{ media['media_type'] }} attachment</span> }
                       }
                     </div>
@@ -152,7 +154,7 @@ interface DataRecord { [key: string]: unknown; }
   `,
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
-    .post-media-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.post-media-strip img{width:72px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}.post-media-strip a,.post-media-strip span{align-self:center;padding:8px 10px;border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.72rem;text-decoration:none}
+    .post-media-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.post-media-strip img{width:72px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}.post-media-strip video{width:120px;height:72px;border-radius:8px;background:#111}.post-media-strip audio{width:min(240px,100%);height:36px}.post-media-strip a,.post-media-strip span{align-self:center;padding:8px 10px;border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.72rem;text-decoration:none}
     .composer-backdrop{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:18px;background:rgba(10,18,15,.62)}.promotion-composer{width:min(680px,100%);max-height:90vh;overflow:auto;padding:24px;background:var(--surface-card);color:var(--text-primary);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.25)}.promotion-composer header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.promotion-composer header .eyebrow{margin:0 0 7px}.promotion-composer h2{margin:0;font-size:1.35rem}.promotion-composer header p:last-child{margin:6px 0 0;color:var(--text-secondary);font-size:.78rem}.composer-close{border:0;background:transparent;color:var(--text-secondary);font-size:1.5rem;cursor:pointer}.promotion-composer>label{display:grid;gap:7px;margin:13px 0;font-size:.78rem;font-weight:700}.promotion-composer input[type=text],.promotion-composer input[type=datetime-local],.promotion-composer textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.82rem}.promotion-composer label small{font-weight:400;color:var(--text-secondary)}.post-upload-zone{margin:16px 0}.post-file-picker{display:grid;justify-items:center;gap:5px;padding:22px;border:1px dashed var(--border);border-radius:11px;background:var(--surface-page);cursor:pointer}.post-file-picker>span{font-size:1.5rem;color:var(--brand)}.post-file-picker strong{font-size:.8rem}.post-file-picker small{font-size:.68rem;color:var(--text-secondary)}.post-file-picker input{max-width:100%;margin-top:7px;font-size:.7rem}.post-file-list{display:grid;gap:7px;margin-top:10px}.post-file-list>div{display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:5px 10px;align-items:center;padding:9px;border:1px solid var(--border);border-radius:8px}.post-file-list span{grid-row:span 2;font-size:.62rem;font-weight:800;color:var(--brand)}.post-file-list strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.74rem}.post-file-list small{font-size:.66rem;color:var(--text-secondary)}.post-file-list button{grid-column:3;grid-row:1/3;border:0;background:transparent;color:#bf4545;font:inherit;font-size:.7rem;cursor:pointer}.promotion-composer footer{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.composer-error{color:#c43d3d;font-size:.78rem}.composer-hint{color:var(--text-secondary);font-size:.75rem}
     .module-page{width:min(1320px,100%);margin:0 auto;padding:42px 32px 76px}
     .page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:25px}
@@ -216,6 +218,7 @@ export class DashboardModule implements OnInit {
   readonly promotionMediaBusy = signal(false);
   readonly promotionError = signal('');
   readonly draftPromotionId = signal<number | null>(null);
+  readonly promotionUploadedCount = signal(0);
 
   readonly title = computed(() => this.config[this.section()]?.title ?? 'Workspace');
   readonly description = computed(() => this.config[this.section()]?.description ?? 'Manage your BBG workspace.');
@@ -585,6 +588,7 @@ export class DashboardModule implements OnInit {
 
   async createPromotion(): Promise<void> {
     this.draftPromotionId.set(null);
+    this.promotionUploadedCount.set(0);
     this.promotionTitle.set('');
     this.promotionContent.set('');
     this.promotionValidUntil.set('');
@@ -597,6 +601,7 @@ export class DashboardModule implements OnInit {
     if (this.promotionMediaBusy()) return;
     this.showPromotionComposer.set(false);
     this.draftPromotionId.set(null);
+    this.promotionUploadedCount.set(0);
   }
 
   setPromotionField(field: 'title' | 'content' | 'validUntil', event: Event): void {
@@ -657,6 +662,7 @@ export class DashboardModule implements OnInit {
           file_size_bytes:file.size,display_order:index,media_type:mediaType,
         });
         this.promotionFiles.update((remaining) => remaining.filter((candidate) => candidate !== file));
+        this.promotionUploadedCount.update((count) => count + 1);
       }
       this.notice.set('Promotion draft and attachments saved. Publish it when ready.');
       this.showPromotionComposer.set(false);
