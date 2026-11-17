@@ -268,7 +268,7 @@ export class DashboardModule implements OnInit {
   readonly newPassword = signal('');
   readonly confirmPassword = signal('');
   readonly passwordError = signal('');
-  readonly profileInitials = computed(() => String(this.summary()?.['full_name'] ?? 'BB').trim().split(/\\s+/).slice(0,2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BB');
+  readonly profileInitials = computed(() => String(this.summary()?.['full_name'] ?? 'BB').trim().split(/\s+/).slice(0,2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BB');
   readonly plans = signal<DataRecord[]>([]);
   readonly pendingPlanId = signal<number | null>(null);
   readonly showPromotionComposer = signal(false);
