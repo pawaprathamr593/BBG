@@ -24,23 +24,24 @@ interface DashboardModule {
     <main class="workspace">
       <section class="workspace-heading">
         <div>
-          <p class="eyebrow">BBG WORKSPACE</p>
-          <h1>Good {{ greeting() }}, {{ firstName() }}.</h1>
-          <p class="heading-copy">Your work, tools and business activity in one place.</p>
+          <p class="eyebrow">{{ isPersonalContext() ? 'MY ACCOUNT' : isPlatformContext() ? 'PLATFORM ADMINISTRATION' : 'BUSINESS WORKSPACE' }}</p>
+          <h1>{{ isPersonalContext() ? 'My Account' : isPlatformContext() ? 'Platform Administration' : 'Business Workspace' }}</h1>
+          <p class="heading-copy">Good {{ greeting() }}, {{ firstName() }}.</p>
+          
         </div>
       </section>
 
       @if (loading()) {
-        <section class="loading-panel" role="status"><span class="loader"></span><div><strong>Preparing your workspace</strong><p>Checking your roles and available permissions…</p></div></section>
+        <section class="loading-panel" role="status"><span class="loader"></span><div><strong>Preparing your account</strong><p>Checking your roles and available permissions…</p></div></section>
       } @else if (error()) {
-        <section class="message-panel error-panel" role="alert"><strong>We couldn’t load your workspace.</strong><p>{{ error() }}</p><button type="button" (click)="reload()">Try again</button></section>
+        <section class="message-panel error-panel" role="alert"><strong>We couldn’t load this area.</strong><p>{{ error() }}</p><button type="button" (click)="reload()">Try again</button></section>
       } @else {
         <section class="context-banner">
           <div class="context-symbol" aria-hidden="true">{{ selectedTenant() ? '⌂' : '◎' }}</div>
           <div class="context-copy">
-            <span>{{ selectedTenant() ? 'ACTIVE BUSINESS WORKSPACE' : 'PERSONAL & PLATFORM CONTEXT' }}</span>
-            <strong>{{ selectedTenant()?.tenant_name ?? 'Your BBG account' }}</strong>
-            <p>{{ selectedTenant() ? 'Workspace access is limited to your assigned tenant permissions.' : 'Select a business workspace to view its tools and assigned access.' }}</p>
+            <span>{{ isPersonalContext() ? 'PERSONAL ACCOUNT' : isPlatformContext() ? 'PLATFORM ADMINISTRATION' : 'BUSINESS WORKSPACE' }}</span>
+            <strong>{{ selectedTenant() ? 'Business Workspace' : isPlatformContext() ? 'BBG Platform' : 'My Account' }}</strong>
+            <p>{{ isPersonalContext() ? 'Your personal orders, enquiries, payments and profile in one place.' : isPlatformContext() ? 'Manage BBG platform operations using your assigned administrator permissions.' : 'Manage your business operations using your assigned permissions.' }}</p>
           </div>
           <div class="role-list">
             @for (role of roleCodes(); track role) { <span class="role-chip">{{ roleLabel(role) }}</span> }
@@ -53,7 +54,7 @@ interface DashboardModule {
         } @else if (summaryError()) {
           <div class="summary-notice">{{ summaryError() }}</div>
         } @else if (summaryCards().length) {
-          <section class="metrics-grid" aria-label="Workspace summary">
+          <section class="metrics-grid" aria-label="Account and business summary">
             @for (metric of summaryCards(); track metric.label) {
               <article class="metric-card">
                 <span class="metric-icon">{{ metric.icon }}</span>
@@ -63,7 +64,7 @@ interface DashboardModule {
           </section>
         }
 
-        @if (!selectedTenant()) {
+        @if (isPersonalContext()) {
           <section class="personal-shortcuts">
             <div><p class="eyebrow">PERSONAL DASHBOARD</p><h2>Your activity</h2><p>Access your personal orders, enquiries, saved addresses and payments.</p></div>
             <div class="shortcut-grid">
@@ -77,7 +78,7 @@ interface DashboardModule {
 
         <section class="modules-section">
           <div class="section-heading">
-            <div><p class="eyebrow">YOUR ACCESS</p><h2>Workspace modules</h2><p>Modules are shown only when your current context grants the required permission.</p></div>
+            <div><p class="eyebrow">YOUR ACCESS</p><h2>Available modules</h2><p>Modules are shown only when your current area grants the required permission.</p></div>
             <span class="module-count">{{ visibleModules().length }} available</span>
           </div>
 
@@ -96,14 +97,14 @@ interface DashboardModule {
             <div class="empty-modules">
               <span class="empty-icon">⌑</span>
               <h3>No modules assigned in this context</h3>
-              <p>Your account is active, but there are no module permissions to display here. Choose a business workspace or contact its administrator.</p>
+              <p>{{ isPersonalContext() ? 'Your account is active. Your personal account features are available above.' : 'Your account is active, but no modules are assigned in this area. Contact your platform or business administrator.' }}</p>
             </div>
           }
         </section>
 
-        @if (tenants().length && !selectedTenant()) {
+        @if (tenants().length && isPersonalContext()) {
           <section class="workspace-hint">
-            <div><strong>You have {{ tenants().length }} business workspace{{ tenants().length === 1 ? '' : 's' }}.</strong><p>Choose a workspace above to load its tenant-specific roles and modules. BBG never selects a tenant automatically.</p></div>
+            <div><strong>Business access is available.</strong><p>Open the profile menu and choose Business Workspace to manage your business.</p></div>
             <span aria-hidden="true">→</span>
           </section>
         }
@@ -196,6 +197,8 @@ export class Dashboard implements OnInit {
   }
 
   readonly selectedTenant = computed(() => this.tenants().find((tenant) => tenant.id === this.selectedTenantId()) ?? null);
+  readonly isPlatformContext = computed(() => this.selectedTenantId() === null && this.permissions().some((permission) => permission.scope_type === 'PLATFORM'));
+  readonly isPersonalContext = computed(() => this.selectedTenantId() === null && !this.isPlatformContext());
   readonly roleCodes = computed(() => [...new Set(this.permissions().map((permission) => permission.role_code))]);
   readonly firstName = computed(() => (this.auth.user()?.full_name || 'there').trim().split(/\s+/)[0]);
   readonly greeting = computed(() => {
