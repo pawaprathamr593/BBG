@@ -252,7 +252,7 @@ export class WorkspaceLayout implements OnInit {
     return [];
   });
   readonly hasPageFilters = computed(() => this.filterFields().length > 0);
-  readonly activeFilterCount = computed(() => { const filters = this.activeFilters(); return [filters.status, filters.from, filters.to].filter(Boolean).length; });
+  readonly activeFilterCount = computed(() => Object.values(this.activeFilters()).filter(Boolean).length);
   readonly statusOptions = computed(() => {
     const s = this.currentSection();
     if (s === 'orders') return ['PENDING','CONFIRMED','PROCESSING','SHIPPED','DELIVERED','CANCELLED'];
@@ -347,7 +347,8 @@ export class WorkspaceLayout implements OnInit {
     this.filterDrawerOpen.set(open);
   }
   resetDraftFilters(): void {
-    this.draftFilters.set({ search: '', status: '', from: '', to: '' });
+    this.clearFilters();
+    this.filterDrawerOpen.set(false);
   }
   setDraftFilter(key: 'search' | 'status' | 'from' | 'to', event: Event): void {
     const value = (event.target as HTMLInputElement | HTMLSelectElement).value;
@@ -359,9 +360,13 @@ export class WorkspaceLayout implements OnInit {
     this.setFilterDrawerOpen(false);
   }
   clearFilters(): void {
-    this.draftFilters.set({search:'',status:'',from:'',to:''});
-    this.activeFilters.set({search:'',status:'',from:'',to:''});
-    void this.router.navigate([this.currentPath()], {queryParams:{search:null,status:null,from:null,to:null},queryParamsHandling:'merge'});
+    const emptyFilters = { search: '', status: '', from: '', to: '' };
+    this.draftFilters.set(emptyFilters);
+    this.activeFilters.set(emptyFilters);
+    void this.router.navigate([this.currentPath()], {
+      queryParams: { search: null, status: null, from: null, to: null, page: null },
+      queryParamsHandling: 'merge',
+    });
   }
 
 }
