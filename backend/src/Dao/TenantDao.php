@@ -90,7 +90,7 @@ final readonly class TenantDao
              FROM TENANT_MEMBERSHIPS tm
              INNER JOIN TENANTS t ON t.id = tm.tenant_id AND t.status = 'A'
                 AND (t.tenant_status = 'ACTIVE'
-                    OR (t.tenant_status = 'PENDING' AND :permission_code = 'SUBSCRIPTIONS_MANAGE'))
+                    OR (t.tenant_status = 'PENDING' AND :tenant_permission_gate = 'SUBSCRIPTIONS_MANAGE'))
              INNER JOIN USER_ROLE_ASSIGNMENTS ura ON ura.user_id = tm.user_id
                 AND ura.tenant_id = tm.tenant_id AND ura.status = 'A'
                 AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
@@ -101,7 +101,7 @@ final readonly class TenantDao
              WHERE tm.user_id = :user_id AND tm.tenant_id = :tenant_id
                 AND tm.membership_status = 'ACTIVE' AND tm.status = 'A'
              LIMIT 1",
-            [':user_id' => $userId, ':tenant_id' => $tenantId, ':permission_code' => $permissionCode],
+            [':user_id' => $userId, ':tenant_id' => $tenantId, ':permission_code' => $permissionCode, ':tenant_permission_gate' => $permissionCode],
             'hasTenantPermission',
         );
     }
