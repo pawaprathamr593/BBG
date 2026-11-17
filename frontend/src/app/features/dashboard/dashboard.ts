@@ -212,7 +212,7 @@ export class Dashboard implements OnInit {
     { code: 'sales', title: 'Sales & enquiries', description: 'Review incoming enquiries and manage sales conversations.', permission: 'ENQUIRIES_MANAGE', icon: '↗', scope: 'TENANT' },
     { code: 'orders', title: 'Order management', description: 'Process, update and track orders for this business.', permission: 'ORDERS_MANAGE', icon: '▤', scope: 'TENANT' },
     { code: 'payments', title: 'Payments', description: 'Review payment activity and related business records.', permission: 'PAYMENTS_VIEW', icon: '₹', scope: 'TENANT' },
-    { code: 'promotions', title: 'Promotions', description: 'Create and manage business promotions and campaigns.', permission: 'PROMOTIONS_MANAGE', icon: '✳', scope: 'TENANT' },
+    { code: 'promotions', title: 'Promotions', description: 'Create and manage business promotions and campaigns.', permission: 'PROMOTIONS_MANAGE', icon: '✳', scope: 'TENANT', entitlement: 'DAILY_PROMOTION_LIMIT' },
     { code: 'subscriptions', title: 'Subscriptions', description: 'Review the business subscription and plan entitlements.', permission: 'SUBSCRIPTIONS_MANAGE', icon: '◇', scope: 'TENANT' },
     { code: 'members', title: 'Team & access', description: 'View team membership and assigned workspace access.', permission: 'TENANT_MEMBERS_VIEW', icon: '♧', scope: 'TENANT' },
     { code: 'analytics', title: 'Business analytics', description: 'Review the analytics available to your business role.', permission: 'ANALYTICS_VIEW', icon: '▥', scope: 'TENANT' },

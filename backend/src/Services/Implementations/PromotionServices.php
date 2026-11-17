@@ -203,10 +203,9 @@ final readonly class PromotionServices implements IPromotionServices
         }
         if ($operation === 'publish' || $operation === 'unpublish') {
             if ($operation === 'publish') {
-                $entitlement = $this->dao->hasPromotionEntitlement($this->db, $tenantId);
-                if ($entitlement['status'] !== 'SUCCESS' || $entitlement['data'] === []) {
-                    $resArr['msgArr'][] = 'An active subscription with PROMOTIONAL_POSTS entitlement is required to publish promotions.';
-                    return $resArr;
+                $quota = $this->getPromotionQuota($tenantId, (int) $context['data']['user_id'], $promotionId);
+                if ($quota['status'] !== 'SUCCESS') {
+                    return $quota;
                 }
                 $validUntil = $existing['data']['valid_until'] ?? null;
                 if ($validUntil !== null && strtotime((string) $validUntil) < time()) {
@@ -236,14 +235,64 @@ final readonly class PromotionServices implements IPromotionServices
         }
 
         if ($operation === 'create') {
-            $entitlement = $this->dao->hasPromotionEntitlement($this->db, $tenantId);
-            if ($entitlement['status'] !== 'SUCCESS' || $entitlement['data'] === []) {
-                $resArr['msgArr'][] = 'An active subscription with PROMOTIONAL_POSTS entitlement is required to create promotions.';
+            $entitlement = $this->dao->getActivePromotionDailyLimit($this->db, $tenantId);
+            if ($entitlement['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($entitlement, 'PromotionServices::manageMyPromotion');
+            }
+            $dailyLimit = $entitlement['data']['entitlement_value'] ?? null;
+            if (!is_numeric($dailyLimit) || (int) $dailyLimit < 1) {
+                $resArr['msgArr'][] = 'An active subscription with a valid DAILY_PROMOTION_LIMIT entitlement is required to create promotions.';
                 return $resArr;
             }
             return $this->dao->insertPromotion($this->db, $tenantId, $title, $content, $validUntil, $userId);
         }
         return $this->dao->updatePromotion($this->db, $tenantId, $promotionId, $title, $content, $validUntil, $userId);
+    }
+
+    private function getPromotionQuota(int $tenantId, int $userId, int $promotionId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $entitlement = $this->dao->getActivePromotionDailyLimit($this->db, $tenantId);
+        if ($entitlement['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($entitlement, 'PromotionServices::getPromotionQuota');
+        }
+        $limit = $entitlement['data']['entitlement_value'] ?? null;
+        if (!is_numeric($limit) || (int) $limit < 1) {
+            $resArr['msgArr'][] = 'An active subscription with a valid DAILY_PROMOTION_LIMIT entitlement is required to publish promotions.';
+            return $resArr;
+        }
+
+        $tenant = $this->tenantDao->getMyTenant($this->db, $userId, $tenantId);
+        if ($tenant['status'] !== 'SUCCESS' || $tenant['data'] === []) {
+            return $this->propagateFailure($tenant, 'PromotionServices::getPromotionQuota');
+        }
+        $timezoneName = trim((string) ($tenant['data']['timezone'] ?? 'UTC'));
+        try {
+            $timezone = new \\DateTimeZone($timezoneName !== '' ? $timezoneName : 'UTC');
+            $localStart = new \\DateTimeImmutable('today', $timezone);
+            $localEnd = $localStart->modify('+1 day');
+            $utc = new \\DateTimeZone('UTC');
+            $startUtc = $localStart->setTimezone($utc)->format('Y-m-d H:i:s');
+            $endUtc = $localEnd->setTimezone($utc)->format('Y-m-d H:i:s');
+        } catch (\\Throwable $exception) {
+            $resArr['msgArr'][] = 'The tenant timezone is invalid; promotion publishing is blocked until it is corrected.';
+            return $resArr;
+        }
+
+        $count = $this->dao->countTenantPromotionsPublishedInRange(
+            $this->db, $tenantId, $startUtc, $endUtc, $promotionId,
+        );
+        if ($count['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($count, 'PromotionServices::getPromotionQuota');
+        }
+        if ((int) ($count['data']['total'] ?? 0) >= (int) $limit) {
+            $resArr['msgArr'][] = 'The tenant daily promotion publishing limit has been reached for its local calendar day.';
+            return $resArr;
+        }
+
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['daily_limit' => (int) $limit];
+        return $resArr;
     }
 
     private function tenantContext(array $actionData): array

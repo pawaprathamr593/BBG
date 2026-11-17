@@ -130,6 +130,21 @@ if (in_array(false, $discoveryContracts, true)) {
     exit(1);
 }
 
+$promotionDao = file_get_contents($root . '/src/Dao/PromotionDao.php');
+$promotionService = file_get_contents($root . '/src/Services/Implementations/PromotionServices.php');
+if (
+    $promotionDao === false
+    || $promotionService === false
+    || !str_contains($promotionDao, 'DAILY_PROMOTION_LIMIT')
+    || !str_contains($promotionDao, 'countTenantPromotionsPublishedInRange')
+    || !str_contains($promotionService, 'getPromotionQuota')
+    || !str_contains($promotionService, 'DateTimeZone')
+    || !str_contains($promotionService, 'tenant local calendar day')
+) {
+    fwrite(STDERR, "Tenant-local daily promotion entitlement contract is incomplete.\n");
+    exit(1);
+}
+
 $socialAuthService = file_get_contents($root . '/src/Services/Implementations/AuthServices.php');
 $socialAuthController = file_get_contents($root . '/src/Modules/Api/V1/Controllers/AuthController.php');
 $socialAuthContracts = [
