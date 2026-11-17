@@ -268,7 +268,7 @@ export class DashboardModule implements OnInit {
   });
   readonly contextLabel = computed(() => this.workspace.activeTenantId() !== null
     ? 'BUSINESS WORKSPACE'
-    : this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM')
+    : this.workspace.permissions().some((permission) => permission.scope_type === 'PLATFORM')
       ? 'PLATFORM ADMINISTRATION'
       : 'MY ACCOUNT');
   readonly summaryEntries = computed(() => {
@@ -360,7 +360,7 @@ export class DashboardModule implements OnInit {
     promotions: { title: 'Promotions', description: 'Review campaigns and publish or pause eligible promotions.' },
     subscriptions: { title: 'Subscriptions & plans', description: 'Review available plans and the subscription history for this business.' },
     payments: { title: 'Payments', description: 'Review payment activity and related business records.' },
-    analytics: { title: 'Analytics', description: 'Review the summary metrics available in your current workspace.' },
+    analytics: { title: 'Analytics', description: 'Review the summary metrics available in this area.' },
     members: { title: 'Team & access', description: 'Review the members assigned to this business workspace.' },
     'platform-analytics': { title: 'Platform analytics', description: 'Review platform-wide metrics exposed to authorized administrators.' },
     categories: { title: 'Marketplace categories', description: 'Review the category taxonomy used by marketplace listings.' },
