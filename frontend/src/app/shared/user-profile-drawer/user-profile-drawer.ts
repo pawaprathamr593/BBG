@@ -57,7 +57,7 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
           <section class="drawer-section context-section">
             <div class="section-heading"><h3>Go to</h3></div>
             <button class="context-action" type="button" [disabled]="switching()"
-              [class.is-active]="workspace.activeTenantId() === null && workspace.permissions().some(permission => permission.scope_type === 'GLOBAL')"
+              [class.is-active]="isPersonalContext()"
               (click)="goToMyAccount()">
               <span class="context-action-icon">◎</span>
               <span><strong>My Account</strong><small>Orders, enquiries, payments and profile</small></span>
@@ -65,7 +65,7 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
             </button>
             @if (workspace.platformPermissions().some(permission => permission.scope_type === 'PLATFORM')) {
               <button class="context-action" type="button" [disabled]="switching()"
-                [class.is-active]="workspace.activeTenantId() === null && workspace.permissions().some(permission => permission.scope_type === 'PLATFORM')"
+                [class.is-active]="isPlatformContext()"
                 (click)="goToPlatformAdministration()">
                 <span class="context-action-icon">⚙</span>
                 <span><strong>Platform Administration</strong><small>Manage BBG platform operations</small></span>
@@ -173,6 +173,10 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
   readonly logoutError = signal('');
   readonly initials = computed(() => (this.auth.user()?.full_name || 'BBG')
     .trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join(''));
+  readonly isPersonalContext = computed(() => this.workspace.activeTenantId() === null
+    && this.workspace.permissions().some((permission) => permission.scope_type === 'GLOBAL'));
+  readonly isPlatformContext = computed(() => this.workspace.activeTenantId() === null
+    && this.workspace.permissions().some((permission) => permission.scope_type === 'PLATFORM'));
 
   @ViewChild('trigger') private trigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('drawer') private drawer?: ElementRef<HTMLElement>;
