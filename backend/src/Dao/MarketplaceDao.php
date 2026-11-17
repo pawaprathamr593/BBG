@@ -33,6 +33,13 @@ final readonly class MarketplaceDao
                  FROM PRODUCTS p
                  INNER JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
                     AND bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                     AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
                  INNER JOIN TENANTS t ON t.id = p.tenant_id
                     AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
@@ -150,6 +157,13 @@ final readonly class MarketplaceDao
                 GROUP BY tenant_id
              ) e ON e.tenant_id = bp.tenant_id
              WHERE bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
                 AND (COALESCE(v.view_count, 0) + COALESCE(e.enquiry_count, 0)) > 0
              ORDER BY engagement_count DESC, view_count DESC, enquiry_count DESC,
@@ -184,6 +198,13 @@ final readonly class MarketplaceDao
                 GROUP BY tenant_id
              ) e ON e.tenant_id = bp.tenant_id
              WHERE bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
                 AND (COALESCE(v.view_count, 0) + COALESCE(e.enquiry_count, 0)) > 0",
             [],
@@ -213,6 +234,13 @@ final readonly class MarketplaceDao
                 AND ss.storefront_status = 'ACTIVE' AND ss.status = 'A'
              LEFT JOIN CATEGORIES c ON c.id = bp.primary_category_id AND c.status = 'A'
              WHERE bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              ORDER BY bp.created_on DESC, bp.id DESC
              LIMIT :limit OFFSET :offset",
@@ -243,6 +271,13 @@ final readonly class MarketplaceDao
              LEFT JOIN CATEGORIES c ON c.id = bp.primary_category_id AND c.status = 'A'
              WHERE bp.business_slug = :slug
                 AND bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                 AND bp.publication_status = 'PUBLISHED'
                 AND bp.status = 'A'
              LIMIT 1",
@@ -273,6 +308,13 @@ final readonly class MarketplaceDao
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
                 AND bp.business_slug = :slug
                 AND bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = p.tenant_id
                 AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
@@ -309,6 +351,13 @@ final readonly class MarketplaceDao
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
                 AND bp.business_slug = :slug
                 AND bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = p.tenant_id
                 AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
@@ -341,6 +390,13 @@ final readonly class MarketplaceDao
              FROM PRODUCTS p
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
                 AND bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = p.tenant_id
                 AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
@@ -367,6 +423,13 @@ final readonly class MarketplaceDao
              FROM PRODUCTS p
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
                 AND bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = p.tenant_id
                 AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
@@ -428,6 +491,13 @@ final readonly class MarketplaceDao
              FROM PRODUCTS p
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
                 AND bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = p.tenant_id
                 AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
@@ -468,6 +538,13 @@ final readonly class MarketplaceDao
              FROM PRODUCTS p
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
                 AND bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = p.tenant_id
                 AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
@@ -509,6 +586,13 @@ final readonly class MarketplaceDao
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
                 AND bp.business_slug = :slug
                 AND bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = p.tenant_id
                 AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
@@ -578,6 +662,13 @@ final readonly class MarketplaceDao
              FROM PROMOTIONAL_POSTS pp
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = pp.tenant_id
                 AND bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = pp.tenant_id
                 AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
@@ -609,6 +700,13 @@ final readonly class MarketplaceDao
              FROM PROMOTIONAL_POSTS pp
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = pp.tenant_id
                 AND bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = pp.tenant_id
                 AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
@@ -633,6 +731,13 @@ final readonly class MarketplaceDao
              FROM PROMOTIONAL_POSTS pp
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = pp.tenant_id
                 AND bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = pp.tenant_id
                 AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
@@ -665,6 +770,13 @@ final readonly class MarketplaceDao
     private function publicProductWhere(array $filters): string
     {
         $where = "bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
             AND bp.publication_status = 'PUBLISHED'
             AND bp.status = 'A'";
         if (($filters['tenant_id'] ?? null) !== null) {
@@ -753,6 +865,13 @@ final readonly class MarketplaceDao
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $where = "bp.approval_status = 'APPROVED'
+                    AND EXISTS (
+                        SELECT 1 FROM TENANT_SUBSCRIPTIONS ts_public
+                        WHERE ts_public.tenant_id = bp.tenant_id
+                            AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
+                            AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                    )
             AND bp.publication_status = 'PUBLISHED'
             AND bp.status = 'A'";
         if ($filters['search'] !== '') {
