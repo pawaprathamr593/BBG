@@ -1,10 +1,17 @@
 <section class="auth-experience" [class.auth-page-mode]="presentation === 'page'" [class.auth-popup-mode]="presentation === 'popup'">
-  @if (presentation === 'popup') {
+  @if (presentation === 'popup' && !compactLoginView()) {
     <div class="popup-reason" role="note">
       <strong>Sign in required for this action</strong>
       @if (reason) { <span>{{ reason }}</span> }
     </div>
   }
+  @if (presentation === 'popup' && compactLoginView()) {
+    <div class="popup-compact-heading">
+      <strong>Login with ID &amp; password</strong>
+      <button type="button" (click)="showOtherLoginMethods()">Login with other ways</button>
+    </div>
+  }
+  @if (presentation !== 'popup' || !compactLoginView()) {
   <div class="auth-heading">
     @if (presentation === 'page') {
       <span class="auth-mark" aria-hidden="true">{{ brandName.slice(0, 1).toUpperCase() }}</span>
@@ -45,10 +52,11 @@
   </div>
 
   <div class="separator"><span>OR</span></div>
-  <button class="email-entry" type="button" (click)="toggleEmailForm()" [attr.aria-expanded]="emailFormVisible()">
-    {{ emailFormVisible() ? 'Back to social sign-in' : (activeMode() === 'login' ? 'Or sign in with email or phone' : 'Or create an account with email or phone') }}
-    <span aria-hidden="true">{{ emailFormVisible() ? '←' : '→' }}</span>
+  <button class="email-entry" type="button" (click)="presentation === 'popup' ? showPasswordLogin() : toggleEmailForm()" [attr.aria-expanded]="emailFormVisible()">
+    {{ presentation === 'popup' ? 'Login with ID and password' : (emailFormVisible() ? 'Back to social sign-in' : (activeMode() === 'login' ? 'Or sign in with email or phone' : 'Or create an account with email or phone')) }}
+    <span aria-hidden="true">→</span>
   </button>
+  }
 
   @if (emailFormVisible()) {
     @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
@@ -89,7 +97,7 @@
 
   <p class="mode-switch">
     @if (activeMode() === 'login') {
-      New here? <button type="button" (click)="switchMode('register')">Create an account</button>
+      {{ presentation === 'popup' ? 'Not registered?' : 'New here?' }} <button type="button" (click)="switchMode('register')">{{ presentation === 'popup' ? 'Register here' : 'Create an account' }}</button>
     } @else {
       Already have an account? <button type="button" (click)="switchMode('login')">Sign in</button>
     }
