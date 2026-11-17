@@ -75,38 +75,7 @@ interface DashboardModule {
           </section>
         }
 
-        <section class="modules-section">
-          <div class="section-heading">
-            <div><p class="eyebrow">YOUR ACCESS</p><h2>Available modules</h2><p>Modules are shown only when your current area grants the required permission.</p></div>
-            <span class="module-count">{{ visibleModules().length }} available</span>
-          </div>
 
-          @if (visibleModules().length) {
-            <div class="module-grid">
-              @for (module of visibleModules(); track module.code) {
-                <article class="module-card">
-                  <div class="module-top"><span class="module-icon">{{ module.icon }}</span><span class="access-indicator"><i></i> Access granted</span></div>
-                  <h3>{{ module.title }}</h3>
-                  <p>{{ module.description }}</p>
-                  <div class="module-foot"><span>{{ module.permission }}</span>@if (module.route) { <a [routerLink]="module.route" (click)="$event.stopPropagation()">Open module <span aria-hidden="true">↗</span></a> } @else { <span aria-hidden="true">✓</span> }</div>
-                </article>
-              }
-            </div>
-          } @else {
-            <div class="empty-modules">
-              <span class="empty-icon">⌑</span>
-              <h3>No modules assigned in this context</h3>
-              <p>{{ isPersonalContext() ? 'Your My Account overview is available. Personal features will appear here when the required permissions are assigned.' : 'Your account is active, but no modules are assigned in this area. Contact your platform or business administrator.' }}</p>
-            </div>
-          }
-        </section>
-
-        @if (tenants().length && isPersonalContext()) {
-          <section class="workspace-hint">
-            <div><strong>Business access is available.</strong><p>Open the profile menu and choose Business Workspace to manage your business.</p></div>
-            <span aria-hidden="true">→</span>
-          </section>
-        }
       }
     </main>
   `,
@@ -189,7 +158,7 @@ export class Dashboard implements OnInit {
       this.summaryError.set('');
       if (tenantId !== null && permissions.some((permission) => permission.permission_code === 'TENANT_MEMBERS_VIEW')) {
         void this.loadTenantSummary(tenantId);
-      } else if (tenantId === null && permissions.some((permission) => permission.role_code === 'CONSUMER' && permission.scope_type === 'GLOBAL')) {
+      } else if (tenantId === null && !this.isPlatformContext()) {
         void this.loadConsumerSummary();
       }
     });
@@ -205,8 +174,7 @@ export class Dashboard implements OnInit {
       { permission: 'ENQUIRIES_VIEW', title: 'My Enquiries', description: 'Continue your conversations with businesses.', icon: '↗', route: '/dashboard/enquiries' },
       { permission: 'PAYMENTS_VIEW', title: 'My Payments', description: 'Review your customer payment activity.', icon: '₹', route: '/dashboard/payments' },
     ];
-    return definitions.filter((shortcut) => this.permissions().some((permission) =>
-      permission.role_code === 'CONSUMER' && permission.permission_code === shortcut.permission && permission.scope_type === 'GLOBAL'));
+    return this.isPersonalContext() ? definitions : [];
   });
   readonly roleCodes = computed(() => [...new Set(this.permissions().map((permission) => permission.role_code))]);
   readonly firstName = computed(() => (this.auth.user()?.full_name || 'there').trim().split(/\s+/)[0]);
@@ -270,7 +238,7 @@ export class Dashboard implements OnInit {
       this.loading.set(false);
       if (this.selectedTenantId() !== null && permissions.some((permission) => permission.permission_code === 'TENANT_MEMBERS_VIEW')) {
         await this.loadTenantSummary(this.selectedTenantId()!);
-      } else if (permissions.some((permission) => permission.role_code === 'CONSUMER' && permission.scope_type === 'GLOBAL')) {
+      } else if (this.isPersonalContext()) {
         await this.loadConsumerSummary();
       }
     } catch (error) {
