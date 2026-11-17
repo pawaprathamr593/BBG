@@ -1,6 +1,6 @@
 <section class="auth-experience" [class.auth-page-mode]="presentation() === 'page'" [class.auth-popup-mode]="presentation() === 'popup'">
   @if (presentation() === 'popup' && !compactLoginView()) {
-    <div class="popup-reason()" role="note">
+    <div class="popup-reason" role="note">
       <strong>Sign in required for this action</strong>
       @if (reason()) { <span>{{ reason() }}</span> }
     </div>
