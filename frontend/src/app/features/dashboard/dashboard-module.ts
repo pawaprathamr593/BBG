@@ -138,7 +138,7 @@ interface DataRecord { [key: string]: unknown; }
             <label>Post content <textarea rows="5" maxlength="10000" [value]="promotionContent()" (input)="setPromotionField('content',$event)" placeholder="Tell customers about your offer…" required></textarea></label>
             <label>Valid until <input type="datetime-local" [value]="promotionValidUntil()" (input)="setPromotionField('validUntil',$event)"><small>Optional. Leave blank for no expiry date.</small></label>
             <div class="post-upload-zone">
-              <div class="post-file-picker" (dragover)="allowPromotionMediaDrop($event)" (drop)="dropPromotionMedia($event)"><span>＋</span><strong>Add media files</strong><small>Images, videos, audio and PDF · multiple selection · max 10 MB per file</small><input type="file" aria-label="Add promotion media files" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,application/pdf" (change)="selectPromotionMedia($event)" [disabled]="promotionMediaBusy()"></div>
+              <div class="post-file-picker" (dragover)="allowPromotionMediaDrop($event)" (drop)="dropPromotionMedia($event)"><span>＋</span><strong>Add media files</strong><small>Images, videos, audio and PDF · multiple selection · max 10 MB per file</small><input type="file" aria-label="Add promotion media files" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,application/pdf,text/plain,text/csv,application/rtf" (change)="selectPromotionMedia($event)" [disabled]="promotionMediaBusy()"></div>
               @if (promotionFiles().length) {
                 <div class="post-file-list">
                   @for (file of promotionFiles(); track $index) {
@@ -662,7 +662,7 @@ export class DashboardModule implements OnInit {
   }
 
   private addPromotionMedia(files: File[]): void {
-    const allowed = new Set(['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','audio/mpeg','audio/wav','audio/ogg','application/pdf']);
+    const allowed = new Set(['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','audio/mpeg','audio/wav','audio/ogg','application/pdf','text/plain','text/csv','application/rtf']);
     const invalid = files.find((file) => !allowed.has(file.type) || file.size < 1 || file.size > 10 * 1024 * 1024);
     if (invalid) this.promotionError.set(`"${invalid.name}" is not supported or exceeds the 10 MB per-file limit.`);
     else {
@@ -737,7 +737,7 @@ export class DashboardModule implements OnInit {
     return Array.isArray(media) ? media as DataRecord[] : [];
   }
   mediaLabel(mime: string): string {
-    return mime.startsWith('image/') ? 'IMAGE' : mime.startsWith('video/') ? 'VIDEO' : mime.startsWith('audio/') ? 'AUDIO' : 'PDF';
+    return mime.startsWith('image/') ? 'IMAGE' : mime.startsWith('video/') ? 'VIDEO' : mime.startsWith('audio/') ? 'AUDIO' : mime === 'application/pdf' ? 'PDF' : 'DOC';
   }
   fileSize(bytes: number): string {
     return bytes < 1024 * 1024 ? `${Math.max(1,Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
