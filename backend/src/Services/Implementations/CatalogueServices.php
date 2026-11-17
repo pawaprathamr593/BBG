@@ -163,6 +163,19 @@ final readonly class CatalogueServices implements ICatalogueServices
         if ($rows['status'] !== 'SUCCESS') {
             return $this->propagateFailure($rows, 'CatalogueServices::getTenantProducts');
         }
+        foreach ($rows['data'] as &$productRow) {
+            $productRow['primary_image_url'] = null;
+            if (!empty($productRow['primary_media_path'])) {
+                try { $productRow['primary_image_url'] = $this->s3Storage->createDownloadUrl((string) $productRow['primary_media_path']); }
+                catch (Throwable $exception) {
+                    $this->logger->warning('Unable to create a primary product image URL.', [
+                        'tenant_id' => $tenantId, 'product_id' => (int) $productRow['id'], 'exception' => $exception,
+                    ]);
+                }
+            }
+            unset($productRow['primary_media_path']);
+        }
+        unset($productRow);
         $count = $this->dao->countTenantProducts($this->db, $tenantId, $search);
         if ($count['status'] !== 'SUCCESS') {
             return $this->propagateFailure($count, 'CatalogueServices::getTenantProducts');
