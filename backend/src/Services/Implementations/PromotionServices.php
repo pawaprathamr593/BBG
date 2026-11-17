@@ -238,7 +238,7 @@ final readonly class PromotionServices implements IPromotionServices
             'application/rtf' => ['rtf', 'DOCUMENT'],
         ];
         if ($promotionId === null || $fileName === null || !isset($supported[$mimeType])
-            || $fileSize === false || $fileSize < 1 || $fileSize > $this->s3Storage->getMaxUploadBytes()) {
+            || $fileSize === false || $fileSize < 1 || $fileSize > $this->s3Storage->getMaxMediaUploadBytes()) {
             $resArr['msgArr'][] = 'Choose a supported image, video, audio or PDF file within the configured upload size limit.';
             return $resArr;
         }
@@ -326,7 +326,7 @@ final readonly class PromotionServices implements IPromotionServices
         $actualSize = (int) ($object['ContentLength'] ?? 0);
         $signature = $this->s3Storage->getObjectPrefix($filePath);
         if ($actualMime !== $mimeType || $actualSize !== $fileSize || $actualSize < 1
-            || $actualSize > $this->s3Storage->getMaxUploadBytes()
+            || $actualSize > $this->s3Storage->getMaxMediaUploadBytes()
             || !$this->promotionMediaSignatureMatches($mimeType, $signature)) {
             $this->s3Storage->deleteObject($filePath);
             $resArr['msgArr'][] = 'Uploaded post media failed content type, signature or file size verification.';
