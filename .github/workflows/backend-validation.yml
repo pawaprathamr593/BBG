@@ -57,6 +57,30 @@ jobs:
           mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261113_001_public_marketplace_engagement.sql
           mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261113_002_social_identity_mapping.sql
           mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261113_003_public_product_discovery_support.sql
+          mysql --protocol=tcp -h 127.0.0.1 -uroot bbg -e "
+            CREATE TABLE TENANT_SUBSCRIPTIONS (
+              id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+              tenant_id INT UNSIGNED NOT NULL,
+              subscription_status VARCHAR(20) NOT NULL,
+              approved_by INT UNSIGNED NULL,
+              approved_on DATETIME NULL,
+              rejection_reason VARCHAR(500) NULL,
+              updated_by INT UNSIGNED NULL,
+              updated_on DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              created_by INT UNSIGNED NULL,
+              created_on DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              status VARCHAR(1) NOT NULL DEFAULT 'A'
+            );
+            CREATE TABLE SUBSCRIPTION_PAYMENT_PROOFS (
+              id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+              tenant_id INT UNSIGNED NOT NULL,
+              subscription_id INT UNSIGNED NOT NULL,
+              reviewed_by INT UNSIGNED NULL,
+              reviewed_on DATETIME NULL,
+              review_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+              status VARCHAR(1) NOT NULL DEFAULT 'A'
+            );
+          "
           mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261117_002_subscription_payment_review_workflow.sql
       - name: Verify migration tables and generated cart keys
         env:
