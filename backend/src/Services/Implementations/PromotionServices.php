@@ -217,6 +217,13 @@ final readonly class PromotionServices implements IPromotionServices
         $context = $this->tenantContext($actionData);
         if ($context['status'] !== 'SUCCESS') return $this->propagateFailure($context, 'PromotionServices::generatePromotionMediaUploadUrl');
         $tenantId = (int) $context['data']['tenant_id'];
+        $dailyEntitlement = $this->dao->getActivePromotionDailyLimit($this->db, $tenantId);
+        if ($dailyEntitlement['status'] !== 'SUCCESS') return $this->propagateFailure($dailyEntitlement, 'PromotionServices::generatePromotionMediaUploadUrl');
+        $dailyLimit = $dailyEntitlement['data']['entitlement_value'] ?? null;
+        if (!is_numeric($dailyLimit) || (int) $dailyLimit < 1) {
+            $resArr['msgArr'][] = 'An active subscription with a valid DAILY_PROMOTION_LIMIT entitlement is required for post media.';
+            return $resArr;
+        }
         $promotionId = $this->positiveInt($actionData['promotion_id'] ?? null);
         $fileName = $this->requiredText($actionData['original_file_name'] ?? '', 255);
         $mimeType = strtolower($this->requiredText($actionData['mime_type'] ?? '', 100) ?? '');
@@ -254,6 +261,15 @@ final readonly class PromotionServices implements IPromotionServices
         if ($context['status'] !== 'SUCCESS') return $this->propagateFailure($context, 'PromotionServices::managePromotionMedia');
         $tenantId = (int) $context['data']['tenant_id'];
         $userId = (int) $context['data']['user_id'];
+        if ($operation === 'link') {
+            $dailyEntitlement = $this->dao->getActivePromotionDailyLimit($this->db, $tenantId);
+            if ($dailyEntitlement['status'] !== 'SUCCESS') return $this->propagateFailure($dailyEntitlement, 'PromotionServices::managePromotionMedia');
+            $dailyLimit = $dailyEntitlement['data']['entitlement_value'] ?? null;
+            if (!is_numeric($dailyLimit) || (int) $dailyLimit < 1) {
+                $resArr['msgArr'][] = 'An active subscription with a valid DAILY_PROMOTION_LIMIT entitlement is required for post media.';
+                return $resArr;
+            }
+        }
         $promotionId = $this->positiveInt($actionData['promotion_id'] ?? null);
         if ($promotionId === null) {
             $resArr['msgArr'][] = 'A valid promotion_id is required.';
