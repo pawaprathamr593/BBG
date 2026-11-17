@@ -403,7 +403,37 @@ final readonly class PromotionServices implements IPromotionServices
             }
         }
         if ($operation === 'delete') {
-            return $this->dao->softDeletePromotion($this->db, $tenantId, $promotionId, $userId);
+            $media = $this->dao->getPromotionMedia($this->db, $tenantId, $promotionId);
+            if ($media['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($media, 'PromotionServices::manageMyPromotion media lookup');
+            }
+            $deleted = $this->dao->softDeletePromotion($this->db, $tenantId, $promotionId, $userId);
+            if ($deleted['status'] !== 'SUCCESS') {
+                return $deleted;
+            }
+            $mediaDeleted = $this->dao->softDeleteAllPromotionMedia($this->db, $tenantId, $promotionId, $userId);
+            if ($mediaDeleted['status'] !== 'SUCCESS') {
+                $this->logger->error('Post was deleted but associated media records could not be soft-deleted.', [
+                    'tenant_id' => $tenantId, 'promotion_id' => $promotionId, 'messages' => $mediaDeleted['msgArr'] ?? [],
+                ]);
+                return $deleted;
+            }
+            foreach ($media['data'] as $mediaRow) {
+                $objectKey = trim((string) ($mediaRow['file_path'] ?? ''));
+                if ($objectKey === '') {
+                    continue;
+                }
+                try {
+                    $this->s3Storage->deleteObject($objectKey);
+                } catch (Throwable $exception) {
+                    $this->logger->warning('Post media record was soft-deleted but S3 cleanup failed.', [
+                        'tenant_id' => $tenantId, 'promotion_id' => $promotionId,
+                        'media_id' => (int) ($mediaRow['id'] ?? 0), 'object_key' => $objectKey,
+                        'exception' => $exception,
+                    ]);
+                }
+            }
+            return $deleted;
         }
         if ($operation === 'publish' || $operation === 'unpublish') {
             if ($operation === 'publish') {
