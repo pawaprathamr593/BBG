@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../core/http/api.service';
 import { ApiError } from '../../core/http/api-error';
 import { ApiEnvelope } from '../../core/http/api.models';
@@ -45,9 +46,9 @@ export class WorkspaceOverview implements OnInit {
         : 'getAdminAnalyticsSummary';
     const actionData: Record<string, unknown> = mode === 'BUSINESS' ? { tenant_id: tenantId } : {};
     try {
-      const response = await this.api.post<Record<string, unknown>>(route, {
+      const response = await firstValueFrom(this.api.post<Record<string, unknown>>(route, {
         [envelope]: { actionType, actionData },
-      }).toPromise();
+      }));
       this.assertSuccess(response);
       if (!response?.data || Array.isArray(response.data) || typeof response.data !== 'object') {
         throw new ApiError('The dashboard response was empty or had an unexpected format.');
