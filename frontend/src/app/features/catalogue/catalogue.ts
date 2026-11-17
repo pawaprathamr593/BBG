@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -27,6 +27,7 @@ const emptyProduct = (): ProductForm => ({
 });
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-catalogue',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
