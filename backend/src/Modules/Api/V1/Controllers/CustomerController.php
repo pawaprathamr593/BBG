@@ -41,7 +41,7 @@ final class CustomerController
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $getActions = [
             '/api/v1/customers/profile' => 'getMyCustomerProfile',
-            '/api/v1/customers/addresses/list' => 'listMyAddresses',
+            '/api/v1/customers/addresses/list' => 'listMyAddresses',\n            '/api/v1/customers/tenant/list' => 'listTenantCustomers',
         ];
         $manageActions = [
             '/api/v1/customers/addresses/create' => 'createMyAddress',
