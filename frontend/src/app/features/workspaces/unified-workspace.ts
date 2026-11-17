@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ApiService } from '../../core/http/api.service';
 import { ApiError } from '../../core/http/api-error';
@@ -43,10 +44,10 @@ export class UnifiedWorkspace implements OnInit {
     this.loadingTenants.set(true);
     this.error.set('');
     try {
-      const response = await this.api.post<{ items: WorkspaceTenant[] }>(
+      const response = await firstValueFrom(this.api.post<{ items: WorkspaceTenant[] }>(
         '/api/v1/tenants/mine/list',
         { tenantParam: { actionType: 'listMyTenants', actionData: { page: 1, page_size: 50 } } },
-      ).toPromise();
+      ));
       this.assertSuccess(response, 'Unable to load your business memberships.');
       const data = response?.data;
       const tenants = data && !Array.isArray(data) && Array.isArray(data.items)
