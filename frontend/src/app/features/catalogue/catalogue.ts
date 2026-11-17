@@ -34,7 +34,6 @@ const emptyProduct = (): ProductForm => ({
     <main class="catalogue-page">
       <header class="page-header">
         <div>
-          <a class="back-link" routerLink="/dashboard">← Workspace dashboard</a>
           <p class="eyebrow">BUSINESS WORKSPACE / CATALOGUE</p>
           <h1>Product catalogue</h1>
           <p class="subtitle">Manage your business products and categories in one place.</p>
