@@ -41,7 +41,7 @@ interface WorkspaceNavItem {
                   <option value="PERSONAL">My Account</option>
                   @if (canAccessPlatform()) { <option value="PLATFORM">Platform Administration</option> }
                   @for (tenant of workspace.tenants(); track tenant.id; let index = $index) {
-                    <option [value]="'BUSINESS:' + tenant.id">Business Workspace {{ index + 1 }}</option>
+                    <option [value]="'BUSINESS:' + tenant.id">{{ tenant.tenant_name || ('Business Workspace ' + (index + 1)) }}</option>
                   }
                 </select>
               </label>
@@ -122,7 +122,7 @@ interface WorkspaceNavItem {
                   <option value="PERSONAL">My Account</option>
                   @if (canAccessPlatform()) { <option value="PLATFORM">Platform Administration</option> }
                   @for (tenant of workspace.tenants(); track tenant.id; let index = $index) {
-                    <option [value]="'BUSINESS:' + tenant.id">Business Workspace {{ index + 1 }}</option>
+                    <option [value]="'BUSINESS:' + tenant.id">{{ tenant.tenant_name || ('Business Workspace ' + (index + 1)) }}</option>
                   }
                 </select>
               </label>
