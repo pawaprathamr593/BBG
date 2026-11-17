@@ -77,6 +77,18 @@ interface DashboardModule {
           </section>
         }
 
+        @if (!selectedTenant()) {
+          <section class="personal-shortcuts">
+            <div><p class="eyebrow">PERSONAL DASHBOARD</p><h2>Your activity</h2><p>Access your personal orders, enquiries, saved addresses and payments.</p></div>
+            <div class="shortcut-grid">
+              <a routerLink="/dashboard/customers"><span>♙</span><strong>Profile & addresses</strong><small>Manage your customer details and saved addresses</small></a>
+              <a routerLink="/dashboard/orders"><span>▤</span><strong>My orders</strong><small>Track orders placed with BBG businesses</small></a>
+              <a routerLink="/dashboard/enquiries"><span>↗</span><strong>My enquiries</strong><small>Continue your business conversations</small></a>
+              <a routerLink="/dashboard/payments"><span>₹</span><strong>My payments</strong><small>Review your payment activity</small></a>
+            </div>
+          </section>
+        }
+
         <section class="modules-section">
           <div class="section-heading">
             <div><p class="eyebrow">YOUR ACCESS</p><h2>Workspace modules</h2><p>Modules are shown only when your current context grants the required permission.</p></div>
@@ -135,7 +147,7 @@ interface DashboardModule {
     .metric-card{display:flex;align-items:center;gap:14px;min-height:102px;padding:18px;background:var(--surface-card);border:1px solid var(--border);border-radius:13px}
     .metric-icon{display:grid;flex:0 0 42px;width:42px;height:42px;place-items:center;background:var(--surface-subtle);border-radius:11px;font-size:1.15rem}
     .metric-card div{display:grid;gap:3px}.metric-card strong{font-size:1.55rem;letter-spacing:-.04em}.metric-card div span{color:var(--text-secondary);font-size:.75rem}
-    .modules-section{margin-top:42px}.section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:18px}
+    .personal-shortcuts{margin-top:28px;padding:22px;background:var(--surface-card);border:1px solid var(--border);border-radius:15px}.personal-shortcuts h2{margin:0;font-size:1.35rem;letter-spacing:-.035em}.personal-shortcuts>div:first-child>p:last-child{margin:7px 0 0;color:var(--text-secondary);font-size:.8rem}.shortcut-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-top:18px}.shortcut-grid a{display:grid;gap:7px;padding:15px;color:var(--text-primary);background:var(--surface-subtle);border:1px solid var(--border);border-radius:11px;text-decoration:none}.shortcut-grid a:hover{border-color:var(--brand)}.shortcut-grid span{color:var(--brand);font-size:1.2rem}.shortcut-grid strong{font-size:.82rem}.shortcut-grid small{color:var(--text-secondary);font-size:.69rem;line-height:1.45}.modules-section{margin-top:42px}.section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:18px}
     .section-heading .eyebrow{margin-bottom:7px}.section-heading h2{margin:0;font-size:1.55rem;letter-spacing:-.035em}.section-heading p:not(.eyebrow){margin:7px 0 0;color:var(--text-secondary);font-size:.82rem}
     .module-count{padding:7px 10px;color:var(--text-secondary);background:var(--surface-subtle);border:1px solid var(--border);border-radius:8px;font-size:.72rem;font-weight:750;white-space:nowrap}
     .module-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
@@ -155,8 +167,8 @@ interface DashboardModule {
     .workspace-hint{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:24px;padding:17px 20px;background:var(--surface-subtle);border:1px solid var(--border);border-radius:12px}
     .workspace-hint strong{font-size:.82rem}.workspace-hint p{margin:5px 0 0;color:var(--text-secondary);font-size:.76rem}.workspace-hint>span{color:var(--brand);font-size:1.25rem}
     @keyframes spin{to{transform:rotate(360deg)}}
-    @media(max-width:900px){.metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.context-banner{align-items:flex-start;flex-wrap:wrap}.role-list{justify-content:flex-start;width:100%;padding-left:66px}}
-    @media(max-width:650px){.workspace{padding:32px 17px 54px}.workspace-heading{align-items:flex-start;flex-direction:column}.heading-actions{align-items:stretch;flex-direction:column;width:100%}.context-picker{width:100%}.context-picker select{width:100%}.market-link{justify-content:center}.context-banner{padding:18px}.context-copy{min-width:calc(100% - 70px)}.role-list{padding-left:0}.metrics-grid{gap:9px}.metric-card{min-height:88px;padding:12px;gap:9px}.metric-icon{width:35px;height:35px;flex-basis:35px}.metric-card strong{font-size:1.25rem}.metric-card div span{font-size:.68rem}.modules-section{margin-top:32px}.module-grid{grid-template-columns:1fr}.module-card{min-height:170px}.section-heading{align-items:flex-start}.workspace-hint{align-items:flex-start}}
+    @media(max-width:900px){.shortcut-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.module-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.context-banner{align-items:flex-start;flex-wrap:wrap}.role-list{justify-content:flex-start;width:100%;padding-left:66px}}
+    @media(max-width:650px){.workspace{padding:32px 17px 54px}.personal-shortcuts{padding:17px}.shortcut-grid{grid-template-columns:1fr 1fr}.workspace-heading{align-items:flex-start;flex-direction:column}.heading-actions{align-items:stretch;flex-direction:column;width:100%}.context-picker{width:100%}.context-picker select{width:100%}.market-link{justify-content:center}.context-banner{padding:18px}.context-copy{min-width:calc(100% - 70px)}.role-list{padding-left:0}.metrics-grid{gap:9px}.metric-card{min-height:88px;padding:12px;gap:9px}.metric-icon{width:35px;height:35px;flex-basis:35px}.metric-card strong{font-size:1.25rem}.metric-card div span{font-size:.68rem}.modules-section{margin-top:32px}.module-grid{grid-template-columns:1fr}.module-card{min-height:170px}.section-heading{align-items:flex-start}.workspace-hint{align-items:flex-start}}
   `],
 })
 export class Dashboard implements OnInit {
@@ -208,6 +220,7 @@ export class Dashboard implements OnInit {
   private readonly modules: DashboardModule[] = [
     { code: 'catalogue', title: 'Product catalogue', description: 'Manage products, categories, variants and product media for your business.', permission: 'CATALOGUE_MANAGE', icon: '▦', scope: 'TENANT', route: '/dashboard/catalogue', entitlement: 'PRODUCT_MANAGEMENT' },
     { code: 'business', title: 'Business profile', description: 'Maintain your business information and public storefront profile.', permission: 'BUSINESS_PROFILE_MANAGE', icon: '⌂', scope: 'TENANT', route: '/dashboard/profile' },
+    { code: 'storefront', title: 'Public storefront', description: 'Configure and publish your public business storefront.', permission: 'BUSINESS_PROFILE_MANAGE', icon: '▣', scope: 'TENANT', route: '/dashboard/storefront' },
     { code: 'customers', title: 'Customers', description: 'Review customer information and available customer records.', permission: 'CUSTOMERS_MANAGE', icon: '♙', scope: 'TENANT', route: '/dashboard/customers' },
     { code: 'sales', title: 'Sales & enquiries', description: 'Review incoming enquiries and manage sales conversations.', permission: 'ENQUIRIES_MANAGE', icon: '↗', scope: 'TENANT', route: '/dashboard/enquiries' },
     { code: 'orders', title: 'Order management', description: 'Process, update and track orders for this business.', permission: 'ORDERS_MANAGE', icon: '▤', scope: 'TENANT', route: '/dashboard/orders' },
