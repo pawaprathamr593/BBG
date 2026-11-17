@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { FilterDrawer } from '../../../shared/filter-drawer/filter-drawer';
@@ -12,6 +12,7 @@ interface BusinessFilterValues {
 }
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-business-directory',
   imports: [FormsModule, RouterLink, FilterDrawer],
   template: `
