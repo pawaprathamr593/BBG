@@ -57,12 +57,21 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
           <section class="drawer-section context-section">
             <div class="section-heading"><h3>Go to</h3></div>
             <button class="context-action" type="button" [disabled]="switching()"
-              [class.is-active]="workspace.activeTenantId() === null"
+              [class.is-active]="workspace.activeTenantId() === null && workspace.permissions().some(permission => permission.scope_type === 'GLOBAL')"
               (click)="goToMyAccount()">
               <span class="context-action-icon">◎</span>
               <span><strong>My Account</strong><small>Orders, enquiries, payments and profile</small></span>
               @if (workspace.activeTenantId() === null) { <span class="selected-mark">✓</span> }
             </button>
+            @if (workspace.platformPermissions().some(permission => permission.scope_type === 'PLATFORM')) {
+              <button class="context-action" type="button" [disabled]="switching()"
+                [class.is-active]="workspace.activeTenantId() === null && workspace.permissions().some(permission => permission.scope_type === 'PLATFORM')"
+                (click)="goToPlatformAdministration()">
+                <span class="context-action-icon">⚙</span>
+                <span><strong>Platform Administration</strong><small>Manage BBG platform operations</small></span>
+                @if (workspace.activeTenantId() === null && workspace.permissions().some(permission => permission.scope_type === 'PLATFORM')) { <span class="selected-mark">✓</span> }
+              </button>
+            }
             @if (workspace.loading()) {
               <div class="drawer-status" role="status">Checking business access…</div>
             } @else if (workspace.error()) {
@@ -226,7 +235,11 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
   }
 
   async goToMyAccount(): Promise<void> {
-    await this.switchTo(null);
+    await this.switchTo('PERSONAL');
+  }
+
+  async goToPlatformAdministration(): Promise<void> {
+    await this.switchTo('PLATFORM');
   }
 
   async goToBusinessWorkspace(): Promise<void> {
@@ -235,12 +248,14 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
     await this.switchTo(tenantId);
   }
 
-  private async switchTo(tenantId: number | null): Promise<void> {
+  private async switchTo(context: 'PERSONAL' | 'PLATFORM' | number): Promise<void> {
     if (this.switching()) return;
     this.switching.set(true);
     this.switchError.set('');
     try {
-      await this.workspace.switchWorkspace(tenantId);
+      if (context === 'PERSONAL') await this.workspace.switchToMyAccount();
+      else if (context === 'PLATFORM') await this.workspace.switchToPlatformAdministration();
+      else await this.workspace.switchWorkspace(context);
       this.close();
       await this.router.navigateByUrl('/dashboard');
     } catch (error) {
