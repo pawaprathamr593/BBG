@@ -199,6 +199,8 @@ export class DashboardModule implements OnInit {
   readonly loading = signal(false);
   readonly busy = signal(false);
   readonly activeTenantId = this.workspace.activeTenantId;
+  readonly isPersonalContext = computed(() => this.workspace.activeTenantId() === null
+    && !this.workspace.permissions().some((permission) => permission.scope_type === 'PLATFORM'));
   readonly error = signal('');
   readonly notice = signal('');
   readonly unsupported = signal('');
@@ -244,7 +246,7 @@ export class DashboardModule implements OnInit {
 
   readonly title = computed(() => {
     const section = this.section();
-    if (this.workspace.activeTenantId() === null && this.workspace.permissions().some((permission) => permission.scope_type === 'GLOBAL')) {
+    if (this.isPersonalContext()) {
       const personalTitles: Record<string, string> = {
         customers: 'My Profile & Addresses',
         enquiries: 'My Enquiries',
@@ -262,7 +264,7 @@ export class DashboardModule implements OnInit {
       orders: 'Track orders you have placed with businesses on BBG.',
       payments: 'Review payments associated with your customer orders.',
     };
-    return this.workspace.activeTenantId() === null && this.workspace.permissions().some((permission) => permission.scope_type === 'GLOBAL')
+    return this.isPersonalContext()
       ? personalDescriptions[this.section()] ?? 'Manage your personal BBG account.'
       : this.config[this.section()]?.description ?? 'Manage your business operations.';
   });
@@ -313,6 +315,7 @@ export class DashboardModule implements OnInit {
     const permissions = this.workspace.permissions();
     const has = (code: string, scope: string) => permissions.some((entry) => entry.permission_code === code && entry.scope_type === scope);
     const activeTenant = this.workspace.activeTenantId() !== null;
+    const personalContext = !activeTenant && !permissions.some((entry) => entry.scope_type === 'PLATFORM');
     const tenantRequirements: Record<string,string> = {
       profile: 'BUSINESS_PROFILE_MANAGE', storefront: 'BUSINESS_PROFILE_MANAGE',
       catalogue: 'CATALOGUE_MANAGE', customers: 'CUSTOMERS_MANAGE', enquiries: 'ENQUIRIES_MANAGE',
@@ -327,15 +330,7 @@ export class DashboardModule implements OnInit {
     return links.filter((link) => {
       if (tenantRequirements[link.key]) {
         if (activeTenant) return has(tenantRequirements[link.key], 'TENANT');
-        const globalPermissions: Record<string,string> = {
-          customers: 'CUSTOMER_PROFILE_VIEW',
-          enquiries: 'ENQUIRIES_VIEW',
-          orders: 'ORDERS_VIEW',
-          payments: 'PAYMENTS_VIEW',
-        };
-        const requiredGlobal = globalPermissions[link.key];
-        return !!requiredGlobal && permissions.some((entry) => entry.role_code === 'CONSUMER'
-          && entry.permission_code === requiredGlobal && entry.scope_type === 'GLOBAL');
+        return personalContext && ['customers','enquiries','orders','payments'].includes(link.key);
       }
       const required = platformRequirements[link.key];
       return required ? has(required, 'PLATFORM') : false;
