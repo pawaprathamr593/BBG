@@ -27,7 +27,6 @@ interface WorkspaceNavItem {
         </a>
 
         <div class="topbar-spacer"></div>
-        @if (switchError()) { <span class="switch-error" role="alert">{{ switchError() }}</span> }
         <a class="marketplace-link" routerLink="/" title="Return to marketplace"><span>↗</span><span>Marketplace</span></a>
         <div class="desktop-profile"><app-user-profile-drawer /></div>
       </header>
@@ -170,13 +169,9 @@ export class WorkspaceLayout implements OnInit {
 
   readonly sidebarCollapsed = signal(false);
   readonly mobileExpanded = signal(false);
-  readonly switching = signal(false);
-  readonly switchError = signal('');
   readonly filterDrawerOpen = signal(false);
   readonly draftFilters = signal({ search: '', status: '', from: '', to: '' });
   readonly activeFilters = signal({ search: '', status: '', from: '', to: '' });
-  readonly tenants = this.workspace.tenants;
-  readonly activeTenant = this.workspace.activeTenant;
   readonly activeTenantId = this.workspace.activeTenantId;
   readonly permissions = this.workspace.permissions;
   readonly isPlatform = computed(() => this.activeTenantId() === null && this.hasPlatformAccess());
@@ -258,25 +253,6 @@ export class WorkspaceLayout implements OnInit {
     return this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM');
   }
 
-  canSwitchWorkspace(): boolean {
-    return this.workspace.tenants().length > 0 || this.hasPlatformAccess();
-  }
-
-  async switchWorkspace(event: Event): Promise<void> {
-    const value = (event.target as HTMLSelectElement).value;
-    const tenantId = value === 'platform' ? null : Number(value);
-    if (tenantId !== null && (!Number.isInteger(tenantId) || !this.tenants().some((tenant) => tenant.id === tenantId))) return;
-    if (tenantId === this.activeTenantId()) return;
-    this.switching.set(true); this.switchError.set('');
-    try {
-      await this.workspace.switchWorkspace(tenantId);
-      const current = this.currentPath();
-      const currentItem = this.visibleNavItems().find((item) => item.route === current);
-      if (current !== '/dashboard' && !currentItem) await this.router.navigateByUrl('/dashboard');
-    } catch (error) {
-      this.switchError.set(error instanceof Error ? error.message : 'Unable to switch workspace.');
-    } finally { this.switching.set(false); }
-  }
 
   setFilterDrawerOpen(open: boolean): void {
     this.draftFilters.set({ ...this.activeFilters() });
