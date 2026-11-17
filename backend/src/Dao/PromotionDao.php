@@ -182,6 +182,22 @@ final readonly class PromotionDao
             [':tenant_id' => $tenantId, ':post_id' => $promotionId], 'getPromotionMedia');
     }
 
+    public function softDeleteAllPromotionMedia(ConnectionInterface $db, int $tenantId, int $promotionId, int $userId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $affected = $db->createCommand("UPDATE POST_MEDIA SET status = 'Z',
+                updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                WHERE tenant_id = :tenant_id AND post_id = :post_id AND status = 'A'",
+                [':user_id' => $userId, ':tenant_id' => $tenantId, ':post_id' => $promotionId])->execute();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['deleted_count' => $affected];
+        } catch (Throwable $exception) {
+            return $this->error('softDeleteAllPromotionMedia', $exception);
+        }
+        return $resArr;
+    }
+
     public function getPromotionMediaRecord(ConnectionInterface $db, int $tenantId, int $promotionId, int $mediaId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
