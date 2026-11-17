@@ -64,6 +64,7 @@ final readonly class AuthServices implements IAuthServices
             'logout' => $this->manageLogoutSession($actionData),
             'logoutAll' => $this->manageLogoutAllSessions($actionData),
             'updateProfile' => $this->manageUserProfile($actionData),
+            'setPassword' => $this->manageUserPassword($actionData),
             default => $this->failed('Unsupported authentication management action.'),
         };
     }
@@ -614,6 +615,53 @@ final readonly class AuthServices implements IAuthServices
         return $resArr;
     }
 
+    private function manageUserPassword(array $actionData): array
+    {
+        $principal = $this->resolvePrincipal((string) ($actionData['_accessToken'] ?? ''));
+        if ($principal['status'] !== 'SUCCESS') {
+            return $principal;
+        }
+
+        $userId = (int) $principal['data']['user_id'];
+        $currentUser = $this->authDao->getUserById($this->connection, $userId);
+        if ($currentUser['status'] !== 'SUCCESS' || $currentUser['data'] === []) {
+            return $this->propagateFailure($currentUser, 'AuthServices::manageUserPassword');
+        }
+
+        $existingHash = $currentUser['data']['password_hash'] ?? null;
+        $hasPassword = is_string($existingHash) && $existingHash !== '';
+        $currentPassword = (string) ($actionData['current_password'] ?? '');
+        $newPassword = (string) ($actionData['new_password'] ?? '');
+
+        if (strlen($newPassword) < 8 || strlen($newPassword) > 200) {
+            return $this->failed('Your new password must contain at least 8 characters.');
+        }
+        if ($hasPassword && ($currentPassword === '' || !password_verify($currentPassword, $existingHash))) {
+            return $this->failed('Your current password is incorrect.');
+        }
+        if (!$hasPassword && $currentPassword !== '') {
+            return $this->failed('This account does not have an existing password. Set a new password without a current password.');
+        }
+
+        try {
+            $updated = $this->authDao->updateUserPassword(
+                $this->connection,
+                $userId,
+                password_hash($newPassword, PASSWORD_DEFAULT),
+            );
+            if ($updated['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($updated, 'AuthServices::manageUserPassword');
+            }
+            $resArr = $this->initialResponse();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['msgArr'][] = $hasPassword ? 'Password changed successfully.' : 'Password set successfully.';
+            $resArr['data'] = ['has_password' => true];
+            return $resArr;
+        } catch (Throwable $exception) {
+            return $this->exception('manageUserPassword', $exception);
+        }
+    }
+
     private function manageUserProfile(array $actionData): array
     {
         $resArr = $this->initialResponse();
@@ -794,6 +842,7 @@ final readonly class AuthServices implements IAuthServices
             'email' => $user['email'] ?? null,
             'mobile' => $user['mobile'] ?? null,
             'profile_image' => $user['profile_image'] ?? null,
+            'has_password' => is_string($user['password_hash'] ?? null) && ($user['password_hash'] ?? '') !== '',
         ];
     }
 
