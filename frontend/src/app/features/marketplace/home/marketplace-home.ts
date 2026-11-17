@@ -55,7 +55,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
       <section class="marketplace-stats" aria-label="Live BBG marketplace statistics">
           <div class="hero-stats" aria-label="Live BBG marketplace statistics">
             @if (homeStats(); as stats) {
-              <div class="hero-stat"><strong>{{ formatCount(stats.businesses_registered) }}</strong><span>Businesses registered</span></div>
+              <div class="hero-stat"><strong>{{ formatCount(stats.businesses_registered) }}</strong><span>Public businesses</span></div>
               <div class="hero-stat"><strong>{{ formatCount(stats.platform_users) }}</strong><span>Platform users</span></div>
               <div class="hero-stat"><strong>{{ formatCount(stats.products_listed) }}</strong><span>Products listed</span></div>
               <div class="hero-stat"><strong>{{ formatCount(stats.orders_completed) }}</strong><span>Orders completed</span></div>
@@ -411,7 +411,7 @@ export class MarketplaceHome implements OnInit {
   protected readonly recentProducts = signal<MarketplaceProduct[]>([]);
   protected readonly promotions = signal<MarketplacePromotion[]>([]);
   protected readonly homeStats = signal<MarketplaceHomeStats | null>(null);
-  protected readonly statLabels = ['Businesses registered', 'Platform users', 'Products listed', 'Orders completed'];
+  protected readonly statLabels = ['Public businesses', 'Platform users', 'Products listed', 'Orders completed'];
 
   protected async startBusinessRegistration(event: Event): Promise<void> {
     const anchor = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
