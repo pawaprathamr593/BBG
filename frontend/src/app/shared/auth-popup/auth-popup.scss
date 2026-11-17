@@ -1,6 +1,6 @@
 :host{position:relative;z-index:1000}
 .auth-popup-layer{position:fixed;inset:0;z-index:1000;background:transparent}
-.auth-popup{position:fixed;box-sizing:border-box;width:min(360px,calc(100vw - 24px));height:min(440px,calc(100vh - 24px));max-height:calc(100vh - 24px);overflow:hidden;filter:drop-shadow(0 14px 36px rgba(0,0,0,.22));animation:popup-in .16s ease-out}
+.auth-popup{position:fixed;box-sizing:border-box;width:min(360px,calc(100vw - 24px));height:min(440px,calc(100vh - 24px));max-height:calc(100vh - 24px);overflow:visible;filter:drop-shadow(0 14px 36px rgba(0,0,0,.22));animation:popup-in .16s ease-out}
 .auth-popup:before{content:"";position:absolute;z-index:5;left:calc(var(--arrow-offset,40px) - 6px);width:12px;height:12px;background:var(--surface-card,#fff);transform:rotate(45deg);pointer-events:none}
 .auth-popup[data-placement="bottom"]:before{top:-5px}
 .auth-popup[data-placement="top"]:before{bottom:-5px}
