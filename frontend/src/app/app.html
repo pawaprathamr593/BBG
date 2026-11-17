@@ -1,5 +1,5 @@
 <div class="app-shell" [class.storefront-mode]="isStorefrontRoute()" [class.workspace-mode]="isWorkspaceRoute()">
-  @if (!isStorefrontRoute()) {
+  @if (!isStorefrontRoute() && !isWorkspaceRoute()) {
     <header class="topbar">
       <a class="brand" routerLink="/" aria-label="BBG home" (click)="closeMenu()">
         <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
@@ -44,7 +44,7 @@
     <router-outlet />
   </div>
 
-  @if (!isStorefrontRoute()) {
+  @if (!isStorefrontRoute() && !isWorkspaceRoute()) {
     <footer class="site-footer" id="about">
       <div class="footer-brand">
         <a class="brand footer-logo" routerLink="/" aria-label="BBG home">
