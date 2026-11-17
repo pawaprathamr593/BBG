@@ -88,7 +88,9 @@ final readonly class TenantDao
             $db,
             "SELECT p.id
              FROM TENANT_MEMBERSHIPS tm
-             INNER JOIN TENANTS t ON t.id = tm.tenant_id AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+             INNER JOIN TENANTS t ON t.id = tm.tenant_id AND t.status = 'A'
+                AND (t.tenant_status = 'ACTIVE'
+                    OR (t.tenant_status = 'PENDING' AND :permission_code = 'SUBSCRIPTIONS_MANAGE'))
              INNER JOIN USER_ROLE_ASSIGNMENTS ura ON ura.user_id = tm.user_id
                 AND ura.tenant_id = tm.tenant_id AND ura.status = 'A'
                 AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
