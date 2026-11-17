@@ -98,11 +98,14 @@ interface DataRecord { [key: string]: unknown; }
                   @if (section() === 'promotions' && mediaOf(item).length) {
                     <div class="post-media-strip" aria-label="Post attachments">
                       @for (media of mediaOf(item); track media['id']) {
-                        @if (media['url'] && media['media_type'] === 'IMAGE') { <img [src]="$any(media['url'])" [alt]="'Post image ' + media['id']"> }
-                        @else if (media['url'] && media['media_type'] === 'VIDEO') { <video controls [src]="$any(media['url'])" aria-label="Post video attachment"></video> }
-                        @else if (media['url'] && media['media_type'] === 'AUDIO') { <audio controls [src]="$any(media['url'])" aria-label="Post audio attachment"></audio> }
-                        @else if (media['url']) { <a [href]="$any(media['url'])" target="_blank" rel="noopener">Open {{ media['media_type'] }} attachment</a> }
-                        @else { <span>{{ media['media_type'] }} attachment</span> }
+                        <div class="post-media-item">
+                          @if (media['url'] && media['media_type'] === 'IMAGE') { <img [src]="$any(media['url'])" [alt]="'Post image ' + media['id']"> }
+                          @else if (media['url'] && media['media_type'] === 'VIDEO') { <video controls [src]="$any(media['url'])" aria-label="Post video attachment"></video> }
+                          @else if (media['url'] && media['media_type'] === 'AUDIO') { <audio controls [src]="$any(media['url'])" aria-label="Post audio attachment"></audio> }
+                          @else if (media['url']) { <a [href]="$any(media['url'])" target="_blank" rel="noopener">Open {{ media['media_type'] }} attachment</a> }
+                          @else { <span>{{ media['media_type'] }} attachment</span> }
+                          @if (statusOf(item).toUpperCase() !== 'PUBLISHED') { <button type="button" (click)="removePromotionAttachment(item,media)" [disabled]="busy()">Remove</button> }
+                        </div>
                       }
                     </div>
                   }
@@ -154,7 +157,7 @@ interface DataRecord { [key: string]: unknown; }
   `,
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
-    .post-media-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.post-media-strip img{width:72px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}.post-media-strip video{width:120px;height:72px;border-radius:8px;background:#111}.post-media-strip audio{width:min(240px,100%);height:36px}.post-media-strip a,.post-media-strip span{align-self:center;padding:8px 10px;border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.72rem;text-decoration:none}
+    .post-media-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.post-media-item{display:grid;justify-items:start;gap:4px}.post-media-strip img{width:72px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}.post-media-strip video{width:120px;height:72px;border-radius:8px;background:#111}.post-media-strip audio{width:min(240px,100%);height:36px}.post-media-strip a,.post-media-strip span{align-self:center;padding:8px 10px;border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.72rem;text-decoration:none}.post-media-item button{border:0;background:transparent;color:#c44747;font-size:.65rem;cursor:pointer}
     .composer-backdrop{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:18px;background:rgba(10,18,15,.62)}.promotion-composer{width:min(680px,100%);max-height:90vh;overflow:auto;padding:24px;background:var(--surface-card);color:var(--text-primary);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.25)}.promotion-composer header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.promotion-composer header .eyebrow{margin:0 0 7px}.promotion-composer h2{margin:0;font-size:1.35rem}.promotion-composer header p:last-child{margin:6px 0 0;color:var(--text-secondary);font-size:.78rem}.composer-close{border:0;background:transparent;color:var(--text-secondary);font-size:1.5rem;cursor:pointer}.promotion-composer>label{display:grid;gap:7px;margin:13px 0;font-size:.78rem;font-weight:700}.promotion-composer input[type=text],.promotion-composer input[type=datetime-local],.promotion-composer textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.82rem}.promotion-composer label small{font-weight:400;color:var(--text-secondary)}.post-upload-zone{margin:16px 0}.post-file-picker{display:grid;justify-items:center;gap:5px;padding:22px;border:1px dashed var(--border);border-radius:11px;background:var(--surface-page);cursor:pointer}.post-file-picker>span{font-size:1.5rem;color:var(--brand)}.post-file-picker strong{font-size:.8rem}.post-file-picker small{font-size:.68rem;color:var(--text-secondary)}.post-file-picker input{max-width:100%;margin-top:7px;font-size:.7rem}.post-file-list{display:grid;gap:7px;margin-top:10px}.post-file-list>div{display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:5px 10px;align-items:center;padding:9px;border:1px solid var(--border);border-radius:8px}.post-file-list span{grid-row:span 2;font-size:.62rem;font-weight:800;color:var(--brand)}.post-file-list strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.74rem}.post-file-list small{font-size:.66rem;color:var(--text-secondary)}.post-file-list button{grid-column:3;grid-row:1/3;border:0;background:transparent;color:#bf4545;font:inherit;font-size:.7rem;cursor:pointer}.promotion-composer footer{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.composer-error{color:#c43d3d;font-size:.78rem}.composer-progress{display:flex;align-items:center;gap:10px;color:var(--text-secondary);font-size:.72rem}.composer-progress progress{flex:1;height:7px;accent-color:var(--brand)}
     .module-page{width:min(1320px,100%);margin:0 auto;padding:42px 32px 76px}
     .page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:25px}
@@ -467,7 +470,9 @@ export class DashboardModule implements OnInit {
     const status = this.statusOf(item).toUpperCase();
     if (this.section()==='orders' && this.workspace.activeTenantId()!==null && !['CANCELLED','COMPLETED','DELIVERED'].includes(status)) return [{key:'confirm-order',label:'Confirm order'},{key:'cancel-order',label:'Cancel order',danger:true}];
     if (this.section()==='enquiries' && this.workspace.activeTenantId()!==null && status!=='CLOSED') return [{key:'reply-enquiry',label:'Reply'},{key:'close-enquiry',label:'Close enquiry',danger:true}];
-    if (this.section()==='promotions') return status==='PUBLISHED' ? [{key:'unpublish-promotion',label:'Unpublish'}] : [{key:'publish-promotion',label:'Publish'}];
+    if (this.section()==='promotions') return status==='PUBLISHED'
+      ? [{key:'unpublish-promotion',label:'Unpublish'}]
+      : [{key:'manage-post-media',label:'Manage media'},{key:'publish-promotion',label:'Publish'}];
     if (this.section()==='customers' && this.workspace.activeTenantId()===null && (item['address_id'] || item['id'])) return [{key:'default-address',label:'Set as default'},{key:'delete-address',label:'Delete address',danger:true}];
     if (this.section()==='platform-users') return status==='SUSPENDED' ? [{key:'restore-user',label:'Restore account'}] : [{key:'suspend-user',label:'Suspend account',danger:true}];
     if (this.section()==='business-approval' && status==='PENDING') return [{key:'approve-business',label:'Approve'},{key:'reject-business',label:'Reject',danger:true}];
@@ -483,6 +488,9 @@ export class DashboardModule implements OnInit {
     const id = this.recordId(item);
     let path = ''; let key: EnvelopeKey = 'adminParam'; let actionType = ''; let data: DataRecord = {};
     switch (action) {
+      case 'manage-post-media':
+        this.addMediaToPromotion(item);
+        return;
       case 'confirm-order': case 'cancel-order':
         path = action==='confirm-order'?'/api/v1/orders/tenant/confirm':'/api/v1/orders/tenant/cancel'; key='orderParam'; actionType='changeTenantOrderStatus'; data={tenant_id:tenantId,order_id:id}; break;
       case 'reply-enquiry': {
@@ -585,6 +593,34 @@ export class DashboardModule implements OnInit {
     const publish = this.storefrontStatus() !== 'PUBLISHED';
     if (!window.confirm(publish ? 'Publish this storefront now?' : 'Unpublish this storefront?')) return;
     await this.performAction(publish?'/api/v1/business/storefront/publish':'/api/v1/business/storefront/unpublish','businessParam',publish?'publishMyStorefront':'unpublishMyStorefront',{tenant_id:this.workspace.activeTenantId()});
+  }
+
+  addMediaToPromotion(item: DataRecord): void {
+    this.draftPromotionId.set(this.recordId(item, 'id'));
+    this.promotionUploadedCount.set(this.mediaOf(item).length);
+    this.promotionTitle.set(String(item['post_title'] ?? ''));
+    this.promotionContent.set(String(item['post_content'] ?? ''));
+    this.promotionValidUntil.set(String(item['valid_until'] ?? '').replace(' ', 'T').slice(0,16));
+    this.promotionFiles.set([]);
+    this.promotionError.set('');
+    this.showPromotionComposer.set(true);
+  }
+
+  async removePromotionAttachment(item: DataRecord, media: DataRecord): Promise<void> {
+    const tenantId = this.workspace.activeTenantId();
+    const promotionId = this.recordId(item, 'id');
+    const mediaId = Number(media['id'] ?? 0);
+    if (!tenantId || !promotionId || !mediaId || this.busy()) return;
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      await this.request('/api/v1/promotions/media/delete','promotionParam','deletePromotionMedia',{
+        tenant_id:tenantId,promotion_id:promotionId,media_id:mediaId,
+      });
+      this.notice.set('Post attachment removed.');
+      await this.load();
+    } catch (error) { this.error.set(this.auth.errorMessage(error)); }
+    finally { this.busy.set(false); }
   }
 
   async createPromotion(): Promise<void> {
