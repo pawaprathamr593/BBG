@@ -135,7 +135,7 @@ interface DataRecord { [key: string]: unknown; }
             <label>Post content <textarea rows="5" maxlength="10000" [value]="promotionContent()" (input)="setPromotionField('content',$event)" placeholder="Tell customers about your offer…" required></textarea></label>
             <label>Valid until <input type="datetime-local" [value]="promotionValidUntil()" (input)="setPromotionField('validUntil',$event)"><small>Optional. Leave blank for no expiry date.</small></label>
             <div class="post-upload-zone">
-              <label class="post-file-picker"><span>＋</span><strong>Add media files</strong><small>Images, videos, audio and PDF · multiple selection · max 10 MB per file<input type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,application/pdf" (change)="selectPromotionMedia($event)" [disabled]="promotionMediaBusy()"></label>
+              <div class="post-file-picker"><span>＋</span><strong>Add media files</strong><small>Images, videos, audio and PDF · multiple selection · max 10 MB per file</small><input type="file" aria-label="Add promotion media files" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,application/pdf" (change)="selectPromotionMedia($event)" [disabled]="promotionMediaBusy()"></div>
               @if (promotionFiles().length) {
                 <div class="post-file-list">
                   @for (file of promotionFiles(); track $index) {
