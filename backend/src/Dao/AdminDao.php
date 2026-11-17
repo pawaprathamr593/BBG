@@ -271,6 +271,20 @@ final readonly class AdminDao
                 ORDER BY proof.reviewed_on DESC, proof.id DESC LIMIT 1",
                 [':tenant_id' => $tenantId, ':subscription_id' => $subscriptionId, ':admin_id' => $adminId,
                  ':proof_tenant_id' => $tenantId, ':proof_subscription_id' => $subscriptionId])->execute();
+            $businessUpdated = $db->createCommand("UPDATE BUSINESS_PROFILES
+                SET approval_status = 'APPROVED', approved_by = :admin_id,
+                    approved_on = CURRENT_TIMESTAMP, rejection_reason = NULL,
+                    updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
+                WHERE tenant_id = :tenant_id AND status = 'A'",
+                [':admin_id' => $adminId, ':tenant_id' => $tenantId])->execute();
+            if ($businessUpdated < 1) {
+                $resArr['msgArr'][] = 'The subscription cannot be approved because its business profile was not found.';
+                return $resArr;
+            }
+            $db->createCommand("UPDATE TENANTS SET tenant_status = 'ACTIVE',
+                updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
+                WHERE id = :tenant_id AND status = 'A'",
+                [':admin_id' => $adminId, ':tenant_id' => $tenantId])->execute();
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = ['subscription_id' => $subscriptionId, 'subscription_status' => 'ACTIVE'];
         } catch (Throwable $exception) {
