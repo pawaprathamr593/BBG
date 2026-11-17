@@ -188,8 +188,8 @@ interface DataRecord { [key: string]: unknown; }
       @if (subscriptionReview()) {
         <div class="composer-backdrop" (click)="subscriptionReview.set(null)">
           <section class="promotion-composer subscription-review-dialog" role="dialog" aria-modal="true" aria-labelledby="subscription-review-title" (click)="$event.stopPropagation()">
-            <header><div><p class="eyebrow">PLATFORM ADMIN / SUBSCRIPTION REVIEW</p><h2 id="subscription-review-title">Subscription #{{ subscriptionReview()?.['subscription']?.['id'] }}</h2><p>Business registration, selected plan, captured payment instructions and submission history.</p></div><button type="button" class="composer-close" (click)="subscriptionReview.set(null)">×</button></header>
-            @if (subscriptionReview()?.['subscription']; as detail) {
+            <header><div><p class="eyebrow">PLATFORM ADMIN / SUBSCRIPTION REVIEW</p><h2 id="subscription-review-title">Subscription #{{ subscriptionReviewDetail()?.['id'] }}</h2><p>Business registration, selected plan, captured payment instructions and submission history.</p></div><button type="button" class="composer-close" (click)="subscriptionReview.set(null)">×</button></header>
+            @if (subscriptionReviewDetail(); as detail) {
               <h3>Business details</h3>
               <div class="review-detail-grid">
                 @for (key of ['tenant_code','tenant_type','tenant_status','business_name','business_slug','business_description','primary_category_id','business_email','business_phone','whatsapp_number','logo_path','cover_image_path','address_line_1','address_line_2','city','state','postal_code','country_code','latitude','longitude','business_approval_status','business_publication_status','business_rejection_reason']; track key) {
@@ -205,11 +205,11 @@ interface DataRecord { [key: string]: unknown; }
               @if (detail['payment_qr_file_url']) { <img class="payment-qr-preview" [src]="$any(detail['payment_qr_file_url'])" alt="Captured payment QR"> }
             }
             <h3>Payment receipts</h3>
-            @for (proof of subscriptionReview()?.['proofs'] ?? []; track proof['id']) {
+            @for (proof of subscriptionReviewProofs(); track proof['id']) {
               <div class="review-history-row"><div><strong>{{ proof['review_status'] }}</strong><span>{{ proof['payment_reference'] || 'No payment reference' }} · {{ formatValue(proof['submitted_on']) }}</span></div>@if (proof['proof_file_url']) { <a [href]="$any(proof['proof_file_url'])" target="_blank" rel="noopener">Open receipt</a> }</div>
             } @empty { <p>No receipt submissions were found.</p> }
             <h3>Decision history</h3>
-            @for (entry of subscriptionReview()?.['review_history'] ?? []; track entry['id']) {
+            @for (entry of subscriptionReviewHistory(); track entry['id']) {
               <div class="review-history-row"><div><strong>{{ entry['decision'] }}</strong><span>{{ entry['review_reason'] || 'No rejection reason recorded' }}</span><small>{{ entry['reviewer_name'] || 'System' }} · {{ formatValue(entry['reviewed_on']) }}</small></div></div>
             } @empty { <p>No review decisions have been recorded yet.</p> }
           </section>
@@ -999,6 +999,21 @@ export class DashboardModule implements OnInit {
     try { await this.request(path,key,actionType,data); this.notice.set('Changes saved successfully.'); await this.load(); }
     catch(error) { this.error.set(this.auth.errorMessage(error)); }
     finally { this.busy.set(false); }
+  }
+
+  subscriptionReviewDetail(): DataRecord | null {
+    const detail = this.subscriptionReview()?.['subscription'];
+    return detail && typeof detail === 'object' && !Array.isArray(detail) ? detail as DataRecord : null;
+  }
+
+  subscriptionReviewProofs(): DataRecord[] {
+    const proofs = this.subscriptionReview()?.['proofs'];
+    return Array.isArray(proofs) ? proofs as DataRecord[] : [];
+  }
+
+  subscriptionReviewHistory(): DataRecord[] {
+    const history = this.subscriptionReview()?.['review_history'];
+    return Array.isArray(history) ? history as DataRecord[] : [];
   }
 
   async openSubscriptionReview(item: DataRecord): Promise<void> {
