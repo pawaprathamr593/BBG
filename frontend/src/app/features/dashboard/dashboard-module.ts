@@ -24,7 +24,17 @@ interface DataRecord { [key: string]: unknown; }
           <h1>{{ title() }}</h1>
           <p class="intro">{{ description() }}</p>
         </div>
-        <button class="refresh" type="button" (click)="load()" [disabled]="loading()">↻ Refresh</button>
+        <div class="heading-buttons">
+          @if (section() === 'profile') { <button class="secondary-action" type="button" (click)="editBusinessProfile()" [disabled]="busy()">Edit profile</button> }
+          @if (section() === 'storefront') {
+            <button class="secondary-action" type="button" (click)="editStorefront()" [disabled]="busy()">Edit settings</button>
+            <button class="secondary-action" type="button" (click)="toggleStorefront()" [disabled]="busy()">{{ storefrontStatus() === 'PUBLISHED' ? 'Unpublish' : 'Publish' }} storefront</button>
+          }
+          @if (section() === 'promotions') { <button class="secondary-action" type="button" (click)="createPromotion()" [disabled]="busy()">+ New promotion</button> }
+          @if (section() === 'customers' && !workspace.activeTenantId()) { <button class="secondary-action" type="button" (click)="createAddress()" [disabled]="busy()">+ Add address</button> }
+          @if (section() === 'categories') { <button class="secondary-action" type="button" (click)="createCategory()" [disabled]="busy()">+ New category</button> }
+          <button class="refresh" type="button" (click)="load()" [disabled]="loading()">↻ Refresh</button>
+        </div>
       </header>
 
       <nav class="section-nav" aria-label="Dashboard sections">
@@ -109,8 +119,8 @@ interface DataRecord { [key: string]: unknown; }
     .back-link{display:inline-block;margin-bottom:20px;color:var(--text-secondary);font-size:.78rem;font-weight:700;text-decoration:none}
     .back-link:hover{color:var(--brand)}.eyebrow{margin:0 0 8px;color:var(--brand);font-size:.67rem;font-weight:850;letter-spacing:.14em}
     h1{margin:0;font-size:clamp(2rem,4vw,2.8rem);letter-spacing:-.05em;line-height:1.12}.intro{max-width:700px;margin:10px 0 0;color:var(--text-secondary);font-size:.9rem;line-height:1.6}
-    .refresh,.record-actions button,.state-panel button{min-height:40px;padding:0 14px;color:var(--text-primary);background:var(--surface-card);border:1px solid var(--border);border-radius:9px;font:inherit;font-size:.76rem;font-weight:750;cursor:pointer}
-    .refresh:disabled,.record-actions button:disabled{opacity:.55;cursor:wait}
+    .refresh,.secondary-action,.record-actions button,.state-panel button{min-height:40px;padding:0 14px;color:var(--text-primary);background:var(--surface-card);border:1px solid var(--border);border-radius:9px;font:inherit;font-size:.76rem;font-weight:750;cursor:pointer}
+    .heading-buttons{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.secondary-action{min-height:40px;padding:0 13px;color:var(--brand);background:var(--surface-card);border:1px solid color-mix(in srgb,var(--brand) 30%,var(--border));border-radius:9px;font:inherit;font-size:.75rem;font-weight:750;cursor:pointer}.refresh:disabled,.secondary-action:disabled,.record-actions button:disabled{opacity:.55;cursor:wait}
     .section-nav{display:flex;gap:7px;overflow:auto;padding:4px 0 17px;margin-bottom:22px;border-bottom:1px solid var(--border)}
     .section-nav a{flex:0 0 auto;padding:9px 12px;color:var(--text-secondary);border-radius:8px;font-size:.75rem;font-weight:750;text-decoration:none}
     .section-nav a.active{color:var(--brand);background:var(--brand-soft)}
@@ -161,7 +171,24 @@ export class DashboardModule implements OnInit {
   readonly title = computed(() => this.config[this.section()]?.title ?? 'Workspace');
   readonly description = computed(() => this.config[this.section()]?.description ?? 'Manage your BBG workspace.');
   readonly contextLabel = computed(() => this.workspace.activeTenantId() === null ? 'PERSONAL & PLATFORM' : 'BUSINESS WORKSPACE');
-  readonly summaryEntries = computed(() => this.summary() ? Object.entries(this.summary()!).filter(([key, value]) => value !== null && typeof value !== 'object').map(([key, value]) => ({ key, value })) : []);
+  readonly summaryEntries = computed(() => {
+    const source = this.summary();
+    if (!source) return [];
+    const entries: Array<{key:string;value:unknown}> = [];
+    for (const [key, value] of Object.entries(source)) {
+      if (value !== null && typeof value !== 'object') entries.push({key,value});
+      else if (value && typeof value === 'object' && !Array.isArray(value)) {
+        for (const [nestedKey, nestedValue] of Object.entries(value as DataRecord)) {
+          if (nestedValue === null || typeof nestedValue !== 'object') entries.push({key: nestedKey, value: nestedValue});
+        }
+      }
+    }
+    return entries.slice(0, 16);
+  });
+  readonly storefrontStatus = computed(() => {
+    const storefront = this.summary()?.['storefront'];
+    return storefront && typeof storefront === 'object' ? String((storefront as DataRecord)['publication_status'] ?? '') : '';
+  });
   readonly navLinks = computed(() => {
     const links = [
       { key: 'profile', label: 'Business profile', path: '/dashboard/profile' },
@@ -370,6 +397,7 @@ export class DashboardModule implements OnInit {
     if (this.section()==='orders' && this.workspace.activeTenantId()!==null && !['CANCELLED','COMPLETED','DELIVERED'].includes(status)) return [{key:'confirm-order',label:'Confirm order'},{key:'cancel-order',label:'Cancel order',danger:true}];
     if (this.section()==='enquiries' && this.workspace.activeTenantId()!==null && status!=='CLOSED') return [{key:'reply-enquiry',label:'Reply'},{key:'close-enquiry',label:'Close enquiry',danger:true}];
     if (this.section()==='promotions') return status==='PUBLISHED' ? [{key:'unpublish-promotion',label:'Unpublish'}] : [{key:'publish-promotion',label:'Publish'}];
+    if (this.section()==='customers' && item.address_id) return [{key:'default-address',label:'Set as default'},{key:'delete-address',label:'Delete address',danger:true}];
     if (this.section()==='platform-users') return status==='SUSPENDED' ? [{key:'restore-user',label:'Restore account'}] : [{key:'suspend-user',label:'Suspend account',danger:true}];
     if (this.section()==='business-approval' && status==='PENDING') return [{key:'approve-business',label:'Approve'},{key:'reject-business',label:'Reject',danger:true}];
     if (this.section()==='subscription-approval' && status==='PENDING') return [{key:'approve-subscription',label:'Approve'},{key:'reject-subscription',label:'Reject',danger:true}];
@@ -414,6 +442,11 @@ export class DashboardModule implements OnInit {
         }
         path=action==='approve-subscription'?'/api/v1/admin/subscriptions/approve':'/api/v1/admin/subscriptions/reject'; actionType=action==='approve-subscription'?'approveSubscription':'rejectSubscription'; data={subscription_id:Number(item.subscription_id ?? item.id),...dates,...(reason?{reason:reason.trim()}:{})}; break;
       }
+      case 'default-address': case 'delete-address': {
+        const remove = action==='delete-address';
+        if (remove && !window.confirm('Delete this saved address?')) return;
+        path=remove?'/api/v1/customers/addresses/delete':'/api/v1/customers/addresses/default'; key='customerParam'; actionType=remove?'deleteMyAddress':'setDefaultAddress'; data={address_id:Number(item.address_id ?? item.id)}; break;
+      }
       case 'delete-category':
         if (!window.confirm('Soft-delete this category? Categories referenced by active businesses or products cannot be deleted.')) return;
         path='/api/v1/admin/categories/delete'; actionType='deleteCategory'; data={category_id:id}; break;
@@ -431,6 +464,102 @@ export class DashboardModule implements OnInit {
     this.busy.set(true); this.error.set('');
     try { await this.request(path,key,actionType,data); this.notice.set('The requested action was completed.'); await this.load(); }
     catch (error) { this.error.set(this.auth.errorMessage(error)); }
+    finally { this.busy.set(false); }
+  }
+
+  async editBusinessProfile(): Promise<void> {
+    const current = this.summary();
+    if (!current) return;
+    const businessId = Number(current['business_id'] ?? current['id'] ?? 0);
+    const tenantId = this.workspace.activeTenantId();
+    const businessName = window.prompt('Business name:', String(current['business_name'] ?? ''));
+    if (!businessName?.trim()) return;
+    const businessEmail = window.prompt('Business email:', String(current['business_email'] ?? ''));
+    const businessPhone = window.prompt('Business phone:', String(current['business_phone'] ?? ''));
+    const description = window.prompt('Business description:', String(current['business_description'] ?? ''));
+    const address1 = window.prompt('Address line 1:', String(current['address_line_1'] ?? ''));
+    const address2 = window.prompt('Address line 2:', String(current['address_line_2'] ?? ''));
+    const city = window.prompt('City:', String(current['city'] ?? ''));
+    const state = window.prompt('State:', String(current['state'] ?? ''));
+    const postal = window.prompt('Postal code:', String(current['postal_code'] ?? ''));
+    if (!tenantId || !businessId) { this.error.set('Business identifiers are unavailable. Refresh the profile before editing.'); return; }
+    await this.performAction('/api/v1/business/profile/update','businessParam','updateMyBusinessProfile',{
+      tenant_id:tenantId,business_id:businessId,business_name:businessName.trim(),business_email:businessEmail ?? '',
+      business_phone:businessPhone ?? '',business_description:description ?? '',address_line_1:address1 ?? '',
+      address_line_2:address2 ?? '',city:city ?? '',state:state ?? '',postal_code:postal ?? '',
+    });
+  }
+
+  async editStorefront(): Promise<void> {
+    const current = this.summary()?.['storefront'];
+    if (!current || typeof current !== 'object') return;
+    const settings = current as DataRecord;
+    const title = window.prompt('Storefront title:', String(settings['storefront_title'] ?? ''));
+    if (title === null) return;
+    const description = window.prompt('Storefront description:', String(settings['storefront_description'] ?? ''));
+    if (description === null) return;
+    const showPrices = window.confirm('Show product prices on your storefront?');
+    const acceptOrders = window.confirm('Accept online orders?');
+    const whatsappEnabled = window.confirm('Enable WhatsApp contact?');
+    const whatsappNumber = whatsappEnabled ? window.prompt('WhatsApp number (international format):', String(settings['whatsapp_number'] ?? '')) : '';
+    const theme = window.prompt('Theme code:', String(settings['theme_code'] ?? ''));
+    await this.performAction('/api/v1/business/storefront/update','businessParam','updateMyStorefront',{
+      tenant_id:this.workspace.activeTenantId(),storefront_title:title,storefront_description:description,
+      show_prices:showPrices,accept_online_orders:acceptOrders,whatsapp_enabled:whatsappEnabled,
+      whatsapp_number:whatsappNumber ?? '',theme_code:theme ?? '',
+    });
+  }
+
+  async toggleStorefront(): Promise<void> {
+    const publish = this.storefrontStatus() !== 'PUBLISHED';
+    if (!window.confirm(publish ? 'Publish this storefront now?' : 'Unpublish this storefront?')) return;
+    await this.performAction(publish?'/api/v1/business/storefront/publish':'/api/v1/business/storefront/unpublish','businessParam',publish?'publishMyStorefront':'unpublishMyStorefront',{tenant_id:this.workspace.activeTenantId()});
+  }
+
+  async createPromotion(): Promise<void> {
+    const title = window.prompt('Promotion title:');
+    const content = window.prompt('Promotion content (required):');
+    if (!content?.trim()) return;
+    const validUntil = window.prompt('Valid until (optional date-time, YYYY-MM-DD HH:MM:SS):');
+    await this.performAction('/api/v1/promotions/create','promotionParam','createPromotion',{
+      tenant_id:this.workspace.activeTenantId(),post_title:title ?? '',post_content:content.trim(),
+      ...(validUntil?.trim()?{valid_until:validUntil.trim()}:{})
+    });
+  }
+
+  async createAddress(): Promise<void> {
+    const line1 = window.prompt('Address line 1 (required):');
+    if (!line1?.trim()) return;
+    const recipient = window.prompt('Recipient name:');
+    const mobile = window.prompt('Mobile number:');
+    const city = window.prompt('City:');
+    const state = window.prompt('State:');
+    const postal = window.prompt('Postal code:');
+    const country = window.prompt('Country code (2 letters):','IN');
+    const label = window.prompt('Address label (Home, Office, etc.):','Home');
+    await this.performAction('/api/v1/customers/addresses/create','customerParam','createMyAddress',{
+      address_line_1:line1.trim(),recipient_name:recipient ?? '',mobile:mobile ?? '',
+      city:city ?? '',state:state ?? '',postal_code:postal ?? '',country_code:(country ?? 'IN').toUpperCase(),address_label:label ?? '',
+    });
+  }
+
+  async createCategory(): Promise<void> {
+    const code = window.prompt('Category code (unique):');
+    const name = window.prompt('Category name:');
+    const type = window.prompt('Category type: BUSINESS or PRODUCT','BUSINESS');
+    if (!code?.trim() || !name?.trim() || !['BUSINESS','PRODUCT'].includes((type ?? '').toUpperCase())) return;
+    const description = window.prompt('Description:');
+    await this.performAction('/api/v1/admin/categories/create','adminParam','createCategory',{
+      category_code:code.trim().toUpperCase(),category_name:name.trim(),category_type:type!.toUpperCase(),
+      description:description ?? '',display_order:0,
+    });
+  }
+
+  private async performAction(path:string,key:EnvelopeKey,actionType:string,data:DataRecord):Promise<void> {
+    if (this.busy()) return;
+    this.busy.set(true); this.error.set('');
+    try { await this.request(path,key,actionType,data); this.notice.set('Changes saved successfully.'); await this.load(); }
+    catch(error) { this.error.set(this.auth.errorMessage(error)); }
     finally { this.busy.set(false); }
   }
 
