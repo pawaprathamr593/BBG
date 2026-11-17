@@ -4,6 +4,7 @@ import { AuthService } from '../auth/auth.service';
 import { DashboardApiService, DashboardPermission, DashboardTenant } from '../dashboard/dashboard-api.service';
 
 const ACTIVE_WORKSPACE_KEY = 'bbg.activeWorkspaceId';
+const ACTIVE_CONTEXT_KEY = 'bbg.activeContext';
 
 @Injectable({ providedIn: 'root' })
 export class WorkspaceContextService {
@@ -49,6 +50,7 @@ export class WorkspaceContextService {
     this.activeTenantId.set(tenantId);
     this.permissions.set(permissions);
     this.persistActiveWorkspace(tenantId);
+    this.persistActiveContext('BUSINESS');
   }
 
   async switchToMyAccount(): Promise<void> {
@@ -58,6 +60,7 @@ export class WorkspaceContextService {
     this.activeTenantId.set(null);
     this.permissions.set(allPermissions.filter((permission) => permission.scope_type === 'GLOBAL'));
     this.persistActiveWorkspace(null);
+    this.persistActiveContext('PERSONAL');
   }
 
   async switchToPlatformAdministration(): Promise<void> {
@@ -69,6 +72,7 @@ export class WorkspaceContextService {
     this.activeTenantId.set(null);
     this.permissions.set(platformPermissions);
     this.persistActiveWorkspace(null);
+    this.persistActiveContext('PLATFORM');
   }
 
   clear(): void {
@@ -80,6 +84,7 @@ export class WorkspaceContextService {
     this.error.set('');
     this.initialization = undefined;
     this.persistActiveWorkspace(null);
+    this.persistActiveContext(null);
   }
 
   private async loadContext(): Promise<void> {
@@ -108,9 +113,13 @@ export class WorkspaceContextService {
       const restoredTenantId = savedId !== null && tenants.some((tenant) => tenant.id === savedId)
         ? savedId
         : null;
-      const defaultScope = savedPermissions.some((permission) => permission.scope_type === 'PLATFORM')
-        ? 'PLATFORM'
-        : 'GLOBAL';
+      const savedContext = this.readActiveContext();
+      const hasPlatformAccess = savedPermissions.some((permission) => permission.scope_type === 'PLATFORM');
+      const defaultScope = savedContext === 'PERSONAL'
+        ? 'GLOBAL'
+        : savedContext === 'PLATFORM' && hasPlatformAccess
+          ? 'PLATFORM'
+          : hasPlatformAccess ? 'PLATFORM' : 'GLOBAL';
       const permissions = restoredTenantId === null
         ? savedPermissions.filter((permission) => permission.scope_type === defaultScope)
         : await this.api.getPermissions(restoredTenantId);
@@ -123,6 +132,30 @@ export class WorkspaceContextService {
       throw error;
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  private readActiveContext(): 'PERSONAL' | 'PLATFORM' | 'BUSINESS' | null {
+    try {
+      const userId = this.auth.user()?.user_id;
+      if (!userId) return null;
+      const value = this.document.defaultView?.sessionStorage.getItem(`${ACTIVE_CONTEXT_KEY}.${userId}`);
+      return value === 'PERSONAL' || value === 'PLATFORM' || value === 'BUSINESS' ? value : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private persistActiveContext(context: 'PERSONAL' | 'PLATFORM' | 'BUSINESS' | null): void {
+    try {
+      const userId = this.auth.user()?.user_id;
+      const storage = this.document.defaultView?.sessionStorage;
+      if (!storage || !userId) return;
+      const key = `${ACTIVE_CONTEXT_KEY}.${userId}`;
+      if (context) storage.setItem(key, context);
+      else storage.removeItem(key);
+    } catch {
+      // The selected context remains active for the current application session.
     }
   }
 
