@@ -458,11 +458,15 @@ export class DashboardModule implements OnInit {
             break;
           }
           {
-            const [profile, addresses] = await Promise.all([
-              this.auth.loadProfile(),
-              this.request<{items?:DataRecord[]}>('/api/v1/customers/addresses/list','customerParam','listMyAddresses'),
-            ]);
-            this.summary.set(profile as unknown as DataRecord); this.items.set(addresses.items ?? []);
+            const profile = await this.auth.loadProfile();
+            this.summary.set(profile as unknown as DataRecord);
+            try {
+              const addresses = await this.request<{items?:DataRecord[]}>('/api/v1/customers/addresses/list','customerParam','listMyAddresses');
+              this.items.set(addresses.items ?? []);
+            } catch (addressError) {
+              this.items.set([]);
+              this.notice.set('Your account details loaded, but saved addresses are temporarily unavailable. ' + this.auth.errorMessage(addressError));
+            }
           }
           break;
         case 'orders':
