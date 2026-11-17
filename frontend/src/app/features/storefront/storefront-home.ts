@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MarketplaceApiService, MarketplaceBusinessDetail, MarketplaceProduct, MarketplacePromotion } from '../../core/marketplace/marketplace-api.service';
@@ -6,6 +6,7 @@ import { StorefrontContextService } from './storefront-context.service';
 import { StorefrontSeoService } from './storefront-seo.service';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-storefront-home',
   imports: [RouterLink],
   template: `
