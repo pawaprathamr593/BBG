@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
-import { CatalogueApiService, CatalogueCategory, CatalogueProduct, CatalogueUnit } from './catalogue-api.service';
+import { CatalogueApiService, CatalogueCategory, CatalogueProduct, CatalogueUnit, ProductMedia } from './catalogue-api.service';
 
 interface ProductForm {
   product_code: string;
@@ -128,6 +128,34 @@ const emptyProduct = (): ProductForm => ({
                 @if (editingId()) { <label>Publication status<select name="publication" [(ngModel)]="form.publication_status"><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option></select></label> }
                 <label class="span-two">Description<textarea name="description" [(ngModel)]="form.description" maxlength="5000" rows="3"></textarea></label>
               </div>
+              <section class="media-manager" aria-label="Product media">
+                <div class="media-heading"><div><strong>Product media</strong><p>Add multiple images, videos, audio clips or PDF documents.</p></div><span>{{ selectedMediaFiles().length + existingMedia().length }} files</span></div>
+                <label class="media-dropzone">
+                  <input type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,application/pdf" (change)="selectMedia($event)" [disabled]="saving() || mediaBusy()">
+                  <span class="upload-symbol">＋</span><strong>Choose files to upload</strong><small>Images · Video · Audio · PDF. Select multiple files at once.</small>
+                </label>
+                @if (mediaError()) { <p class="form-error" role="alert">{{ mediaError() }}</p> }
+                @if (selectedMediaFiles().length) {
+                  <div class="media-list">
+                    @for (file of selectedMediaFiles(); track $index) {
+                      <div class="media-item"><span class="media-kind">{{ mediaKind(file.type) }}</span><div><strong>{{ file.name }}</strong><small>{{ formatFileSize(file.size) }} · Ready to upload</small></div><button type="button" class="icon-button" [attr.aria-label]="'Remove ' + file.name" (click)="removeSelectedMedia($index)">×</button></div>
+                    }
+                  </div>
+                }
+                @if (existingMedia().length) {
+                  <div class="media-list">
+                    @for (media of existingMedia(); track media.id) {
+                      <div class="media-item">
+                        @if (media.url && media.media_type === 'IMAGE') { <img class="media-thumb" [src]="media.url" [alt]="media.original_file_name"> }
+                        @else { <span class="media-kind">{{ media.media_type }}</span> }
+                        <div><strong>{{ media.original_file_name }}</strong><small>{{ formatFileSize(media.file_size_bytes) }} · {{ media.is_primary ? 'Primary image' : media.media_type }}</small></div>
+                        <button type="button" class="icon-button" [disabled]="mediaBusy()" [attr.aria-label]="'Delete ' + media.original_file_name" (click)="removeExistingMedia(media)">×</button>
+                      </div>
+                    }
+                  </div>
+                }
+                @if (mediaBusy()) { <p class="form-note">Uploading media… keep this window open until the upload finishes.</p> }
+              </section>
               <p class="form-note">New products are saved as drafts. Publishing and product limits are validated by BBG based on your active subscription.</p>
               @if (formError()) { <p class="form-error" role="alert">{{ formError() }}</p> }
               <footer><button type="button" class="secondary-button" (click)="closeForm()">Cancel</button><button type="submit" class="primary-button" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save product' }}</button></footer>
@@ -160,7 +188,7 @@ const emptyProduct = (): ProductForm => ({
     .table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;text-align:left;white-space:nowrap}th{padding:11px 9px;color:var(--text-secondary);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)}td{padding:14px 9px;border-bottom:1px solid var(--border);font-size:.8rem}td strong,td small{display:block}td small{margin-top:4px;color:var(--text-secondary);font-size:.7rem}.actions-heading{text-align:right}.actions{text-align:right}.actions button{border:0;background:transparent;color:var(--brand);font:inherit;font-size:.76rem;font-weight:700;cursor:pointer;margin-left:9px}.actions .danger-link{color:#c44747}.status.published{color:#137a51;background:#e7f6ee}
     .table-footer{display:flex;justify-content:space-between;align-items:center;padding-top:14px;color:var(--text-secondary);font-size:.75rem}.inline-state,.empty-state{padding:42px 12px;text-align:center;color:var(--text-secondary)}.empty-state{display:grid;justify-items:center;gap:9px}.empty-state>span{font-size:2rem}.empty-state strong{color:var(--text-primary)}.empty-state p{margin:0 0 8px;font-size:.82rem}
     .category-form{display:grid;gap:12px;margin:18px 0}.category-form label,.form-grid label{display:grid;gap:6px;font-size:.75rem;font-weight:700}.category-form input,.form-grid input,.form-grid select,.form-grid textarea{width:100%;box-sizing:border-box;padding:10px 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.8rem}.optional{color:var(--text-secondary);font-weight:400}.full-width{width:100%}.category-list{list-style:none;margin:0;padding:0}.category-list li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--border)}.category-list strong,.category-list small{display:block}.category-list strong{font-size:.8rem}.category-list small{margin-top:4px;color:var(--text-secondary);font-size:.7rem}.category-empty{color:var(--text-secondary);font-size:.78rem}
-    .icon-button{border:0;background:transparent;color:var(--text-secondary);font-size:1.25rem;cursor:pointer}.modal-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:18px;background:rgba(12,20,16,.58)}.product-modal{width:min(720px,100%);max-height:min(90vh,900px);overflow:auto;padding:24px;background:var(--surface-card);border:1px solid var(--border);border-radius:17px;box-shadow:0 24px 80px rgba(0,0,0,.22)}.product-modal>header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.product-modal header .eyebrow{margin:0 0 6px}.product-modal h2{margin:0;font-size:1.35rem}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.form-grid .span-two{grid-column:1/-1}.form-note{margin:14px 0;color:var(--text-secondary);font-size:.75rem;line-height:1.5}.form-error{color:#bd3535;font-size:.8rem}.product-modal footer{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.toast{position:fixed;right:22px;bottom:22px;z-index:1100;padding:13px 17px;background:var(--surface-card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.15);font-size:.82rem}
+    .media-manager{grid-column:1/-1;border:1px solid var(--border);border-radius:12px;padding:15px;background:var(--surface-page)}.media-heading{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.media-heading strong{font-size:.86rem}.media-heading p{margin:5px 0 12px;color:var(--text-secondary);font-size:.72rem}.media-heading>span{font-size:.7rem;color:var(--text-secondary)}.media-dropzone{min-height:112px;border:1px dashed var(--border);border-radius:10px;display:grid;place-items:center;align-content:center;gap:5px;cursor:pointer;text-align:center;background:var(--surface-card)}.media-dropzone input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}.upload-symbol{font-size:1.4rem;color:var(--brand)}.media-dropzone strong{font-size:.78rem}.media-dropzone small{font-size:.68rem;color:var(--text-secondary)}.media-list{display:grid;gap:7px;margin-top:10px}.media-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface-card);min-width:0}.media-item>div{min-width:0;flex:1}.media-item strong,.media-item small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.media-item strong{font-size:.74rem}.media-item small{margin-top:3px;color:var(--text-secondary);font-size:.66rem}.media-kind{display:grid;place-items:center;min-width:45px;height:38px;border-radius:7px;background:var(--surface-muted);font-size:.57rem;font-weight:800;color:var(--text-secondary)}.media-thumb{width:45px;height:38px;object-fit:cover;border-radius:6px}    .icon-button{border:0;background:transparent;color:var(--text-secondary);font-size:1.25rem;cursor:pointer}.modal-backdrop{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:18px;background:rgba(12,20,16,.58)}.product-modal{width:min(720px,100%);max-height:min(90vh,900px);overflow:auto;padding:24px;background:var(--surface-card);border:1px solid var(--border);border-radius:17px;box-shadow:0 24px 80px rgba(0,0,0,.22)}.product-modal>header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.product-modal header .eyebrow{margin:0 0 6px}.product-modal h2{margin:0;font-size:1.35rem}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.form-grid .span-two{grid-column:1/-1}.form-note{margin:14px 0;color:var(--text-secondary);font-size:.75rem;line-height:1.5}.form-error{color:#bd3535;font-size:.8rem}.product-modal footer{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.toast{position:fixed;right:22px;bottom:22px;z-index:1100;padding:13px 17px;background:var(--surface-card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.15);font-size:.82rem}
     @media(max-width:900px){.catalogue-layout{grid-template-columns:1fr}.categories-panel{order:-1}}
     @media(max-width:600px){.catalogue-page{padding:26px 16px 56px}.page-header{align-items:flex-start;flex-direction:column}.stats-row{gap:8px}.stats-row article{padding:13px}.stats-row span{font-size:.68rem}.stats-row strong{font-size:1.35rem}.products-panel,.categories-panel{padding:15px}.form-grid{grid-template-columns:1fr}.form-grid .span-two{grid-column:auto}.toolbar{align-items:stretch}.table-footer{gap:10px;flex-wrap:wrap}}
   `],
@@ -190,6 +218,10 @@ export class Catalogue implements OnInit {
   readonly error = signal('');
   readonly formError = signal('');
   readonly notice = signal('');
+  readonly selectedMediaFiles = signal<File[]>([]);
+  readonly existingMedia = signal<ProductMedia[]>([]);
+  readonly mediaBusy = signal(false);
+  readonly mediaError = signal('');
   readonly products = signal<CatalogueProduct[]>([]);
   readonly categories = signal<CatalogueCategory[]>([]);
   readonly units = signal<CatalogueUnit[]>([]);
@@ -266,6 +298,9 @@ export class Catalogue implements OnInit {
     this.editingId.set(null);
     this.form = emptyProduct();
     this.formError.set('');
+    this.selectedMediaFiles.set([]);
+    this.existingMedia.set([]);
+    this.mediaError.set('');
     this.showForm.set(true);
   }
 
@@ -285,13 +320,59 @@ export class Catalogue implements OnInit {
       publication_status: product.publication_status,
     };
     this.formError.set('');
+    this.selectedMediaFiles.set([]);
+    this.existingMedia.set([]);
+    this.mediaError.set('');
     this.showForm.set(true);
+    const tenantId = this.tenantId();
+    if (tenantId) this.api.listProductMedia(tenantId, product.id).then((items) => this.existingMedia.set(items)).catch((error) => this.mediaError.set(this.auth.errorMessage(error)));
   }
 
   closeForm(): void {
     if (this.saving()) return;
     this.showForm.set(false);
     this.formError.set('');
+    this.selectedMediaFiles.set([]);
+    this.existingMedia.set([]);
+    this.mediaError.set('');
+  }
+
+  selectMedia(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    const allowed = new Set(['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','audio/mpeg','audio/wav','audio/ogg','application/pdf']);
+    const invalid = files.find((file) => !allowed.has(file.type) || file.size < 1 || file.size > 10 * 1024 * 1024);
+    if (invalid) this.mediaError.set(`"${invalid.name}" is not a supported file or exceeds the 10 MB limit.`);
+    else {
+      this.mediaError.set('');
+      this.selectedMediaFiles.update((current) => [...current, ...files]);
+    }
+    input.value = '';
+  }
+
+  removeSelectedMedia(index: number): void {
+    this.selectedMediaFiles.update((files) => files.filter((_, position) => position !== index));
+  }
+
+  async removeExistingMedia(media: ProductMedia): Promise<void> {
+    const tenantId = this.tenantId();
+    const productId = this.editingId();
+    if (!tenantId || !productId || this.mediaBusy() || !window.confirm(`Remove "${media.original_file_name}"?`)) return;
+    this.mediaBusy.set(true);
+    this.mediaError.set('');
+    try {
+      await this.api.deleteProductMedia(tenantId, productId, media.id);
+      this.existingMedia.update((items) => items.filter((item) => item.id !== media.id));
+    } catch (error) { this.mediaError.set(this.auth.errorMessage(error)); }
+    finally { this.mediaBusy.set(false); }
+  }
+
+  mediaKind(mime: string): string {
+    return mime.startsWith('image/') ? 'IMAGE' : mime.startsWith('video/') ? 'VIDEO' : mime.startsWith('audio/') ? 'AUDIO' : 'PDF';
+  }
+
+  formatFileSize(bytes: number): string {
+    return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   async saveProduct(): Promise<void> {
@@ -322,14 +403,30 @@ export class Catalogue implements OnInit {
     this.formError.set('');
     try {
       const editingId = this.editingId();
-      if (editingId) await this.api.updateProduct(tenantId, editingId, payload);
-      else await this.api.createProduct(tenantId, payload);
+      const saved = editingId
+        ? await this.api.updateProduct(tenantId, editingId, payload)
+        : await this.api.createProduct(tenantId, payload);
+      const productId = editingId ?? Number(saved.id);
+      if (!productId) throw new Error('Product was saved but its identifier was not returned. Media upload could not continue.');
+      this.editingId.set(productId);
+      const files = this.selectedMediaFiles();
+      if (files.length) {
+        this.mediaBusy.set(true);
+        for (let index = 0; index < files.length; index++) {
+          await this.api.uploadAndLinkProductMedia(tenantId, productId, files[index], this.existingMedia().length + index, this.existingMedia().length === 0 && index === 0);
+        }
+        this.mediaBusy.set(false);
+        this.selectedMediaFiles.set([]);
+        this.existingMedia.set(await this.api.listProductMedia(tenantId, productId));
+      }
       this.showForm.set(false);
-      this.notice.set(editingId ? 'Product updated.' : 'Product created as a draft.');
+      this.notice.set(editingId ? 'Product and media updated.' : 'Product created as a draft.');
       await this.loadProducts();
     } catch (error) {
       this.formError.set(this.auth.errorMessage(error));
+      this.mediaError.set(this.auth.errorMessage(error));
     } finally {
+      this.mediaBusy.set(false);
       this.saving.set(false);
     }
   }
