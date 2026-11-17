@@ -13,7 +13,7 @@ SET pe.status = 'Z'
 WHERE pe.status = 'A'
   AND (
       (UPPER(p.plan_code) LIKE 'GOLD%' AND pe.entitlement_code IN ('PRODUCT_MANAGEMENT', 'PRODUCT_LIMIT', 'PROMOTIONAL_POSTS', 'DAILY_PROMOTION_LIMIT'))
-      OR (UPPER(p.plan_code) IN ('DIAMOND%', 'PLATINUM%') AND pe.entitlement_code = 'PROMOTIONAL_POSTS')
+      OR ((UPPER(p.plan_code) LIKE 'DIAMOND%' OR UPPER(p.plan_code) LIKE 'PLATINUM%') AND pe.entitlement_code = 'PROMOTIONAL_POSTS')
   );
 
 -- Common storefront capabilities for all three tiers.

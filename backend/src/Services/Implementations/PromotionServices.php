@@ -268,13 +268,13 @@ final readonly class PromotionServices implements IPromotionServices
         }
         $timezoneName = trim((string) ($tenant['data']['timezone'] ?? 'UTC'));
         try {
-            $timezone = new \\DateTimeZone($timezoneName !== '' ? $timezoneName : 'UTC');
-            $localStart = new \\DateTimeImmutable('today', $timezone);
+            $timezone = new \DateTimeZone($timezoneName !== '' ? $timezoneName : 'UTC');
+            $localStart = new \DateTimeImmutable('today', $timezone);
             $localEnd = $localStart->modify('+1 day');
-            $utc = new \\DateTimeZone('UTC');
+            $utc = new \DateTimeZone('UTC');
             $startUtc = $localStart->setTimezone($utc)->format('Y-m-d H:i:s');
             $endUtc = $localEnd->setTimezone($utc)->format('Y-m-d H:i:s');
-        } catch (\\Throwable $exception) {
+        } catch (\Throwable $exception) {
             $resArr['msgArr'][] = 'The tenant timezone is invalid; promotion publishing is blocked until it is corrected.';
             return $resArr;
         }
