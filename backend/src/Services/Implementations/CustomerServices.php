@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Implementations;
 
 use App\Dao\CustomerDao;
+use App\Dao\TenantDao;
 use App\Services\Interfaces\IAuthServices;
 use App\Services\Interfaces\ICustomerServices;
 use Psr\Log\LoggerInterface;
@@ -16,6 +17,7 @@ final readonly class CustomerServices implements ICustomerServices
     public function __construct(
         private ConnectionInterface $db,
         private CustomerDao $dao,
+        private TenantDao $tenantDao,
         private IAuthServices $authServices,
         private LoggerInterface $logger,
     ) {}
@@ -40,6 +42,9 @@ final readonly class CustomerServices implements ICustomerServices
                     break;
                 case 'listMyAddresses':
                     $resArr = $this->getMyAddresses($actionData);
+                    break;
+                case 'listTenantCustomers':
+                    $resArr = $this->getTenantCustomers($actionData);
                     break;
                 default:
                     $resArr['msgArr'][] = 'Unsupported customer read action.';
