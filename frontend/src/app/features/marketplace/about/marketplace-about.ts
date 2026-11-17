@@ -9,7 +9,7 @@ interface PlanRecord { [key: string]: unknown; }
 interface PlanEnvelope {
   status: 'SUCCESS' | 'FAILED' | 'EXCEPTION';
   msgArr?: string[];
-  data?: { items?: PlanRecord[] } | [];
+  data?: { items?: PlanRecord[] };
 }
 
 @Component({
