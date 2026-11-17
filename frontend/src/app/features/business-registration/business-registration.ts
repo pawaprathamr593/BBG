@@ -14,7 +14,7 @@ import { BusinessRegistrationApiService } from '../../core/business/business-reg
         <a class="back-link" href="/" (click)="goHome($event)">← Back to BBG</a>
         <p class="eyebrow">JOIN THE BBG BUSINESS NETWORK</p>
         <h1>Register your business</h1>
-        <p class="intro">Tell us about your business. Once submitted, our team will review the details and update your registration status in your workspace.</p>
+        <p class="intro">Tell us about your business. After registration, you can choose a plan, complete the payment and submit your receipt for review.</p>
 
         @if (error()) { <div class="notice error" role="alert">{{ error() }}</div> }
         <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
@@ -31,7 +31,7 @@ import { BusinessRegistrationApiService } from '../../core/business/business-reg
             <label class="field"><span>City *</span><input formControlName="city" maxlength="100" placeholder="City" /></label>
             <label class="field"><span>State *</span><input formControlName="state" maxlength="100" placeholder="State" /></label>
           </div>
-          <div class="form-note"><strong>What happens next?</strong><span>Your application will be submitted for review. Until it is approved, your workspace will only show your business registration status.</span></div>
+          <div class="form-note"><strong>What happens next?</strong><span>After you submit your business details, you’ll continue to plan selection and payment. Your subscription becomes active only after the BBG team approves your payment proof.</span></div>
           <button class="submit-button" type="submit" [disabled]="busy()">{{ busy() ? 'Submitting application…' : 'Submit business registration' }} <span aria-hidden="true">→</span></button>
         </form>
       </section>
@@ -81,7 +81,7 @@ export class BusinessRegistration implements OnInit {
         return;
       }
       if (!this.auth.user()) await this.auth.loadProfile();
-      if (await this.api.getMyApplication()) await this.router.navigate(['/workspace']);
+      if (await this.api.getMyApplication()) await this.router.navigate(['/dashboard/subscriptions']);
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     }
@@ -111,7 +111,7 @@ export class BusinessRegistration implements OnInit {
         tenant_type: 'BUSINESS',
         country_code: 'IN',
       });
-      await this.router.navigate(['/workspace']);
+      await this.router.navigate(['/dashboard/subscriptions']);
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
