@@ -263,6 +263,7 @@ export class DashboardModule implements OnInit {
   ngOnInit(): void {
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.section.set(params.get('section') ?? 'profile');
+      this.notice.set('');
       void this.load();
     });
   }
@@ -280,7 +281,7 @@ export class DashboardModule implements OnInit {
   }
 
   async load(): Promise<void> {
-    this.loading.set(true); this.error.set(''); this.unsupported.set(''); this.notice.set('');
+    this.loading.set(true); this.error.set(''); this.unsupported.set('');
     this.items.set([]); this.summary.set(null); this.plans.set([]);
     try {
       await this.workspace.initialize();
