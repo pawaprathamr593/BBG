@@ -23,6 +23,14 @@ Apply these additive, idempotent seeds after verifying the target database and b
 
 The seeds do not alter table structures. Review each script before execution and verify the result queries afterwards.
 
+
+### Global My Account saved addresses — 17 November 2026
+
+- `20261117_001_global_customer_addresses.sql` adds `CUSTOMER_ADDRESSES.user_id`, backfills resolvable legacy tenant addresses through `TENANT_CUSTOMERS` and `CUSTOMER_IDENTITIES`, makes the two legacy tenant-link columns nullable, and adds an owner/status index.
+- This migration is a one-time schema change. Back up and inspect the live schema before running it; do not run it twice.
+- Deploy the matching `CustomerServices` / `CustomerDao` code only after the migration is applied. My Account address operations no longer require `tenant_id` and derive ownership from the authenticated user profile.
+- See `../docs/BBG_DATABASE_DESIGN_V2.3_GLOBAL_MY_ACCOUNT_ADDRESSES.md` for ownership, compatibility and rollout rules.
+
 ## Locked data conventions
 
 - All tables use the five required common columns: `status`, `created_by`, `created_on`, `updated_by`, `updated_on`.
