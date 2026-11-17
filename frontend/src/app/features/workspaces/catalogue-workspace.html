@@ -59,7 +59,7 @@
             <label>Cost price (₹)<input type="number" name="cost_price" [(ngModel)]="productForm.cost_price" min="0" step="0.01"></label>
             <label>Selling price (₹)<input type="number" name="selling_price" [(ngModel)]="productForm.selling_price" min="0" step="0.01"></label>
             <label>Tax rate (%)<input type="number" name="tax_rate" [(ngModel)]="productForm.tax_rate" min="0" max="100" step="0.01"></label>
-            <label>Publication status<select name="publication_status" [(ngModel)]="productForm.publication_status"><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option></select></label>
+            <label>Publication status@if (editingProductId()) {<select name="publication_status" [(ngModel)]="productForm.publication_status"><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option></select>} @else {<span class="form-static">New products are saved as drafts. You can publish after creation.</span>}</label>
             <label class="full">Description<textarea name="description" [(ngModel)]="productForm.description" rows="3" maxlength="5000"></textarea></label>
           </div>
           <p class="form-note">Publishing and product limits are validated by your active subscription on the server.</p>
