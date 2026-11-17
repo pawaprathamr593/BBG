@@ -62,11 +62,8 @@ export class UnifiedWorkspace implements OnInit {
           }))
         : [];
       this.workspace.setTenants(tenants);
-      if (tenants.length === 1) {
-        await this.selectBusiness(tenants[0].id);
-        this.notice.set('Your business is ready to manage.');
-      } else if (tenants.length > 1) {
-        this.notice.set('Choose a business to load its modules and permissions.');
+      if (tenants.length > 0) {
+        this.notice.set('Choose a business explicitly to load its modules and permissions.');
       }
     } catch (cause) {
       this.error.set(cause instanceof Error ? cause.message : 'Unable to load business memberships.');
@@ -109,8 +106,6 @@ export class UnifiedWorkspace implements OnInit {
     this.workspace.setMode(mode);
     if (this.workspace.tenantId()) {
       await this.selectBusiness(this.workspace.tenantId()!);
-    } else if (this.workspace.tenants().length === 1) {
-      await this.selectBusiness(this.workspace.tenants()[0].id);
     } else {
       await this.router.navigateByUrl('/dashboard');
     }
