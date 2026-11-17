@@ -18,7 +18,7 @@ final readonly class PromotionDao
         return $this->one($db, "SELECT ts.id
             FROM TENANT_SUBSCRIPTIONS ts
             INNER JOIN PLAN_ENTITLEMENTS pe ON pe.plan_id = ts.plan_id
-                AND pe.entitlement_code = 'PROMOTIONAL_POSTS'
+                AND pe.entitlement_code = 'PROMOTION_MANAGEMENT'
                 AND UPPER(pe.entitlement_value) IN ('1', 'TRUE', 'YES')
                 AND pe.status = 'A'
             WHERE ts.tenant_id = :tenant_id AND ts.subscription_status = 'ACTIVE'
@@ -26,6 +26,48 @@ final readonly class PromotionDao
                 AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
                 AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
             LIMIT 1", [':tenant_id' => $tenantId], 'hasPromotionEntitlement');
+    }
+
+    public function lockTenantForPromotionPublish(ConnectionInterface $db, int $tenantId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one(
+            $db,
+            "SELECT id FROM TENANTS WHERE id = :tenant_id AND status = 'A' FOR UPDATE",
+            [':tenant_id' => $tenantId],
+            'lockTenantForPromotionPublish',
+        );
+    }
+
+    public function getActiveDailyPromotionLimit(ConnectionInterface $db, int $tenantId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT pe.entitlement_value
+            FROM TENANT_SUBSCRIPTIONS ts
+            INNER JOIN PLAN_ENTITLEMENTS pe ON pe.plan_id = ts.plan_id
+                AND pe.entitlement_code = 'DAILY_PROMOTION_LIMIT'
+                AND pe.value_type = 'INTEGER' AND pe.status = 'A'
+            WHERE ts.tenant_id = :tenant_id AND ts.subscription_status = 'ACTIVE'
+                AND ts.status = 'A'
+                AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
+                AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
+            ORDER BY ts.starts_on DESC, ts.id DESC
+            LIMIT 1", [':tenant_id' => $tenantId], 'getActiveDailyPromotionLimit');
+    }
+
+    public function countPromotionsPublishedOnTenantLocalDay(ConnectionInterface $db, int $tenantId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT COUNT(pp.id) AS total,
+                CONVERT_TZ(CURRENT_TIMESTAMP, @@session.time_zone, t.timezone) AS tenant_now
+            FROM TENANTS t
+            LEFT JOIN PROMOTIONAL_POSTS pp ON pp.tenant_id = t.id
+                AND pp.status = 'A' AND pp.published_on IS NOT NULL
+                AND DATE(CONVERT_TZ(pp.published_on, @@session.time_zone, t.timezone)) =
+                    DATE(CONVERT_TZ(CURRENT_TIMESTAMP, @@session.time_zone, t.timezone))
+            WHERE t.id = :tenant_id AND t.status = 'A'
+            GROUP BY t.id, t.timezone",
+            [':tenant_id' => $tenantId], 'countPromotionsPublishedOnTenantLocalDay');
     }
 
     public function getMyPromotions(ConnectionInterface $db, int $tenantId, int $limit, int $offset): array
