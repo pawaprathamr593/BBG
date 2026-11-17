@@ -12,8 +12,8 @@ if ($routes === false) {
 
 preg_match_all("~Route::post\\('(/api/v1/[^']+)'\\)~", $routes, $routeMatches);
 $routePaths = $routeMatches[1] ?? [];
-if (count($routePaths) !== 128 || count(array_unique($routePaths)) !== 128) {
-    fwrite(STDERR, 'Expected 128 unique POST API routes; found ' . count($routePaths) . ".\n");
+if (count($routePaths) !== 129 || count(array_unique($routePaths)) !== 129) {
+    fwrite(STDERR, 'Expected 129 unique POST API routes; found ' . count($routePaths) . ".\n");
     exit(1);
 }
 
@@ -162,4 +162,4 @@ if (in_array(false, $socialAuthContracts, true)) {
     exit(1);
 }
 
-echo "Static API contract checks passed: 128 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, social authentication, marketplace discovery and subscription proof S3 flow.\\n";
+echo "Static API contract checks passed: 129 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, social authentication, marketplace discovery and subscription proof S3 flow.\\n";
