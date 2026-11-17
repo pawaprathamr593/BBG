@@ -356,8 +356,8 @@ export class Catalogue implements OnInit {
 
   private addMediaFiles(files: File[]): void {
     const allowed = new Set(['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','audio/mpeg','audio/wav','audio/ogg','application/pdf','text/plain','text/csv','application/rtf']);
-    const invalid = files.find((file) => !allowed.has(file.type) || file.size < 1 || file.size > 10 * 1024 * 1024);
-    if (invalid) this.mediaError.set(`"${invalid.name}" is not a supported file or exceeds the 10 MB limit.`);
+    const invalid = files.find((file) => !allowed.has(file.type) || file.size < 1 || file.size > 100 * 1024 * 1024);
+    if (invalid) this.mediaError.set(`"${invalid.name}" is not a supported file or exceeds the 100 MB limit.`);
     else {
       this.mediaError.set('');
       this.selectedMediaFiles.update((current) => [...current, ...files]);
