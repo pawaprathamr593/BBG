@@ -1,4 +1,5 @@
-import { Component, DestroyRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { AfterViewChecked, Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -88,7 +89,7 @@ interface WorkspaceNavItem {
               }
             </div>
             @if (hasPageFilters()) {
-              <button class="filter-trigger" type="button" (click)="toggleFilterDrawer()" [attr.aria-expanded]="filterDrawerOpen()">
+              <button #filterTrigger class="filter-trigger" type="button" (click)="toggleFilterDrawer()" [attr.aria-expanded]="filterDrawerOpen()">
                 <span>☷</span> Filters @if (activeFilterCount()) { <b>{{ activeFilterCount() }}</b> }
               </button>
             }
@@ -126,7 +127,7 @@ interface WorkspaceNavItem {
 
       @if (filterDrawerOpen()) {
         <div class="filter-backdrop" (click)="closeFilterDrawer()"></div>
-        <aside class="filter-drawer" role="dialog" aria-modal="true" aria-labelledby="filter-title">
+        <aside #filterDrawer class="filter-drawer" role="dialog" aria-modal="true" aria-labelledby="filter-title">
           <header><div><small>WORKSPACE</small><h2 id="filter-title">{{ currentPageLabel() }} filters</h2><p>Refine the records shown in this section.</p></div><button type="button" aria-label="Close filters" (click)="closeFilterDrawer()">×</button></header>
           <div class="filter-drawer-body">
             <p class="filter-note">Filters are shown for the current module only. Choose your criteria, then apply them to this view.</p>
@@ -193,12 +194,17 @@ interface WorkspaceNavItem {
     @media(prefers-reduced-motion:reduce){.workspace-sidebar,.mobile-nav-panel,.filter-drawer,.filter-backdrop{transition:none;animation:none}}
   `],
 })
-export class WorkspaceLayout implements OnInit {
+export class WorkspaceLayout implements OnInit, AfterViewChecked, OnDestroy {
   readonly workspace = inject(WorkspaceContextService);
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly document = inject(DOCUMENT);
+  @ViewChild('filterDrawer') private filterDrawer?: ElementRef<HTMLElement>;
+  @ViewChild('filterTrigger') private filterTrigger?: ElementRef<HTMLButtonElement>;
+  private previousBodyOverflow = '';
+  private focusPending = false;
 
   readonly sidebarCollapsed = signal(false);
   readonly mobileExpanded = signal(false);
@@ -224,7 +230,7 @@ export class WorkspaceLayout implements OnInit {
   });
   readonly filterFields = computed(() => {
     const section = this.currentSection();
-    if (['orders','enquiries','payments','promotions','customers','catalogue'].includes(section)) return ['search','status','from','to'];
+    if (['orders','enquiries','payments','promotions','customers'].includes(section)) return ['search','status','from','to'];
     if (['profile','storefront','members','subscriptions','categories','platform-users','business-approval','subscription-approval','moderation','platform-analytics','analytics','system-health'].includes(section)) return ['search','status'];
     return [];
   });
@@ -273,8 +279,12 @@ export class WorkspaceLayout implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const filters = {search:params.get('search') ?? '',status:params.get('status') ?? '',from:params.get('from') ?? '',to:params.get('to') ?? ''};
+      this.activeFilters.set(filters); this.draftFilters.set(filters);
+    });
     this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd),takeUntilDestroyed(this.destroyRef))
-      .subscribe((event) => { this.currentPath.set(event.urlAfterRedirects.split(/[?#]/,1)[0]); this.closeFilterDrawer(); this.mobileNavOpen.set(false); });
+      .subscribe((event) => { this.currentPath.set(event.urlAfterRedirects.split(/[?#]/,1)[0]); this.closeFilterDrawer(); this.mobileNavOpen.set(false); this.mobileExpanded.set(false); });
     try { await this.workspace.initialize(); } catch { /* Workspace service exposes its own error. */ }
   }
 
@@ -306,11 +316,29 @@ export class WorkspaceLayout implements OnInit {
     const next = !this.filterDrawerOpen();
     this.filterDrawerOpen.set(next);
     if (next) {
+      this.previousBodyOverflow = this.document.body.style.overflow;
       this.draftFilters.set({...this.activeFilters()});
-      this.documentScroll(true);
-    } else this.documentScroll(false);
+      this.document.body.style.overflow = 'hidden';
+      this.focusPending = true;
+    } else this.closeFilterDrawer();
   }
-  closeFilterDrawer(): void { this.filterDrawerOpen.set(false); this.documentScroll(false); }
+  closeFilterDrawer(): void {
+    const wasOpen = this.filterDrawerOpen();
+    this.filterDrawerOpen.set(false);
+    if (wasOpen) {
+      this.document.body.style.overflow = this.previousBodyOverflow;
+      this.filterTrigger?.nativeElement.focus();
+    }
+  }
+  ngAfterViewChecked(): void {
+    if (this.filterDrawerOpen() && this.focusPending && this.filterDrawer) {
+      this.filterDrawer.nativeElement.querySelector<HTMLElement>('input,select,button')?.focus();
+      this.focusPending = false;
+    }
+  }
+  ngOnDestroy(): void {
+    if (this.filterDrawerOpen()) this.document.body.style.overflow = this.previousBodyOverflow;
+  }
   setDraftFilter(key: 'search' | 'status' | 'from' | 'to', event: Event): void {
     const value = (event.target as HTMLInputElement | HTMLSelectElement).value;
     this.draftFilters.update((filters) => ({...filters,[key]:value}));
@@ -325,12 +353,16 @@ export class WorkspaceLayout implements OnInit {
     this.activeFilters.set({search:'',status:'',from:'',to:''});
     void this.router.navigate([], {relativeTo:this.route,queryParams:{search:null,status:null,from:null,to:null},queryParamsHandling:'merge'});
   }
-  private documentScroll(lock: boolean): void {
-    if (typeof document === 'undefined') return;
-    document.body.style.overflow = lock ? 'hidden' : '';
-  }
   @HostListener('document:keydown',['$event'])
   onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') { this.closeFilterDrawer(); this.mobileNavOpen.set(false); }
+    if (!this.filterDrawerOpen()) { if (event.key === 'Escape') this.mobileNavOpen.set(false); return; }
+    if (event.key === 'Escape') { event.preventDefault(); this.closeFilterDrawer(); return; }
+    if (event.key === 'Tab' && this.filterDrawer) {
+      const focusable = Array.from(this.filterDrawer.nativeElement.querySelectorAll<HTMLElement>('button:not([disabled]),input:not([disabled]),select:not([disabled]),a[href]'));
+      if (!focusable.length) return;
+      const first = focusable[0], last = focusable[focusable.length - 1];
+      if (event.shiftKey && this.document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && this.document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
   }
 }
