@@ -137,6 +137,12 @@ interface DataRecord { [key: string]: unknown; }
                     <label class="upload-proof">Upload payment proof
                       <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" [disabled]="busy()" (change)="uploadProof($event, item)" />
                     </label>
+                    @if (proofDrafts()[recordId(item,'subscription_id')]) {
+                      <div class="proof-ready" role="status">
+                        <span>Receipt uploaded: {{ proofDrafts()[recordId(item,'subscription_id')].fileName }}</span>
+                        <button type="button" (click)="submitProof(item)" [disabled]="busy()">Submit for Review</button>
+                      </div>
+                    }
                   }
                   @if (actionsFor(item).length) {
                     <div class="record-actions">
@@ -180,7 +186,8 @@ interface DataRecord { [key: string]: unknown; }
   `,
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
-    .post-media-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.post-media-item{display:grid;justify-items:start;gap:4px}.post-media-strip img{width:72px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}.post-media-strip video{width:120px;height:72px;border-radius:8px;background:#111}.post-media-strip audio{width:min(240px,100%);height:36px}.post-media-strip a,.post-media-strip span{align-self:center;padding:8px 10px;border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.72rem;text-decoration:none}.post-media-item button{border:0;background:transparent;color:#c44747;font-size:.65rem;cursor:pointer}
+.proof-ready{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:9px;background:var(--surface-subtle);font-size:.75rem}.proof-ready button{padding:8px 12px;border:0;border-radius:7px;background:var(--brand);color:#fff;font:inherit;font-weight:800;cursor:pointer}.proof-ready button:disabled{opacity:.6;cursor:wait}
+        .post-media-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.post-media-item{display:grid;justify-items:start;gap:4px}.post-media-strip img{width:72px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}.post-media-strip video{width:120px;height:72px;border-radius:8px;background:#111}.post-media-strip audio{width:min(240px,100%);height:36px}.post-media-strip a,.post-media-strip span{align-self:center;padding:8px 10px;border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.72rem;text-decoration:none}.post-media-item button{border:0;background:transparent;color:#c44747;font-size:.65rem;cursor:pointer}
     .composer-backdrop{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:18px;background:rgba(10,18,15,.62)}.promotion-composer{width:min(680px,100%);max-height:90vh;overflow:auto;padding:24px;background:var(--surface-card);color:var(--text-primary);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.25)}.promotion-composer header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.promotion-composer header .eyebrow{margin:0 0 7px}.promotion-composer h2{margin:0;font-size:1.35rem}.promotion-composer header p:last-child{margin:6px 0 0;color:var(--text-secondary);font-size:.78rem}.composer-close{border:0;background:transparent;color:var(--text-secondary);font-size:1.5rem;cursor:pointer}.promotion-composer>label{display:grid;gap:7px;margin:13px 0;font-size:.78rem;font-weight:700}.promotion-composer input[type=text],.promotion-composer input[type=datetime-local],.promotion-composer textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.82rem}.promotion-composer label small{font-weight:400;color:var(--text-secondary)}.post-upload-zone{margin:16px 0}.post-file-picker{display:grid;justify-items:center;gap:5px;padding:22px;border:1px dashed var(--border);border-radius:11px;background:var(--surface-page);cursor:pointer}.post-file-picker>span{font-size:1.5rem;color:var(--brand)}.post-file-picker strong{font-size:.8rem}.post-file-picker small{font-size:.68rem;color:var(--text-secondary)}.post-file-picker input{max-width:100%;margin-top:7px;font-size:.7rem}.post-file-list{display:grid;gap:7px;margin-top:10px}.post-file-list>div{display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:5px 10px;align-items:center;padding:9px;border:1px solid var(--border);border-radius:8px}.post-file-list span{grid-row:span 2;font-size:.62rem;font-weight:800;color:var(--brand)}.post-file-list strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.74rem}.post-file-list small{font-size:.66rem;color:var(--text-secondary)}.post-file-list button{grid-column:3;grid-row:1/3;border:0;background:transparent;color:#bf4545;font:inherit;font-size:.7rem;cursor:pointer}.promotion-composer footer{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.composer-error{color:#c43d3d;font-size:.78rem}.composer-progress{display:flex;align-items:center;gap:10px;color:var(--text-secondary);font-size:.72rem}.composer-progress progress{flex:1;height:7px;accent-color:var(--brand)}
     .module-page{width:100%;max-width:none;box-sizing:border-box;margin:0;padding:36px 32px 64px}
     .page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:25px}
@@ -269,6 +276,7 @@ export class DashboardModule implements OnInit {
   readonly profileInitials = computed(() => String(this.summary()?.['full_name'] ?? 'BB').trim().split(/\s+/).slice(0,2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BB');
   readonly plans = signal<DataRecord[]>([]);
   readonly pendingPlanId = signal<number | null>(null);
+  readonly proofDrafts = signal<Record<number,{objectKey:string;paymentReference:string;fileName:string}>>({});
   readonly showPromotionComposer = signal(false);
   readonly promotionTitle = signal('');
   readonly promotionContent = signal('');
@@ -922,15 +930,15 @@ export class DashboardModule implements OnInit {
     const file = input.files?.[0];
     if (!file) return;
     const allowed = ['image/jpeg','image/png','image/webp','application/pdf'];
-    if (!allowed.includes(file.type) || file.size < 1) {
-      this.error.set('Choose a non-empty JPG, PNG, WEBP or PDF file.');
+    if (!allowed.includes(file.type) || file.size < 1 || file.size > 10 * 1024 * 1024) {
+      this.error.set('Choose a non-empty JPG, PNG, WEBP or PDF file up to 10 MB.');
       input.value = '';
       return;
     }
     const subscriptionId = this.recordId(subscription,'subscription_id');
     const tenantId = this.workspace.activeTenantId();
     if (!subscriptionId || !tenantId) { this.error.set('Subscription or workspace details are unavailable.'); input.value=''; return; }
-    const paymentReference = window.prompt('Payment reference (optional):');
+    const paymentReference = window.prompt('Payment reference (optional):') ?? '';
     this.busy.set(true); this.error.set('');
     try {
       const upload = await this.request<{upload_url:string;object_key:string;method:string;headers:Record<string,string>}>(
@@ -941,17 +949,40 @@ export class DashboardModule implements OnInit {
       await firstValueFrom(this.http.put(upload.upload_url,file,{
         headers:new HttpHeaders(upload.headers ?? {'Content-Type':file.type}),responseType:'text',
       }));
-      await this.request('/api/v1/subscriptions/proofs/submit','subscriptionParam','submitSubscriptionProof',{
-        tenant_id:tenantId,subscription_id:subscriptionId,proof_file_path:upload.object_key,
-        ...(paymentReference?.trim()?{payment_reference:paymentReference.trim()}:{})
-      });
-      this.notice.set('Payment proof uploaded and submitted for review.');
-      await this.load();
+      this.proofDrafts.update((drafts) => ({...drafts,[subscriptionId]:{
+        objectKey:upload.object_key,paymentReference:paymentReference.trim(),fileName:file.name,
+      }}));
+      this.notice.set('Receipt uploaded. Select “Submit for Review” when you are ready to send it to the BBG team.');
     } catch(error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
       this.busy.set(false);
       input.value = '';
+    }
+  }
+
+  async submitProof(subscription: DataRecord): Promise<void> {
+    const subscriptionId = this.recordId(subscription,'subscription_id');
+    const tenantId = this.workspace.activeTenantId();
+    const draft = this.proofDrafts()[subscriptionId];
+    if (!subscriptionId || !tenantId || !draft || this.busy()) return;
+    this.busy.set(true); this.error.set('');
+    try {
+      await this.request('/api/v1/subscriptions/proofs/submit','subscriptionParam','submitSubscriptionProof',{
+        tenant_id:tenantId,subscription_id:subscriptionId,proof_file_path:draft.objectKey,
+        ...(draft.paymentReference ? {payment_reference:draft.paymentReference} : {}),
+      });
+      this.proofDrafts.update((drafts) => {
+        const next = {...drafts};
+        delete next[subscriptionId];
+        return next;
+      });
+      this.notice.set('Payment proof submitted for review.');
+      await this.load();
+    } catch(error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
     }
   }
 
