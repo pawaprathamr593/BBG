@@ -163,7 +163,7 @@ interface WorkspaceNavItem {
   styles: [`
     :host{display:block;width:100%;height:100%;min-height:100dvh;color:var(--text-primary)}
     .workspace-shell{--workspace-topbar:72px;--bbg-header-height:72px;--bbg-filter-fab-bottom:max(86px,calc(env(safe-area-inset-bottom) + 82px));--sidebar-width:258px;position:relative;display:flex;width:100%;height:100dvh;min-height:0;flex-direction:column;overflow:hidden;background:var(--surface-page)}
-    .workspace-topbar{position:relative;z-index:30;display:flex;flex:0 0 var(--workspace-topbar);height:var(--workspace-topbar);align-items:center;gap:18px;padding:0 26px;background:var(--surface-header);border-bottom:1px solid var(--border);box-shadow:0 2px 12px rgba(15,35,24,.035)}
+    .workspace-topbar{position:relative;z-index:1002;display:flex;flex:0 0 var(--workspace-topbar);height:var(--workspace-topbar);align-items:center;gap:18px;padding:0 26px;background:var(--surface-header);border-bottom:1px solid var(--border);box-shadow:0 2px 12px rgba(15,35,24,.035)}
     .workspace-brand{display:flex;flex:0 0 190px;align-items:center;gap:10px;color:var(--text-primary);text-decoration:none}
     .brand-mark{position:relative;display:block;width:36px;height:36px;overflow:hidden;border-radius:9px;background:#174d35}
     .brand-mark i{position:absolute;width:42px;height:6px;left:3px;background:#fff;border-radius:5px;transform:rotate(-42deg)}.brand-mark i:nth-child(1){top:7px}.brand-mark i:nth-child(2){top:16px;left:-4px}.brand-mark i:nth-child(3){top:25px;background:#f5d928}
