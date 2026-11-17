@@ -307,6 +307,52 @@ final readonly class AdminDao
         return $resArr;
     }
 
+    public function getActivePaymentQrConfig(ConnectionInterface $db): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT id, config_version, payee_name, upi_id, qr_file_path,
+            payment_instructions, effective_from, effective_until
+            FROM PLATFORM_PAYMENT_QR_CONFIG
+            WHERE config_status = 'ACTIVE' AND status = 'A'
+                AND effective_from <= CURRENT_TIMESTAMP
+                AND (effective_until IS NULL OR effective_until > CURRENT_TIMESTAMP)
+            ORDER BY config_version DESC LIMIT 1", [], 'getActivePaymentQrConfig');
+    }
+
+    public function insertPaymentQrConfig(
+        ConnectionInterface $db,
+        string $payeeName,
+        string $upiId,
+        string $qrFilePath,
+        ?string $instructions,
+        int $adminId,
+    ): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $versionRow = $db->createCommand("SELECT COALESCE(MAX(config_version), 0) + 1 AS next_version
+                FROM PLATFORM_PAYMENT_QR_CONFIG")->queryOne();
+            $version = (int) ($versionRow['next_version'] ?? 1);
+            $db->createCommand("UPDATE PLATFORM_PAYMENT_QR_CONFIG
+                SET config_status = 'INACTIVE', effective_until = CURRENT_TIMESTAMP,
+                    updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
+                WHERE config_status = 'ACTIVE' AND status = 'A'",
+                [':admin_id' => $adminId])->execute();
+            $db->createCommand("INSERT INTO PLATFORM_PAYMENT_QR_CONFIG
+                (config_version, payee_name, upi_id, qr_file_path, payment_instructions,
+                 config_status, effective_from, status, created_by, updated_by)
+                VALUES (:version, :payee, :upi, :path, :instructions,
+                 'ACTIVE', CURRENT_TIMESTAMP, 'A', :admin_id, :admin_id)",
+                [':version' => $version, ':payee' => $payeeName, ':upi' => $upiId,
+                 ':path' => $qrFilePath, ':instructions' => $instructions,
+                 ':admin_id' => $adminId])->execute();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['id' => (int) $db->getLastInsertId(), 'config_version' => $version];
+        } catch (Throwable $exception) {
+            return $this->error('insertPaymentQrConfig', $exception);
+        }
+        return $resArr;
+    }
+
     public function getActiveSubscriptions(ConnectionInterface $db, int $limit, int $offset): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
