@@ -54,45 +54,32 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
             </div>
           </section>
 
-          @if (workspace.loading()) {
-            <div class="drawer-status" role="status">Loading your workspaces…</div>
-          } @else if (workspace.error()) {
-            <div class="drawer-error" role="alert">{{ workspace.error() }}</div>
-            <button class="retry-button" type="button" (click)="reloadWorkspaces()">Try again</button>
-          } @else if (workspace.tenants().length || workspace.permissions().length) {
-            <section class="drawer-section">
-              <div class="section-heading">
-                <h3>Workspace &amp; context</h3>
-                <span>{{ workspace.tenants().length }} business workspaces</span>
-              </div>
-              <button class="workspace-option" type="button"
-                [class.is-active]="workspace.activeTenantId() === null"
-                [disabled]="switching()"
-                (click)="switchWorkspace(null)">
-                <span class="workspace-symbol">◎</span>
-                <span class="workspace-copy">
-                  <strong>{{ personalContextLabel() }}</strong>
-                  <small>Personal account and platform access</small>
-                </span>
-                @if (workspace.activeTenantId() === null) { <span class="selected-mark">✓</span> }
+          <section class="drawer-section context-section">
+            <div class="section-heading"><h3>Go to</h3></div>
+            <button class="context-action" type="button" [disabled]="switching()"
+              [class.is-active]="workspace.activeTenantId() === null"
+              (click)="goToMyAccount()">
+              <span class="context-action-icon">◎</span>
+              <span><strong>My Account</strong><small>Orders, enquiries, payments and profile</small></span>
+              @if (workspace.activeTenantId() === null) { <span class="selected-mark">✓</span> }
+            </button>
+            @if (workspace.loading()) {
+              <div class="drawer-status" role="status">Checking business access…</div>
+            } @else if (workspace.error()) {
+              <div class="drawer-error" role="alert">{{ workspace.error() }}</div>
+              <button class="retry-button" type="button" (click)="reloadWorkspaces()">Try again</button>
+            } @else if (workspace.tenants().length) {
+              <button class="context-action" type="button" [disabled]="switching()"
+                [class.is-active]="workspace.activeTenantId() !== null"
+                (click)="goToBusinessWorkspace()">
+                <span class="context-action-icon">⌂</span>
+                <span><strong>Business Workspace</strong><small>Manage your business and its operations</small></span>
+                @if (workspace.activeTenantId() !== null) { <span class="selected-mark">✓</span> }
               </button>
-              @for (tenant of workspace.tenants(); track tenant.id) {
-                <button class="workspace-option" type="button"
-                  [class.is-active]="workspace.activeTenantId() === tenant.id"
-                  [disabled]="switching()"
-                  (click)="switchWorkspace(tenant.id)">
-                  <span class="workspace-symbol">⌂</span>
-                  <span class="workspace-copy">
-                    <strong>{{ tenant.tenant_name }}</strong>
-                    <small>{{ roleLabel(tenant.role_codes) }}</small>
-                  </span>
-                  @if (workspace.activeTenantId() === tenant.id) { <span class="selected-mark">✓</span> }
-                </button>
-              }
-              @if (switching()) { <div class="drawer-status" role="status">Switching workspace and refreshing access…</div> }
-              @if (switchError()) { <div class="drawer-error" role="alert">{{ switchError() }}</div> }
-            </section>
-          }
+            }
+            @if (switching()) { <div class="drawer-status" role="status">Changing your BBG area…</div> }
+            @if (switchError()) { <div class="drawer-error" role="alert">{{ switchError() }}</div> }
+          </section>
 
           <section class="drawer-section appearance-section">
             <div class="section-heading"><h3>Appearance</h3><span>Theme</span></div>
@@ -128,7 +115,7 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
     .profile-trigger{display:grid;width:42px;height:42px;place-items:center;overflow:hidden;padding:0;border:2px solid var(--border);border-radius:50%;background:var(--surface-subtle);color:var(--text-primary);font:inherit;font-size:.82rem;font-weight:800;cursor:pointer;transition:border-color .16s ease,transform .16s ease}
     .profile-trigger:hover{transform:translateY(-1px);border-color:var(--brand)}
     .profile-trigger img{width:100%;height:100%;object-fit:cover}
-    .profile-trigger:focus-visible,.drawer-close:focus-visible,.workspace-option:focus-visible,.theme-options button:focus-visible,.logout-button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 42%,transparent);outline-offset:3px}
+    .profile-trigger:focus-visible,.drawer-close:focus-visible,.context-action:focus-visible,.theme-options button:focus-visible,.logout-button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 42%,transparent);outline-offset:3px}
     .profile-backdrop{position:fixed;z-index:1000;inset:0;background:rgba(15,23,42,.42)}
     .profile-drawer{position:fixed;z-index:1001;inset-block:var(--bbg-header-height,76px) 0;inset-inline-end:0;display:flex;width:clamp(18rem,17.2vw,24rem);max-width:100vw;height:auto;flex-direction:column;overflow:hidden;border-inline-start:1px solid var(--border);background:var(--surface-card);color:var(--text-primary);box-shadow:-18px 0 50px rgba(0,0,0,.18);animation:profile-drawer-in .2s ease-out}
     .drawer-header{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:16px;padding:22px 24px 18px;border-bottom:1px solid var(--border)}
@@ -142,11 +129,11 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
     .drawer-section{display:grid;gap:9px;padding:22px 0;border-bottom:1px solid var(--border)}
     .section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:3px}
     .section-heading h3{margin:0;font-size:.82rem;font-weight:800}.section-heading>span{color:var(--text-muted);font-size:.68rem}
-    .workspace-option{display:flex;width:100%;min-height:62px;align-items:center;gap:12px;padding:10px 12px;border:1px solid transparent;border-radius:11px;background:transparent;color:var(--text-primary);text-align:left;cursor:pointer}
-    .workspace-option:hover,.workspace-option.is-active{border-color:var(--brand-soft);background:var(--brand-soft)}
-    .workspace-option:disabled{opacity:.58;cursor:wait}
-    .workspace-symbol{display:grid;width:36px;height:36px;flex:0 0 36px;place-items:center;border-radius:9px;background:var(--surface-subtle);color:var(--brand);font-size:1.05rem}
-    .workspace-copy{display:grid;min-width:0;flex:1;gap:4px}.workspace-copy strong{overflow:hidden;font-size:.78rem;text-overflow:ellipsis;white-space:nowrap}.workspace-copy small{overflow:hidden;color:var(--text-secondary);font-size:.67rem;text-overflow:ellipsis;white-space:nowrap}
+    .context-action{display:flex;width:100%;min-height:64px;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--border);border-radius:11px;background:var(--surface-card);color:var(--text-primary);text-align:left;cursor:pointer}
+    .context-action:hover,.context-action.is-active{border-color:var(--brand);background:var(--brand-soft)}
+    .context-action:disabled{opacity:.58;cursor:wait}
+    .context-action-icon{display:grid;width:38px;height:38px;flex:0 0 38px;place-items:center;border-radius:10px;background:var(--surface-subtle);color:var(--brand);font-size:1.1rem}
+    .context-action>span:nth-child(2){display:grid;min-width:0;flex:1;gap:4px}.context-action strong{font-size:.8rem}.context-action small{color:var(--text-secondary);font-size:.68rem;line-height:1.4}
     .selected-mark{color:var(--brand);font-size:1rem;font-weight:900}
     .theme-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
     .theme-options button{display:flex;min-height:42px;align-items:center;justify-content:center;gap:6px;padding:0 8px;border:1px solid var(--border);border-radius:9px;background:var(--surface-subtle);color:var(--text-secondary);font:inherit;font-size:.72rem;font-weight:750;cursor:pointer}
@@ -238,7 +225,17 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
     }
   }
 
-  async switchWorkspace(tenantId: number | null): Promise<void> {
+  async goToMyAccount(): Promise<void> {
+    await this.switchTo(null);
+  }
+
+  async goToBusinessWorkspace(): Promise<void> {
+    const tenantId = this.workspace.activeTenantId() ?? this.workspace.tenants()[0]?.id ?? null;
+    if (tenantId === null) return;
+    await this.switchTo(tenantId);
+  }
+
+  private async switchTo(tenantId: number | null): Promise<void> {
     if (this.switching()) return;
     this.switching.set(true);
     this.switchError.set('');
@@ -247,7 +244,7 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
       this.close();
       await this.router.navigateByUrl('/dashboard');
     } catch (error) {
-      this.switchError.set(error instanceof Error ? error.message : 'Workspace could not be changed.');
+      this.switchError.set(error instanceof Error ? error.message : 'Unable to change your BBG area.');
     } finally {
       this.switching.set(false);
     }
@@ -263,18 +260,6 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
 
   setTheme(mode: ThemeMode): void {
     this.theme.setMode(mode);
-  }
-
-  personalContextLabel(): string {
-    return this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM')
-      ? 'Platform workspace'
-      : 'Personal / Marketplace';
-  }
-
-  roleLabel(roles: string | null): string {
-    if (!roles) return 'Workspace access';
-    return roles.split(',').map((role) => role.trim().toLowerCase()
-      .split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')).filter(Boolean).join(' · ');
   }
 
   async logout(): Promise<void> {
