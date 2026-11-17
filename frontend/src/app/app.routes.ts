@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+import { Routes } from '@angular/router';\nimport { WorkspaceLayout } from './features/workspace/workspace-layout';
 
 export const routes: Routes = [
   { path: 'business/register', loadComponent: () => import('./features/business-registration/business-registration').then((m) => m.BusinessRegistration), title: 'Register your business | BBG' },
