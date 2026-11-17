@@ -73,8 +73,14 @@ SELECT ts.tenant_id, ts.id, proof.id, ts.subscription_status, ts.rejection_reaso
        COALESCE(ts.approved_by, proof.reviewed_by, ts.updated_by, ts.created_by)
 FROM TENANT_SUBSCRIPTIONS ts
 LEFT JOIN SUBSCRIPTION_PAYMENT_PROOFS proof
-    ON proof.tenant_id = ts.tenant_id AND proof.subscription_id = ts.id
-    AND proof.review_status IN ('APPROVED', 'REJECTED') AND proof.status = 'A'
+    ON proof.id = (
+        SELECT MAX(proof_latest.id)
+        FROM SUBSCRIPTION_PAYMENT_PROOFS proof_latest
+        WHERE proof_latest.tenant_id = ts.tenant_id
+            AND proof_latest.subscription_id = ts.id
+            AND proof_latest.review_status = CASE WHEN ts.subscription_status = 'ACTIVE' THEN 'APPROVED' ELSE 'REJECTED' END
+            AND proof_latest.status = 'A'
+    )
 WHERE ts.subscription_status IN ('ACTIVE', 'REJECTED')
   AND ts.status = 'A'
   AND NOT EXISTS (
