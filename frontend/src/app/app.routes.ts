@@ -4,6 +4,7 @@ export const routes: Routes = [
   { path: 'business/register', loadComponent: () => import('./features/business-registration/business-registration').then((m) => m.BusinessRegistration), title: 'Register your business | BBG' },
   { path: 'workspace', loadComponent: () => import('./features/business-workspace/business-workspace').then((m) => m.BusinessWorkspace), title: 'Business registration status | BBG' },
   { path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard), title: 'Workspace Dashboard | BBG' },
+  { path: 'dashboard/catalogue', loadComponent: () => import('./features/catalogue/catalogue').then((m) => m.Catalogue), title: 'Product Catalogue | BBG' },
   {
     path: '',
     pathMatch: 'full',

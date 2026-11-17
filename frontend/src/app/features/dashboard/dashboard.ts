@@ -12,6 +12,7 @@ interface DashboardModule {
   permission: string;
   icon: string;
   scope: 'PLATFORM' | 'TENANT' | 'GLOBAL';
+  route?: string;
 }
 
 @Component({
@@ -88,7 +89,7 @@ interface DashboardModule {
                   <div class="module-top"><span class="module-icon">{{ module.icon }}</span><span class="access-indicator"><i></i> Access granted</span></div>
                   <h3>{{ module.title }}</h3>
                   <p>{{ module.description }}</p>
-                  <div class="module-foot"><span>{{ module.permission }}</span><span aria-hidden="true">✓</span></div>
+                  <div class="module-foot"><span>{{ module.permission }}</span>@if (module.route) { <a [routerLink]="module.route" (click)="$event.stopPropagation()">Open module <span aria-hidden="true">↗</span></a> } @else { <span aria-hidden="true">✓</span> }</div>
                 </article>
               }
             </div>
@@ -204,7 +205,7 @@ export class Dashboard implements OnInit {
   });
 
   private readonly modules: DashboardModule[] = [
-    { code: 'catalogue', title: 'Product catalogue', description: 'Manage products, categories, variants and product media for your business.', permission: 'CATALOGUE_MANAGE', icon: '▦', scope: 'TENANT' },
+    { code: 'catalogue', title: 'Product catalogue', description: 'Manage products, categories, variants and product media for your business.', permission: 'CATALOGUE_MANAGE', icon: '▦', scope: 'TENANT', route: '/dashboard/catalogue' },
     { code: 'business', title: 'Business profile', description: 'Maintain your business information and public storefront profile.', permission: 'BUSINESS_PROFILE_MANAGE', icon: '⌂', scope: 'TENANT' },
     { code: 'customers', title: 'Customers', description: 'View and manage customer relationships within this business.', permission: 'CUSTOMERS_MANAGE', icon: '♙', scope: 'TENANT' },
     { code: 'sales', title: 'Sales & enquiries', description: 'Review incoming enquiries and manage sales conversations.', permission: 'ENQUIRIES_MANAGE', icon: '↗', scope: 'TENANT' },
