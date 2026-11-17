@@ -14,10 +14,6 @@ import { BusinessRegistrationApiService } from '../../core/business/business-reg
     <main class="workspace">
       <section class="workspace-heading">
         <div>
-          @if (!isPersonalContext()) {
-            <p class="eyebrow">{{ isPlatformContext() ? 'PLATFORM ADMINISTRATION' : 'BUSINESS WORKSPACE' }}</p>
-            <h1>{{ isPlatformContext() ? 'Platform Administration' : 'Business Workspace' }}</h1>
-          }
           <p class="heading-copy">Good {{ greeting() }}, {{ firstName() }}.</p>
           
         </div>
