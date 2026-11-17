@@ -47,7 +47,7 @@ interface DataRecord { [key: string]: unknown; }
       } @else if (unsupported()) {
         <section class="state-panel"><span class="state-icon">ⓘ</span><strong>{{ unsupportedTitle() }}</strong><p>{{ unsupported() }}</p></section>
       } @else {
-        @if (summaryEntries().length) {
+        @if (summaryEntries().length && !(section() === 'customers' && !activeTenantId())) {
           <section class="summary-grid" aria-label="Summary">
             @for (entry of summaryEntries(); track entry.key) {
               <article class="summary-card"><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></article>
