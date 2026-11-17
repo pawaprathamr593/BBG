@@ -139,6 +139,7 @@ if (
     || $promotionDao === false
     || $promotionService === false
     || !str_contains($catalogueDao, "entitlement_code = 'PRODUCT_MANAGEMENT'")
+    || !str_contains($catalogueService, 'isEntitlementEnabled')
     || str_contains($catalogueDao, "entitlement_code = 'PRODUCT_LIMIT'")
     || !str_contains($promotionDao, "entitlement_code = 'PROMOTION_MANAGEMENT'")
     || !str_contains($promotionDao, "entitlement_code = 'DAILY_PROMOTION_LIMIT'")
@@ -146,7 +147,7 @@ if (
     || !str_contains($promotionService, 'lockTenantForPromotionPublish')
     || !str_contains($promotionService, 'countPromotionsPublishedOnTenantLocalDay')
 ) {
-    fwrite(STDERR, "Catalogue or promotion subscription entitlement enforcement does not match the BBG plan seed.\\n");
+    fwrite(STDERR, "Catalogue or promotion subscription entitlement enforcement does not match the BBG plan seed.\n");
     exit(1);
 }
 
