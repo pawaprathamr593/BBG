@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
+import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
 
 @Component({
   selector: 'app-business-registration',
@@ -57,6 +58,7 @@ export class BusinessRegistration implements OnInit {
   private readonly api = inject(BusinessRegistrationApiService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly workspace = inject(WorkspaceContextService);
 
   readonly busy = signal(false);
   readonly error = signal('');
@@ -81,7 +83,11 @@ export class BusinessRegistration implements OnInit {
         return;
       }
       if (!this.auth.user()) await this.auth.loadProfile();
-      if (await this.api.getMyApplication()) await this.router.navigate(['/dashboard/subscriptions']);
+      const application = await this.api.getMyApplication();
+      if (application) {
+        await this.workspace.switchWorkspace(application.tenant_id);
+        await this.router.navigate(['/dashboard/subscriptions']);
+      }
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     }
@@ -106,11 +112,12 @@ export class BusinessRegistration implements OnInit {
     try {
       if (!this.auth.isAuthenticated()) throw new Error('Your session has expired. Please sign in again.');
       const values = this.form.getRawValue();
-      await this.api.submitApplication({
+      const application = await this.api.submitApplication({
         ...values,
         tenant_type: 'BUSINESS',
         country_code: 'IN',
       });
+      await this.workspace.switchWorkspace(application.tenant_id);
       await this.router.navigate(['/dashboard/subscriptions']);
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
