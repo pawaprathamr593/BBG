@@ -25,7 +25,7 @@ Migration `20261117_002_subscription_payment_review_workflow.sql` adds:
 5. Owner uploads a receipt using the existing S3 proof flow.
 6. Owner explicitly clicks **Submit for Review**. Until this action, the request is not visible in the Admin review queue.
 7. Platform Admin reviews the business profile, selected plan, captured payment instructions and all receipt attempts from the subscription detail panel.
-8. Approval activates the subscription. Rejection requires a reason and returns the request to the owner for correction and resubmission.
+8. Approval activates the subscription, approves the associated business profile and activates the tenant in the same database transaction. Rejection requires a reason and returns the request to the owner for correction and resubmission.
 9. When the owner submits a replacement receipt after rejection, the subscription returns to PENDING and re-enters the Admin queue. Previous receipts and decisions remain in history.
 10. Each subsequent decision is retained in the review history. Old receipts are not overwritten.
 11. Subscription expiry suspends public visibility server-side while preserving authenticated workspace access for renewal. The owner sees EXPIRED in subscription history and can request renewal.
@@ -50,4 +50,4 @@ The existing tenant subscription routes remain the payment request and receipt w
 
 ## Public visibility enforcement
 
-Marketplace business, product and promotion queries require an approved business profile **and** an ACTIVE subscription whose start/end dates include the current time. This is enforced in the backend DAO queries, not only by hiding frontend links. Tenant owners retain private workspace access for subscription renewal.
+Marketplace business, product and promotion queries require an approved business profile **and** an ACTIVE subscription whose start/end dates include the current time. This is enforced in the backend DAO queries, not only by hiding frontend links. Pending business owners receive only the `SUBSCRIPTIONS_MANAGE` permission needed to complete plan selection and payment; other tenant permissions remain unavailable until the subscription review approves the business. Tenant owners retain private workspace access for subscription renewal.
