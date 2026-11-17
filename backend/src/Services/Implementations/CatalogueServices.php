@@ -439,7 +439,8 @@ final readonly class CatalogueServices implements ICatalogueServices
             'image/jpeg' => 'IMAGE', 'image/png' => 'IMAGE', 'image/webp' => 'IMAGE', 'image/gif' => 'IMAGE',
             'video/mp4' => 'VIDEO', 'video/webm' => 'VIDEO',
             'audio/mpeg' => 'AUDIO', 'audio/wav' => 'AUDIO', 'audio/ogg' => 'AUDIO',
-            'application/pdf' => 'DOCUMENT',
+            'application/pdf' => 'DOCUMENT', 'text/plain' => 'DOCUMENT', 'text/csv' => 'DOCUMENT',
+            'application/rtf' => 'DOCUMENT',
         ];
         return ($types[$mimeType] ?? null) === $mediaType;
     }
@@ -458,6 +459,8 @@ final readonly class CatalogueServices implements ICatalogueServices
             'audio/wav' => str_starts_with($signature, 'RIFF') && substr($signature, 8, 4) === 'WAVE',
             'audio/ogg' => str_starts_with($signature, 'OggS'),
             'application/pdf' => str_starts_with($signature, '%PDF-'),
+            'text/plain', 'text/csv' => !str_contains($signature, "\\0"),
+            'application/rtf' => str_starts_with($signature, '{\\rtf'),
             default => false,
         };
     }
@@ -523,6 +526,9 @@ final readonly class CatalogueServices implements ICatalogueServices
             'audio/wav' => ['extension' => 'wav', 'media_type' => 'AUDIO'],
             'audio/ogg' => ['extension' => 'ogg', 'media_type' => 'AUDIO'],
             'application/pdf' => ['extension' => 'pdf', 'media_type' => 'DOCUMENT'],
+            'text/plain' => ['extension' => 'txt', 'media_type' => 'DOCUMENT'],
+            'text/csv' => ['extension' => 'csv', 'media_type' => 'DOCUMENT'],
+            'application/rtf' => ['extension' => 'rtf', 'media_type' => 'DOCUMENT'],
         ];
 
         if ($productId === null || $fileName === null || !isset($mimeExtensions[$mimeType])
