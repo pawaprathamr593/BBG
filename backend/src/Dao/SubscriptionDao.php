@@ -137,7 +137,13 @@ final readonly class SubscriptionDao
             ts.amount, ts.currency, ts.approved_on, ts.rejection_reason, ts.created_on,
             instructions.config_version AS payment_qr_version, instructions.payee_name AS payment_payee_name,
             instructions.upi_id AS payment_upi_id, instructions.qr_file_path AS payment_qr_file_path,
-            instructions.payment_instructions
+            instructions.payment_instructions,
+            (SELECT proof.review_status FROM SUBSCRIPTION_PAYMENT_PROOFS proof
+                WHERE proof.tenant_id = ts.tenant_id AND proof.subscription_id = ts.id AND proof.status = 'A'
+                ORDER BY proof.id DESC LIMIT 1) AS latest_proof_review_status,
+            (SELECT proof.submitted_on FROM SUBSCRIPTION_PAYMENT_PROOFS proof
+                WHERE proof.tenant_id = ts.tenant_id AND proof.subscription_id = ts.id AND proof.status = 'A'
+                ORDER BY proof.id DESC LIMIT 1) AS latest_proof_submitted_on
             FROM TENANT_SUBSCRIPTIONS ts
             INNER JOIN PLANS p ON p.id = ts.plan_id AND p.status = 'A'
             LEFT JOIN TENANT_SUBSCRIPTION_PAYMENT_INSTRUCTIONS instructions
