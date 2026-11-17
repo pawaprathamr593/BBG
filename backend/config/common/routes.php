@@ -98,7 +98,8 @@ return [
     Route::post('/api/v1/catalogue/products/media/delete')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/media/delete'),
 
     Route::post('/api/v1/customers/profile')->action([CustomerController::class, 'actionGetCustomer'])->name('api/v1/customers/profile'),
-    Route::post('/api/v1/customers/addresses/list')->action([CustomerController::class, 'actionGetCustomer'])->name('api/v1/customers/addresses/list'),\n    Route::post('/api/v1/customers/tenant/list')->action([CustomerController::class, 'actionGetCustomer'])->name('api/v1/customers/tenant/list'),
+    Route::post('/api/v1/customers/addresses/list')->action([CustomerController::class, 'actionGetCustomer'])->name('api/v1/customers/addresses/list'),
+    Route::post('/api/v1/customers/tenant/list')->action([CustomerController::class, 'actionGetCustomer'])->name('api/v1/customers/tenant/list'),
     Route::post('/api/v1/customers/addresses/create')->action([CustomerController::class, 'actionManageCustomer'])->name('api/v1/customers/addresses/create'),
     Route::post('/api/v1/customers/addresses/update')->action([CustomerController::class, 'actionManageCustomer'])->name('api/v1/customers/addresses/update'),
     Route::post('/api/v1/customers/addresses/delete')->action([CustomerController::class, 'actionManageCustomer'])->name('api/v1/customers/addresses/delete'),
