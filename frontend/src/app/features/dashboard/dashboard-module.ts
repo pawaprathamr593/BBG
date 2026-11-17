@@ -156,7 +156,10 @@ interface DataRecord { [key: string]: unknown; }
                     </div>
                   }
 
-                  @if (section() === 'subscriptions' && ['PENDING','REJECTED'].includes(statusOf(item).toUpperCase())) {
+                  @if (section() === 'subscriptions' && statusOf(item).toUpperCase() === 'PENDING' && item['latest_proof_review_status'] === 'PENDING') {
+                    <p class="payment-instructions">Your receipt was submitted on {{ formatValue(item['latest_proof_submitted_on']) }} and is awaiting Platform Admin review.</p>
+                  }
+                  @if (section() === 'subscriptions' && ['PENDING','REJECTED'].includes(statusOf(item).toUpperCase()) && item['latest_proof_review_status'] !== 'PENDING') {
                     <label class="upload-proof">Upload payment proof
                       <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" [disabled]="busy()" (change)="uploadProof($event, item)" />
                     </label>
