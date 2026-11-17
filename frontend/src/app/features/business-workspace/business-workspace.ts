@@ -1,10 +1,11 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { BusinessApplication, BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-business-workspace',
   standalone: true,
   template: `
