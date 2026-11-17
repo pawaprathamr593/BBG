@@ -284,7 +284,11 @@ export class DashboardModule implements OnInit {
           this.summary.set(await this.request<DataRecord>('/api/v1/business/storefront/get','businessParam','getMyStorefront',{tenant_id:tenantId}));
           break;
         case 'customers':
-          if (tenantId) return this.setUnsupported('The current backend exposes customer profile and address endpoints for the signed-in consumer, but does not expose a tenant-wide customer directory. This page will not display fabricated customer records.');
+          if (tenantId) {
+            const data = await this.request<{items?:DataRecord[]}>('/api/v1/customers/tenant/list','customerParam','listTenantCustomers',pageData);
+            this.items.set(data.items ?? []);
+            break;
+          }
           {
             const [profile, addresses] = await Promise.all([
               this.request<DataRecord>('/api/v1/customers/profile','customerParam','getMyCustomerProfile'),
