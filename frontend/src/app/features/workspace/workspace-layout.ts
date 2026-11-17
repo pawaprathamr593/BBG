@@ -214,7 +214,7 @@ export class WorkspaceLayout implements OnInit {
     const scope = this.activeTenantId() === null ? ['PLATFORM','GLOBAL'] : ['TENANT'];
     const perms = this.permissions();
     const available = (permission: string | null, itemScope: WorkspaceNavItem['scope']) => {
-      if (itemScope === 'GLOBAL') return perms.some((p) => p.role_code === 'CONSUMER' && p.scope_type === 'GLOBAL');
+      if (itemScope === 'GLOBAL') return !!permission && perms.some((p) => p.role_code === 'CONSUMER' && p.permission_code === permission && p.scope_type === 'GLOBAL');
       if (!permission) return true;
       return perms.some((p) => p.permission_code === permission && (itemScope === 'ANY' || p.scope_type === itemScope));
     };
