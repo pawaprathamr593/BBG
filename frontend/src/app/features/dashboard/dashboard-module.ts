@@ -131,6 +131,13 @@ interface DataRecord { [key: string]: unknown; }
                       <div><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
                     }
                   </div>
+                  @if (section() === 'subscriptions' && item['payment_qr_url']) {
+                    <div class="subscription-payment-qr">
+                      <img [src]="$any(item['payment_qr_url'])" alt="UPI payment QR for this subscription">
+                      <div><strong>Pay using UPI</strong><span>{{ item['payment_payee_name'] }}</span><span>{{ item['payment_upi_id'] }}</span><small>QR version {{ item['payment_qr_version'] }} · retained for this request</small></div>
+                    </div>
+                    @if (item['payment_instructions']) { <p class="payment-instructions">{{ item['payment_instructions'] }}</p> }
+                  }
                   @if (section() === 'promotions' && mediaOf(item).length) {
                     <div class="post-media-strip" aria-label="Post attachments">
                       @for (media of mediaOf(item); track media['id']) {
