@@ -1,8 +1,8 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { firstValueFrom } from 'rxjs';
+import { filter, firstValueFrom, lastValueFrom, tap } from 'rxjs';
 import { API_BASE_URL } from '../../core/config/api-base-url';
 import { AuthService } from '../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
@@ -145,7 +145,7 @@ interface DataRecord { [key: string]: unknown; }
               }
             </div>
             @if (promotionError()) { <p class="composer-error" role="alert">{{ promotionError() }}</p> }
-            @if (promotionMediaBusy()) { <p class="composer-hint" role="status">Saving post and uploading attachments… please keep this window open.</p> }
+            @if (promotionMediaBusy()) { <div class="composer-progress" role="status"><progress [value]="promotionUploadProgress()" max="100"></progress><span>Uploading attachments… {{ promotionUploadProgress() }}%</span></div> }
             <footer><button type="button" class="refresh" (click)="closePromotionComposer()" [disabled]="promotionMediaBusy()">Cancel</button><button type="button" class="secondary-action" (click)="submitPromotion()" [disabled]="promotionMediaBusy() || !promotionContent().trim()">{{ promotionMediaBusy() ? 'Uploading…' : (promotionFiles().length ? 'Save post & upload media' : 'Create draft') }}</button></footer>
           </section>
         </div>
@@ -155,7 +155,7 @@ interface DataRecord { [key: string]: unknown; }
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
     .post-media-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.post-media-strip img{width:72px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}.post-media-strip video{width:120px;height:72px;border-radius:8px;background:#111}.post-media-strip audio{width:min(240px,100%);height:36px}.post-media-strip a,.post-media-strip span{align-self:center;padding:8px 10px;border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.72rem;text-decoration:none}
-    .composer-backdrop{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:18px;background:rgba(10,18,15,.62)}.promotion-composer{width:min(680px,100%);max-height:90vh;overflow:auto;padding:24px;background:var(--surface-card);color:var(--text-primary);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.25)}.promotion-composer header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.promotion-composer header .eyebrow{margin:0 0 7px}.promotion-composer h2{margin:0;font-size:1.35rem}.promotion-composer header p:last-child{margin:6px 0 0;color:var(--text-secondary);font-size:.78rem}.composer-close{border:0;background:transparent;color:var(--text-secondary);font-size:1.5rem;cursor:pointer}.promotion-composer>label{display:grid;gap:7px;margin:13px 0;font-size:.78rem;font-weight:700}.promotion-composer input[type=text],.promotion-composer input[type=datetime-local],.promotion-composer textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.82rem}.promotion-composer label small{font-weight:400;color:var(--text-secondary)}.post-upload-zone{margin:16px 0}.post-file-picker{display:grid;justify-items:center;gap:5px;padding:22px;border:1px dashed var(--border);border-radius:11px;background:var(--surface-page);cursor:pointer}.post-file-picker>span{font-size:1.5rem;color:var(--brand)}.post-file-picker strong{font-size:.8rem}.post-file-picker small{font-size:.68rem;color:var(--text-secondary)}.post-file-picker input{max-width:100%;margin-top:7px;font-size:.7rem}.post-file-list{display:grid;gap:7px;margin-top:10px}.post-file-list>div{display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:5px 10px;align-items:center;padding:9px;border:1px solid var(--border);border-radius:8px}.post-file-list span{grid-row:span 2;font-size:.62rem;font-weight:800;color:var(--brand)}.post-file-list strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.74rem}.post-file-list small{font-size:.66rem;color:var(--text-secondary)}.post-file-list button{grid-column:3;grid-row:1/3;border:0;background:transparent;color:#bf4545;font:inherit;font-size:.7rem;cursor:pointer}.promotion-composer footer{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.composer-error{color:#c43d3d;font-size:.78rem}.composer-hint{color:var(--text-secondary);font-size:.75rem}
+    .composer-backdrop{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:18px;background:rgba(10,18,15,.62)}.promotion-composer{width:min(680px,100%);max-height:90vh;overflow:auto;padding:24px;background:var(--surface-card);color:var(--text-primary);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.25)}.promotion-composer header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.promotion-composer header .eyebrow{margin:0 0 7px}.promotion-composer h2{margin:0;font-size:1.35rem}.promotion-composer header p:last-child{margin:6px 0 0;color:var(--text-secondary);font-size:.78rem}.composer-close{border:0;background:transparent;color:var(--text-secondary);font-size:1.5rem;cursor:pointer}.promotion-composer>label{display:grid;gap:7px;margin:13px 0;font-size:.78rem;font-weight:700}.promotion-composer input[type=text],.promotion-composer input[type=datetime-local],.promotion-composer textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.82rem}.promotion-composer label small{font-weight:400;color:var(--text-secondary)}.post-upload-zone{margin:16px 0}.post-file-picker{display:grid;justify-items:center;gap:5px;padding:22px;border:1px dashed var(--border);border-radius:11px;background:var(--surface-page);cursor:pointer}.post-file-picker>span{font-size:1.5rem;color:var(--brand)}.post-file-picker strong{font-size:.8rem}.post-file-picker small{font-size:.68rem;color:var(--text-secondary)}.post-file-picker input{max-width:100%;margin-top:7px;font-size:.7rem}.post-file-list{display:grid;gap:7px;margin-top:10px}.post-file-list>div{display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:5px 10px;align-items:center;padding:9px;border:1px solid var(--border);border-radius:8px}.post-file-list span{grid-row:span 2;font-size:.62rem;font-weight:800;color:var(--brand)}.post-file-list strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.74rem}.post-file-list small{font-size:.66rem;color:var(--text-secondary)}.post-file-list button{grid-column:3;grid-row:1/3;border:0;background:transparent;color:#bf4545;font:inherit;font-size:.7rem;cursor:pointer}.promotion-composer footer{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.composer-error{color:#c43d3d;font-size:.78rem}.composer-progress{display:flex;align-items:center;gap:10px;color:var(--text-secondary);font-size:.72rem}.composer-progress progress{flex:1;height:7px;accent-color:var(--brand)}
     .module-page{width:min(1320px,100%);margin:0 auto;padding:42px 32px 76px}
     .page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:25px}
     .back-link{display:inline-block;margin-bottom:20px;color:var(--text-secondary);font-size:.78rem;font-weight:700;text-decoration:none}
@@ -216,6 +216,7 @@ export class DashboardModule implements OnInit {
   readonly promotionValidUntil = signal('');
   readonly promotionFiles = signal<File[]>([]);
   readonly promotionMediaBusy = signal(false);
+  readonly promotionUploadProgress = signal(0);
   readonly promotionError = signal('');
   readonly draftPromotionId = signal<number | null>(null);
   readonly promotionUploadedCount = signal(0);
@@ -652,9 +653,18 @@ export class DashboardModule implements OnInit {
             tenant_id:tenantId,promotion_id:promotionId,original_file_name:file.name,mime_type:file.type,file_size_bytes:file.size,
           },
         );
-        await firstValueFrom(this.http.put(upload.upload_url,file,{
-          headers:new HttpHeaders(upload.headers ?? {'Content-Type':file.type}),responseType:'text',
-        }));
+        this.promotionUploadProgress.set(0);
+        await lastValueFrom(this.http.put(upload.upload_url,file,{
+          headers:new HttpHeaders(upload.headers ?? {'Content-Type':file.type}),
+          observe:'events',reportProgress:true,responseType:'text',
+        }).pipe(
+          tap((event) => {
+            if (event.type === HttpEventType.UploadProgress && event.total) {
+              this.promotionUploadProgress.set(Math.round((event.loaded / event.total) * 100));
+            }
+          }),
+          filter((event) => event.type === HttpEventType.Response),
+        ));
         const mediaType = file.type.startsWith('image/') ? 'IMAGE' : file.type.startsWith('video/') ? 'VIDEO'
           : file.type.startsWith('audio/') ? 'AUDIO' : 'DOCUMENT';
         await this.request('/api/v1/promotions/media/link','promotionParam','linkPromotionMedia',{
@@ -672,6 +682,7 @@ export class DashboardModule implements OnInit {
       this.promotionError.set(this.auth.errorMessage(error));
     } finally {
       this.promotionMediaBusy.set(false);
+      this.promotionUploadProgress.set(0);
     }
   }
 
