@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { AuthDialogService } from '../../../core/auth/auth-dialog.service';
@@ -6,6 +6,7 @@ import { BusinessRegistrationApiService } from '../../../core/business/business-
 import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, MarketplaceProduct, MarketplacePromotion, MarketplaceHomeStats } from '../../../core/marketplace/marketplace-api.service';
 
 @Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-marketplace-home',
   imports: [RouterLink],
   template: `
