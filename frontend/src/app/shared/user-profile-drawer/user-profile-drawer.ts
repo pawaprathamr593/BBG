@@ -248,7 +248,7 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
   }
 
   async goToBusinessWorkspace(): Promise<void> {
-    const tenantId = this.workspace.activeTenantId() ?? this.workspace.tenants()[0]?.id ?? null;
+    const tenantId = this.workspace.activeTenantId() ?? this.workspace.lastActiveTenantId() ?? this.workspace.tenants()[0]?.id ?? null;
     if (tenantId === null) return;
     await this.switchTo(tenantId);
   }
