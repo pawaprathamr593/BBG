@@ -95,6 +95,16 @@ interface DataRecord { [key: string]: unknown; }
                       <div><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
                     }
                   </div>
+                  @if (section() === 'promotions' && mediaOf(item).length) {
+                    <div class="post-media-strip" aria-label="Post attachments">
+                      @for (media of mediaOf(item); track media['id']) {
+                        @if (media['url'] && media['media_type'] === 'IMAGE') { <img [src]="$any(media['url'])" [alt]="'Post image ' + media['id']"> }
+                        @else if (media['url']) { <a [href]="$any(media['url'])" target="_blank" rel="noopener">{{ media['media_type'] }} attachment</a> }
+                        @else { <span>{{ media['media_type'] }} attachment</span> }
+                      }
+                    </div>
+                  }
+
                   @if (section() === 'subscriptions' && ['PENDING','REJECTED'].includes(statusOf(item).toUpperCase())) {
                     <label class="upload-proof">Upload payment proof
                       <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" [disabled]="busy()" (change)="uploadProof($event, item)" />
@@ -115,10 +125,35 @@ interface DataRecord { [key: string]: unknown; }
           <section class="state-panel empty"><span class="state-icon">⌑</span><strong>Nothing to show yet</strong><p>There are no records available for this section in the current workspace.</p></section>
         }
       }
+      @if (showPromotionComposer()) {
+        <div class="composer-backdrop" (click)="closePromotionComposer()">
+          <section class="promotion-composer" role="dialog" aria-modal="true" aria-labelledby="promotion-composer-title" (click)="$event.stopPropagation()">
+            <header><div><p class="eyebrow">BUSINESS WORKSPACE / PROMOTIONS</p><h2 id="promotion-composer-title">Create promotion</h2><p>Prepare your post and attach multiple media files.</p></div><button type="button" class="composer-close" (click)="closePromotionComposer()" [disabled]="promotionMediaBusy()">×</button></header>
+            <label>Post title <input type="text" maxlength="180" [value]="promotionTitle()" (input)="setPromotionField('title',$event)" placeholder="e.g. Festive season offer"></label>
+            <label>Post content <textarea rows="5" maxlength="10000" [value]="promotionContent()" (input)="setPromotionField('content',$event)" placeholder="Tell customers about your offer…" required></textarea></label>
+            <label>Valid until <input type="datetime-local" [value]="promotionValidUntil()" (input)="setPromotionField('validUntil',$event)"><small>Optional. Leave blank for no expiry date.</small></label>
+            <div class="post-upload-zone">
+              <label class="post-file-picker"><span>＋</span><strong>Add media files</strong><small>Images, videos, audio and PDF · multiple selection · max 10 MB per file<input type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,application/pdf" (change)="selectPromotionMedia($event)" [disabled]="promotionMediaBusy()"></label></label>
+              @if (promotionFiles().length) {
+                <div class="post-file-list">
+                  @for (file of promotionFiles(); track $index) {
+                    <div><span>{{ mediaLabel(file.type) }}</span><strong>{{ file.name }}</strong><small>{{ fileSize(file.size) }}</small><button type="button" (click)="removePromotionMedia($index)" [disabled]="promotionMediaBusy()">Remove</button></div>
+                  }
+                </div>
+              }
+            </div>
+            @if (promotionError()) { <p class="composer-error" role="alert">{{ promotionError() }}</p> }
+            @if (promotionMediaBusy()) { <p class="composer-hint" role="status">Saving post and uploading attachments… please keep this window open.</p> }
+            <footer><button type="button" class="refresh" (click)="closePromotionComposer()" [disabled]="promotionMediaBusy()">Cancel</button><button type="button" class="secondary-action" (click)="submitPromotion()" [disabled]="promotionMediaBusy() || !promotionContent().trim()">{{ promotionMediaBusy() ? 'Uploading…' : (promotionFiles().length ? 'Save post & upload media' : 'Create draft') }}</button></footer>
+          </section>
+        </div>
+      }
     </main>
   `,
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
+    .post-media-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.post-media-strip img{width:72px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}.post-media-strip a,.post-media-strip span{align-self:center;padding:8px 10px;border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.72rem;text-decoration:none}
+    .composer-backdrop{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:18px;background:rgba(10,18,15,.62)}.promotion-composer{width:min(680px,100%);max-height:90vh;overflow:auto;padding:24px;background:var(--surface-card);color:var(--text-primary);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.25)}.promotion-composer header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.promotion-composer header .eyebrow{margin:0 0 7px}.promotion-composer h2{margin:0;font-size:1.35rem}.promotion-composer header p:last-child{margin:6px 0 0;color:var(--text-secondary);font-size:.78rem}.composer-close{border:0;background:transparent;color:var(--text-secondary);font-size:1.5rem;cursor:pointer}.promotion-composer>label{display:grid;gap:7px;margin:13px 0;font-size:.78rem;font-weight:700}.promotion-composer input[type=text],.promotion-composer input[type=datetime-local],.promotion-composer textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.82rem}.promotion-composer label small{font-weight:400;color:var(--text-secondary)}.post-upload-zone{margin:16px 0}.post-file-picker{display:grid;justify-items:center;gap:5px;padding:22px;border:1px dashed var(--border);border-radius:11px;background:var(--surface-page);cursor:pointer}.post-file-picker>span{font-size:1.5rem;color:var(--brand)}.post-file-picker strong{font-size:.8rem}.post-file-picker small{font-size:.68rem;color:var(--text-secondary)}.post-file-picker input{max-width:100%;margin-top:7px;font-size:.7rem}.post-file-list{display:grid;gap:7px;margin-top:10px}.post-file-list>div{display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:5px 10px;align-items:center;padding:9px;border:1px solid var(--border);border-radius:8px}.post-file-list span{grid-row:span 2;font-size:.62rem;font-weight:800;color:var(--brand)}.post-file-list strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.74rem}.post-file-list small{font-size:.66rem;color:var(--text-secondary)}.post-file-list button{grid-column:3;grid-row:1/3;border:0;background:transparent;color:#bf4545;font:inherit;font-size:.7rem;cursor:pointer}.promotion-composer footer{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.composer-error{color:#c43d3d;font-size:.78rem}.composer-hint{color:var(--text-secondary);font-size:.75rem}
     .module-page{width:min(1320px,100%);margin:0 auto;padding:42px 32px 76px}
     .page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:25px}
     .back-link{display:inline-block;margin-bottom:20px;color:var(--text-secondary);font-size:.78rem;font-weight:700;text-decoration:none}
@@ -173,6 +208,14 @@ export class DashboardModule implements OnInit {
   readonly summary = signal<DataRecord | null>(null);
   readonly plans = signal<DataRecord[]>([]);
   readonly pendingPlanId = signal<number | null>(null);
+  readonly showPromotionComposer = signal(false);
+  readonly promotionTitle = signal('');
+  readonly promotionContent = signal('');
+  readonly promotionValidUntil = signal('');
+  readonly promotionFiles = signal<File[]>([]);
+  readonly promotionMediaBusy = signal(false);
+  readonly promotionError = signal('');
+  readonly draftPromotionId = signal<number | null>(null);
 
   readonly title = computed(() => this.config[this.section()]?.title ?? 'Workspace');
   readonly description = computed(() => this.config[this.section()]?.description ?? 'Manage your BBG workspace.');
@@ -541,14 +584,100 @@ export class DashboardModule implements OnInit {
   }
 
   async createPromotion(): Promise<void> {
-    const title = window.prompt('Promotion title:');
-    const content = window.prompt('Promotion content (required):');
-    if (!content?.trim()) return;
-    const validUntil = window.prompt('Valid until (optional date-time, YYYY-MM-DD HH:MM:SS):');
-    await this.performAction('/api/v1/promotions/create','promotionParam','createPromotion',{
-      tenant_id:this.workspace.activeTenantId(),post_title:title ?? '',post_content:content.trim(),
-      ...(validUntil?.trim()?{valid_until:validUntil.trim()}:{})
-    });
+    this.draftPromotionId.set(null);
+    this.promotionTitle.set('');
+    this.promotionContent.set('');
+    this.promotionValidUntil.set('');
+    this.promotionFiles.set([]);
+    this.promotionError.set('');
+    this.showPromotionComposer.set(true);
+  }
+
+  closePromotionComposer(): void {
+    if (this.promotionMediaBusy()) return;
+    this.showPromotionComposer.set(false);
+    this.draftPromotionId.set(null);
+  }
+
+  setPromotionField(field: 'title' | 'content' | 'validUntil', event: Event): void {
+    const value = (event.target as HTMLInputElement | HTMLTextAreaElement).value;
+    if (field === 'title') this.promotionTitle.set(value);
+    else if (field === 'content') this.promotionContent.set(value);
+    else this.promotionValidUntil.set(value);
+  }
+
+  selectPromotionMedia(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    const allowed = new Set(['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','audio/mpeg','audio/wav','audio/ogg','application/pdf']);
+    const invalid = files.find((file) => !allowed.has(file.type) || file.size < 1 || file.size > 10 * 1024 * 1024);
+    if (invalid) this.promotionError.set(`"${invalid.name}" is not supported or exceeds the 10 MB per-file limit.`);
+    else {
+      this.promotionError.set('');
+      this.promotionFiles.update((current) => [...current, ...files]);
+    }
+    input.value = '';
+  }
+
+  removePromotionMedia(index: number): void {
+    this.promotionFiles.update((files) => files.filter((_, position) => position !== index));
+  }
+
+  async submitPromotion(): Promise<void> {
+    const tenantId = this.workspace.activeTenantId();
+    if (!tenantId || !this.promotionContent().trim() || this.promotionMediaBusy()) return;
+    this.promotionMediaBusy.set(true);
+    this.promotionError.set('');
+    try {
+      let promotionId = this.draftPromotionId();
+      if (!promotionId) {
+        const result = await this.request<{id:number}>('/api/v1/promotions/create','promotionParam','createPromotion',{
+          tenant_id:tenantId,post_title:this.promotionTitle().trim(),post_content:this.promotionContent().trim(),
+          ...(this.promotionValidUntil() ? {valid_until:this.promotionValidUntil().replace('T',' ') + (this.promotionValidUntil().length === 16 ? ':00' : '')} : {}),
+        });
+        promotionId = Number(result.id);
+        if (!promotionId) throw new Error('The draft was created but its identifier was not returned.');
+        this.draftPromotionId.set(promotionId);
+      }
+      const files = this.promotionFiles();
+      for (let index = 0; index < files.length; index++) {
+        const file = files[index];
+        const upload = await this.request<{upload_url:string;object_key:string;headers:Record<string,string>}>(
+          '/api/v1/promotions/media/upload-url','promotionParam','generatePromotionMediaUploadUrl',{
+            tenant_id:tenantId,promotion_id:promotionId,original_file_name:file.name,mime_type:file.type,file_size_bytes:file.size,
+          },
+        );
+        await firstValueFrom(this.http.put(upload.upload_url,file,{
+          headers:new HttpHeaders(upload.headers ?? {'Content-Type':file.type}),responseType:'text',
+        }));
+        const mediaType = file.type.startsWith('image/') ? 'IMAGE' : file.type.startsWith('video/') ? 'VIDEO'
+          : file.type.startsWith('audio/') ? 'AUDIO' : 'DOCUMENT';
+        await this.request('/api/v1/promotions/media/link','promotionParam','linkPromotionMedia',{
+          tenant_id:tenantId,promotion_id:promotionId,file_path:upload.object_key,mime_type:file.type,
+          file_size_bytes:file.size,display_order:index,media_type:mediaType,
+        });
+        this.promotionFiles.update((remaining) => remaining.filter((candidate) => candidate !== file));
+      }
+      this.notice.set('Promotion draft and attachments saved. Publish it when ready.');
+      this.showPromotionComposer.set(false);
+      this.draftPromotionId.set(null);
+      await this.load();
+    } catch (error) {
+      this.promotionError.set(this.auth.errorMessage(error));
+    } finally {
+      this.promotionMediaBusy.set(false);
+    }
+  }
+
+  mediaOf(item: DataRecord): DataRecord[] {
+    const media = item['media'];
+    return Array.isArray(media) ? media as DataRecord[] : [];
+  }
+  mediaLabel(mime: string): string {
+    return mime.startsWith('image/') ? 'IMAGE' : mime.startsWith('video/') ? 'VIDEO' : mime.startsWith('audio/') ? 'AUDIO' : 'PDF';
+  }
+  fileSize(bytes: number): string {
+    return bytes < 1024 * 1024 ? `${Math.max(1,Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   async createAddress(): Promise<void> {
