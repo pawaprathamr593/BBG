@@ -1,0 +1,76 @@
+<div class="workspace-shell">
+  <header class="workspace-topbar">
+    <a class="brand" routerLink="/" aria-label="BBG home"><span class="brand-mark">B</span><span>BBG</span></a>
+    <div class="topbar-right">
+      <span class="account-name">{{ accountName() }}</span>
+      <button type="button" class="icon-button" (click)="theme.toggle()" [attr.aria-label]="theme.resolvedTheme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'">
+        {{ theme.resolvedTheme() === 'dark' ? '☀' : '☾' }}
+      </button>
+      <button type="button" class="signout-button" (click)="signOut()">Sign out</button>
+    </div>
+  </header>
+
+  <div class="workspace-body">
+    <aside class="workspace-sidebar">
+      <div class="sidebar-intro">
+        <span class="eyebrow">WORKSPACE</span>
+        <h1>Good to see you.</h1>
+        <p>Manage your BBG activity from one place.</p>
+      </div>
+
+      <div class="context-switcher" aria-label="Workspace context">
+        <button type="button" [class.active]="workspace.mode() === 'PERSONAL'" (click)="changeMode('PERSONAL')">Personal</button>
+        @if (canUseBusinessContext()) {
+          <button type="button" [class.active]="workspace.mode() === 'BUSINESS'" (click)="changeMode('BUSINESS')">Business</button>
+        }
+        @if (hasPlatformAccess()) {
+          <button type="button" [class.active]="workspace.mode() === 'PLATFORM'" (click)="changeMode('PLATFORM')">Platform</button>
+        }
+      </div>
+
+      @if (workspace.mode() === 'BUSINESS') {
+        <label class="business-select">
+          <span>Active business</span>
+          <select [value]="workspace.tenantId() ?? ''" (change)="onBusinessChange($event)" [disabled]="loadingTenants() || loadingPermissions()">
+            <option value="">Choose a business</option>
+            @for (tenant of workspace.tenants(); track tenant.id) {
+              <option [value]="tenant.id">{{ tenant.tenant_name }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      <nav class="workspace-nav" aria-label="Workspace navigation">
+        <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <span class="nav-icon">⌂</span><span>Overview</span>
+        </a>
+        @if (workspace.mode() === 'BUSINESS' && hasCatalogueAccess()) {
+          <a routerLink="/dashboard/catalogue" routerLinkActive="active">
+            <span class="nav-icon">▦</span><span>Catalogue</span>
+          </a>
+        }
+        @if (workspace.mode() === 'BUSINESS' && !hasCatalogueAccess() && workspace.tenantId()) {
+          <p class="nav-hint">No catalogue permission is assigned to this membership.</p>
+        }
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="secure-dot"></span>
+        <span>Protected by BBG access controls</span>
+      </div>
+    </aside>
+
+    <main class="workspace-content">
+      @if (loadingTenants() || loadingPermissions()) {
+        <div class="loading-state" role="status">Loading your workspace…</div>
+      }
+      @if (error()) {
+        <div class="notice notice-error" role="alert">{{ error() }}</div>
+      }
+      @if (notice()) {
+        <div class="notice notice-info" role="status">{{ notice() }}</div>
+      }
+      <router-outlet />
+    </main>
+  </div>
+</div>
