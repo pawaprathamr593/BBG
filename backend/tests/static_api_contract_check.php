@@ -71,6 +71,19 @@ foreach ($dispatchMarkers as $module => $marker) {
     }
 }
 
+$catalogueDao = file_get_contents($root . '/src/Dao/CatalogueDao.php');
+$catalogueService = file_get_contents($root . '/src/Services/Implementations/CatalogueServices.php');
+if (
+    $catalogueDao === false
+    || $catalogueService === false
+    || !str_contains($catalogueDao, 'getActiveProductEntitlements')
+    || !str_contains($catalogueService, 'PRODUCT_MANAGEMENT')
+    || !str_contains($catalogueService, 'PRODUCT_LIMIT')
+) {
+    fwrite(STDERR, "Catalogue product-management entitlement contract is incomplete.\n");
+    exit(1);
+}
+
 $subscriptionService = file_get_contents($root . '/src/Services/Implementations/SubscriptionServices.php');
 $subscriptionController = file_get_contents($root . '/src/Modules/Api/V1/Controllers/SubscriptionController.php');
 if (

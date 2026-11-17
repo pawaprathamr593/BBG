@@ -47,8 +47,10 @@ const emptyProduct = (): ProductForm => ({
         <section class="state-panel error" role="alert"><strong>Catalogue unavailable</strong><p>{{ error() }}</p><button type="button" class="secondary-button" (click)="load()">Try again</button></section>
       } @else if (!tenantId()) {
         <section class="state-panel"><strong>Select a business workspace first</strong><p>Catalogue data is tenant-specific. Return to your dashboard and select the business workspace you want to manage.</p><a routerLink="/dashboard" class="text-link">Choose workspace →</a></section>
-      } @else if (!canManage()) {
+      } @else if (!hasPermission()) {
         <section class="state-panel"><strong>You don't have catalogue access</strong><p>This workspace has not granted you the CATALOGUE_MANAGE permission.</p><a routerLink="/dashboard" class="text-link">Return to dashboard →</a></section>
+      } @else if (!hasProductEntitlement()) {
+        <section class="state-panel"><strong>Product management isn't included in this plan</strong><p>Your current active subscription does not include the PRODUCT_MANAGEMENT entitlement. Upgrade the business plan to manage products.</p><a routerLink="/dashboard" class="text-link">Return to dashboard →</a></section>
       } @else {
         <section class="stats-row" aria-label="Catalogue summary">
           <article><span>Active products</span><strong>{{ totalProducts() }}</strong></article>
@@ -171,8 +173,16 @@ export class Catalogue implements OnInit {
 
   readonly tenantId = this.workspace.activeTenantId;
   readonly permissions = this.workspace.permissions;
-  readonly canManage = computed(() => this.permissions().some((permission) =>
+  readonly hasPermission = computed(() => this.permissions().some((permission) =>
     permission.scope_type === 'TENANT' && permission.permission_code === 'CATALOGUE_MANAGE'));
+  readonly hasProductEntitlement = computed(() => {
+    const entitlements = this.workspace.activeTenant()?.active_entitlements ?? '';
+    return entitlements.split(';').some((entry) => {
+      const [code, value] = entry.split('=');
+      return code === 'PRODUCT_MANAGEMENT' && ['1', 'TRUE', 'YES'].includes((value ?? '').toUpperCase());
+    });
+  });
+  readonly canManage = computed(() => this.hasPermission() && this.hasProductEntitlement());
   readonly loading = signal(true);
   readonly productsLoading = signal(false);
   readonly saving = signal(false);

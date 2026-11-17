@@ -13,6 +13,7 @@ interface DashboardModule {
   icon: string;
   scope: 'PLATFORM' | 'TENANT' | 'GLOBAL';
   route?: string;
+  entitlement?: string;
 }
 
 @Component({
@@ -205,7 +206,7 @@ export class Dashboard implements OnInit {
   });
 
   private readonly modules: DashboardModule[] = [
-    { code: 'catalogue', title: 'Product catalogue', description: 'Manage products, categories, variants and product media for your business.', permission: 'CATALOGUE_MANAGE', icon: '▦', scope: 'TENANT', route: '/dashboard/catalogue' },
+    { code: 'catalogue', title: 'Product catalogue', description: 'Manage products, categories, variants and product media for your business.', permission: 'CATALOGUE_MANAGE', icon: '▦', scope: 'TENANT', route: '/dashboard/catalogue', entitlement: 'PRODUCT_MANAGEMENT' },
     { code: 'business', title: 'Business profile', description: 'Maintain your business information and public storefront profile.', permission: 'BUSINESS_PROFILE_MANAGE', icon: '⌂', scope: 'TENANT' },
     { code: 'customers', title: 'Customers', description: 'View and manage customer relationships within this business.', permission: 'CUSTOMERS_MANAGE', icon: '♙', scope: 'TENANT' },
     { code: 'sales', title: 'Sales & enquiries', description: 'Review incoming enquiries and manage sales conversations.', permission: 'ENQUIRIES_MANAGE', icon: '↗', scope: 'TENANT' },
@@ -312,8 +313,14 @@ export class Dashboard implements OnInit {
   readonly visibleModules = computed(() => {
     const permissions = new Set(this.permissions().map((permission) => permission.permission_code));
     const activeScope = this.selectedTenantId() === null ? ['PLATFORM', 'GLOBAL'] : ['TENANT'];
+    const entitlements = new Map((this.selectedTenant()?.active_entitlements ?? '').split(';').filter(Boolean)
+      .map((entry) => {
+        const separator = entry.indexOf('=');
+        return separator > 0 ? [entry.slice(0, separator), entry.slice(separator + 1).toUpperCase()] as const : [entry, ''] as const;
+      }));
     return this.modules.filter((module) => activeScope.includes(module.scope) && permissions.has(module.permission)
-      && this.permissions().some((permission) => permission.permission_code === module.permission && permission.scope_type === module.scope));
+      && this.permissions().some((permission) => permission.permission_code === module.permission && permission.scope_type === module.scope)
+      && (!module.entitlement || ['1', 'TRUE', 'YES'].includes(entitlements.get(module.entitlement) ?? '')));
   });
 
   readonly summaryCards = computed(() => {

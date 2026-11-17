@@ -19,6 +19,7 @@ export interface DashboardTenant {
   tenant_status: string;
   membership_status: string;
   role_codes: string | null;
+  active_entitlements: string | null;
 }
 
 export interface DashboardApiResponse<T> {

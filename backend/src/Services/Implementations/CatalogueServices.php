@@ -318,6 +318,11 @@ final readonly class CatalogueServices implements ICatalogueServices
             return $resArr;
         }
 
+        $productEntitlements = $this->getProductEntitlementState($tenantId);
+        if ($productEntitlements['status'] !== 'SUCCESS') {
+            return $productEntitlements;
+        }
+
         $code = $this->requiredText($actionData['product_code'] ?? '', 80);
         $name = $this->requiredText($actionData['product_name'] ?? '', 180);
         $unitId = $this->positiveInt($actionData['base_unit_id'] ?? null);
@@ -369,22 +374,16 @@ final readonly class CatalogueServices implements ICatalogueServices
         $barcode = $this->filterText($actionData['barcode'] ?? '', 100);
         $globalCategoryId = $this->positiveInt($actionData['global_category_id'] ?? null);
         if ($operation === 'create') {
-            $limitResult = $this->dao->getActiveProductLimit($this->db, $tenantId);
-            if ($limitResult['status'] !== 'SUCCESS') {
-                return $this->propagateFailure($limitResult, 'CatalogueServices::manageTenantProduct');
-            }
-            if ($limitResult['data'] === []) {
-                $resArr['msgArr'][] = 'An active subscription with PRODUCT_LIMIT entitlement is required to create products.';
-                return $resArr;
-            }
-            $limitValue = strtoupper((string) ($limitResult['data']['entitlement_value'] ?? ''));
-            $count = $this->dao->countTenantProducts($this->db, $tenantId, '');
-            if ($count['status'] !== 'SUCCESS') {
-                return $this->propagateFailure($count, 'CatalogueServices::manageTenantProduct');
-            }
-            if ($limitValue !== 'UNLIMITED' && (!is_numeric($limitValue) || (int) $count['data']['total'] >= (int) $limitValue)) {
-                $resArr['msgArr'][] = 'The active subscription product limit has been reached or is not configured correctly.';
-                return $resArr;
+            $limitValue = $productEntitlements['data']['product_limit'];
+            if ($limitValue !== null) {
+                $count = $this->dao->countTenantProducts($this->db, $tenantId, '');
+                if ($count['status'] !== 'SUCCESS') {
+                    return $this->propagateFailure($count, 'CatalogueServices::manageTenantProduct');
+                }
+                if ($limitValue !== 'UNLIMITED' && (int) $count['data']['total'] >= (int) $limitValue) {
+                    $resArr['msgArr'][] = 'The active subscription product limit has been reached.';
+                    return $resArr;
+                }
             }
             return $this->dao->insertProduct(
                 $this->db, $tenantId, $code, $name, $description, $categoryId, $globalCategoryId, $unitId,
@@ -396,22 +395,16 @@ final readonly class CatalogueServices implements ICatalogueServices
             return $this->propagateFailure($existing, 'CatalogueServices::manageTenantProduct');
         }
         if ($publicationStatus === 'PUBLISHED' && ($existing['data']['publication_status'] ?? '') !== 'PUBLISHED') {
-            $limitResult = $this->dao->getActiveProductLimit($this->db, $tenantId);
-            if ($limitResult['status'] !== 'SUCCESS') {
-                return $this->propagateFailure($limitResult, 'CatalogueServices::manageTenantProduct');
-            }
-            if ($limitResult['data'] === []) {
-                $resArr['msgArr'][] = 'An active subscription with PRODUCT_LIMIT entitlement is required to publish products.';
-                return $resArr;
-            }
-            $limitValue = strtoupper((string) ($limitResult['data']['entitlement_value'] ?? ''));
-            $count = $this->dao->countTenantProducts($this->db, $tenantId, '');
-            if ($count['status'] !== 'SUCCESS') {
-                return $this->propagateFailure($count, 'CatalogueServices::manageTenantProduct');
-            }
-            if ($limitValue !== 'UNLIMITED' && (!is_numeric($limitValue) || (int) $count['data']['total'] > (int) $limitValue)) {
-                $resArr['msgArr'][] = 'The active subscription product limit is exceeded or is not configured correctly.';
-                return $resArr;
+            $limitValue = $productEntitlements['data']['product_limit'];
+            if ($limitValue !== null) {
+                $count = $this->dao->countTenantProducts($this->db, $tenantId, '');
+                if ($count['status'] !== 'SUCCESS') {
+                    return $this->propagateFailure($count, 'CatalogueServices::manageTenantProduct');
+                }
+                if ($limitValue !== 'UNLIMITED' && (int) $count['data']['total'] > (int) $limitValue) {
+                    $resArr['msgArr'][] = 'The active subscription product limit is exceeded.';
+                    return $resArr;
+                }
             }
         }
         return $this->dao->updateProduct(
@@ -419,6 +412,38 @@ final readonly class CatalogueServices implements ICatalogueServices
             $unitId, $brand, $barcode, $priceValues[0], $priceValues[1], $priceValues[2], 0, 0,
             $publicationStatus, $userId,
         );
+    }
+
+    private function getProductEntitlementState(int $tenantId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $result = $this->dao->getActiveProductEntitlements($this->db, $tenantId);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'CatalogueServices::getProductEntitlementState');
+        }
+
+        $entitlements = [];
+        foreach ($result['data'] as $row) {
+            $code = (string) ($row['entitlement_code'] ?? '');
+            if ($code !== '' && !array_key_exists($code, $entitlements)) {
+                $entitlements[$code] = strtoupper(trim((string) ($row['entitlement_value'] ?? '')));
+            }
+        }
+
+        if (!in_array($entitlements['PRODUCT_MANAGEMENT'] ?? '', ['1', 'TRUE', 'YES'], true)) {
+            $resArr['msgArr'][] = 'An active subscription with PRODUCT_MANAGEMENT entitlement is required for product management.';
+            return $resArr;
+        }
+
+        $limit = $entitlements['PRODUCT_LIMIT'] ?? null;
+        if ($limit !== null && $limit !== 'UNLIMITED' && (!is_numeric($limit) || (int) $limit < 0)) {
+            $resArr['msgArr'][] = 'The active subscription PRODUCT_LIMIT entitlement is invalid.';
+            return $resArr;
+        }
+
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['product_limit' => $limit];
+        return $resArr;
     }
 
     private function generateProductMediaUploadUrl(array $actionData): array

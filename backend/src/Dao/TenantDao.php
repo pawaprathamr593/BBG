@@ -19,17 +19,29 @@ final readonly class TenantDao
             $db,
             "SELECT t.id, t.tenant_code, t.tenant_name, t.tenant_type, t.tenant_status,
                     tm.membership_status, tm.joined_on,
-                    GROUP_CONCAT(DISTINCT r.role_code ORDER BY r.role_code SEPARATOR ',') AS role_codes
+                    GROUP_CONCAT(DISTINCT r.role_code ORDER BY r.role_code SEPARATOR ',') AS role_codes,
+                    active_plan.active_entitlements
              FROM TENANT_MEMBERSHIPS tm
              INNER JOIN TENANTS t ON t.id = tm.tenant_id AND t.status = 'A'
              LEFT JOIN USER_ROLE_ASSIGNMENTS ura ON ura.user_id = tm.user_id
                 AND ura.tenant_id = tm.tenant_id AND ura.status = 'A'
                 AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
              LEFT JOIN ROLES r ON r.id = ura.role_id AND r.scope_type = 'TENANT' AND r.status = 'A'
+             LEFT JOIN (
+                SELECT ts.tenant_id,
+                    GROUP_CONCAT(DISTINCT CONCAT(pe.entitlement_code, '=', pe.entitlement_value)
+                        ORDER BY pe.entitlement_code SEPARATOR ';') AS active_entitlements
+                FROM TENANT_SUBSCRIPTIONS ts
+                INNER JOIN PLAN_ENTITLEMENTS pe ON pe.plan_id = ts.plan_id AND pe.status = 'A'
+                WHERE ts.subscription_status = 'ACTIVE' AND ts.status = 'A'
+                    AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
+                    AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
+                GROUP BY ts.tenant_id
+             ) active_plan ON active_plan.tenant_id = t.id
              WHERE tm.user_id = :user_id AND tm.membership_status = 'ACTIVE'
                 AND tm.status = 'A'
              GROUP BY t.id, t.tenant_code, t.tenant_name, t.tenant_type, t.tenant_status,
-                      tm.membership_status, tm.joined_on
+                      tm.membership_status, tm.joined_on, active_plan.active_entitlements
              ORDER BY t.tenant_name ASC, t.id ASC
              LIMIT :limit OFFSET :offset",
             [':user_id' => $userId, ':limit' => $limit, ':offset' => $offset],
