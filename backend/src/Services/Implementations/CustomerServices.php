@@ -114,13 +114,11 @@ final readonly class CustomerServices implements ICustomerServices
     private function getMyAddresses(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->customerContext($actionData);
+        $context = $this->personalAddressContext($actionData);
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'CustomerServices::getMyAddresses');
         }
-        $rows = $this->dao->getAddresses(
-            $this->db, (int) $context['data']['tenant_id'], (int) $context['data']['tenant_customer_id'],
-        );
+        $rows = $this->dao->getAddresses($this->db, (int) $context['data']['user_id']);
         if ($rows['status'] !== 'SUCCESS') {
             return $this->propagateFailure($rows, 'CustomerServices::getMyAddresses');
         }
@@ -177,8 +175,7 @@ final readonly class CustomerServices implements ICustomerServices
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'CustomerServices::manageMyAddress');
         }
-        $tenantId = (int) $context['data']['tenant_id'];
-        $customerId = (int) $context['data']['tenant_customer_id'];
+        $userId = (int) $context['data']['user_id'];
         $userId = (int) $context['data']['user_id'];
         $addressId = $this->positiveInt($actionData['address_id'] ?? null);
 
@@ -187,24 +184,24 @@ final readonly class CustomerServices implements ICustomerServices
                 $resArr['msgArr'][] = 'A valid address_id is required.';
                 return $resArr;
             }
-            $existing = $this->dao->getAddress($this->db, $tenantId, $customerId, $addressId);
+            $existing = $this->dao->getAddress($this->db, $userId, $addressId);
             if ($existing['status'] !== 'SUCCESS' || $existing['data'] === []) {
                 return $this->propagateFailure($existing, 'CustomerServices::manageMyAddress');
             }
         }
 
         if ($operation === 'delete') {
-            return $this->dao->softDeleteAddress($this->db, $tenantId, $customerId, $addressId, $userId);
+            return $this->dao->softDeleteAddress($this->db, $userId, $addressId, $userId);
         }
         if ($operation === 'default') {
             $transaction = $this->db->beginTransaction();
             try {
-                $clear = $this->dao->clearDefaultAddresses($this->db, $tenantId, $customerId, $userId);
+                $clear = $this->dao->clearDefaultAddresses($this->db, $userId, $userId);
                 if ($clear['status'] !== 'SUCCESS') {
                     $transaction->rollBack();
                     return $this->propagateFailure($clear, 'CustomerServices::manageMyAddress');
                 }
-                $set = $this->dao->setDefaultAddress($this->db, $tenantId, $customerId, $addressId, $userId);
+                $set = $this->dao->setDefaultAddress($this->db, $userId, $addressId, $userId);
                 if ($set['status'] !== 'SUCCESS') {
                     $transaction->rollBack();
                     return $this->propagateFailure($set, 'CustomerServices::manageMyAddress');
@@ -249,12 +246,12 @@ final readonly class CustomerServices implements ICustomerServices
             }
             if ($operation === 'create') {
                 $result = $this->dao->insertAddress(
-                    $this->db, $tenantId, $customerId, $userId, $label, $recipient, $mobile,
+                    $this->db, $userId, $label, $recipient, $mobile,
                     $line1, $line2, $city, $state, $postal, $country, $isDefault,
                 );
             } else {
                 $result = $this->dao->updateAddress(
-                    $this->db, $tenantId, $customerId, $addressId, $userId, $label, $recipient, $mobile,
+                    $this->db, $userId, $addressId, $userId, $label, $recipient, $mobile,
                     $line1, $line2, $city, $state, $postal, $country, $isDefault,
                 );
             }
@@ -313,6 +310,22 @@ final readonly class CustomerServices implements ICustomerServices
             'mobile' => $profile['data']['mobile'] ?? null,
         ];
         return $resArr;
+    }
+
+    /** Resolve the signed-in account for global My Account address operations.
+     * Tenant context is intentionally not required: saved addresses belong to USERS.
+     */
+    private function personalAddressContext(array $actionData): array
+    {
+        $identity = $this->ensureCustomerIdentity($actionData);
+        if (($identity['status'] ?? '') !== 'SUCCESS') {
+            return $this->propagateFailure($identity, 'CustomerServices::personalAddressContext');
+        }
+        $userId = (int) ($identity['data']['user_id'] ?? 0);
+        if ($userId < 1) {
+            return ['status' => 'FAILED', 'msgArr' => ['Authenticated user profile is unavailable.'], 'data' => []];
+        }
+        return ['status' => 'SUCCESS', 'msgArr' => [], 'data' => ['user_id' => $userId]];
     }
 
     private function customerContext(array $actionData): array
