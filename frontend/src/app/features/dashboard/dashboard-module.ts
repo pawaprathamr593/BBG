@@ -121,7 +121,7 @@ interface DataRecord { [key: string]: unknown; }
             </div>
           </section>
         } @else if (!summaryEntries().length && !(section() === 'subscriptions' && plans().length)) {
-          <section class="state-panel empty"><span class="state-icon">⌑</span><strong>Nothing to show yet</strong><p>There are no records available for this section in the current workspace.</p></section>
+          <section class="state-panel empty"><span class="state-icon">⌑</span><strong>Nothing to show yet</strong><p>There are no records available for this section in your current area.</p></section>
         }
       }
       @if (showPromotionComposer()) {
@@ -242,9 +242,35 @@ export class DashboardModule implements OnInit {
   readonly draftPromotionId = signal<number | null>(null);
   readonly promotionUploadedCount = signal(0);
 
-  readonly title = computed(() => this.config[this.section()]?.title ?? 'Workspace');
-  readonly description = computed(() => this.config[this.section()]?.description ?? 'Manage your BBG workspace.');
-  readonly contextLabel = computed(() => this.workspace.activeTenantId() === null ? 'PERSONAL & PLATFORM' : 'BUSINESS WORKSPACE');
+  readonly title = computed(() => {
+    const section = this.section();
+    if (this.workspace.activeTenantId() === null) {
+      const personalTitles: Record<string, string> = {
+        customers: 'My Profile & Addresses',
+        enquiries: 'My Enquiries',
+        orders: 'My Orders',
+        payments: 'My Payments',
+      };
+      if (personalTitles[section]) return personalTitles[section];
+    }
+    return this.config[section]?.title ?? (this.workspace.activeTenantId() === null ? 'My Account' : 'Business Workspace');
+  });
+  readonly description = computed(() => {
+    const personalDescriptions: Record<string, string> = {
+      customers: 'Manage your personal details and saved delivery addresses.',
+      enquiries: 'Review your enquiries and conversations with businesses.',
+      orders: 'Track orders you have placed with businesses on BBG.',
+      payments: 'Review payments associated with your customer orders.',
+    };
+    return this.workspace.activeTenantId() === null
+      ? personalDescriptions[this.section()] ?? 'Manage your personal BBG account.'
+      : this.config[this.section()]?.description ?? 'Manage your business operations.';
+  });
+  readonly contextLabel = computed(() => this.workspace.activeTenantId() !== null
+    ? 'BUSINESS WORKSPACE'
+    : this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM')
+      ? 'PLATFORM ADMINISTRATION'
+      : 'MY ACCOUNT');
   readonly summaryEntries = computed(() => {
     const source = this.summary();
     if (!source) return [];
@@ -305,18 +331,27 @@ export class DashboardModule implements OnInit {
       }
       const required = platformRequirements[link.key];
       return required ? has(required, 'PLATFORM') : false;
+    }).map((link) => {
+      if (activeTenant) return link;
+      const personalLabels: Record<string, string> = {
+        customers: 'My Profile & Addresses',
+        enquiries: 'My Enquiries',
+        orders: 'My Orders',
+        payments: 'My Payments',
+      };
+      return personalLabels[link.key] ? { ...link, label: personalLabels[link.key] } : link;
     });
   });
 
   private readonly config: Record<string, { title: string; description: string }> = {
     profile: { title: 'Business profile', description: 'Review your approved business information and account details.' },
     storefront: { title: 'Storefront', description: 'Review the public storefront information and publication status for this business.' },
-    customers: { title: 'Customers & profile', description: 'Review your customer profile and saved delivery addresses.' },
-    enquiries: { title: 'Enquiries', description: 'Review incoming business enquiries or your conversations with businesses.' },
-    orders: { title: 'Orders', description: 'Track customer orders or process orders received by your business.' },
+    customers: { title: 'Customers', description: 'Review customer information and available customer records.' },
+    enquiries: { title: 'Enquiries', description: 'Review incoming enquiries and manage sales conversations.' },
+    orders: { title: 'Order management', description: 'Process, update and track orders for this business.' },
     promotions: { title: 'Promotions', description: 'Review campaigns and publish or pause eligible promotions.' },
     subscriptions: { title: 'Subscriptions & plans', description: 'Review available plans and the subscription history for this business.' },
-    payments: { title: 'Payments', description: 'Review payment records associated with your account or business.' },
+    payments: { title: 'Payments', description: 'Review payment activity and related business records.' },
     analytics: { title: 'Analytics', description: 'Review the summary metrics available in your current workspace.' },
     members: { title: 'Team & access', description: 'Review the members assigned to this business workspace.' },
     'platform-analytics': { title: 'Platform analytics', description: 'Review platform-wide metrics exposed to authorized administrators.' },
@@ -363,16 +398,16 @@ export class DashboardModule implements OnInit {
       const pageData = { page: 1, page_size: 25, ...(tenantId ? { tenant_id: tenantId } : {}) };
       switch (this.section()) {
         case 'members': {
-          if (!tenantId) return this.setUnsupported('Select a business workspace to view its team members.');
+          if (!tenantId) return this.setUnsupported('Open Business Workspace to view team members.');
           const data = await this.request<{items?:DataRecord[]}>('/api/v1/tenants/members/list','tenantParam','listTenantMembers',pageData);
           this.items.set(data.items ?? []); break;
         }
         case 'profile':
-          if (!tenantId) return this.setUnsupported('Select a business workspace to view its business profile.');
+          if (!tenantId) return this.setUnsupported('Open Business Workspace to view your business profile.');
           this.summary.set(await this.request<DataRecord>('/api/v1/business/profile/get','businessParam','getMyBusinessProfile',{tenant_id:tenantId}));
           break;
         case 'storefront':
-          if (!tenantId) return this.setUnsupported('Select a business workspace to view its storefront.');
+          if (!tenantId) return this.setUnsupported('Open Business Workspace to view your storefront.');
           this.summary.set(await this.request<DataRecord>('/api/v1/business/storefront/get','businessParam','getMyStorefront',{tenant_id:tenantId}));
           break;
         case 'customers':
@@ -415,14 +450,14 @@ export class DashboardModule implements OnInit {
           break;
         }
         case 'promotions':
-          if (!tenantId) return this.setUnsupported('Select a business workspace to manage promotions.');
+          if (!tenantId) return this.setUnsupported('Open Business Workspace to manage promotions.');
           {
             const data = await this.request<{items?:DataRecord[]}>('/api/v1/promotions/mine/list','promotionParam','listMyPromotions',pageData);
             this.items.set(data.items ?? []);
           }
           break;
         case 'subscriptions':
-          if (!tenantId) return this.setUnsupported('Select a business workspace to review plans and subscriptions.');
+          if (!tenantId) return this.setUnsupported('Open Business Workspace to review plans and subscriptions.');
           {
             const [plans, subscriptions] = await Promise.all([
               this.request<{items?:DataRecord[]}>('/api/v1/subscriptions/plans/list','subscriptionParam','listActivePlans'),
@@ -433,7 +468,7 @@ export class DashboardModule implements OnInit {
           break;
         case 'analytics':
           if (tenantId) this.summary.set(await this.request<DataRecord>('/api/v1/dashboard/entrepreneur/summary','dashboardParam','getTenantSummary',{tenant_id:tenantId}));
-          else return this.setUnsupported('Business analytics require an active business workspace.');
+          else return this.setUnsupported('Business analytics require Business Workspace access.');
           break;
         case 'platform-analytics':
           this.summary.set(await this.request<DataRecord>('/api/v1/admin/analytics/summary','adminParam','getAdminAnalyticsSummary'));
@@ -471,7 +506,7 @@ export class DashboardModule implements OnInit {
     }
   }
 
-  private setUnsupported(message: string): void { this.unsupported.set(message); this.unsupportedTitle.set('Not available in this workspace'); this.loading.set(false); }
+  private setUnsupported(message: string): void { this.unsupported.set(message); this.unsupportedTitle.set('Not available in this area'); this.loading.set(false); }
 
   readonly recordsHeading = computed(() => this.section() === 'customers' ? 'Saved addresses' : this.title());
   recordId(item: DataRecord, preferred = 'id'): number {
