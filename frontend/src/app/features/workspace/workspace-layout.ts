@@ -249,6 +249,7 @@ export class WorkspaceLayout implements OnInit, AfterViewChecked, OnDestroy {
     const scope = this.activeTenantId() === null ? ['PLATFORM','GLOBAL'] : ['TENANT'];
     const perms = this.permissions();
     const available = (permission: string | null, itemScope: WorkspaceNavItem['scope']) => {
+      if (itemScope === 'GLOBAL') return perms.some((p) => p.role_code === 'CONSUMER' && p.scope_type === 'GLOBAL');
       if (!permission) return true;
       return perms.some((p) => p.permission_code === permission && (itemScope === 'ANY' || p.scope_type === itemScope));
     };
@@ -289,7 +290,7 @@ export class WorkspaceLayout implements OnInit, AfterViewChecked, OnDestroy {
   }
 
   hasPlatformAccess(): boolean {
-    return this.permissions().some((permission) => permission.scope_type === 'PLATFORM');
+    return this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM');
   }
 
   canSwitchWorkspace(): boolean {
