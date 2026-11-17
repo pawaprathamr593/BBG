@@ -18,7 +18,7 @@ Apply these additive, idempotent seeds after verifying the target database and b
 
 1. `../seeds/20261112_001_tenant_order_manager.sql` — tenant-scoped `TENANT_ORDER_MANAGER` role and `ORDERS_MANAGE` permission assignment for the configured test user/tenant pair. The seed checks the active membership precondition and does not assign the role if it is missing.
 2. `../seeds/20261112_002_api_rbac_baseline.sql` — `TENANT_OWNER` and `PLATFORM_ADMIN` roles, tenant/platform permissions, and role-permission links. It deliberately does **not** assign `PLATFORM_ADMIN` to any user. A trusted platform operator must be assigned separately through an authorized administrative process.
-3. `../seeds/20261112_003_plan_entitlements.sql` — the documented Gold `PRODUCT_LIMIT=50` and Platinum `PROMOTIONAL_POSTS=1` entitlements, when matching plan codes exist. Other plan limits and features are not guessed.
+3. `../seeds/20261112_003_plan_entitlements.sql` — the Gold/Diamond/Platinum entitlement matrix: Gold storefront capabilities; Diamond product management and one promotion per tenant-local day; Platinum product management, five promotions per tenant-local day, and SEO/AEO/GEO plus advanced analytics entitlements.
 4. `../seeds/20261113_004_global_consumer_role.sql` — creates the global `CONSUMER` role and idempotently assigns it to all active existing accounts. New password and social registrations assign the same role inside the account-creation transaction.
 
 The seeds do not alter table structures. Review each script before execution and verify the result queries afterwards.
@@ -33,8 +33,9 @@ The seeds do not alter table structures. Review each script before execution and
 
 ## API implementation dependencies
 
-- Product creation requires an active subscription with a configured `PRODUCT_LIMIT` entitlement. Only the Gold value of 50 is seeded here; any other plan's value must be configured from an approved commercial plan definition.
-- Promotion publishing requires an active subscription with `PROMOTIONAL_POSTS`. The seed attaches it to an active plan whose `plan_code` is `PLATINUM`.
+- Product create/update/publish requires both the tenant-scoped `CATALOGUE_MANAGE` permission and an active `PRODUCT_MANAGEMENT` entitlement. `PRODUCT_LIMIT` is optional; a cap is enforced only when a commercial limit is explicitly configured.
+- Promotion creation/publishing requires both `PROMOTIONS_MANAGE` and an active numeric `DAILY_PROMOTION_LIMIT`. Publishing is counted against the tenant's local calendar day using `TENANTS.timezone`; the published timestamp is stored in UTC.
+- Angular receives the active tenant's entitlement codes through the existing `/api/v1/tenants/mine/list` response. The UI filters modules using both permissions and entitlements; Core Services independently enforces both on every write.
 - Subscription proofs use `POST /api/v1/subscriptions/proofs/upload-url` to obtain a tenant-scoped S3 presigned PUT URL. `POST /api/v1/subscriptions/proofs/submit` verifies the object exists and checks its actual MIME type, file signature, extension and size before saving proof metadata. The proof flow is implemented in code but requires live bucket credentials/IAM and end-to-end verification. No arbitrary public URL is accepted.
 - Platform administration APIs remain default-deny until a trusted user is explicitly assigned the `PLATFORM_ADMIN` role.
 

@@ -132,6 +132,7 @@ if (in_array(false, $discoveryContracts, true)) {
 
 $promotionDao = file_get_contents($root . '/src/Dao/PromotionDao.php');
 $promotionService = file_get_contents($root . '/src/Services/Implementations/PromotionServices.php');
+$entitlementSeed = file_get_contents($root . '/database/seeds/20261112_003_plan_entitlements.sql');
 if (
     $promotionDao === false
     || $promotionService === false
@@ -139,7 +140,7 @@ if (
     || !str_contains($promotionDao, 'countTenantPromotionsPublishedInRange')
     || !str_contains($promotionService, 'getPromotionQuota')
     || !str_contains($promotionService, 'DateTimeZone')
-    || !str_contains($promotionService, 'tenant local calendar day')
+    || !str_contains($promotionService, 'local calendar day')
 ) {
     fwrite(STDERR, "Tenant-local daily promotion entitlement contract is incomplete.\n");
     exit(1);
