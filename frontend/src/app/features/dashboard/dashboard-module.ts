@@ -31,7 +31,7 @@ interface DataRecord { [key: string]: unknown; }
             <button class="secondary-action" type="button" (click)="toggleStorefront()" [disabled]="busy()">{{ storefrontStatus() === 'PUBLISHED' ? 'Unpublish' : 'Publish' }} storefront</button>
           }
           @if (section() === 'promotions') { <button class="secondary-action" type="button" (click)="createPromotion()" [disabled]="busy()">+ New promotion</button> }
-          @if (section() === 'customers' && !workspace.activeTenantId()) { <button class="secondary-action" type="button" (click)="createAddress()" [disabled]="busy()">+ Add address</button> }
+          @if (section() === 'customers' && !activeTenantId()) { <button class="secondary-action" type="button" (click)="createAddress()" [disabled]="busy()">+ Add address</button> }
           @if (section() === 'categories') { <button class="secondary-action" type="button" (click)="createCategory()" [disabled]="busy()">+ New category</button> }
           <button class="refresh" type="button" (click)="load()" [disabled]="loading()">↻ Refresh</button>
         </div>
@@ -159,6 +159,7 @@ export class DashboardModule implements OnInit {
   readonly section = signal('profile');
   readonly loading = signal(false);
   readonly busy = signal(false);
+  readonly activeTenantId = this.workspace.activeTenantId;
   readonly error = signal('');
   readonly notice = signal('');
   readonly unsupported = signal('');
@@ -206,6 +207,7 @@ export class DashboardModule implements OnInit {
       { key: 'subscription-approval', label: 'Plan reviews', path: '/dashboard/subscription-approval' },
       { key: 'moderation', label: 'Moderation', path: '/dashboard/moderation' },
       { key: 'system-health', label: 'System health', path: '/dashboard/system-health' },
+      { key: 'platform-analytics', label: 'Platform analytics', path: '/dashboard/platform-analytics' },
       { key: 'categories', label: 'Categories', path: '/dashboard/categories' },
     ];
     const permissions = new Set(this.workspace.permissions().map((entry) => entry.permission_code));
@@ -377,15 +379,15 @@ export class DashboardModule implements OnInit {
 
   readonly recordsHeading = computed(() => this.section() === 'customers' ? 'Saved addresses' : this.title());
   recordId(item: DataRecord, preferred = 'id'): number {
-    const value = item[preferred] ?? item.id ?? item.business_id ?? item.subscription_id ?? item.promotion_id ?? item.order_id ?? item.report_id ?? item.user_id;
+    const value = item[preferred] ?? item.id ?? item.address_id ?? item.category_id ?? item.business_id ?? item.subscription_id ?? item.promotion_id ?? item.order_id ?? item.report_id ?? item.user_id;
     return Number(value ?? 0);
   }
   valueOf(item: DataRecord, keys: string[]): string { for (const key of keys) if (item[key] !== null && item[key] !== undefined && item[key] !== '') return this.formatValue(item[key]); return '—'; }
   recordTitle(item: DataRecord): string {
-    return this.valueOf(item,['business_name','tenant_name','plan_name','post_title','order_number','enquiry_number','payment_reference','full_name','name','email','report_number','id']);
+    return this.valueOf(item,['business_name','tenant_name','plan_name','post_title','category_name','order_number','enquiry_number','payment_reference','full_name','name','email','report_number','id']);
   }
   recordSubtitle(item: DataRecord): string {
-    return this.valueOf(item,['email','business_category','customer_name','created_at','created_on','order_status','enquiry_status','subscription_status']);
+    return this.valueOf(item,['email','business_category','category_type','customer_name','created_at','created_on','order_status','enquiry_status','subscription_status']);
   }
   statusOf(item: DataRecord): string { return String(item.approval_status ?? item.subscription_status ?? item.publication_status ?? item.order_status ?? item.enquiry_status ?? item.payment_status ?? item.report_status ?? item.account_status ?? item.status ?? ''); }
   recordEntries(item: DataRecord): Array<{key:string;value:unknown}> {
