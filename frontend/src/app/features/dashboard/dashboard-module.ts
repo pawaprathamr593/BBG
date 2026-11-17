@@ -19,7 +19,6 @@ interface DataRecord { [key: string]: unknown; }
     <main class="module-page">
       <header class="page-heading">
         <div>
-          <a class="back-link" routerLink="/dashboard">← Workspace dashboard</a>
           <p class="eyebrow">{{ contextLabel() }}</p>
           <h1>{{ title() }}</h1>
           <p class="intro">{{ description() }}</p>
@@ -37,11 +36,6 @@ interface DataRecord { [key: string]: unknown; }
         </div>
       </header>
 
-      <nav class="section-nav" aria-label="Dashboard sections">
-        @for (link of navLinks(); track link.path) {
-          <a [routerLink]="link.path" [class.active]="section() === link.key">{{ link.label }}</a>
-        }
-      </nav>
 
       @if (notice()) {
         <div class="notice" role="status">{{ notice() }}</div>
