@@ -244,7 +244,7 @@ export class DashboardModule implements OnInit {
 
   readonly title = computed(() => {
     const section = this.section();
-    if (this.workspace.activeTenantId() === null) {
+    if (this.workspace.activeTenantId() === null && this.workspace.permissions().some((permission) => permission.scope_type === 'GLOBAL')) {
       const personalTitles: Record<string, string> = {
         customers: 'My Profile & Addresses',
         enquiries: 'My Enquiries',
@@ -262,7 +262,7 @@ export class DashboardModule implements OnInit {
       orders: 'Track orders you have placed with businesses on BBG.',
       payments: 'Review payments associated with your customer orders.',
     };
-    return this.workspace.activeTenantId() === null
+    return this.workspace.activeTenantId() === null && this.workspace.permissions().some((permission) => permission.scope_type === 'GLOBAL')
       ? personalDescriptions[this.section()] ?? 'Manage your personal BBG account.'
       : this.config[this.section()]?.description ?? 'Manage your business operations.';
   });
