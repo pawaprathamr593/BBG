@@ -7,7 +7,7 @@ import { API_BASE_URL } from '../../core/config/api-base-url';
 import { AuthService } from '../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
 
-type EnvelopeKey = 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam' | 'tenantParam' | 'dashboardParam';
+type EnvelopeKey = 'authParam' | 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam' | 'tenantParam' | 'dashboardParam';
 interface ApiEnvelope<T = unknown> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION'; msgArr?: string[]; data?: T | []; }
 interface DataRecord { [key: string]: unknown; }
 
@@ -51,6 +51,37 @@ interface DataRecord { [key: string]: unknown; }
           <section class="summary-grid" aria-label="Summary">
             @for (entry of summaryEntries(); track entry.key) {
               <article class="summary-card"><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></article>
+            }
+          </section>
+        }
+
+        @if (section() === 'customers' && !activeTenantId() && summary()) {
+          <section class="personal-profile-card" aria-labelledby="personal-profile-title">
+            <div class="personal-profile-heading">
+              <div><p class="eyebrow">YOUR BBG ACCOUNT</p><h2 id="personal-profile-title">Personal details</h2><p>These details belong to your BBG account and are used across your customer activity.</p></div>
+              <span class="profile-avatar">{{ profileInitials() }}</span>
+            </div>
+            <div class="personal-profile-details">
+              <div><span>Full name</span><strong>{{ summary()?.['full_name'] || 'Not provided' }}</strong></div>
+              <div><span>Email address</span><strong>{{ summary()?.['email'] || 'Not provided' }}</strong></div>
+              <div><span>Mobile number</span><strong>{{ summary()?.['mobile'] || 'Not provided' }}</strong></div>
+            </div>
+            <div class="password-settings">
+              <div><strong>Account password</strong><p>{{ summary()?.['has_password'] ? 'A password is already set for your account.' : 'You signed in without a password. You can set one to also sign in using your email or mobile number.' }}</p></div>
+              @if (!showPasswordForm()) {
+                <button class="secondary-action" type="button" (click)="openPasswordForm()">{{ summary()?.['has_password'] ? 'Change password' : 'Set password' }}</button>
+              }
+            </div>
+            @if (showPasswordForm()) {
+              <form class="password-form" (submit)="$event.preventDefault(); updatePassword()">
+                @if (summary()?.['has_password']) {
+                  <label>Current password<input type="password" autocomplete="current-password" [value]="currentPassword()" (input)="currentPassword.set(($any($event.target)).value)" required></label>
+                }
+                <label>New password<input type="password" autocomplete="new-password" minlength="8" [value]="newPassword()" (input)="newPassword.set(($any($event.target)).value)" required></label>
+                <label>Confirm new password<input type="password" autocomplete="new-password" minlength="8" [value]="confirmPassword()" (input)="confirmPassword.set(($any($event.target)).value)" required></label>
+                @if (passwordError()) { <p class="password-error" role="alert">{{ passwordError() }}</p> }
+                <div class="password-form-actions"><button class="refresh" type="button" (click)="closePasswordForm()" [disabled]="busy()">Cancel</button><button class="secondary-action" type="submit" [disabled]="busy()">{{ busy() ? 'Saving…' : (summary()?.['has_password'] ? 'Update password' : 'Set password') }}</button></div>
+              </form>
             }
           </section>
         }
@@ -168,6 +199,7 @@ interface DataRecord { [key: string]: unknown; }
     .state-panel>div{display:grid;gap:4px}.state-panel p{max-width:560px;margin:5px 0 0;color:var(--text-secondary);font-size:.8rem;line-height:1.6}.state-panel.error{display:block;text-align:center;border-color:#d88a83}.state-panel.error button{margin-top:14px}
     .spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
     .state-icon{display:grid;width:42px;height:42px;place-items:center;color:var(--brand);background:var(--brand-soft);border-radius:12px;font-size:1.35rem}
+    .personal-profile-card{margin:0 0 25px;padding:22px;background:var(--surface-card);border:1px solid var(--border);border-radius:14px}.personal-profile-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}.personal-profile-heading h2{margin:0;font-size:1.25rem;letter-spacing:-.03em}.personal-profile-heading>div>p:last-child{margin:7px 0 0;color:var(--text-secondary);font-size:.78rem}.profile-avatar{display:grid;width:48px;height:48px;flex:0 0 48px;place-items:center;border-radius:50%;background:var(--brand-soft);color:var(--brand);font-weight:850}.personal-profile-details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:22px}.personal-profile-details>div{display:grid;min-width:0;gap:6px}.personal-profile-details span{color:var(--text-secondary);font-size:.68rem;font-weight:700}.personal-profile-details strong{overflow-wrap:anywhere;font-size:.84rem}.password-settings{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:22px;padding-top:18px;border-top:1px solid var(--border)}.password-settings p{margin:5px 0 0;color:var(--text-secondary);font-size:.75rem;line-height:1.5}.password-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}.password-form label{display:grid;gap:6px;font-size:.72rem;font-weight:750}.password-form input{width:100%;box-sizing:border-box;min-height:42px;padding:0 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.78rem}.password-form-actions{display:flex;grid-column:1/-1;justify-content:flex-end;gap:8px}.password-error{grid-column:1/-1;margin:0;color:#bd4941;font-size:.74rem}
     .summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:26px}
     .summary-card{display:grid;gap:7px;padding:17px;background:var(--surface-card);border:1px solid var(--border);border-radius:12px}
     .summary-card span,.record-fields span{color:var(--text-secondary);font-size:.68rem;font-weight:700}.summary-card strong{font-size:1.45rem;letter-spacing:-.04em}
@@ -184,7 +216,7 @@ interface DataRecord { [key: string]: unknown; }
     .empty{flex-direction:column;text-align:center}.empty p{max-width:480px}
     @keyframes spin{to{transform:rotate(360deg)}}
     @media(max-width:900px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.record-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.plans-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:600px){.module-page{padding:28px 16px 54px}.page-heading{align-items:flex-start;flex-direction:column}.refresh{width:100%}.summary-grid{gap:8px}.summary-card{padding:13px}.summary-card strong{font-size:1.2rem}.record-card{padding:15px}.record-fields{grid-template-columns:1fr 1fr;gap:11px}.plans-grid{grid-template-columns:1fr}.section-title{align-items:flex-start}}
+    @media(max-width:600px){.personal-profile-card{padding:16px}.personal-profile-details{grid-template-columns:1fr;gap:12px}.password-settings{align-items:flex-start;flex-direction:column}.password-form{grid-template-columns:1fr}.password-form-actions,.password-error{grid-column:1}.module-page{padding:28px 16px 54px}.page-heading{align-items:flex-start;flex-direction:column}.refresh{width:100%}.summary-grid{gap:8px}.summary-card{padding:13px}.summary-card strong{font-size:1.2rem}.record-card{padding:15px}.record-fields{grid-template-columns:1fr 1fr;gap:11px}.plans-grid{grid-template-columns:1fr}.section-title{align-items:flex-start}}
   `],
 })
 export class DashboardModule implements OnInit {
@@ -231,6 +263,12 @@ export class DashboardModule implements OnInit {
     });
   });
   readonly summary = signal<DataRecord | null>(null);
+  readonly showPasswordForm = signal(false);
+  readonly currentPassword = signal('');
+  readonly newPassword = signal('');
+  readonly confirmPassword = signal('');
+  readonly passwordError = signal('');
+  readonly profileInitials = computed(() => String(this.summary()?.['full_name'] ?? 'BB').trim().split(/\\s+/).slice(0,2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BB');
   readonly plans = signal<DataRecord[]>([]);
   readonly pendingPlanId = signal<number | null>(null);
   readonly showPromotionComposer = signal(false);
@@ -421,10 +459,10 @@ export class DashboardModule implements OnInit {
           }
           {
             const [profile, addresses] = await Promise.all([
-              this.request<DataRecord>('/api/v1/customers/profile','customerParam','getMyCustomerProfile'),
+              this.auth.loadProfile(),
               this.request<{items?:DataRecord[]}>('/api/v1/customers/addresses/list','customerParam','listMyAddresses'),
             ]);
-            this.summary.set(profile); this.items.set(addresses.items ?? []);
+            this.summary.set(profile as unknown as DataRecord); this.items.set(addresses.items ?? []);
           }
           break;
         case 'orders':
@@ -809,6 +847,36 @@ export class DashboardModule implements OnInit {
   }
   fileSize(bytes: number): string {
     return bytes < 1024 * 1024 ? `${Math.max(1,Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  openPasswordForm(): void {
+    this.currentPassword.set(''); this.newPassword.set(''); this.confirmPassword.set('');
+    this.passwordError.set(''); this.showPasswordForm.set(true);
+  }
+
+  closePasswordForm(): void {
+    this.showPasswordForm.set(false); this.passwordError.set('');
+    this.currentPassword.set(''); this.newPassword.set(''); this.confirmPassword.set('');
+  }
+
+  async updatePassword(): Promise<void> {
+    if (this.busy()) return;
+    const newPassword = this.newPassword();
+    if (newPassword.length < 8) { this.passwordError.set('Use at least 8 characters for your new password.'); return; }
+    if (newPassword !== this.confirmPassword()) { this.passwordError.set('The new password and confirmation do not match.'); return; }
+    if (this.summary()?.['has_password'] && !this.currentPassword()) { this.passwordError.set('Enter your current password.'); return; }
+    this.busy.set(true); this.passwordError.set(''); this.error.set('');
+    try {
+      await this.request('/api/v1/auth/password/update','authParam','setPassword',{
+        ...(this.summary()?.['has_password'] ? {current_password:this.currentPassword()} : {}),
+        new_password:newPassword,
+      });
+      this.summary.update((profile) => profile ? {...profile,has_password:true} : profile);
+      this.notice.set('Your password has been saved successfully.');
+      this.closePasswordForm();
+    } catch (error) {
+      this.passwordError.set(this.auth.errorMessage(error));
+    } finally { this.busy.set(false); }
   }
 
   async createAddress(): Promise<void> {
