@@ -5,6 +5,7 @@ import { DashboardApiService, DashboardPermission, DashboardTenant } from '../da
 
 const ACTIVE_WORKSPACE_KEY = 'bbg.activeWorkspaceId';
 const ACTIVE_CONTEXT_KEY = 'bbg.activeContext';
+const LAST_WORKSPACE_KEY = 'bbg.lastWorkspaceId';
 
 @Injectable({ providedIn: 'root' })
 export class WorkspaceContextService {
@@ -15,6 +16,7 @@ export class WorkspaceContextService {
 
   readonly tenants = signal<DashboardTenant[]>([]);
   readonly activeTenantId = signal<number | null>(null);
+  readonly lastActiveTenantId = signal<number | null>(null);
   readonly permissions = signal<DashboardPermission[]>([]);
   readonly platformPermissions = signal<DashboardPermission[]>([]);
   readonly loading = signal(false);
@@ -48,8 +50,10 @@ export class WorkspaceContextService {
     // permission request therefore cannot leave the UI in a false active state.
     const permissions = await this.api.getPermissions(tenantId);
     this.activeTenantId.set(tenantId);
+    this.lastActiveTenantId.set(tenantId);
     this.permissions.set(permissions);
     this.persistActiveWorkspace(tenantId);
+    this.persistLastWorkspace(tenantId);
     this.persistActiveContext('BUSINESS');
   }
 
@@ -80,11 +84,13 @@ export class WorkspaceContextService {
     this.permissions.set([]);
     this.platformPermissions.set([]);
     this.activeTenantId.set(null);
+    this.lastActiveTenantId.set(null);
     this.loading.set(false);
     this.error.set('');
     this.initialization = undefined;
     this.persistActiveWorkspace(null);
     this.persistActiveContext(null);
+    this.persistLastWorkspace(null);
   }
 
   private async loadContext(): Promise<void> {
@@ -113,6 +119,10 @@ export class WorkspaceContextService {
       const restoredTenantId = savedId !== null && tenants.some((tenant) => tenant.id === savedId)
         ? savedId
         : null;
+      const savedLastId = this.readLastWorkspace();
+      const lastTenantId = restoredTenantId ?? (savedLastId !== null && tenants.some((tenant) => tenant.id === savedLastId) ? savedLastId : null);
+      this.lastActiveTenantId.set(lastTenantId);
+      if (restoredTenantId !== null) this.persistLastWorkspace(restoredTenantId);
       const savedContext = this.readActiveContext();
       const hasPlatformAccess = savedPermissions.some((permission) => permission.scope_type === 'PLATFORM');
       const defaultScope = savedContext === 'PERSONAL'
@@ -132,6 +142,32 @@ export class WorkspaceContextService {
       throw error;
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  private readLastWorkspace(): number | null {
+    try {
+      const userId = this.auth.user()?.user_id;
+      if (!userId) return null;
+      const raw = this.document.defaultView?.sessionStorage.getItem(`${LAST_WORKSPACE_KEY}.${userId}`);
+      if (!raw) return null;
+      const value = Number(raw);
+      return Number.isInteger(value) && value > 0 ? value : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private persistLastWorkspace(tenantId: number | null): void {
+    try {
+      const userId = this.auth.user()?.user_id;
+      const storage = this.document.defaultView?.sessionStorage;
+      if (!storage || !userId) return;
+      const key = `${LAST_WORKSPACE_KEY}.${userId}`;
+      if (tenantId === null) storage.removeItem(key);
+      else storage.setItem(key, String(tenantId));
+    } catch {
+      // The last business selection is optional session convenience.
     }
   }
 
