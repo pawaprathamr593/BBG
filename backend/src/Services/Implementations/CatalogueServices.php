@@ -255,6 +255,12 @@ final readonly class CatalogueServices implements ICatalogueServices
         }
         $tenantId = (int) $context['data']['tenant_id'];
         $userId = (int) $context['data']['user_id'];
+        if ($operation !== 'delete') {
+            $entitlement = $this->getProductEntitlementState($tenantId);
+            if ($entitlement['status'] !== 'SUCCESS') {
+                return $entitlement;
+            }
+        }
         $categoryId = $this->positiveInt($actionData['category_id'] ?? null);
         if ($operation !== 'create' && $categoryId === null) {
             $resArr['msgArr'][] = 'A valid category_id is required.';
@@ -455,6 +461,10 @@ final readonly class CatalogueServices implements ICatalogueServices
         }
 
         $tenantId = (int) $context['data']['tenant_id'];
+        $entitlement = $this->getProductEntitlementState($tenantId);
+        if ($entitlement['status'] !== 'SUCCESS') {
+            return $entitlement;
+        }
         $productId = $this->positiveInt($actionData['product_id'] ?? null);
         $fileName = $this->requiredText($actionData['original_file_name'] ?? '', 255);
         $mimeType = strtolower($this->requiredText($actionData['mime_type'] ?? '', 100) ?? '');
@@ -504,6 +514,12 @@ final readonly class CatalogueServices implements ICatalogueServices
         }
         $tenantId = (int) $context['data']['tenant_id'];
         $userId = (int) $context['data']['user_id'];
+        if ($operation === 'link') {
+            $entitlement = $this->getProductEntitlementState($tenantId);
+            if ($entitlement['status'] !== 'SUCCESS') {
+                return $entitlement;
+            }
+        }
         $productId = $this->positiveInt($actionData['product_id'] ?? null);
         if ($productId === null) {
             $resArr['msgArr'][] = 'A valid product_id is required.';
