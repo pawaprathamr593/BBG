@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, effect, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../core/http/api.service';
 import { ApiError } from '../../core/http/api-error';
@@ -10,7 +10,7 @@ import { WorkspaceContextService } from './workspace-context.service';
   templateUrl: './workspace-overview.html',
   styleUrl: './workspace-overview.scss',
 })
-export class WorkspaceOverview implements OnInit {
+export class WorkspaceOverview {
   private readonly api = inject(ApiService);
   private readonly workspace = inject(WorkspaceContextService);
   protected readonly mode = this.workspace.mode;
@@ -19,18 +19,25 @@ export class WorkspaceOverview implements OnInit {
   protected readonly metrics = signal<Record<string, unknown>>({});
   protected readonly title = computed(() => this.mode() === 'PERSONAL' ? 'Your activity' : this.mode() === 'BUSINESS' ? 'Business overview' : 'Platform overview');
 
-  ngOnInit(): void {
-    void this.load();
+  private requestSequence = 0;
+
+  constructor() {
+    effect(() => {
+      this.mode();
+      this.workspace.tenantId();
+      void this.load();
+    });
   }
 
   protected async load(): Promise<void> {
+    const requestId = ++this.requestSequence;
     this.loading.set(true);
     this.error.set('');
     this.metrics.set({});
     const mode = this.mode();
     const tenantId = this.workspace.tenantId();
     if (mode === 'BUSINESS' && !tenantId) {
-      this.loading.set(false);
+      if (requestId === this.requestSequence) this.loading.set(false);
       return;
     }
     const route = mode === 'PERSONAL'
@@ -53,9 +60,9 @@ export class WorkspaceOverview implements OnInit {
       if (!response?.data || Array.isArray(response.data) || typeof response.data !== 'object') {
         throw new ApiError('The dashboard response was empty or had an unexpected format.');
       }
-      this.metrics.set(response.data as Record<string, unknown>);
+      if (requestId === this.requestSequence) this.metrics.set(response.data as Record<string, unknown>);
     } catch (cause) {
-      this.error.set(cause instanceof Error ? cause.message : 'Unable to load dashboard information.');
+      if (requestId === this.requestSequence) this.error.set(cause instanceof Error ? cause.message : 'Unable to load dashboard information.');
     } finally {
       this.loading.set(false);
     }
