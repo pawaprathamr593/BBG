@@ -344,13 +344,13 @@ export class WorkspaceLayout implements OnInit, AfterViewChecked, OnDestroy {
   }
   applyFilters(): void {
     this.activeFilters.set({...this.draftFilters()});
-    void this.router.navigate([], {relativeTo:this.route,queryParams:Object.fromEntries(Object.entries(this.draftFilters()).filter(([,v])=>!!v)),queryParamsHandling:'merge'});
+    void this.router.navigate([this.currentPath()], {queryParams:Object.fromEntries(Object.entries(this.draftFilters()).filter(([,v])=>!!v)),queryParamsHandling:'merge'});
     this.closeFilterDrawer();
   }
   clearFilters(): void {
     this.draftFilters.set({search:'',status:'',from:'',to:''});
     this.activeFilters.set({search:'',status:'',from:'',to:''});
-    void this.router.navigate([], {relativeTo:this.route,queryParams:{search:null,status:null,from:null,to:null},queryParamsHandling:'merge'});
+    void this.router.navigate([this.currentPath()], {queryParams:{search:null,status:null,from:null,to:null},queryParamsHandling:'merge'});
   }
   @HostListener('document:keydown',['$event'])
   onKeydown(event: KeyboardEvent): void {
