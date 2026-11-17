@@ -15,6 +15,7 @@ export class WorkspaceContextService {
   readonly tenants = signal<DashboardTenant[]>([]);
   readonly activeTenantId = signal<number | null>(null);
   readonly permissions = signal<DashboardPermission[]>([]);
+  readonly platformPermissions = signal<DashboardPermission[]>([]);
   readonly loading = signal(false);
   readonly error = signal('');
 
@@ -43,12 +44,14 @@ export class WorkspaceContextService {
     const permissions = await this.api.getPermissions(tenantId ?? 0);
     this.activeTenantId.set(tenantId);
     this.permissions.set(permissions);
+    if (tenantId === null) this.platformPermissions.set(permissions);
     this.persistActiveWorkspace(tenantId);
   }
 
   clear(): void {
     this.tenants.set([]);
     this.permissions.set([]);
+    this.platformPermissions.set([]);
     this.activeTenantId.set(null);
     this.loading.set(false);
     this.error.set('');
@@ -75,6 +78,7 @@ export class WorkspaceContextService {
         this.api.getPermissions(0),
       ]);
       this.tenants.set(tenants);
+      this.platformPermissions.set(savedPermissions);
 
       const savedId = this.readActiveWorkspace();
       const restoredTenantId = savedId !== null && tenants.some((tenant) => tenant.id === savedId)
