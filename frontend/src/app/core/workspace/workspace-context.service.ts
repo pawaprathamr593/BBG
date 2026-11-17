@@ -16,6 +16,7 @@ export class WorkspaceContextService {
 
   readonly tenants = signal<DashboardTenant[]>([]);
   readonly activeTenantId = signal<number | null>(null);
+  readonly activeContext = signal<'PERSONAL' | 'PLATFORM' | 'BUSINESS' | null>(null);
   readonly lastActiveTenantId = signal<number | null>(null);
   readonly permissions = signal<DashboardPermission[]>([]);
   readonly platformPermissions = signal<DashboardPermission[]>([]);
@@ -50,6 +51,7 @@ export class WorkspaceContextService {
     // permission request therefore cannot leave the UI in a false active state.
     const permissions = await this.api.getPermissions(tenantId);
     this.activeTenantId.set(tenantId);
+    this.activeContext.set('BUSINESS');
     this.lastActiveTenantId.set(tenantId);
     this.permissions.set(permissions);
     this.persistActiveWorkspace(tenantId);
@@ -62,6 +64,7 @@ export class WorkspaceContextService {
     const allPermissions = await this.api.getPermissions(0);
     this.platformPermissions.set(allPermissions);
     this.activeTenantId.set(null);
+    this.activeContext.set('PERSONAL');
     this.permissions.set(allPermissions.filter((permission) => permission.scope_type === 'GLOBAL'));
     this.persistActiveWorkspace(null);
     this.persistActiveContext('PERSONAL');
@@ -74,6 +77,7 @@ export class WorkspaceContextService {
     if (!platformPermissions.length) throw new Error('You do not have Platform Administration access.');
     this.platformPermissions.set(allPermissions);
     this.activeTenantId.set(null);
+    this.activeContext.set('PLATFORM');
     this.permissions.set(platformPermissions);
     this.persistActiveWorkspace(null);
     this.persistActiveContext('PLATFORM');
@@ -84,6 +88,7 @@ export class WorkspaceContextService {
     this.permissions.set([]);
     this.platformPermissions.set([]);
     this.activeTenantId.set(null);
+    this.activeContext.set(null);
     this.lastActiveTenantId.set(null);
     this.loading.set(false);
     this.error.set('');
@@ -135,6 +140,7 @@ export class WorkspaceContextService {
         : await this.api.getPermissions(restoredTenantId);
 
       this.activeTenantId.set(restoredTenantId);
+      this.activeContext.set(restoredTenantId !== null ? 'BUSINESS' : defaultScope === 'PLATFORM' ? 'PLATFORM' : 'PERSONAL');
       this.permissions.set(permissions);
       if (restoredTenantId !== savedId) this.persistActiveWorkspace(restoredTenantId);
     } catch (error) {
