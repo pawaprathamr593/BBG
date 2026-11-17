@@ -95,6 +95,11 @@ interface DataRecord { [key: string]: unknown; }
                       <div><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
                     }
                   </div>
+                  @if (section() === 'subscriptions' && ['PENDING','REJECTED'].includes(statusOf(item).toUpperCase())) {
+                    <label class="upload-proof">Upload payment proof
+                      <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" [disabled]="busy()" (change)="uploadProof($event, item)" />
+                    </label>
+                  }
                   @if (actionsFor(item).length) {
                     <div class="record-actions">
                       @for (action of actionsFor(item); track action.key) {
@@ -140,7 +145,7 @@ interface DataRecord { [key: string]: unknown; }
     .status-chip.good{color:#168253;background:#e9f7ef}.status-chip.warn{color:#98691a;background:#fff5df}.status-chip.bad{color:#b34840;background:#fff0ee}
     .record-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
     .record-fields>div{display:grid;gap:5px;min-width:0}.record-fields strong{overflow-wrap:anywhere;font-size:.76rem;font-weight:700}
-    .record-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}.record-actions button{min-height:34px;color:var(--brand);border-color:color-mix(in srgb,var(--brand) 25%,var(--border))}.record-actions button.danger{color:#b34840;border-color:#e7c1bd}
+    .upload-proof{display:inline-flex;align-items:center;gap:10px;margin-top:14px;padding:9px 12px;color:var(--brand);background:var(--brand-soft);border:1px solid color-mix(in srgb,var(--brand) 22%,var(--border));border-radius:8px;font-size:.73rem;font-weight:750}.upload-proof input{max-width:210px;color:var(--text-secondary);font-size:.7rem}.record-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}.record-actions button{min-height:34px;color:var(--brand);border-color:color-mix(in srgb,var(--brand) 25%,var(--border))}.record-actions button.danger{color:#b34840;border-color:#e7c1bd}
     .plans-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.plan-card{padding:20px;background:var(--surface-card);border:1px solid var(--border);border-radius:13px}.plan-card h3{margin:0 0 10px;font-size:1rem}.plan-price{font-size:1.35rem;letter-spacing:-.04em}.plan-card p{min-height:38px;color:var(--text-secondary);font-size:.76rem;line-height:1.55}.plan-card button{width:100%;min-height:38px;color:white;background:var(--brand);border:0;border-radius:8px;font-size:.75rem;font-weight:800;cursor:pointer}
     .empty{flex-direction:column;text-align:center}.empty p{max-width:480px}
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -579,6 +584,44 @@ export class DashboardModule implements OnInit {
     try { await this.request(path,key,actionType,data); this.notice.set('Changes saved successfully.'); await this.load(); }
     catch(error) { this.error.set(this.auth.errorMessage(error)); }
     finally { this.busy.set(false); }
+  }
+
+  async uploadProof(event: Event, subscription: DataRecord): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const allowed = ['image/jpeg','image/png','image/webp','application/pdf'];
+    if (!allowed.includes(file.type) || file.size < 1) {
+      this.error.set('Choose a non-empty JPG, PNG, WEBP or PDF file.');
+      input.value = '';
+      return;
+    }
+    const subscriptionId = this.recordId(subscription,'subscription_id');
+    const tenantId = this.workspace.activeTenantId();
+    if (!subscriptionId || !tenantId) { this.error.set('Subscription or workspace details are unavailable.'); input.value=''; return; }
+    const paymentReference = window.prompt('Payment reference (optional):');
+    this.busy.set(true); this.error.set('');
+    try {
+      const upload = await this.request<{upload_url:string;object_key:string;method:string;headers:Record<string,string>}>(
+        '/api/v1/subscriptions/proofs/upload-url','subscriptionParam','generateSubscriptionProofUploadUrl',{
+          tenant_id:tenantId,subscription_id:subscriptionId,original_file_name:file.name,mime_type:file.type,file_size_bytes:file.size,
+        },
+      );
+      await firstValueFrom(this.http.put(upload.upload_url,file,{
+        headers:new HttpHeaders(upload.headers ?? {'Content-Type':file.type}),responseType:'text',
+      }));
+      await this.request('/api/v1/subscriptions/proofs/submit','subscriptionParam','submitSubscriptionProof',{
+        tenant_id:tenantId,subscription_id:subscriptionId,proof_file_path:upload.object_key,
+        ...(paymentReference?.trim()?{payment_reference:paymentReference.trim()}:{})
+      });
+      this.notice.set('Payment proof uploaded and submitted for review.');
+      await this.load();
+    } catch(error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
+      input.value = '';
+    }
   }
 
   async requestPlan(plan: DataRecord): Promise<void> {
