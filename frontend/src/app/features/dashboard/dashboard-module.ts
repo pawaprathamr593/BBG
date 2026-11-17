@@ -131,6 +131,9 @@ interface DataRecord { [key: string]: unknown; }
                       <div><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
                     }
                   </div>
+                  @if (section() === 'subscription-approval') {
+                    <button type="button" class="secondary-action" (click)="openSubscriptionReview(item)" [disabled]="busy()">View business details, receipts & history</button>
+                  }
                   @if (section() === 'subscriptions' && item['payment_qr_url']) {
                     <div class="subscription-payment-qr">
                       <img [src]="$any(item['payment_qr_url'])" alt="UPI payment QR for this subscription">
@@ -178,6 +181,36 @@ interface DataRecord { [key: string]: unknown; }
         } @else if (!summaryEntries().length && !(section() === 'subscriptions' && plans().length)) {
           <section class="state-panel empty"><span class="state-icon">⌑</span><strong>Nothing to show yet</strong><p>There are no records available for this section in your current area.</p></section>
         }
+      }
+      @if (subscriptionReview()) {
+        <div class="composer-backdrop" (click)="subscriptionReview.set(null)">
+          <section class="promotion-composer subscription-review-dialog" role="dialog" aria-modal="true" aria-labelledby="subscription-review-title" (click)="$event.stopPropagation()">
+            <header><div><p class="eyebrow">PLATFORM ADMIN / SUBSCRIPTION REVIEW</p><h2 id="subscription-review-title">Subscription #{{ subscriptionReview()?.['subscription']?.['id'] }}</h2><p>Business registration, selected plan, captured payment instructions and submission history.</p></div><button type="button" class="composer-close" (click)="subscriptionReview.set(null)">×</button></header>
+            @if (subscriptionReview()?.['subscription']; as detail) {
+              <h3>Business details</h3>
+              <div class="review-detail-grid">
+                @for (key of ['business_name','business_email','business_phone','whatsapp_number','address_line_1','address_line_2','city','state','postal_code','country_code','business_approval_status']; track key) {
+                  <div><span>{{ humanize(key) }}</span><strong>{{ detail[key] || '—' }}</strong></div>
+                }
+              </div>
+              <h3>Plan & payment instructions</h3>
+              <div class="review-detail-grid">
+                @for (key of ['plan_name','plan_code','billing_cycle','amount','currency','subscription_status','payment_payee_name','payment_upi_id','payment_qr_version','payment_instructions']; track key) {
+                  <div><span>{{ humanize(key) }}</span><strong>{{ detail[key] || '—' }}</strong></div>
+                }
+              </div>
+              @if (detail['payment_qr_file_url']) { <img class="payment-qr-preview" [src]="$any(detail['payment_qr_file_url'])" alt="Captured payment QR"> }
+            }
+            <h3>Payment receipts</h3>
+            @for (proof of subscriptionReview()?.['proofs'] ?? []; track proof['id']) {
+              <div class="review-history-row"><div><strong>{{ proof['review_status'] }}</strong><span>{{ proof['payment_reference'] || 'No payment reference' }} · {{ formatValue(proof['submitted_on']) }}</span></div>@if (proof['proof_file_url']) { <a [href]="$any(proof['proof_file_url'])" target="_blank" rel="noopener">Open receipt</a> }</div>
+            } @empty { <p>No receipt submissions were found.</p> }
+            <h3>Decision history</h3>
+            @for (entry of subscriptionReview()?.['review_history'] ?? []; track entry['id']) {
+              <div class="review-history-row"><div><strong>{{ entry['decision'] }}</strong><span>{{ entry['review_reason'] || 'No rejection reason recorded' }}</span><small>{{ entry['reviewer_name'] || 'System' }} · {{ formatValue(entry['reviewed_on']) }}</small></div></div>
+            } @empty { <p>No review decisions have been recorded yet.</p> }
+          </section>
+        </div>
       }
       @if (showPromotionComposer()) {
         <div class="composer-backdrop" (click)="closePromotionComposer()">
@@ -301,6 +334,7 @@ export class DashboardModule implements OnInit {
   readonly qrUpiId = signal('');
   readonly qrInstructions = signal('');
   readonly qrFile = signal<File | null>(null);
+  readonly subscriptionReview = signal<DataRecord | null>(null);
   readonly showPromotionComposer = signal(false);
   readonly promotionTitle = signal('');
   readonly promotionContent = signal('');
@@ -958,6 +992,22 @@ export class DashboardModule implements OnInit {
     try { await this.request(path,key,actionType,data); this.notice.set('Changes saved successfully.'); await this.load(); }
     catch(error) { this.error.set(this.auth.errorMessage(error)); }
     finally { this.busy.set(false); }
+  }
+
+  async openSubscriptionReview(item: DataRecord): Promise<void> {
+    const subscriptionId = this.recordId(item,'subscription_id');
+    if (!subscriptionId || this.busy()) return;
+    this.busy.set(true); this.error.set('');
+    try {
+      const detail = await this.request<DataRecord>(
+        '/api/v1/admin/subscriptions/detail','adminParam','getSubscriptionForReview',{subscription_id:subscriptionId},
+      );
+      this.subscriptionReview.set(detail);
+    } catch(error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   setPaymentQrFile(event: Event): void {
