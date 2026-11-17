@@ -107,15 +107,15 @@ interface WorkspaceNavItem {
           <div class="mobile-quick-nav">
             <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="mobileExpanded.set(false)"><span>▦</span><small>Overview</small></a>
             @for (item of visibleNavItems().slice(0,3); track item.route) {
-              <a [routerLink]="item.route" routerLinkActive="active" (click)="mobileNavOpen.set(false)"><span>{{ item.icon }}</span><small>{{ item.label }}</small></a>
+              <a [routerLink]="item.route" routerLinkActive="active" (click)="mobileExpanded.set(false)"><span>{{ item.icon }}</span><small>{{ item.label }}</small></a>
             }
             <button type="button" (click)="mobileExpanded.set(true)"><span>•••</span><small>All modules</small></button>
           </div>
         } @else {
           <div class="mobile-nav-scroll">
-            <a class="mobile-nav-item" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="mobileNavOpen.set(false)"><span>▦</span>Overview</a>
+            <a class="mobile-nav-item" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" (click)="mobileExpanded.set(false)"><span>▦</span>Overview</a>
             @for (item of visibleNavItems(); track item.route) {
-              <a class="mobile-nav-item" [routerLink]="item.route" routerLinkActive="active" (click)="mobileNavOpen.set(false)"><span>{{ item.icon }}</span>{{ item.label }}</a>
+              <a class="mobile-nav-item" [routerLink]="item.route" routerLinkActive="active" (click)="mobileExpanded.set(false)"><span>{{ item.icon }}</span>{{ item.label }}</a>
             }
           </div>
         }
