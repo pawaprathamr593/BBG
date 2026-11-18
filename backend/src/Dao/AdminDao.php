@@ -238,6 +238,60 @@ final readonly class AdminDao
             [':tenant_id' => $tenantId, ':subscription_id' => $subscriptionId], 'getSubscriptionReviewHistory');
     }
 
+    public function allocateBcnSerial(ConnectionInterface $db): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $counter = $db->createCommand("SELECT last_serial FROM BBG_BCN_SERIAL_COUNTER
+                WHERE id = 1 AND status = 'A' FOR UPDATE")->queryOne();
+            if (!is_array($counter)) {
+                $resArr['msgArr'][] = 'The BCN serial counter is not configured.';
+                return $resArr;
+            }
+            $current = (int) $counter['last_serial'];
+            if ($current >= PHP_INT_MAX) {
+                $resArr['msgArr'][] = 'The BCN serial counter has reached the supported limit.';
+                return $resArr;
+            }
+            $next = $current + 1;
+            $affected = $db->createCommand("UPDATE BBG_BCN_SERIAL_COUNTER
+                SET last_serial = :next_serial, updated_on = CURRENT_TIMESTAMP
+                WHERE id = 1 AND status = 'A' AND last_serial = :current_serial",
+                [':next_serial' => $next, ':current_serial' => $current])->execute();
+            if ($affected !== 1) {
+                $resArr['msgArr'][] = 'The BCN serial number could not be allocated.';
+                return $resArr;
+            }
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['serial' => $next];
+        } catch (Throwable $exception) {
+            return $this->error('allocateBcnSerial', $exception);
+        }
+        return $resArr;
+    }
+
+    public function saveSubscriptionBcn(ConnectionInterface $db, int $subscriptionId, int $tenantId, string $bcn, int $adminId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $affected = $db->createCommand("UPDATE TENANT_SUBSCRIPTIONS
+                SET bcn = :bcn, updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
+                WHERE id = :id AND tenant_id = :tenant_id
+                    AND subscription_status = 'ACTIVE' AND bcn IS NULL AND status = 'A'",
+                [':bcn' => $bcn, ':admin_id' => $adminId,
+                 ':id' => $subscriptionId, ':tenant_id' => $tenantId])->execute();
+            if ($affected !== 1) {
+                $resArr['msgArr'][] = 'The BCN could not be saved for this approved subscription.';
+                return $resArr;
+            }
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['subscription_id' => $subscriptionId, 'bcn' => $bcn];
+        } catch (Throwable $exception) {
+            return $this->error('saveSubscriptionBcn', $exception);
+        }
+        return $resArr;
+    }
+
     public function approveSubscription(ConnectionInterface $db, int $subscriptionId, int $tenantId, int $adminId, string $startsOn, string $endsOn): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
@@ -387,7 +441,7 @@ final readonly class AdminDao
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->many($db, "SELECT ts.id AS subscription_id, ts.tenant_id, t.tenant_name,
-            p.plan_name, ts.starts_on, ts.ends_on, ts.renewal_due_on, ts.amount, ts.currency
+            p.plan_name, ts.starts_on, ts.ends_on, ts.renewal_due_on, ts.amount, ts.currency, ts.bcn
             FROM TENANT_SUBSCRIPTIONS ts
             INNER JOIN TENANTS t ON t.id = ts.tenant_id AND t.status = 'A'
             INNER JOIN PLANS p ON p.id = ts.plan_id AND p.status = 'A'
