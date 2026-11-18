@@ -56,7 +56,7 @@ Existing /dashboard/platform-users, /dashboard/business-approval, /dashboard/sub
 | Payment QR settings read/upload/save | POST | /api/v1/admin/subscriptions/payment-qr/current, /upload-url, /save | getCurrentPaymentQrConfig, generatePaymentQrUploadUrl, savePaymentQrConfig | Route registry and backend workers exist on this branch; API V1 catalogue is stale and must be reconciled separately |
 
 ## 8. Permissions
-Reuse existing keys: PLATFORM_USERS_MANAGE, BUSINESS_APPROVE, SUBSCRIPTIONS_APPROVE, CATEGORIES_MANAGE, MODERATION_MANAGE, ANALYTICS_VIEW, SYSTEM_HEALTH_VIEW. Backend platform authorization is mandatory.
+Use exact platform permission codes returned by the seeded catalogue: `user.view`, `business.approve`, `subscription.approve`, `report.view` and `admin.view`. Categories, moderation and safe system-health navigation use `admin.view` because the seed defines no dedicated permission codes for those screens. Platform Admin role mappings are limited to the seeded ADMIN, USER, BUSINESS, SUBSCRIPTION, REPORT and NOTIFICATION modules; Platform Super Admin remains a separate all-permissions role. Backend platform authorization is mandatory.
 
 ## 9. Rules and validation
 Do not assign platform roles in frontend. Follow backend lifecycle and reason requirements. Proof is evidence, not approval. Category deletion follows dependency rules. Moderation actions limited to supported targets. Health output must not expose secrets. Payment QR settings use the current-branch routes and AdminServices workers; preserve server-side PLATFORM permission checks and S3 verification.
@@ -86,3 +86,4 @@ Review screens remain usable on tablet/mobile; preserve theme tokens, focus and 
 - Added generic detail views for platform users and business applications.
 - Added category editing, moderation-history review and a 30-day platform analytics trend view using existing backend operations.
 - Preserved payment QR configuration using the implemented admin routes and S3 verification flow.
+- Replaced synthetic platform navigation permissions with seeded `user.view`, `business.approve`, `subscription.approve`, `report.view` and `admin.view` codes.
