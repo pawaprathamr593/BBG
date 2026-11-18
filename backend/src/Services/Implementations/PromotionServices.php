@@ -217,14 +217,6 @@ final readonly class PromotionServices implements IPromotionServices
         $context = $this->tenantContext($actionData, 'promotion.update');
         if ($context['status'] !== 'SUCCESS') return $this->propagateFailure($context, 'PromotionServices::generatePromotionMediaUploadUrl');
         $tenantId = (int) $context['data']['tenant_id'];
-        $promotionEntitlement = $this->dao->hasPromotionEntitlement($this->db, $tenantId);
-        if ($promotionEntitlement['status'] !== 'SUCCESS') {
-            return $this->propagateFailure($promotionEntitlement, 'PromotionServices::generatePromotionMediaUploadUrl');
-        }
-        if ($promotionEntitlement['data'] === []) {
-            $resArr['msgArr'][] = 'An active subscription with promotions.enabled entitlement is required.';
-            return $resArr;
-        }
         $promotionId = $this->positiveInt($actionData['promotion_id'] ?? null);
         $fileName = $this->requiredText($actionData['original_file_name'] ?? '', 255);
         $mimeType = strtolower($this->requiredText($actionData['mime_type'] ?? '', 100) ?? '');
@@ -264,16 +256,6 @@ final readonly class PromotionServices implements IPromotionServices
         if ($context['status'] !== 'SUCCESS') return $this->propagateFailure($context, 'PromotionServices::managePromotionMedia');
         $tenantId = (int) $context['data']['tenant_id'];
         $userId = (int) $context['data']['user_id'];
-        if ($operation === 'link') {
-            $promotionEntitlement = $this->dao->hasPromotionEntitlement($this->db, $tenantId);
-            if ($promotionEntitlement['status'] !== 'SUCCESS') {
-                return $this->propagateFailure($promotionEntitlement, 'PromotionServices::managePromotionMedia');
-            }
-            if ($promotionEntitlement['data'] === []) {
-                $resArr['msgArr'][] = 'An active subscription with promotions.enabled entitlement is required.';
-                return $resArr;
-            }
-        }
         $promotionId = $this->positiveInt($actionData['promotion_id'] ?? null);
         if ($promotionId === null) {
             $resArr['msgArr'][] = 'A valid promotion_id is required.';
@@ -439,10 +421,6 @@ final readonly class PromotionServices implements IPromotionServices
         }
         if ($operation === 'publish' || $operation === 'unpublish') {
             if ($operation === 'publish') {
-                $quota = $this->getPromotionQuota($tenantId, (int) $context['data']['user_id'], $promotionId);
-                if ($quota['status'] !== 'SUCCESS') {
-                    return $quota;
-                }
                 $validUntil = $existing['data']['valid_until'] ?? null;
                 if ($validUntil !== null && strtotime((string) $validUntil) < time()) {
                     $resArr['msgArr'][] = 'Expired promotions cannot be published.';
@@ -471,34 +449,11 @@ final readonly class PromotionServices implements IPromotionServices
         }
 
         if ($operation === 'create') {
-            $entitlement = $this->dao->hasPromotionEntitlement($this->db, $tenantId);
-            if ($entitlement['status'] !== 'SUCCESS') {
-                return $this->propagateFailure($entitlement, 'PromotionServices::manageMyPromotion');
-            }
-            if ($entitlement['data'] === []) {
-                $resArr['msgArr'][] = 'An active subscription with promotions.enabled entitlement is required.';
-                return $resArr;
-            }
             return $this->dao->insertPromotion($this->db, $tenantId, $title, $content, $validUntil, $userId);
         }
         return $this->dao->updatePromotion($this->db, $tenantId, $promotionId, $title, $content, $validUntil, $userId);
     }
 
-    private function getPromotionQuota(int $tenantId, int $userId, int $promotionId): array
-    {
-        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $entitlement = $this->dao->hasPromotionEntitlement($this->db, $tenantId);
-        if ($entitlement['status'] !== 'SUCCESS') {
-            return $this->propagateFailure($entitlement, 'PromotionServices::getPromotionQuota');
-        }
-        if ($entitlement['data'] === []) {
-            $resArr['msgArr'][] = 'An active subscription with promotions.enabled entitlement is required to publish promotions.';
-            return $resArr;
-        }
-        $resArr['status'] = 'SUCCESS';
-        $resArr['data'] = ['enabled' => true];
-        return $resArr;
-    }
 
     private function tenantContext(array $actionData, string $permissionCode): array
     {
@@ -523,6 +478,14 @@ final readonly class PromotionServices implements IPromotionServices
         }
         if ($permission['data'] === []) {
             $resArr['msgArr'][] = 'The required promotion permission is missing for this tenant.';
+            return $resArr;
+        }
+        $entitlement = $this->dao->hasPromotionEntitlement($this->db, $tenantId);
+        if ($entitlement['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($entitlement, 'PromotionServices::tenantContext');
+        }
+        if ($entitlement['data'] === []) {
+            $resArr['msgArr'][] = 'An active subscription with promotions.enabled entitlement is required.';
             return $resArr;
         }
         $resArr['status'] = 'SUCCESS';
