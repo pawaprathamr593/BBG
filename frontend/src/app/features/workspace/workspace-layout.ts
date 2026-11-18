@@ -6,6 +6,7 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
 import { UserProfileDrawerComponent } from '../../shared/user-profile-drawer/user-profile-drawer';
 import { FilterDrawer } from '../../shared/filter-drawer/filter-drawer';
 import { WorkspaceNavIconComponent } from './workspace-nav-icon';
+import { getWorkspaceNavItems } from './workspace-navigation';
 
 interface WorkspaceNavItem {
   label: string;
@@ -124,41 +125,10 @@ export class WorkspaceLayout implements OnInit {
     if (s === 'catalogue') return ['DRAFT','PUBLISHED'];
     return ['ACTIVE','INACTIVE','PENDING','APPROVED','REJECTED'];
   });
-  readonly visibleNavItems = computed<WorkspaceNavItem[]>(() => {
-    const scope = this.activeTenantId() !== null ? ['TENANT'] : this.activeContext() === 'PLATFORM' ? ['PLATFORM'] : ['GLOBAL'];
-    const perms = this.permissions();
-    const available = (permission: string | null, itemScope: WorkspaceNavItem['scope']) => {
-      if (!permission) return true;
-      return perms.some((p) => p.permission_code === permission && (itemScope === 'ANY' || p.scope_type === itemScope));
-    };
-    const items: WorkspaceNavItem[] = [
-      {label:'Profile & storefront',route:'/dashboard/profile',permission:'BUSINESS_PROFILE_MANAGE',scope:'TENANT',icon:'store'},
-      {label:'Catalogue',route:'/dashboard/catalogue',permission:'CATALOGUE_MANAGE',scope:'TENANT',icon:'package'},
-      {label:'Customers',route:'/dashboard/customers',permission:'CUSTOMERS_MANAGE',scope:'TENANT',icon:'users'},
-      {label:'Enquiries',route:'/dashboard/enquiries',permission:'ENQUIRIES_MANAGE',scope:'TENANT',icon:'message-square'},
-      {label:'Orders',route:'/dashboard/orders',permission:'ORDERS_MANAGE',scope:'TENANT',icon:'shopping-bag'},
-      {label:'Payments',route:'/dashboard/payments',permission:'PAYMENTS_VIEW',scope:'TENANT',icon:'wallet'},
-      {label:'Promotions',route:'/dashboard/promotions',permission:'PROMOTIONS_MANAGE',scope:'TENANT',icon:'megaphone'},
-      {label:'Subscriptions',route:'/dashboard/subscriptions',permission:'SUBSCRIPTIONS_MANAGE',scope:'TENANT',icon:'badge-check'},
-      {label:'Team & access',route:'/dashboard/members',permission:'TENANT_MEMBERS_VIEW',scope:'TENANT',icon:'users-round'},
-      {label:'Analytics',route:'/dashboard/analytics',permission:'ANALYTICS_VIEW',scope:'TENANT',icon:'chart-no-axes-combined'},
-      {label:'Platform users',route:'/dashboard/platform-users',permission:'PLATFORM_USERS_MANAGE',scope:'PLATFORM',icon:'user-cog'},
-      {label:'Business approvals',route:'/dashboard/business-approval',permission:'BUSINESS_APPROVE',scope:'PLATFORM',icon:'building-check'},
-      {label:'Subscription approvals',route:'/dashboard/subscription-approval',permission:'SUBSCRIPTIONS_APPROVE',scope:'PLATFORM',icon:'credit-card'},
-      {label:'Marketplace categories',route:'/dashboard/categories',permission:'CATEGORIES_MANAGE',scope:'PLATFORM',icon:'tags'},
-      {label:'Moderation',route:'/dashboard/moderation',permission:'MODERATION_MANAGE',scope:'PLATFORM',icon:'shield-check'},
-      {label:'Platform analytics',route:'/dashboard/platform-analytics',permission:'ANALYTICS_VIEW',scope:'PLATFORM',icon:'chart-column'},
-      {label:'System health',route:'/dashboard/system-health',permission:'SYSTEM_HEALTH_VIEW',scope:'PLATFORM',icon:'activity'},
-      // My Account navigation is part of every authenticated consumer account.
-      // Keep these personal destinations visible even when a deployment has not
-      // seeded optional GLOBAL role-permission rows; APIs still enforce ownership.
-      {label:'My Orders',route:'/dashboard/orders',permission:null,scope:'GLOBAL',icon:'receipt-text'},
-      {label:'My Enquiries',route:'/dashboard/enquiries',permission:null,scope:'GLOBAL',icon:'messages-square'},
-      {label:'My Payments',route:'/dashboard/payments',permission:null,scope:'GLOBAL',icon:'hand-coins'},
-      {label:'My Profile & Addresses',route:'/dashboard/customers',permission:null,scope:'GLOBAL',icon:'contact-round'},
-    ];
-    return items.filter((item) => scope.includes(item.scope) && available(item.permission,item.scope));
-  });
+  readonly visibleNavItems = computed(() => getWorkspaceNavItems(
+    this.activeTenantId() !== null ? 'BUSINESS' : this.activeContext() ?? 'PERSONAL',
+    this.permissions(),
+  ));
 
   async ngOnInit(): Promise<void> {
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
