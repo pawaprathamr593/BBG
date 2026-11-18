@@ -46,6 +46,9 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "proxyConfig": "proxy.conf.json"
+          },
           "configurations": {
             "production": { "buildTarget": "bbg-frontend:build:production" },
             "development": { "buildTarget": "bbg-frontend:build:development" }
