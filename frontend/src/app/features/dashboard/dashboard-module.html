@@ -113,7 +113,7 @@
                       <div><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
                     }
                   </div>
-                  @if (section() === 'subscriptions' && hasBcn(item)) {
+                  @if (['subscriptions','subscription-approval'].includes(section()) && hasBcn(item)) {
                     <div class="bcn-record">
                       <span>BBG Contribution Number</span>
                       <div><strong>{{ item['bcn'] }}</strong><button type="button" (click)="copyBcn(item['bcn'])">Copy</button></div>
