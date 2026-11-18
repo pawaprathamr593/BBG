@@ -36,7 +36,7 @@ class StaleWorkspaceRequestError extends Error {}
     .section-nav{display:flex;gap:7px;overflow:auto;padding:4px 0 17px;margin-bottom:22px;border-bottom:1px solid var(--border)}
     .section-nav a{flex:0 0 auto;padding:9px 12px;color:var(--text-secondary);border-radius:8px;font-size:.75rem;font-weight:750;text-decoration:none}
     .section-nav a.active{color:var(--brand);background:var(--brand-soft)}
-    .notice{margin:0 0 16px;padding:12px 15px;color:var(--text-secondary);background:var(--surface-subtle);border:1px solid var(--border);border-radius:10px;font-size:.8rem}
+    .notice{margin:0 0 16px;padding:12px 15px;color:var(--text-secondary);background:var(--surface-subtle);border:1px solid var(--border);border-radius:10px;font-size:.8rem}.notice.error{color:#b34840;border-color:#e7c1bd;background:var(--surface-card)}
     .state-panel{display:flex;align-items:center;justify-content:center;gap:14px;min-height:170px;padding:28px;background:var(--surface-card);border:1px solid var(--border);border-radius:14px}
     .state-panel>div{display:grid;gap:4px}.state-panel p{max-width:560px;margin:5px 0 0;color:var(--text-secondary);font-size:.8rem;line-height:1.6}.state-panel.error{display:block;text-align:center;border-color:#d88a83}.state-panel.error button{margin-top:14px}
     .spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
