@@ -83,5 +83,5 @@ Review screens remain usable on tablet/mobile; preserve theme tokens, focus and 
 ## Implementation log
 - Requirement created on approved branch HG_CODE_IMPROVEMENTS.
 - Added generic detail views for platform users and business applications.
-- Added category editing and a moderation-history view using existing backend operations.
+- Added category editing, moderation-history review and a 30-day platform analytics trend view using existing backend operations.
 - Preserved payment QR configuration using the implemented admin routes and S3 verification flow.
