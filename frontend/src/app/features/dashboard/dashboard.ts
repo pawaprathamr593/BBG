@@ -76,23 +76,35 @@ export class Dashboard implements OnInit {
   readonly summary = signal<Record<string, string | number | null> | null>(null);
 
   private activeContextObserved = false;
+  private summaryLoadSequence = 0;
+  private readonly summaryRefreshVersion = signal(0);
 
   constructor() {
     effect(() => {
       const tenantId = this.workspace.activeTenantId();
+      const context = this.workspace.activeContext();
       const permissions = untracked(() => this.workspace.permissions());
+      this.summaryRefreshVersion();
+
       if (!this.activeContextObserved) {
         this.activeContextObserved = true;
         return;
       }
+
+      // Invalidate requests from the previous context before starting a new
+      // summary load. Personal and Platform contexts both have a null tenant ID.
+      this.summaryLoadSequence += 1;
       this.selectedTenantId.set(tenantId);
       this.permissions.set(permissions);
       this.summary.set(null);
       this.summaryError.set('');
-      if (tenantId !== null && permissions.some((permission) => permission.permission_code === 'TENANT_MEMBERS_VIEW')) {
+
+      if (tenantId !== null && context === 'BUSINESS') {
         void this.loadTenantSummary(tenantId);
-      } else if (tenantId === null && !this.isPlatformContext()) {
+      } else if (context === 'PERSONAL') {
         void this.loadConsumerSummary();
+      } else {
+        this.summaryLoading.set(false);
       }
     });
   }
@@ -148,11 +160,9 @@ export class Dashboard implements OnInit {
       this.summary.set(null);
       this.summaryError.set('');
       this.loading.set(false);
-      if (this.selectedTenantId() !== null && permissions.some((permission) => permission.permission_code === 'TENANT_MEMBERS_VIEW')) {
-        await this.loadTenantSummary(this.selectedTenantId()!);
-      } else if (this.isPersonalContext()) {
-        await this.loadConsumerSummary();
-      }
+      // The same refresh trigger handles initial load, manual refresh and
+      // Personal/Business/Platform context changes consistently.
+      this.summaryRefreshVersion.update((version) => version + 1);
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
       this.loading.set(false);
@@ -180,24 +190,36 @@ export class Dashboard implements OnInit {
   }
 
   private async loadConsumerSummary(): Promise<void> {
+    const requestId = ++this.summaryLoadSequence;
     this.summaryLoading.set(true);
     try {
-      this.summary.set(await this.api.getConsumerSummary());
+      const summary = await this.api.getConsumerSummary();
+      if (requestId === this.summaryLoadSequence && this.workspace.activeContext() === 'PERSONAL') {
+        this.summary.set(summary);
+      }
     } catch (error) {
-      this.summaryError.set(this.auth.errorMessage(error));
+      if (requestId === this.summaryLoadSequence) {
+        this.summaryError.set(this.auth.errorMessage(error));
+      }
     } finally {
-      this.summaryLoading.set(false);
+      if (requestId === this.summaryLoadSequence) this.summaryLoading.set(false);
     }
   }
 
   private async loadTenantSummary(tenantId: number): Promise<void> {
+    const requestId = ++this.summaryLoadSequence;
     this.summaryLoading.set(true);
     try {
-      this.summary.set(await this.api.getTenantSummary(tenantId));
+      const summary = await this.api.getTenantSummary(tenantId);
+      if (requestId === this.summaryLoadSequence && this.workspace.activeTenantId() === tenantId) {
+        this.summary.set(summary);
+      }
     } catch (error) {
-      this.summaryError.set(this.auth.errorMessage(error));
+      if (requestId === this.summaryLoadSequence) {
+        this.summaryError.set(this.auth.errorMessage(error));
+      }
     } finally {
-      this.summaryLoading.set(false);
+      if (requestId === this.summaryLoadSequence) this.summaryLoading.set(false);
     }
   }
 
