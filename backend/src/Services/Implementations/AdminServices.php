@@ -590,7 +590,7 @@ final readonly class AdminServices implements IAdminServices
 
             if ($result['status'] !== 'SUCCESS') {
                 if ($approve) {
-                    $latest = $this->dao->getSubscriptionForReview($this->db, $subscriptionId);
+                    $latest = $this->dao->getSubscriptionBcnState($this->db, $subscriptionId, $tenantId);
                     $latestData = $latest['data'] ?? [];
                     if ($latest['status'] === 'SUCCESS'
                         && ($latestData['subscription_status'] ?? '') === 'ACTIVE'
