@@ -78,7 +78,7 @@ Preserve BBG responsive patterns, dialogs/drawers, theme tokens and accessible f
 4. Enquiry response/close refreshes after success.
 5. Payments expose no unsupported capture/refund actions.
 6. Proof upload never marks subscription approved or order paid.
-7. Customers section does not call undocumented tenant-list endpoint.
+7. Given a tenant member opens Customers, when the directory loads, then the existing tenant customer API returns only records authorized for that tenant and the CUSTOMERS_MANAGE permission.
 
 ## Open questions
 - Verify the tenant customer response DTO against the existing DAO result and current frontend rendering before introducing a dedicated customer-detail workflow.
