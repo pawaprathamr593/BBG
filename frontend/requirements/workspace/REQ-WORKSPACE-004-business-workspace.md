@@ -20,7 +20,7 @@ Authorized business members need a tenant-scoped workspace for supported profile
 
 ## 3. Scope
 **In scope:** Business profile/storefront; existing catalogue feature; read-only tenant member list; tenant orders and supported transitions; incoming enquiries/respond/close; read-only tenant payments; promotions and supported media flow; subscription plans/history/request/renewal/proof; entrepreneur summary and supported analytics.
-**Out of scope:** Member invitations/role assignment; inventory/purchasing/suppliers; gateway/refunds/invoices/expenses; business verification document upload; tenant customer directory until API contract exists; unsupported analytics.
+**Out of scope:** Member invitations/role assignment; inventory/purchasing/suppliers; gateway/refunds/invoices/expenses; business verification document upload; tenant customer directory beyond the documented current-branch API contract; unsupported analytics.
 
 ## 4. Entry and context
 Existing /dashboard, /dashboard/profile, /dashboard/catalogue, /dashboard/members, /dashboard/customers, /dashboard/orders, /dashboard/enquiries, /dashboard/payments, /dashboard/promotions, /dashboard/subscriptions and /dashboard/analytics. Requires active server-authorized tenant.
@@ -57,7 +57,7 @@ Existing /dashboard, /dashboard/profile, /dashboard/catalogue, /dashboard/member
 | Tenant payments | POST | /api/v1/payments/tenant/list, detail | Tenant payment actions | Existing, read-only |
 | Promotions | POST | /api/v1/promotions/mine/list, mine/detail, create, update, delete, publish, unpublish, engagement | Promotion actions | Existing |
 | Subscriptions | POST | /api/v1/subscriptions/plans/list, mine/list, mine/detail, request, renewal/request, proofs/upload-url, proofs/submit | Subscription actions | Existing; live S3 requires configuration |
-| Customer directory | POST | /api/v1/customers/tenant/list | listTenantCustomers | Route and backend worker exist on this branch; API V1 catalogue is stale and must be reconciled separately |
+| Customer directory | POST | /api/v1/customers/tenant/list | listTenantCustomers | Route and worker exist on this branch; API V1 catalogue is stale and should be reconciled separately |
 
 ## 8. Permissions
 Reuse existing keys: BUSINESS_PROFILE_MANAGE, CATALOGUE_MANAGE, CUSTOMERS_MANAGE, ENQUIRIES_MANAGE, ORDERS_MANAGE, PAYMENTS_VIEW, PROMOTIONS_MANAGE, SUBSCRIPTIONS_MANAGE, TENANT_MEMBERS_VIEW, ANALYTICS_VIEW. Backend authorization remains authoritative.
@@ -81,7 +81,7 @@ Preserve BBG responsive patterns, dialogs/drawers, theme tokens and accessible f
 7. Customers section does not call undocumented tenant-list endpoint.
 
 ## Open questions
-- UNKNOWN: Tenant customer directory route and DTO.
+- Verify the tenant customer response DTO against the existing DAO result and current frontend rendering before introducing a dedicated customer-detail workflow.
 - UNKNOWN: Live S3 bucket/CORS configuration for end-to-end media/proof verification.
 - UNKNOWN: Tenant analytics beyond entrepreneur summary and promotion engagement.
 
