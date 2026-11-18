@@ -113,7 +113,7 @@ final readonly class PaymentServices implements IPaymentServices
     private function getTenantPayments(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'payment.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'PaymentServices::getTenantPayments');
         }
@@ -138,7 +138,7 @@ final readonly class PaymentServices implements IPaymentServices
     private function getTenantPayment(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'payment.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'PaymentServices::getTenantPayment');
         }
@@ -189,7 +189,7 @@ final readonly class PaymentServices implements IPaymentServices
         return $identity;
     }
 
-    private function tenantContext(array $actionData): array
+    private function tenantContext(array $actionData, string $permissionCode): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $principal = $this->authServices->getAuth([
@@ -205,13 +205,13 @@ final readonly class PaymentServices implements IPaymentServices
             return $resArr;
         }
         $permission = $this->tenantDao->hasTenantPermission(
-            $this->db, (int) $principal['data']['user_id'], $tenantId, 'PAYMENTS_VIEW',
+            $this->db, (int) $principal['data']['user_id'], $tenantId, $permissionCode,
         );
         if ($permission['status'] !== 'SUCCESS') {
             return $this->propagateFailure($permission, 'PaymentServices::tenantContext');
         }
         if ($permission['data'] === []) {
-            $resArr['msgArr'][] = 'PAYMENTS_VIEW permission is required for this tenant.';
+            $resArr['msgArr'][] = 'payment.view permission is required for this tenant.';
             return $resArr;
         }
         $resArr['status'] = 'SUCCESS';
