@@ -223,7 +223,7 @@ final readonly class OrderServices implements IOrderServices
                 return $resArr;
             }
 
-            $permission = $this->dao->hasTenantOrderManagementPermission($this->db, $userId, $tenantId);
+            $permission = $this->dao->hasTenantOrderManagementPermission($this->db, $userId, $tenantId, 'order.view');
             if ($permission['status'] !== 'SUCCESS') {
                 $resArr = $permission;
                 $resArr['msgArr'][] = 'Failed in OrderServices::getOrder while checking tenant order permission.';
@@ -380,7 +380,7 @@ final readonly class OrderServices implements IOrderServices
         $transaction = $this->db->beginTransaction();
 
         try {
-            $permission = $this->dao->hasTenantOrderManagementPermission($this->db, $userId, (int) $tenantId, true);
+            $permission = $this->dao->hasTenantOrderManagementPermission($this->db, $userId, (int) $tenantId, 'order.update', true);
             if ($permission['status'] !== 'SUCCESS') {
                 $transaction->rollBack();
                 $resArr = $permission;
