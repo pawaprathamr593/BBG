@@ -61,7 +61,10 @@ export const workspacePermissionGuard: CanActivateChildFn = async (route) => {
 
   const context = workspace.activeContext();
   if (context === 'PERSONAL') {
-    return PERSONAL_SECTIONS.has(section) ? true : router.createUrlTree(['/dashboard']);
+    const requiredPermission = PERSONAL_PERMISSIONS[section];
+    const allowed = requiredPermission !== undefined
+      && hasWorkspacePermission(workspace.permissions(), 'GLOBAL', requiredPermission);
+    return allowed ? true : router.createUrlTree(['/dashboard']);
   }
 
   const requiredPermission = context === 'BUSINESS'
@@ -73,10 +76,9 @@ export const workspacePermissionGuard: CanActivateChildFn = async (route) => {
   if (!requiredPermission) return router.createUrlTree(['/dashboard']);
 
   const requiredScope = context === 'BUSINESS' ? 'TENANT' : 'PLATFORM';
-  const allowed = workspace.permissions().some(
-    (permission) => permission.scope_type === requiredScope
-      && permission.permission_code === requiredPermission,
-  );
-
-  return allowed ? true : router.createUrlTree(['/dashboard']);
+  const hasPermission = hasWorkspacePermission(workspace.permissions(), requiredScope, requiredPermission);
+  const entitlement = context === 'BUSINESS' ? BUSINESS_ENTITLEMENTS[section] : undefined;
+  const hasEntitlement = entitlement === undefined
+    || hasActiveEntitlement(workspace.activeTenant()?.active_entitlements, entitlement);
+  return hasPermission && hasEntitlement ? true : router.createUrlTree(['/dashboard']);
 };
