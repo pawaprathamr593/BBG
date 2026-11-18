@@ -191,9 +191,11 @@ final readonly class BusinessDao
              INNER JOIN USER_ROLE_ASSIGNMENTS ura ON ura.tenant_id = bp.tenant_id
                 AND ura.user_id = :user_id AND ura.status = 'A'
                 AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
-             INNER JOIN ROLES r ON r.id = ura.role_id AND r.role_code = 'TENANT_OWNER'
+             INNER JOIN ROLES r ON r.id = ura.role_id
                 AND r.scope_type = 'TENANT' AND r.status = 'A'
-             WHERE bp.status = 'A' AND (:tenant_id_filter = 0 OR bp.tenant_id = :tenant_id_match)
+             WHERE bp.status = 'A'
+                AND (:tenant_id_filter = 0 OR bp.tenant_id = :tenant_id_match)
+                AND (:tenant_id_filter <> 0 OR r.role_code = 'TENANT_OWNER')
              ORDER BY bp.id DESC LIMIT 1",
             [':user_id' => $userId, ':tenant_id_filter' => $tenantId, ':tenant_id_match' => $tenantId],
             'getMyBusinessApplication',
