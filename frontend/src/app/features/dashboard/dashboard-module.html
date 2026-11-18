@@ -15,6 +15,11 @@
             <button class="secondary-action" type="button" (click)="createAddress()" [disabled]="busy()">+ Add address</button>
           }
           @if (section() === 'categories') { <button class="secondary-action" type="button" (click)="createCategory()" [disabled]="busy()">+ New category</button> }
+          @if (section() === 'moderation') {
+            <button class="secondary-action" type="button" (click)="loadModerationHistory()" [disabled]="moderationHistoryLoading()">
+              {{ moderationHistoryLoading() ? 'Loading history…' : 'View moderation history' }}
+            </button>
+          }
           <button class="refresh" type="button" (click)="load()" [disabled]="loading()">↻ Refresh</button>
         </div>
       </header>
@@ -98,6 +103,25 @@
           </section>
         }
 
+        @if (section() === 'moderation' && moderationHistory().length) {
+          <section class="records-section">
+            <div class="section-title"><div><p class="eyebrow">AUDIT TRAIL</p><h2>Moderation history</h2></div><span class="record-count">{{ moderationHistory().length }} records</span></div>
+            <div class="records-list">
+              @for (entry of moderationHistory(); track recordId(entry, 'history_id')) {
+                <article class="record-card">
+                  <div class="record-head"><div><strong>{{ recordTitle(entry) }}</strong><span>{{ recordSubtitle(entry) }}</span></div>
+                    @if (statusOf(entry)) { <span class="status-chip">{{ humanize(statusOf(entry)) }}</span> }
+                  </div>
+                  <div class="record-fields">
+                    @for (field of recordEntries(entry); track field.key) {
+                      <div><span>{{ humanize(field.key) }}</span><strong>{{ formatValue(field.value) }}</strong></div>
+                    }
+                  </div>
+                </article>
+              }
+            </div>
+          </section>
+        }
         @if (filteredItems().length) {
           <section class="records-section">
             <div class="section-title">
