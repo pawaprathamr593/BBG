@@ -112,8 +112,8 @@ export class Dashboard implements OnInit {
   }
 
   readonly selectedTenant = computed(() => this.tenants().find((tenant) => tenant.id === this.selectedTenantId()) ?? null);
-  readonly isPlatformContext = computed(() => this.selectedTenantId() === null && this.permissions().some((permission) => permission.scope_type === 'PLATFORM'));
-  readonly isPersonalContext = computed(() => this.selectedTenantId() === null && !this.isPlatformContext());
+  readonly isPlatformContext = computed(() => this.workspace.activeContext() === 'PLATFORM');
+  readonly isPersonalContext = computed(() => this.workspace.activeContext() === 'PERSONAL');
   readonly moduleCards = computed(() => {
     const context = this.workspace.activeContext();
     if (!context) return [];
