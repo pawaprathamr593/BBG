@@ -1,4 +1,4 @@
-import { DashboardPermission } from '../../core/dashboard/dashboard-api.service';
+import type { DashboardPermission } from '../../core/dashboard/dashboard-api.service';
 
 export type WorkspaceNavigationContext = 'PERSONAL' | 'BUSINESS' | 'PLATFORM';
 
