@@ -113,6 +113,12 @@
                       <div><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
                     }
                   </div>
+                  @if (section() === 'subscriptions' && hasBcn(item)) {
+                    <div class="bcn-record">
+                      <span>BBG Contribution Number</span>
+                      <div><strong>{{ item['bcn'] }}</strong><button type="button" (click)="copyBcn(item['bcn'])">Copy</button></div>
+                    </div>
+                  }
                   @if (section() === 'subscription-approval') {
                     <button type="button" class="secondary-action" (click)="openSubscriptionReview(item)" [disabled]="busy()">View business details, receipts & history</button>
                   }
@@ -184,6 +190,12 @@
                   <div><span>{{ humanize(key) }}</span><strong>{{ detail[key] || '—' }}</strong></div>
                 }
               </div>
+              @if (hasBcn(detail)) {
+                <div class="bcn-record">
+                  <span>BBG Contribution Number</span>
+                  <div><strong>{{ detail['bcn'] }}</strong><button type="button" (click)="copyBcn(detail['bcn'])">Copy</button></div>
+                </div>
+              }
               @if (detail['payment_qr_file_url']) { <img class="payment-qr-preview" [src]="asUrl(detail['payment_qr_file_url'])" alt="Captured payment QR"> }
             }
             <h3>Payment receipts</h3>
