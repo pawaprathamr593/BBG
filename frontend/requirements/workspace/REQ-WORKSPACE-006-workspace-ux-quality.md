@@ -79,3 +79,4 @@ Verify 360–390px, tablet and desktop; light and dark themes; no horizontal ove
 - Workspace context is cleared when the authenticated principal logs out or changes, preventing prior-user tenant and permission state from remaining in memory.
 - Added detail rendering for nested record responses while suppressing token, credential, hash and raw-payload fields.
 - Added server-backed pagination to workspace record lists and stale-load protection when the user changes section or workspace context.
+- Refresh failures now retain already-loaded records in the active section and show inline error feedback rather than replacing the data with a full-page error panel.
