@@ -138,14 +138,15 @@
             </div>
           </section>
         }
-        @if (filteredItems().length) {
+        @if (filteredItems().length || totalItems() > 0) {
           <section class="records-section">
             <div class="section-title">
               <div><p class="eyebrow">LIVE RECORDS</p><h2>{{ recordsHeading() }}</h2></div>
-              <span class="record-count">{{ filteredItems().length }} shown</span>
+              <span class="record-count">{{ filteredItems().length }} shown of {{ totalItems() }}</span>
             </div>
             <div class="records-list">
-              @for (item of filteredItems(); track recordId(item, 'id')) {
+              @if (filteredItems().length) {
+                @for (item of filteredItems(); track recordId(item, 'id')) {
                 <article class="record-card">
                   <div class="record-head">
                     <div><strong>{{ recordTitle(item) }}</strong><span>{{ recordSubtitle(item) }}</span></div>
@@ -212,8 +213,18 @@
                     </div>
                   }
                 </article>
+                }
+              } @else {
+                <p class="records-filter-empty">No records match the current filters on this page. Adjust or reset the filters to see more results.</p>
               }
             </div>
+            @if (totalItems() > pageSize) {
+              <nav class="records-pagination" aria-label="Record pages">
+                <button type="button" (click)="goToPage(currentPage() - 1)" [disabled]="loading() || currentPage() <= 1">Previous</button>
+                <span>Page {{ currentPage() }} of {{ pageCount() }} · {{ totalItems() }} records</span>
+                <button type="button" (click)="goToPage(currentPage() + 1)" [disabled]="loading() || currentPage() >= pageCount()">Next</button>
+              </nav>
+            }
           </section>
         } @else if (!summaryEntries().length && !(section() === 'subscriptions' && plans().length)) {
           <section class="state-panel empty"><span class="state-icon">⌑</span><strong>Nothing to show yet</strong><p>There are no records available for this section in your current area.</p></section>
