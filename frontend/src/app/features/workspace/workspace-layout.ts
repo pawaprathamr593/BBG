@@ -8,13 +8,6 @@ import { FilterDrawer } from '../../shared/filter-drawer/filter-drawer';
 import { WorkspaceNavIconComponent } from './workspace-nav-icon';
 import { getWorkspaceNavItems } from './workspace-navigation';
 
-interface WorkspaceNavItem {
-  label: string;
-  route: string;
-  permission: string | null;
-  scope: 'TENANT' | 'PLATFORM' | 'GLOBAL' | 'ANY';
-  icon: string;
-}
 
 @Component({
   selector: 'app-workspace-layout',
