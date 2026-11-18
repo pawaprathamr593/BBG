@@ -5,7 +5,7 @@
 | Requirement ID | BBG-SUB-001 |
 | Feature | Subscription identification / BCN generation |
 | Scope | Yii 3 backend and Angular frontend integration |
-| Status | Draft — sequencing and lifecycle decisions pending |
+| Status | Implemented on `HG_CODE_IMPROVEMENTS` — migration pending application |
 | Related data | `TENANT_SUBSCRIPTIONS`, `PLANS` |
 | Trigger | Successful Platform Admin approval of a subscription request |
 
@@ -92,68 +92,66 @@ Do not generate a BCN for a request that is merely created, pending review, reje
 - Do not invent a new route, action type, request DTO or response envelope as part of this requirement. Extend the existing subscription contracts only after inspecting the current Controller, InDto, versioned service and frontend data-layer implementation.
 - Preserve the project's existing response structure, including the established `$resArr` convention.
 
-## 5. Serial-number policy — decision required
+## 5. Serial-number policy — confirmed implementation
 
-The user's initial direction is that the serial number is based on the last approved business. The precise sequence scope is not yet defined.
+The selected policy is **one global sequence across all approved subscriptions**, regardless of tenant, plan or expiry month.
 
-Options requiring product confirmation:
-
-| Option | Sequence behaviour |
+| Policy item | Implemented behaviour |
 | --- | --- |
-| Global | One sequence across all approved businesses/subscriptions, regardless of plan and expiry month |
-| Monthly | Sequence resets for each expiry month |
-| Plan-wise | Each plan has an independent sequence |
-| Plan + expiry month | Sequence resets for each plan and expiry-month combination |
+| Sequence scope | One platform-wide counter shared by every approved subscription |
+| Allocation point | During Platform Admin approval, inside the approval transaction |
+| Rollback | Counter increment rolls back with the approval; failed approvals do not consume a serial |
+| Serial width | Minimum five digits, zero-padded (for example `00001`, `00125`); expands naturally beyond five digits and is never truncated |
+| Concurrency | A single InnoDB counter row is selected `FOR UPDATE` and incremented transactionally |
+| Uniqueness | Unique index on `TENANT_SUBSCRIPTIONS.bcn` |
 
-The selected policy must define:
-- Whether the sequence is global or partitioned.
-- Whether a serial is consumed only after approval succeeds.
-- Whether a serial allocated during a rolled-back approval can be reused or is allowed to leave a gap.
-- Serial width, zero-padding and behaviour after the configured width is exceeded.
-- Whether the sequence is scoped to a business, tenant, plan, expiry month or the whole platform.
+Plan ID formatting follows the supplied example: numeric plan IDs are zero-padded to a minimum of two digits (`3` becomes `03`); larger IDs are not truncated.
 
-**Current status:** UNKNOWN — do not implement serial allocation until confirmed.
+The exact identifier is constructed as:
 
-## 6. Expiry-date source — decision required
+```text
+BCN-{YYMM}{PID}-{SN}
+```
 
-The `YYMM` segment must be calculated from the subscription's final expiry date.
+There is no separator between the expiry month and plan ID.
 
-The current subscription data model stores `ends_on`. The product decision still needs to confirm how that value is established during approval:
+Existing approved subscriptions from before this feature are not backfilled by this migration. The sequence begins at `00001` for the first approval processed after the migration is applied.
 
-- Is expiry calculated from the approved plan's duration/billing cycle?
-- Or does the Platform Admin set/override the expiry date during approval?
+**Status:** Confirmed and implemented.
 
-The generator must use the final persisted `ends_on` value after the approval workflow has applied the agreed expiry rule. It must not calculate a different expiry independently from the frontend.
+## 6. Expiry-date source — confirmed implementation
 
-**Current status:** UNKNOWN — confirm the expiry source and timezone/date-boundary convention before implementation.
+The current Platform Admin approval flow explicitly accepts `starts_on` and `ends_on`. The generator uses the final `ends_on` value validated and persisted by that approval operation.
 
-## 7. Renewal, upgrade and expiry lifecycle — decision required
+- `YYMM` is derived from the calendar year/month portion of the persisted `ends_on` value.
+- The generator does not independently calculate plan duration or change the expiry date.
+- The date portion is formatted from the persisted date/time value as stored; no separate timezone conversion is applied by BCN formatting.
 
-The BCN is described as the reference for an approved subscription. The treatment of a renewal or plan upgrade has not yet been confirmed.
+**Status:** Confirmed from the existing approval contract and implemented.
 
-Product must decide whether:
-- Renewal preserves the existing BCN for the business, or creates a new BCN for the new subscription period.
-- An upgrade preserves the current BCN or creates a new BCN for the upgraded subscription.
-- A new subscription request for the same tenant/business receives a new BCN.
-- Expiry-date changes after approval are prohibited, or require a controlled reissue/versioning process.
+## 7. Renewal, upgrade and expiry lifecycle
 
-Until confirmed:
-- Never overwrite an existing BCN silently.
-- Approval retries return the existing BCN.
-- Do not assume renewal/upgrade should generate a new identifier.
+The current renewal workflow creates a new `TENANT_SUBSCRIPTIONS` record rather than modifying the previous subscription. Because BCN identifies an approved subscription record:
 
-**Current status:** UNKNOWN.
+- Each newly created subscription record receives its own BCN when that record is approved.
+- The previous subscription's BCN remains unchanged.
+- Repeated approval calls for the same already-approved subscription return its existing BCN.
+- Future plan-upgrade workflows must follow the same record-level rule: a new approved subscription record receives a new BCN; an existing record's BCN is immutable.
+- Expiry or plan edits to an already-issued subscription do not silently rewrite its BCN.
+
+**Status:** Implemented for the existing new-record renewal workflow. No separate plan-upgrade workflow was added.
 
 ## 8. Data and persistence impact
 
 - Primary logical entity: `TENANT_SUBSCRIPTIONS`.
 - Related lookup entity: `PLANS`.
 - The subscription record already contains `tenant_id`, `plan_id`, `subscription_status`, `starts_on`, `ends_on`, `approved_by` and `approved_on` in the current implementation.
-- Add a persisted BCN attribute to the subscription record, or use an explicitly approved equivalent schema design, after checking the current physical schema and database design documentation.
+- Add nullable `TENANT_SUBSCRIPTIONS.bcn VARCHAR(64)` with a unique index.
+- Add `BBG_BCN_SERIAL_COUNTER`, containing one active row whose `last_serial` value is locked and incremented within the approval transaction.
 - Add a database uniqueness constraint/index for the BCN, subject to the final column definition and existing data review.
 - Follow BBG's common audit fields and A/Z soft-delete conventions. Do not cascade-delete subscription or business history.
 - Provide a safe migration/backfill strategy if any existing approved subscriptions need BCN values. Backfill ordering and serial assignment must follow the confirmed sequencing policy.
-- No migration is authorized or included in this requirement draft.
+- Migration: `backend/database/migrations/20261118_001_bbg_contribution_number.sql`. It is additive and is not automatically applied. Existing approved subscriptions are not backfilled.
 
 ## 9. Architecture and implementation constraints
 
