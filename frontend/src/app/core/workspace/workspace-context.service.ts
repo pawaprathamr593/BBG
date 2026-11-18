@@ -23,11 +23,20 @@ export class WorkspaceContextService {
 
       // Workspace permissions and tenant data belong to one authenticated
       // principal. Never carry them across logout or an account switch.
-      if (!authenticated || (this.authStateObserved && userId !== this.observedUserId)) {
+      const principalChanged = this.authStateObserved
+        && userId !== null
+        && this.observedUserId !== null
+        && userId !== this.observedUserId;
+
+      if (!authenticated || principalChanged) {
         this.clear();
       }
 
-      this.observedUserId = authenticated ? userId : null;
+      // Session restoration can authenticate before loadProfile has populated
+      // the user ID. Do not treat that initial null -> known ID transition as
+      // an account switch; only compare two known principals.
+      if (!authenticated) this.observedUserId = null;
+      else if (userId !== null) this.observedUserId = userId;
       this.authStateObserved = true;
     });
   }
