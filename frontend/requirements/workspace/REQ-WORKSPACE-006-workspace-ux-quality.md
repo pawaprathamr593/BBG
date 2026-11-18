@@ -73,3 +73,5 @@ Verify 360–390px, tablet and desktop; light and dark themes; no horizontal ove
 - Requirement created on approved branch HG_CODE_IMPROVEMENTS.
 - Removed manual Bearer header construction from workspace dashboard API calls so the shared auth interceptor owns API authentication.
 - Dashboard summary loading now responds to active workspace context changes and ignores stale responses from an earlier context.
+- Workspace context is cleared when the authenticated principal logs out or changes, preventing prior-user tenant and permission state from remaining in memory.
+- Added detail rendering for nested record responses while suppressing token, credential, hash and raw-payload fields.
