@@ -19,7 +19,7 @@ const BUSINESS_PERMISSIONS: Record<string, string> = {
 
 const BUSINESS_ENTITLEMENTS: Record<string, string> = {
   profile: 'business.profile',
-  storefront: 'business.profile',
+  storefront: 'storefront.enabled',
   catalogue: 'catalogue.enabled',
   promotions: 'promotions.enabled',
   analytics: 'advanced.reports.enabled',
