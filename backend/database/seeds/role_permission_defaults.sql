@@ -3,34 +3,25 @@
 -- It does not create users, roles, or permission catalogue records.
 --
 -- Preconditions:
-----   * ROLES contains PLATFORM_ADMIN with scope_type PLATFORM.
+--   * ROLES contains PLATFORM_ADMIN with scope_type PLATFORM.
 --   * PERMISSIONS contains the listed platform codes with status = 'A'.
 -- Review the two preflight result sets before relying on the inserts.
 
--- Preflight: expected role records.
+-- Preflight: expected platform role record.
 SELECT role_code, scope_type, status
 FROM ROLES
-WHERE (role_code = 'TENANT_OWNER' AND scope_type = 'TENANT')
-   OR (role_code = 'PLATFORM_ADMIN' AND scope_type = 'PLATFORM');
+WHERE role_code = 'PLATFORM_ADMIN'
+  AND scope_type = 'PLATFORM';
 
--- Preflight: permission codes that are missing or inactive.
+-- Preflight: platform permission codes that are missing or inactive.
 SELECT expected.permission_code
 FROM (
-    SELECT 'BUSINESS_PROFILE_MANAGE' AS permission_code UNION ALL
-    SELECT 'CATALOGUE_MANAGE' UNION ALL
-    SELECT 'CUSTOMERS_MANAGE' UNION ALL
-    SELECT 'ENQUIRIES_MANAGE' UNION ALL
-    SELECT 'ORDERS_MANAGE' UNION ALL
-    SELECT 'PAYMENTS_VIEW' UNION ALL
-    SELECT 'PROMOTIONS_MANAGE' UNION ALL
-    SELECT 'SUBSCRIPTIONS_MANAGE' UNION ALL
-    SELECT 'TENANT_MEMBERS_VIEW' UNION ALL
-    SELECT 'ANALYTICS_VIEW' UNION ALL
-    SELECT 'PLATFORM_USERS_MANAGE' UNION ALL
+    SELECT 'PLATFORM_USERS_MANAGE' AS permission_code UNION ALL
     SELECT 'BUSINESS_APPROVE' UNION ALL
     SELECT 'SUBSCRIPTIONS_APPROVE' UNION ALL
     SELECT 'CATEGORIES_MANAGE' UNION ALL
     SELECT 'MODERATION_MANAGE' UNION ALL
+    SELECT 'ANALYTICS_VIEW' UNION ALL
     SELECT 'SYSTEM_HEALTH_VIEW'
 ) expected
 LEFT JOIN PERMISSIONS p
