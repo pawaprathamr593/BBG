@@ -532,14 +532,20 @@ export class DashboardModule implements OnInit {
         const order = window.prompt('Display order:', String(item['display_order'] ?? 0));
         if (order === null || !categoryId || !code.trim() || !name.trim()) return;
         const normalizedType = type.trim().toUpperCase();
+        const parentId = parent.trim() ? Number(parent) : null;
+        const displayOrder = Number(order);
         if (!['BUSINESS', 'PRODUCT'].includes(normalizedType)) {
           this.error.set('Category type must be BUSINESS or PRODUCT.');
           return;
         }
+        if ((parentId !== null && (!Number.isInteger(parentId) || parentId < 1 || parentId === categoryId))
+          || !Number.isInteger(displayOrder) || displayOrder < 0) {
+          this.error.set('Enter a valid parent category ID and a non-negative display order.');
+          return;
+        }
         path='/api/v1/admin/categories/update'; actionType='updateCategory';
         data={category_id:categoryId,category_code:code.trim().toUpperCase(),category_name:name.trim(),
-          category_type:normalizedType,description,parent_category_id:parent.trim() ? Number(parent) : null,
-          display_order:Number(order)};
+          category_type:normalizedType,description,parent_category_id:parentId,display_order:displayOrder};
         break;
       }
       case 'delete-category':
