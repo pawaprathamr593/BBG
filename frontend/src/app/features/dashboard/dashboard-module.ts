@@ -278,7 +278,7 @@ export class DashboardModule implements OnInit {
 
   async load(): Promise<void> {
     this.loading.set(true); this.error.set(''); this.unsupported.set('');
-    this.items.set([]); this.summary.set(null); this.plans.set([]);
+    this.items.set([]); this.summary.set(null); this.plans.set([]); this.moderationHistory.set([]);
     try {
       await this.workspace.initialize();
       const tenantId = this.workspace.activeTenantId();
