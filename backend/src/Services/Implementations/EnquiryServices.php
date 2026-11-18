@@ -151,7 +151,7 @@ final readonly class EnquiryServices implements IEnquiryServices
     private function getTenantEnquiries(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'enquiry.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'EnquiryServices::getTenantEnquiries');
         }
@@ -176,7 +176,7 @@ final readonly class EnquiryServices implements IEnquiryServices
     private function getTenantEnquiry(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'enquiry.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'EnquiryServices::getTenantEnquiry');
         }
@@ -270,7 +270,7 @@ final readonly class EnquiryServices implements IEnquiryServices
     private function manageTenantEnquiry(array $actionData, string $operation): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'enquiry.update');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'EnquiryServices::manageTenantEnquiry');
         }
@@ -366,7 +366,7 @@ final readonly class EnquiryServices implements IEnquiryServices
         return $resArr;
     }
 
-    private function tenantContext(array $actionData): array
+    private function tenantContext(array $actionData, string $permissionCode): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $principal = $this->principal($actionData);
@@ -379,13 +379,13 @@ final readonly class EnquiryServices implements IEnquiryServices
             return $resArr;
         }
         $permission = $this->tenantDao->hasTenantPermission(
-            $this->db, (int) $principal['data']['user_id'], $tenantId, 'ENQUIRIES_MANAGE',
+            $this->db, (int) $principal['data']['user_id'], $tenantId, $permissionCode,
         );
         if ($permission['status'] !== 'SUCCESS') {
             return $this->propagateFailure($permission, 'EnquiryServices::tenantContext');
         }
         if ($permission['data'] === []) {
-            $resArr['msgArr'][] = 'ENQUIRIES_MANAGE permission is required for this tenant.';
+            $resArr['msgArr'][] = 'The required enquiry permission is missing for this tenant.';
             return $resArr;
         }
         $resArr['status'] = 'SUCCESS';
