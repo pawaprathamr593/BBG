@@ -72,3 +72,4 @@ Verify 360–390px, tablet and desktop; light and dark themes; no horizontal ove
 ## Implementation log
 - Requirement created on approved branch HG_CODE_IMPROVEMENTS.
 - Removed manual Bearer header construction from workspace dashboard API calls so the shared auth interceptor owns API authentication.
+- Dashboard summary loading now responds to active workspace context changes and ignores stale responses from an earlier context.
