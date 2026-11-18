@@ -16,7 +16,7 @@
           <div class="context-copy">
             <span>{{ isPersonalContext() ? 'PERSONAL ACCOUNT' : isPlatformContext() ? 'PLATFORM ADMINISTRATION' : 'BUSINESS WORKSPACE' }}</span>
             <strong>{{ selectedTenant() ? 'Business Workspace' : isPlatformContext() ? 'BBG Platform' : 'My Account' }}</strong>
-            <p>{{ isPersonalContext() ? 'Your personal orders, enquiries, payments and profile in one place.' : isPlatformContext() ? 'Manage BBG platform operations using your assigned administrator permissions.' : 'Manage your business operations using your assigned permissions.' }}</p>
+            <p>{{ isPersonalContext() ? 'Your personal orders, enquiries and profile in one place.' : isPlatformContext() ? 'Manage BBG platform operations using your assigned administrator permissions.' : 'Manage your business operations using your assigned permissions.' }}</p>
           </div>
           @if (!isPersonalContext()) {
             <div class="role-list">
