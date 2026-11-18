@@ -98,7 +98,7 @@ Do not introduce new permission keys for BCN display.
 
 ## 9. Rules and validation
 
-- Display a BCN only when the subscription is in the approved/active state and the backend supplies a non-empty BCN.
+- Display a BCN only when the subscription is approved (including an expired approved subscription) and the backend supplies a non-empty BCN.
 - Pending and rejected subscriptions must not display a BCN.
 - The frontend treats BCN as opaque display data. It must not parse, reformat, recalculate or derive its segments.
 - Display exactly the backend-provided value, preserving uppercase letters, digits and hyphens.
