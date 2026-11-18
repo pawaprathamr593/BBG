@@ -66,6 +66,19 @@
           </section>
         }
 
+        @if (section() === 'payment-qr-settings') {
+          <section class="qr-settings-card">
+            <div class="section-title"><div><p class="eyebrow">PLATFORM PAYMENT SETTINGS</p><h2>UPI payment QR</h2><p>Changing the QR affects new subscription requests only. Existing requests retain their captured payment instructions.</p></div></div>
+            @if (summary()?.['qr_url']) { <img class="payment-qr-preview" [src]="asUrl(summary()?.['qr_url'])" alt="Current BBG UPI payment QR"> }
+            <label>Payee name<input type="text" maxlength="150" [value]="qrPayeeName()" (input)="qrPayeeName.set(inputValue($event))" placeholder="BBG account name"></label>
+            <label>UPI ID<input type="text" maxlength="150" [value]="qrUpiId()" (input)="qrUpiId.set(inputValue($event))" placeholder="payments@upi"></label>
+            <label>Payment instructions<textarea rows="3" maxlength="1000" [value]="qrInstructions()" (input)="qrInstructions.set(inputValue($event))" placeholder="Optional instructions for business owners"></textarea></label>
+            <label>New QR image<input type="file" accept="image/jpeg,image/png,image/webp" (change)="setPaymentQrFile($event)" [disabled]="busy()"><small>JPG, PNG or WEBP, up to 10 MB. Uploading a new QR creates a new version.</small></label>
+            @if (qrFile()) { <p class="qr-file-name">Selected: {{ qrFile()?.name }}</p> }
+            <button type="button" class="secondary-action" (click)="savePaymentQrConfig()" [disabled]="busy() || !qrPayeeName().trim() || !qrUpiId().trim() || !qrFile()">{{ busy() ? 'Saving…' : 'Save payment QR configuration' }}</button>
+          </section>
+        }
+
         @if (section() === 'subscriptions' && plans().length) {
           <section class="plans-section">
             <div class="section-title"><div><p class="eyebrow">AVAILABLE PLANS</p><h2>Choose a business plan</h2></div></div>
