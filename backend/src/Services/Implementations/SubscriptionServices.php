@@ -116,7 +116,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
     private function getMySubscriptions(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'subscription.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'SubscriptionServices::getMySubscriptions');
         }
@@ -147,7 +147,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
     private function getMySubscription(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'subscription.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'SubscriptionServices::getMySubscription');
         }
@@ -171,7 +171,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
     private function manageSubscriptionRequest(array $actionData, bool $renewal): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'subscription.create');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'SubscriptionServices::manageSubscriptionRequest');
         }
@@ -258,7 +258,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
     private function generateSubscriptionProofUploadUrl(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'subscription.update');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'SubscriptionServices::generateSubscriptionProofUploadUrl');
         }
@@ -317,7 +317,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
     private function manageSubscriptionProof(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'subscription.update');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'SubscriptionServices::manageSubscriptionProof');
         }
@@ -411,7 +411,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         }
     }
 
-    private function tenantContext(array $actionData): array
+    private function tenantContext(array $actionData, string $permissionCode): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $principal = $this->authServices->getAuth([
@@ -427,13 +427,13 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             return $resArr;
         }
         $permission = $this->tenantDao->hasTenantPermission(
-            $this->db, (int) $principal['data']['user_id'], $tenantId, 'SUBSCRIPTIONS_MANAGE',
+            $this->db, (int) $principal['data']['user_id'], $tenantId, $permissionCode,
         );
         if ($permission['status'] !== 'SUCCESS') {
             return $this->propagateFailure($permission, 'SubscriptionServices::tenantContext');
         }
         if ($permission['data'] === []) {
-            $resArr['msgArr'][] = 'SUBSCRIPTIONS_MANAGE permission is required for this tenant.';
+            $resArr['msgArr'][] = 'The required subscription permission is missing for this tenant.';
             return $resArr;
         }
         $resArr['status'] = 'SUCCESS';
