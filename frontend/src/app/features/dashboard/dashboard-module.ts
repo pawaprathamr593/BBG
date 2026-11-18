@@ -87,6 +87,8 @@ export class DashboardModule implements OnInit {
   readonly paginationPageSize = computed(() => this.section() === 'subscription-approval' ? this.pageSize * 2 : this.pageSize);
   readonly pageCount = computed(() => Math.max(1, Math.ceil(this.totalItems() / this.paginationPageSize())));
   private loadSequence = 0;
+  private loadedContextKey: string | null = null;
+  private lastLoadedPage = 1;
   readonly filterSearch = signal('');
   readonly filterStatus = signal('');
   readonly filterFrom = signal('');
@@ -312,12 +314,17 @@ export class DashboardModule implements OnInit {
 
   async load(): Promise<void> {
     const loadId = ++this.loadSequence;
+    let contextKey: string | null = null;
     this.loading.set(true); this.error.set(''); this.unsupported.set('');
-    this.items.set([]); this.totalItems.set(0); this.summary.set(null); this.plans.set([]); this.moderationHistory.set([]); this.analyticsTrends.set([]);
     try {
       await this.workspace.initialize();
       if (loadId !== this.loadSequence) return;
       const tenantId = this.workspace.activeTenantId();
+      contextKey = [this.section(), this.workspace.activeContext() ?? 'UNKNOWN', tenantId ?? 'none'].join(':');
+      if (this.loadedContextKey !== contextKey) {
+        this.items.set([]); this.totalItems.set(0); this.summary.set(null); this.plans.set([]);
+        this.moderationHistory.set([]); this.analyticsTrends.set([]);
+      }
       const pageData = { page: this.currentPage(), page_size: this.pageSize, ...(tenantId ? { tenant_id: tenantId } : {}) };
       switch (this.section()) {
         case 'members': {
@@ -451,8 +458,13 @@ export class DashboardModule implements OnInit {
         default:
           this.setUnsupported('This dashboard section is not configured.');
       }
+      this.loadedContextKey = contextKey;
+      this.lastLoadedPage = this.currentPage();
     } catch (error) {
       if (loadId === this.loadSequence && !(error instanceof StaleWorkspaceRequestError)) {
+        if (contextKey === this.loadedContextKey && this.currentPage() !== this.lastLoadedPage) {
+          this.currentPage.set(this.lastLoadedPage);
+        }
         this.error.set(this.auth.errorMessage(error));
       }
     } finally {
