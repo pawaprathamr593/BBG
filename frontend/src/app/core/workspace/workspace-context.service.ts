@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
 import { DashboardApiService, DashboardPermission, DashboardTenant } from '../dashboard/dashboard-api.service';
 
@@ -13,6 +13,24 @@ export class WorkspaceContextService {
   private readonly api = inject(DashboardApiService);
   private readonly document = inject(DOCUMENT);
   private initialization?: Promise<void>;
+  private observedUserId: number | null = null;
+  private authStateObserved = false;
+
+  constructor() {
+    effect(() => {
+      const authenticated = this.auth.isAuthenticated();
+      const userId = this.auth.user()?.user_id ?? null;
+
+      // Workspace permissions and tenant data belong to one authenticated
+      // principal. Never carry them across logout or an account switch.
+      if (!authenticated || (this.authStateObserved && userId !== this.observedUserId)) {
+        this.clear();
+      }
+
+      this.observedUserId = authenticated ? userId : null;
+      this.authStateObserved = true;
+    });
+  }
 
   readonly tenants = signal<DashboardTenant[]>([]);
   readonly activeTenantId = signal<number | null>(null);
