@@ -225,7 +225,6 @@ final readonly class PromotionServices implements IPromotionServices
             $resArr['msgArr'][] = 'An active subscription with promotions.enabled entitlement is required.';
             return $resArr;
         }
-        }
         $promotionId = $this->positiveInt($actionData['promotion_id'] ?? null);
         $fileName = $this->requiredText($actionData['original_file_name'] ?? '', 255);
         $mimeType = strtolower($this->requiredText($actionData['mime_type'] ?? '', 100) ?? '');
@@ -267,13 +266,12 @@ final readonly class PromotionServices implements IPromotionServices
         $userId = (int) $context['data']['user_id'];
         if ($operation === 'link') {
             $promotionEntitlement = $this->dao->hasPromotionEntitlement($this->db, $tenantId);
-        if ($promotionEntitlement['status'] !== 'SUCCESS') {
-            return $this->propagateFailure($promotionEntitlement, 'PromotionServices::managePromotionMedia');
-        }
-        if ($promotionEntitlement['data'] === []) {
-            $resArr['msgArr'][] = 'An active subscription with promotions.enabled entitlement is required.';
-            return $resArr;
-        }
+            if ($promotionEntitlement['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($promotionEntitlement, 'PromotionServices::managePromotionMedia');
+            }
+            if ($promotionEntitlement['data'] === []) {
+                $resArr['msgArr'][] = 'An active subscription with promotions.enabled entitlement is required.';
+                return $resArr;
             }
         }
         $promotionId = $this->positiveInt($actionData['promotion_id'] ?? null);
