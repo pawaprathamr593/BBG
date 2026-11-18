@@ -529,7 +529,7 @@ final readonly class BusinessServices implements IBusinessServices
         if ($existing['data'] === [] || (int) $existing['data']['business_id'] !== $businessId
             || $existing['data']['approval_status'] !== 'APPROVED'
         ) {
-            $resArr['msgArr'][] = 'Only the approved business owner can update this profile.';
+            $resArr['msgArr'][] = 'Only a tenant member with business.update can update an approved business profile.';
             return $resArr;
         }
         $email = $this->optionalText($actionData['business_email'] ?? '', 190) ?? '';
