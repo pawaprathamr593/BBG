@@ -507,7 +507,7 @@ export class DashboardModule implements OnInit {
         path='/api/v1/customers/addresses/update'; key='customerParam'; actionType='updateMyAddress';
         data={address_id:addressId,address_line_1:line1.trim(),recipient_name:recipient,mobile,
           address_line_2:line2,city,state,postal_code:postal,country_code:country.trim().toUpperCase(),
-          address_label:label,is_default:item['is_default'] ? 1 : 0};
+          address_label:label,is_default:Number(item['is_default'] ?? 0) === 1 ? 1 : 0};
         break;
       }
       case 'default-address': case 'delete-address': {
