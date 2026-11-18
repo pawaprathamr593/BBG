@@ -52,7 +52,7 @@ Existing /dashboard, /dashboard/customers, /dashboard/orders, /dashboard/enquiri
 | Own payments | POST | /api/v1/payments/mine/list, /api/v1/payments/mine/detail | listMyPayments, getMyPayment | Existing |
 
 ## 8. Permissions
-Personal navigation uses the seeded consumer permissions `user.view`, `order.own.view` and `enquiry.own.view`, with backend ownership checks remaining authoritative. The seed contains no own-payment permission, so My Payments is not exposed by the workspace navigation or Personal route guard until the permission catalogue and backend policy define one.
+Personal navigation uses the seeded consumer permissions `user.view`, `order.own.view` and `enquiry.own.view`, with backend ownership checks remaining authoritative. The seed contains no own-payment permission, so My Payments is not exposed by the workspace navigation or Personal route guard until the permission catalogue and backend policy define one. The seed assigns the demo Consumer role with `PLATFORM` scope, while `AuthDao::assignConsumerRole` currently looks up a `GLOBAL` Consumer role; fresh registration role assignment must be reconciled in the backend.
 
 ## 9. Rules and validation
 Use existing DTOs and envelopes. Server resolves current user. Preserve address ownership/default semantics. Do not show tenant actions in Personal context. Proof/QR must never imply payment settlement.
