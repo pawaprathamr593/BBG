@@ -59,7 +59,7 @@
             </div>
             <div class="password-settings">
               <div><strong>Account password</strong><p>{{ summary()?.['has_password'] ? 'A password is already set for your account.' : 'You signed in without a password. You can set one to also sign in using your email or mobile number.' }}</p></div>
-              @if (!showPasswordForm()) {
+              @if (!showPasswordForm() && can('user.update')) {
                 <button class="secondary-action" type="button" (click)="openPasswordForm()">{{ summary()?.['has_password'] ? 'Change password' : 'Set password' }}</button>
               }
             </div>
