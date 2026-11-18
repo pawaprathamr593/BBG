@@ -52,7 +52,7 @@ Existing /dashboard, /dashboard/customers, /dashboard/orders, /dashboard/enquiri
 | Own payments | POST | /api/v1/payments/mine/list, /api/v1/payments/mine/detail | listMyPayments, getMyPayment | Existing |
 
 ## 8. Permissions
-Own profile, addresses, orders, enquiries and payments rely on authenticated-principal ownership enforced by the backend. Do not invent personal permission codes.
+Personal navigation uses the seeded consumer permissions `user.view`, `order.own.view` and `enquiry.own.view`, with backend ownership checks remaining authoritative. The seed contains no own-payment permission, so My Payments is not exposed by the workspace navigation or Personal route guard until the permission catalogue and backend policy define one.
 
 ## 9. Rules and validation
 Use existing DTOs and envelopes. Server resolves current user. Preserve address ownership/default semantics. Do not show tenant actions in Personal context. Proof/QR must never imply payment settlement.
@@ -79,3 +79,4 @@ Mobile-first forms and lists; no horizontal overflow; preserve keyboard access, 
 - Added saved-address editing through the existing customer address update API; existing create/default/delete actions remain intact.
 - Added detail views for the current user's order, enquiry and payment records using the existing `getMyOrder`, `getMyEnquiry` and `getMyPayment` routes/actions.
 - Added previous/next pagination to personal order and enquiry lists, using the backend pagination totals.
+- Personal navigation now requires the corresponding seeded consumer view permission; My Payments is hidden because the seed has no consumer own-payment permission.
