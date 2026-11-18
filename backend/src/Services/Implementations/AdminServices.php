@@ -524,12 +524,32 @@ final readonly class AdminServices implements IAdminServices
         if ($subscription['status'] !== 'SUCCESS' || $subscription['data'] === []) {
             return $this->propagateFailure($subscription, 'AdminServices::manageSubscriptionDecision');
         }
-        if (($subscription['data']['subscription_status'] ?? '') !== 'PENDING') {
+        $subscriptionData = $subscription['data'];
+        $currentStatus = (string) ($subscriptionData['subscription_status'] ?? '');
+        if ($currentStatus !== 'PENDING') {
+            if ($approve && $currentStatus === 'ACTIVE' && is_string($subscriptionData['bcn'] ?? null)
+                && $subscriptionData['bcn'] !== '') {
+                return [
+                    'status' => 'SUCCESS',
+                    'msgArr' => [],
+                    'data' => [
+                        'subscription_id' => $subscriptionId,
+                        'subscription_status' => 'ACTIVE',
+                        'bcn' => $subscriptionData['bcn'],
+                    ],
+                ];
+            }
             $resArr['msgArr'][] = 'Only pending subscriptions can be approved or rejected.';
             return $resArr;
         }
-        $tenantId = (int) $subscription['data']['tenant_id'];
+        $tenantId = (int) $subscriptionData['tenant_id'];
         $adminId = (int) $context['data']['user_id'];
+        $planId = $approve ? $this->positiveInt($subscriptionData['plan_id'] ?? null) : null;
+        if ($approve && $planId === null) {
+            $resArr['msgArr'][] = 'The subscription has no valid plan ID and cannot be approved.';
+            return $resArr;
+        }
+
         $transaction = $this->db->beginTransaction();
         try {
             if ($approve) {
@@ -567,10 +587,48 @@ final readonly class AdminServices implements IAdminServices
                 }
                 $result = $this->dao->rejectSubscription($this->db, $subscriptionId, $tenantId, $adminId, $reason);
             }
+
             if ($result['status'] !== 'SUCCESS') {
+                if ($approve) {
+                    $latest = $this->dao->getSubscriptionForReview($this->db, $subscriptionId);
+                    $latestData = $latest['data'] ?? [];
+                    if ($latest['status'] === 'SUCCESS'
+                        && ($latestData['subscription_status'] ?? '') === 'ACTIVE'
+                        && is_string($latestData['bcn'] ?? null) && $latestData['bcn'] !== '') {
+                        $transaction->rollBack();
+                        return [
+                            'status' => 'SUCCESS',
+                            'msgArr' => [],
+                            'data' => [
+                                'subscription_id' => $subscriptionId,
+                                'subscription_status' => 'ACTIVE',
+                                'bcn' => $latestData['bcn'],
+                            ],
+                        ];
+                    }
+                }
                 $transaction->rollBack();
                 return $this->propagateFailure($result, 'AdminServices::manageSubscriptionDecision');
             }
+
+            if ($approve) {
+                $serialResult = $this->dao->allocateBcnSerial($this->db);
+                if ($serialResult['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($serialResult, 'AdminServices::manageSubscriptionDecision');
+                }
+                $expiry = new DateTimeImmutable($endsOn);
+                $planSegment = str_pad((string) $planId, 2, '0', STR_PAD_LEFT);
+                $serialSegment = str_pad((string) $serialResult['data']['serial'], 5, '0', STR_PAD_LEFT);
+                $bcn = 'BCN-' . $expiry->format('ym') . $planSegment . '-' . $serialSegment;
+                $savedBcn = $this->dao->saveSubscriptionBcn($this->db, $subscriptionId, $tenantId, $bcn, $adminId);
+                if ($savedBcn['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($savedBcn, 'AdminServices::manageSubscriptionDecision');
+                }
+                $result['data']['bcn'] = $bcn;
+            }
+
             $transaction->commit();
             return $result;
         } catch (Throwable $exception) {
