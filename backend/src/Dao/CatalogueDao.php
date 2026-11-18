@@ -18,7 +18,7 @@ final readonly class CatalogueDao
         return $this->many($db, "SELECT pe.entitlement_code, pe.entitlement_value
             FROM TENANT_SUBSCRIPTIONS ts
             INNER JOIN PLAN_ENTITLEMENTS pe ON pe.plan_id = ts.plan_id
-                AND pe.entitlement_code IN ('PRODUCT_MANAGEMENT', 'PRODUCT_LIMIT') AND pe.status = 'A'
+                AND pe.entitlement_code IN ('catalogue.enabled', 'product.limit') AND pe.status = 'A'
             WHERE ts.tenant_id = :tenant_id AND ts.subscription_status = 'ACTIVE' AND ts.status = 'A'
                 AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
                 AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
