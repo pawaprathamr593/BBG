@@ -84,14 +84,14 @@ final readonly class DashboardServices implements IDashboardServices
             $resArr['msgArr'][] = 'A valid tenant_id is required.';
             return $resArr;
         }
-        $permission = $this->tenantDao->hasTenantPermission(
-            $this->db, (int) $principal['data']['user_id'], $tenantId, 'report.view',
+        $membership = $this->tenantDao->getMyTenant(
+            $this->db, (int) $principal['data']['user_id'], $tenantId,
         );
-        if ($permission['status'] !== 'SUCCESS') {
-            return $this->propagateFailure($permission, 'DashboardServices::getEntrepreneurDashboard');
+        if ($membership['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($membership, 'DashboardServices::getEntrepreneurDashboard');
         }
-        if ($permission['data'] === []) {
-            $resArr['msgArr'][] = 'report.view permission is required for this dashboard.';
+        if ($membership['data'] === []) {
+            $resArr['msgArr'][] = 'An active membership in this tenant is required for the business dashboard.';
             return $resArr;
         }
         $result = $this->dao->getEntrepreneurSummary($this->db, $tenantId);
