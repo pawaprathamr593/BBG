@@ -106,6 +106,28 @@ final readonly class TenantDao
         );
     }
 
+    public function hasTenantEntitlement(ConnectionInterface $db, int $tenantId, string $entitlementCode): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one(
+            $db,
+            "SELECT pe.id
+             FROM TENANT_SUBSCRIPTIONS ts
+             INNER JOIN PLAN_ENTITLEMENTS pe ON pe.plan_id = ts.plan_id
+                AND pe.entitlement_code = :entitlement_code
+                AND UPPER(pe.entitlement_value) IN ('1', 'TRUE', 'YES')
+                AND pe.status = 'A'
+             WHERE ts.tenant_id = :tenant_id
+                AND ts.subscription_status = 'ACTIVE' AND ts.status = 'A'
+                AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
+                AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
+             ORDER BY ts.starts_on DESC, ts.id DESC
+             LIMIT 1",
+            [':tenant_id' => $tenantId, ':entitlement_code' => $entitlementCode],
+            'hasTenantEntitlement',
+        );
+    }
+
     public function getTenantMembers(ConnectionInterface $db, int $tenantId, int $limit, int $offset): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
