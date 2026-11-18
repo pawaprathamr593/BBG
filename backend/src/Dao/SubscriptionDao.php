@@ -134,7 +134,7 @@ final readonly class SubscriptionDao
         return $this->many($db, "SELECT ts.id, ts.plan_id, p.plan_code, p.plan_name, p.billing_cycle,
             CASE WHEN ts.subscription_status = 'ACTIVE' AND ts.ends_on < CURRENT_TIMESTAMP THEN 'EXPIRED' ELSE ts.subscription_status END AS subscription_status,
             ts.starts_on, ts.ends_on, ts.renewal_due_on,
-            ts.amount, ts.currency, ts.approved_on, ts.rejection_reason, ts.created_on,
+            ts.amount, ts.currency, ts.approved_on, ts.rejection_reason, ts.created_on, ts.bcn,
             instructions.config_version AS payment_qr_version, instructions.payee_name AS payment_payee_name,
             instructions.upi_id AS payment_upi_id, instructions.qr_file_path AS payment_qr_file_path,
             instructions.payment_instructions,
@@ -166,7 +166,7 @@ final readonly class SubscriptionDao
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->one($db, "SELECT ts.id, ts.tenant_id, ts.plan_id, p.plan_code, p.plan_name,
             p.billing_cycle, ts.subscription_status, ts.starts_on, ts.ends_on, ts.renewal_due_on,
-            ts.amount, ts.currency, ts.approved_by, ts.approved_on, ts.rejection_reason, ts.created_on,
+            ts.amount, ts.currency, ts.approved_by, ts.approved_on, ts.rejection_reason, ts.created_on, ts.bcn,
             instructions.config_version AS payment_qr_version, instructions.payee_name AS payment_payee_name,
             instructions.upi_id AS payment_upi_id, instructions.qr_file_path AS payment_qr_file_path,
             instructions.payment_instructions
