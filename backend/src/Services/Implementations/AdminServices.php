@@ -612,7 +612,7 @@ final readonly class AdminServices implements IAdminServices
             }
 
             if ($approve) {
-                $serialResult = $this->dao->allocateBcnSerial($this->db);
+                $serialResult = $this->dao->allocateBcnSerial($this->db, $adminId);
                 if ($serialResult['status'] !== 'SUCCESS') {
                     $transaction->rollBack();
                     return $this->propagateFailure($serialResult, 'AdminServices::manageSubscriptionDecision');
