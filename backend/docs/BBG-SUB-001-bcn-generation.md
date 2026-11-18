@@ -48,7 +48,7 @@ For `BCN-271203-00125`:
 - `03`: plan ID as represented in the identifier.
 - `00125`: serial number.
 
-The example is illustrative. The exact padding/width rules for `PID` and `SN` must be confirmed before implementation.
+The example establishes minimum widths: `PID` is zero-padded to at least two digits and `SN` to at least five digits. Wider numeric values are preserved without truncation.
 
 ## 3. Business trigger and lifecycle
 
@@ -68,7 +68,7 @@ Do not generate a BCN for a request that is merely created, pending review, reje
 - Generate the BCN only in the backend during the successful Platform Admin subscription approval operation.
 - Use the plan ID associated with the subscription being approved. Do not trust a plan ID supplied independently by the client at approval time.
 - Derive `YYMM` from the final expiry date persisted for that subscription (`ends_on` in the current subscription data model).
-- Allocate `SN` using the approved serial-number policy. The policy is currently unresolved and must not be guessed.
+- Allocate `SN` from the single platform-wide serial counter. It is zero-padded to a minimum of five digits and expands without truncation.
 - Construct the identifier exactly as `BCN-{YYMM}{PID}-{SN}`.
 - Persist the complete BCN against the subscription record (the current logical entity is `TENANT_SUBSCRIPTIONS`).
 - Enforce uniqueness at the persistence layer, not only through an application-level pre-check.
@@ -79,7 +79,7 @@ Do not generate a BCN for a request that is merely created, pending review, reje
 - BCN allocation, persistence, and subscription approval must be part of the same database transaction.
 - If BCN allocation or persistence fails, the approval transaction must fail/roll back; do not leave an approved subscription without its required BCN.
 - Concurrent approvals must not allocate the same serial or BCN.
-- Serial allocation must use a concurrency-safe strategy (for example, a database-serialized counter/locking strategy) selected during implementation. Do not rely on an unsafe `MAX(serial) + 1` read without transaction/locking protection.
+- Serial allocation uses the single InnoDB counter row selected `FOR UPDATE`; the counter update participates in the approval transaction. Do not use an unsafe `MAX(serial) + 1` read.
 - Repeated approval requests, including retries after a client timeout, must be idempotent. If the subscription is already approved and has a BCN, return the existing BCN rather than allocating a new one.
 - A previously issued BCN must never be replaced by a retry.
 
@@ -148,9 +148,9 @@ The current renewal workflow creates a new `TENANT_SUBSCRIPTIONS` record rather 
 - The subscription record already contains `tenant_id`, `plan_id`, `subscription_status`, `starts_on`, `ends_on`, `approved_by` and `approved_on` in the current implementation.
 - Add nullable `TENANT_SUBSCRIPTIONS.bcn VARCHAR(64)` with a unique index.
 - Add `BBG_BCN_SERIAL_COUNTER`, containing one active row whose `last_serial` value is locked and incremented within the approval transaction.
-- Add a database uniqueness constraint/index for the BCN, subject to the final column definition and existing data review.
+- The migration adds a unique index for the BCN column.
 - Follow BBG's common audit fields and A/Z soft-delete conventions. Do not cascade-delete subscription or business history.
-- Provide a safe migration/backfill strategy if any existing approved subscriptions need BCN values. Backfill ordering and serial assignment must follow the confirmed sequencing policy.
+- Existing approved subscriptions are intentionally not backfilled; the new global sequence begins at zero when the migration is applied.
 - Migration: `backend/database/migrations/20261118_001_bbg_contribution_number.sql`. It is additive and is not automatically applied. Existing approved subscriptions are not backfilled.
 
 ## 9. Architecture and implementation constraints
@@ -215,16 +215,21 @@ Keep the existing payment review and subscription approval behaviour intact exce
 - Approved product decisions for serial-number scope, expiry-date source, identifier padding and renewal/upgrade behaviour.
 - Frontend requirement: `frontend/requirements/workspace/REQ-WORKSPACE-001-bcn-display.md`.
 
-## 14. Open decisions
+## 14. Resolved implementation decisions
 
-1. **Serial sequence scope:** global, monthly, plan-wise, or plan + expiry month? Is the serial strictly per approved business?
-2. **Expiry source:** plan-derived expiry or Admin-entered/overridden expiry?
-3. **Renewal/upgrade:** preserve BCN or issue a new BCN for a new subscription period?
-4. **PID representation:** is the plan ID zero-padded to two digits as in the example, or should its natural database representation be used?
-5. **SN representation:** is the serial zero-padded to five digits as in the example? What happens after 99,999?
-6. **Existing approved subscriptions:** should they be backfilled, and if so, what deterministic order and serial policy should be used?
+1. Serial scope is global across all approved subscription records, regardless of tenant, plan or expiry month.
+2. A serial is allocated only during approval. The counter increment rolls back if approval or BCN persistence fails.
+3. `PID` is zero-padded to a minimum of two digits; values wider than two digits are not truncated.
+4. `SN` is zero-padded to a minimum of five digits; values wider than five digits are not truncated.
+5. The final Admin-entered and persisted `ends_on` supplies the expiry year/month segment.
+6. The existing renewal flow creates a new subscription record; each such record receives a new BCN when approved. The earlier record's BCN remains unchanged.
+7. Existing approved subscriptions are not backfilled. The global counter starts at zero after migration.
+8. The migration is additive, must be reviewed against the physical schema and is applied separately by an authorized operator.
 
 ## 15. Implementation log
 
-- Requirement drafted from the user's BCN format and the existing BBG subscription/payment-review workflow.
-- No source code, database schema, migration, API contract or deployment changes are included.
+- Implemented global transactional serial allocation and immutable BCN persistence in the existing Platform Admin approval workflow.
+- Added the BCN schema migration and migration-runbook entry; migration has not been applied to any database.
+- Exposed BCN through existing Admin active/detail and tenant subscription list/detail reads.
+- Added idempotent handling for repeated and concurrent approval requests.
+- Frontend implementation is recorded in `frontend/requirements/workspace/REQ-WORKSPACE-001-bcn-display.md`.
