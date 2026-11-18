@@ -125,7 +125,7 @@ final readonly class BusinessDao
             $inClause = implode(', ', $placeholders);
 
             $available = $db->createCommand(
-                "SELECT COUNT(DISTINCT permission_code) AS permission_count
+                "SELECT COUNT(*) AS permission_count
                  FROM PERMISSIONS
                  WHERE status = 'A' AND permission_code IN ($inClause)",
                 array_diff_key($params, [':role_id' => true]),
