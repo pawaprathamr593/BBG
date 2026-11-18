@@ -81,6 +81,7 @@ Review screens remain usable on tablet/mobile; preserve theme tokens, focus and 
 - The API V1 catalogue does not yet document payment QR routes, although the route registry and AdminServices workers implement them on this branch. Reconcile the catalogue in a backend documentation task.
 
 ## Implementation log
+- Approved platform RBAC policy: PLATFORM_ADMIN receives the seven platform permission codes in this requirement; a separate idempotent SQL seed backfills existing platform-admin roles without granting tenant-only permissions.
 - Requirement created on approved branch HG_CODE_IMPROVEMENTS.
 - Added generic detail views for platform users and business applications.
 - Added category editing, moderation-history review and a 30-day platform analytics trend view using existing backend operations.
