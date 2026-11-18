@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
+import { hasActiveEntitlement, hasWorkspacePermission } from '../../core/workspace/workspace-access';
 import { CatalogueApiService, CatalogueCategory, CatalogueProduct, CatalogueUnit, ProductMedia } from './catalogue-api.service';
 
 interface ProductForm {
@@ -69,16 +70,18 @@ export class Catalogue implements OnInit {
 
   readonly tenantId = this.workspace.activeTenantId;
   readonly permissions = this.workspace.permissions;
-  readonly hasPermission = computed(() => this.permissions().some((permission) =>
-    permission.scope_type === 'TENANT' && permission.permission_code === 'CATALOGUE_MANAGE'));
-  readonly hasProductEntitlement = computed(() => {
-    const entitlements = this.workspace.activeTenant()?.active_entitlements ?? '';
-    return entitlements.split(';').some((entry) => {
-      const [code, value] = entry.split('=');
-      return code === 'PRODUCT_MANAGEMENT' && ['1', 'TRUE', 'YES'].includes((value ?? '').toUpperCase());
-    });
-  });
+  readonly hasPermission = computed(() => hasWorkspacePermission(this.permissions(), 'TENANT', 'catalogue.view'));
+  readonly hasProductEntitlement = computed(() => hasActiveEntitlement(
+    this.workspace.activeTenant()?.active_entitlements,
+    'catalogue.enabled',
+  ));
   readonly canManage = computed(() => this.hasPermission() && this.hasProductEntitlement());
+  readonly canCreate = computed(() => this.canManage()
+    && hasWorkspacePermission(this.permissions(), 'TENANT', 'catalogue.create'));
+  readonly canUpdate = computed(() => this.canManage()
+    && hasWorkspacePermission(this.permissions(), 'TENANT', 'catalogue.update'));
+  readonly canDelete = computed(() => this.canManage()
+    && hasWorkspacePermission(this.permissions(), 'TENANT', 'catalogue.delete'));
   readonly loading = signal(true);
   readonly productsLoading = signal(false);
   readonly saving = signal(false);
@@ -176,6 +179,7 @@ export class Catalogue implements OnInit {
   }
 
   openCreate(): void {
+    if (!this.canCreate()) return;
     this.editingId.set(null);
     this.form = emptyProduct();
     this.formError.set('');
@@ -186,6 +190,7 @@ export class Catalogue implements OnInit {
   }
 
   edit(product: CatalogueProduct): void {
+    if (!this.canUpdate()) return;
     this.editingId.set(product.id);
     this.form = {
       product_code: product.product_code,
@@ -248,7 +253,7 @@ export class Catalogue implements OnInit {
   async removeExistingMedia(media: ProductMedia): Promise<void> {
     const tenantId = this.tenantId();
     const productId = this.editingId();
-    if (!tenantId || !productId || this.mediaBusy() || !window.confirm(`Remove "${media.original_file_name}"?`)) return;
+    if (!tenantId || !productId || !this.canUpdate() || this.mediaBusy() || !window.confirm(`Remove "${media.original_file_name}"?`)) return;
     this.mediaBusy.set(true);
     this.mediaError.set('');
     try {
@@ -268,7 +273,9 @@ export class Catalogue implements OnInit {
 
   async saveProduct(): Promise<void> {
     const tenantId = this.tenantId();
-    if (!tenantId || !this.canManage() || !this.form.base_unit_id) {
+    const editingId = this.editingId();
+    const canSave = editingId !== null ? this.canUpdate() : this.canCreate();
+    if (!tenantId || !canSave || !this.form.base_unit_id) {
       this.formError.set('Select a valid base unit before saving.');
       return;
     }
@@ -293,7 +300,6 @@ export class Catalogue implements OnInit {
     this.saving.set(true);
     this.formError.set('');
     try {
-      const editingId = this.editingId();
       const saved = editingId
         ? await this.api.updateProduct(tenantId, editingId, payload)
         : await this.api.createProduct(tenantId, payload);
@@ -332,7 +338,7 @@ export class Catalogue implements OnInit {
 
   async removeProduct(product: CatalogueProduct): Promise<void> {
     const tenantId = this.tenantId();
-    if (!tenantId || !this.canManage() || !window.confirm(`Delete "${product.product_name}" from this catalogue?`)) return;
+    if (!tenantId || !this.canDelete() || !window.confirm(`Delete "${product.product_name}" from this catalogue?`)) return;
     try {
       await this.api.deleteProduct(tenantId, product.id);
       this.notice.set('Product moved to deleted status.');
@@ -345,7 +351,7 @@ export class Catalogue implements OnInit {
   async addCategory(): Promise<void> {
     const tenantId = this.tenantId();
     const name = this.categoryName.trim();
-    if (!tenantId || !this.canManage() || !name) return;
+    if (!tenantId || !this.canCreate() || !name) return;
     this.savingCategory.set(true);
     this.error.set('');
     try {
@@ -363,7 +369,7 @@ export class Catalogue implements OnInit {
 
   async removeCategory(category: CatalogueCategory): Promise<void> {
     const tenantId = this.tenantId();
-    if (!tenantId || !this.canManage() || !window.confirm(`Delete category "${category.category_name}"?`)) return;
+    if (!tenantId || !this.canDelete() || !window.confirm(`Delete category "${category.category_name}"?`)) return;
     try {
       await this.api.deleteCategory(tenantId, category.id);
       this.categories.set(await this.api.listCategories(tenantId));
