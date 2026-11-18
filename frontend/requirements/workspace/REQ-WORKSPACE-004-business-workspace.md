@@ -20,7 +20,7 @@ Authorized business members need a tenant-scoped workspace for supported profile
 
 ## 3. Scope
 **In scope:** Business profile/storefront; existing catalogue feature; read-only tenant member list; tenant orders and supported transitions; incoming enquiries/respond/close; read-only tenant payments; promotions and supported media flow; subscription plans/history/request/renewal/proof; entrepreneur summary and supported analytics.
-**Out of scope:** Member invitations/role assignment; inventory/purchasing/suppliers; gateway/refunds/invoices/expenses; business verification document upload; tenant customer directory beyond the documented current-branch API contract; unsupported analytics.
+**Out of scope:** Member invitations/role assignment; inventory/purchasing/suppliers; gateway/refunds/invoices/expenses; business verification document upload; unsupported analytics.
 
 ## 4. Entry and context
 Existing /dashboard, /dashboard/profile, /dashboard/catalogue, /dashboard/members, /dashboard/customers, /dashboard/orders, /dashboard/enquiries, /dashboard/payments, /dashboard/promotions, /dashboard/subscriptions and /dashboard/analytics. Requires active server-authorized tenant.
@@ -55,7 +55,7 @@ Existing /dashboard, /dashboard/profile, /dashboard/catalogue, /dashboard/member
 | Tenant orders | POST | /api/v1/orders/tenant/list, detail, status | Tenant order actions | Existing |
 | Tenant enquiries | POST | /api/v1/enquiries/tenant/list, detail, respond, close | Tenant enquiry actions | Existing |
 | Tenant payments | POST | /api/v1/payments/tenant/list, detail | Tenant payment actions | Existing, read-only |
-| Promotions | POST | /api/v1/promotions/mine/list, mine/detail, create, update, delete, publish, unpublish, engagement | Promotion actions | Existing |
+| Promotions and media | POST | /api/v1/promotions/mine/list, mine/detail, create, update, delete, publish, unpublish, engagement; /api/v1/promotions/media/upload-url, link, delete | Promotion and media actions | Existing on this branch; media upload requires configured S3 and an eligible promotion entitlement |
 | Subscriptions | POST | /api/v1/subscriptions/plans/list, mine/list, mine/detail, request, renewal/request, proofs/upload-url, proofs/submit | Subscription actions | Existing; live S3 requires configuration |
 | Customer directory | POST | /api/v1/customers/tenant/list | listTenantCustomers | Route and worker exist on this branch; API V1 catalogue is stale and should be reconciled separately |
 
