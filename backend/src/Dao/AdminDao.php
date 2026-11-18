@@ -211,7 +211,7 @@ final readonly class AdminDao
             LEFT JOIN TENANT_SUBSCRIPTION_PAYMENT_INSTRUCTIONS instructions
                 ON instructions.tenant_id = ts.tenant_id AND instructions.subscription_id = ts.id
                 AND instructions.status = 'A'
-            WHERE ts.id = :id AND ts.status = 'A' LIMIT 1 FOR UPDATE",
+            WHERE ts.id = :id AND ts.status = 'A' LIMIT 1",
             [':id' => $subscriptionId], 'getSubscriptionForReview');
     }
 
@@ -236,6 +236,14 @@ final readonly class AdminDao
             WHERE h.tenant_id = :tenant_id AND h.subscription_id = :subscription_id AND h.status = 'A'
             ORDER BY h.reviewed_on DESC, h.id DESC",
             [':tenant_id' => $tenantId, ':subscription_id' => $subscriptionId], 'getSubscriptionReviewHistory');
+    }
+
+    public function getSubscriptionBcnState(ConnectionInterface $db, int $subscriptionId, int $tenantId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one($db, "SELECT subscription_status, bcn FROM TENANT_SUBSCRIPTIONS
+            WHERE id = :id AND tenant_id = :tenant_id AND status = 'A' FOR UPDATE",
+            [':id' => $subscriptionId, ':tenant_id' => $tenantId], 'getSubscriptionBcnState');
     }
 
     public function allocateBcnSerial(ConnectionInterface $db, int $adminId): array
