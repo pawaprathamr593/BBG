@@ -994,6 +994,14 @@ export class DashboardModule implements OnInit {
       actionType = tenantId ? 'getTenantPayment' : 'getMyPayment';
       actionData = { payment_id: paymentId, ...(tenantId ? { tenant_id: tenantId } : {}) };
       this.recordDetailTitle.set('Payment details');
+    } else if (section === 'subscriptions' && tenantId !== null) {
+      const subscriptionId = Number(item['subscription_id'] ?? item['id'] ?? 0);
+      if (!subscriptionId) return;
+      key = 'subscriptionParam';
+      path = '/api/v1/subscriptions/mine/detail';
+      actionType = 'getMySubscription';
+      actionData = { tenant_id: tenantId, subscription_id: subscriptionId };
+      this.recordDetailTitle.set('Subscription details');
     } else {
       return;
     }
