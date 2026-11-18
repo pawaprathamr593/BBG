@@ -377,8 +377,11 @@ export class DashboardModule implements OnInit {
           this.items.set(data.items ?? []); break;
         }
         case 'subscription-approval': {
-          const data = await this.request<{items?:DataRecord[]}>('/api/v1/admin/subscriptions/pending/list','adminParam','listPendingSubscriptions',{page:1,page_size:25});
-          this.items.set(data.items ?? []); break;
+          const [pending, active] = await Promise.all([
+            this.request<{items?:DataRecord[]}>('/api/v1/admin/subscriptions/pending/list','adminParam','listPendingSubscriptions',{page:1,page_size:25}),
+            this.request<{items?:DataRecord[]}>('/api/v1/admin/subscriptions/active/list','adminParam','listActiveSubscriptions',{page:1,page_size:25}),
+          ]);
+          this.items.set([...(pending.items ?? []), ...(active.items ?? [])]); break;
         }
         case 'payment-qr-settings': {
           const data = await this.request<DataRecord>('/api/v1/admin/subscriptions/payment-qr/current','adminParam','getCurrentPaymentQrConfig');
