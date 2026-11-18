@@ -6,7 +6,7 @@ import { filter, firstValueFrom, lastValueFrom, tap } from 'rxjs';
 import { API_BASE_URL } from '../../core/config/api-base-url';
 import { AuthService } from '../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
-import { hasWorkspacePermission } from '../../core/workspace/workspace-access';
+import { hasActiveEntitlement, hasWorkspacePermission } from '../../core/workspace/workspace-access';
 
 type EnvelopeKey = 'authParam' | 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam' | 'tenantParam' | 'dashboardParam';
 interface ApiEnvelope<T = unknown> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION'; msgArr?: string[]; data?: T | []; }
@@ -236,35 +236,62 @@ export class DashboardModule implements OnInit {
       { key: 'platform-analytics', label: 'Platform analytics', path: '/dashboard/platform-analytics' },
       { key: 'categories', label: 'Categories', path: '/dashboard/categories' },
     ];
+    const context = this.workspace.activeContext();
+    if (!context) return [];
     const permissions = this.workspace.permissions();
-    const has = (code: string, scope: string) => permissions.some((entry) => entry.permission_code === code && entry.scope_type === scope);
-    const activeTenant = this.workspace.activeTenantId() !== null;
-    const personalContext = !activeTenant && !permissions.some((entry) => entry.scope_type === 'PLATFORM');
-    const tenantRequirements: Record<string,string> = {
-      profile: 'BUSINESS_PROFILE_MANAGE', storefront: 'BUSINESS_PROFILE_MANAGE',
-      catalogue: 'CATALOGUE_MANAGE', customers: 'CUSTOMERS_MANAGE', enquiries: 'ENQUIRIES_MANAGE',
-      orders: 'ORDERS_MANAGE', promotions: 'PROMOTIONS_MANAGE', subscriptions: 'SUBSCRIPTIONS_MANAGE',
-      payments: 'PAYMENTS_VIEW', analytics: 'ANALYTICS_VIEW', members: 'TENANT_MEMBERS_VIEW',
+    const activeTenant = context === 'BUSINESS';
+    const scope = activeTenant ? 'TENANT' : context === 'PLATFORM' ? 'PLATFORM' : 'GLOBAL';
+    const entitlements = this.workspace.activeTenant()?.active_entitlements ?? null;
+    const tenantRequirements: Record<string, string> = {
+      profile: 'business.view',
+      storefront: 'business.view',
+      catalogue: 'catalogue.view',
+      customers: 'customer.view',
+      enquiries: 'enquiry.view',
+      orders: 'order.view',
+      promotions: 'promotion.view',
+      subscriptions: 'subscription.view',
+      payments: 'payment.view',
+      analytics: 'report.view',
+      members: 'tenant.view',
     };
-    const platformRequirements: Record<string,string> = {
-      'platform-users': 'PLATFORM_USERS_MANAGE', 'business-approval': 'BUSINESS_APPROVE',
-      'subscription-approval': 'SUBSCRIPTIONS_APPROVE', 'payment-qr-settings': 'SUBSCRIPTIONS_APPROVE', moderation: 'MODERATION_MANAGE',
-      categories: 'CATEGORIES_MANAGE', 'platform-analytics': 'ANALYTICS_VIEW', 'system-health': 'SYSTEM_HEALTH_VIEW',
+    const tenantEntitlements: Record<string, string> = {
+      profile: 'business.profile',
+      storefront: 'storefront.enabled',
+      catalogue: 'catalogue.enabled',
+      promotions: 'promotions.enabled',
+      analytics: 'advanced.reports.enabled',
+    };
+    const platformRequirements: Record<string, string> = {
+      'platform-users': 'user.view',
+      'business-approval': 'business.approve',
+      'subscription-approval': 'subscription.approve',
+      'payment-qr-settings': 'subscription.update',
+      moderation: 'admin.view',
+      categories: 'admin.view',
+      'platform-analytics': 'report.view',
+      'system-health': 'admin.view',
+    };
+    const personalRequirements: Record<string, string> = {
+      customers: 'user.view',
+      enquiries: 'enquiry.own.view',
+      orders: 'order.own.view',
     };
     return links.filter((link) => {
-      if (tenantRequirements[link.key]) {
-        if (activeTenant) return has(tenantRequirements[link.key], 'TENANT');
-        return personalContext && ['customers','enquiries','orders','payments'].includes(link.key);
-      }
-      const required = platformRequirements[link.key];
-      return required ? has(required, 'PLATFORM') : false;
+      const requiredPermission = scope === 'TENANT'
+        ? tenantRequirements[link.key]
+        : scope === 'PLATFORM'
+          ? platformRequirements[link.key]
+          : personalRequirements[link.key];
+      if (!requiredPermission || !hasWorkspacePermission(permissions, scope, requiredPermission)) return false;
+      const entitlement = scope === 'TENANT' ? tenantEntitlements[link.key] : undefined;
+      return entitlement === undefined || hasActiveEntitlement(entitlements, entitlement);
     }).map((link) => {
-      if (activeTenant) return link;
+      if (scope !== 'GLOBAL') return link;
       const personalLabels: Record<string, string> = {
         customers: 'My Profile & Addresses',
         enquiries: 'My Enquiries',
         orders: 'My Orders',
-        payments: 'My Payments',
       };
       return personalLabels[link.key] ? { ...link, label: personalLabels[link.key] } : link;
     });
