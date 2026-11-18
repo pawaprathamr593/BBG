@@ -1,11 +1,10 @@
--- BBG default workspace role permissions
+-- BBG platform role permission defaults
 -- Apply once to backfill existing role mappings. This script is idempotent.
 -- It does not create users, roles, or permission catalogue records.
 --
 -- Preconditions:
---   * ROLES contains TENANT_OWNER with scope_type TENANT.
---   * ROLES contains PLATFORM_ADMIN with scope_type PLATFORM.
---   * PERMISSIONS contains all codes listed below with status = 'A'.
+----   * ROLES contains PLATFORM_ADMIN with scope_type PLATFORM.
+--   * PERMISSIONS contains the listed platform codes with status = 'A'.
 -- Review the two preflight result sets before relying on the inserts.
 
 -- Preflight: expected role records.
@@ -40,31 +39,8 @@ LEFT JOIN PERMISSIONS p
 WHERE p.id IS NULL
 ORDER BY expected.permission_code;
 
--- Backfill all active business permissions to every active TENANT_OWNER role.
-INSERT INTO ROLE_PERMISSIONS
-    (role_id, permission_id, status, created_by, updated_by)
-SELECT r.id, p.id, 'A', NULL, NULL
-FROM ROLES r
-INNER JOIN PERMISSIONS p
-    ON p.permission_code IN (
-        'BUSINESS_PROFILE_MANAGE',
-        'CATALOGUE_MANAGE',
-        'CUSTOMERS_MANAGE',
-        'ENQUIRIES_MANAGE',
-        'ORDERS_MANAGE',
-        'PAYMENTS_VIEW',
-        'PROMOTIONS_MANAGE',
-        'SUBSCRIPTIONS_MANAGE',
-        'TENANT_MEMBERS_VIEW',
-        'ANALYTICS_VIEW'
-    )
-   AND p.status = 'A'
-WHERE r.role_code = 'TENANT_OWNER'
-  AND r.scope_type = 'TENANT'
-  AND r.status = 'A'
-ON DUPLICATE KEY UPDATE
-    status = 'A',
-    updated_on = CURRENT_TIMESTAMP;
+-- Tenant-owner permissions are NOT seeded statically. Effective tenant access
+-- must be calculated from the tenant's approved active plan entitlements.
 
 -- Backfill all approved platform administration permissions to PLATFORM_ADMIN.
 -- Tenant-only permissions are deliberately excluded.
