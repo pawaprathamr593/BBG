@@ -5,7 +5,7 @@
           <h1>Product catalogue</h1>
           <p class="subtitle">Manage your business products and categories in one place.</p>
         </div>
-        <button class="primary-button" type="button" [disabled]="!canCreate() || !units().length" (click)="openCreate()">＋ Add product</button>
+        @if (canCreate()) { <button class="primary-button" type="button" [disabled]="!units().length" (click)="openCreate()">＋ Add product</button> }
       </header>
 
       @if (loading()) {
@@ -15,9 +15,9 @@
       } @else if (!tenantId()) {
         <section class="state-panel"><strong>Select a business workspace first</strong><p>Catalogue data is tenant-specific. Return to your dashboard and select the business workspace you want to manage.</p><a routerLink="/dashboard" class="text-link">Choose workspace →</a></section>
       } @else if (!hasPermission()) {
-        <section class="state-panel"><strong>You don't have catalogue access</strong><p>This workspace has not granted you the CATALOGUE_MANAGE permission.</p><a routerLink="/dashboard" class="text-link">Return to dashboard →</a></section>
+        <section class="state-panel"><strong>You don't have catalogue access</strong><p>This workspace has not granted you the catalogue.view permission.</p><a routerLink="/dashboard" class="text-link">Return to dashboard →</a></section>
       } @else if (!hasProductEntitlement()) {
-        <section class="state-panel"><strong>Product management isn't included in this plan</strong><p>Your current active subscription does not include the PRODUCT_MANAGEMENT entitlement. Upgrade the business plan to manage products.</p><a routerLink="/dashboard" class="text-link">Return to dashboard →</a></section>
+        <section class="state-panel"><strong>Product management isn't included in this plan</strong><p>Your current active subscription does not include the catalogue.enabled entitlement. Upgrade the business plan to manage products.</p><a routerLink="/dashboard" class="text-link">Return to dashboard →</a></section>
       } @else {
         <section class="stats-row" aria-label="Catalogue summary">
           <article><span>Active products</span><strong>{{ totalProducts() }}</strong></article>
@@ -63,11 +63,11 @@
 
           <aside class="categories-panel">
             <div class="panel-heading"><div><h2>Categories</h2><p>Organise your catalogue.</p></div></div>
-            <form class="category-form" (ngSubmit)="addCategory()">
+            @if (canCreate()) { <form class="category-form" (ngSubmit)="addCategory()">
               <label>Category name<input name="categoryName" [(ngModel)]="categoryName" maxlength="120" required placeholder="e.g. Office furniture"></label>
               <label>Description <span class="optional">(optional)</span><input name="categoryDescription" [(ngModel)]="categoryDescription" maxlength="500" placeholder="Short description"></label>
               <button class="secondary-button full-width" type="submit" [disabled]="!canCreate() || savingCategory() || !categoryName.trim()"> {{ savingCategory() ? 'Adding…' : 'Add category' }} </button>
-            </form>
+            </form> }
             <ul class="category-list">
               @for (category of categories(); track category.id) {
                 <li><div><strong>{{ category.category_name }}</strong><small>{{ category.description || 'No description' }}</small></div>@if (canDelete()) { <button type="button" class="icon-button" [attr.aria-label]="'Delete ' + category.category_name" (click)="removeCategory(category)">×</button> }</li>
