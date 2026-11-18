@@ -59,7 +59,7 @@ Existing /dashboard/platform-users, /dashboard/business-approval, /dashboard/sub
 Reuse existing keys: PLATFORM_USERS_MANAGE, BUSINESS_APPROVE, SUBSCRIPTIONS_APPROVE, CATEGORIES_MANAGE, MODERATION_MANAGE, ANALYTICS_VIEW, SYSTEM_HEALTH_VIEW. Backend platform authorization is mandatory.
 
 ## 9. Rules and validation
-Do not assign platform roles in frontend. Follow backend lifecycle and reason requirements. Proof is evidence, not approval. Category deletion follows dependency rules. Moderation actions limited to supported targets. Health output must not expose secrets. No QR settings request/form without an approved API contract.
+Do not assign platform roles in frontend. Follow backend lifecycle and reason requirements. Proof is evidence, not approval. Category deletion follows dependency rules. Moderation actions limited to supported targets. Health output must not expose secrets. Payment QR settings use the current-branch routes and AdminServices workers; preserve server-side PLATFORM permission checks and S3 verification.
 
 ## 10. UI states
 Loading, empty, error/retry, permission denied, detail loading, mutation pending, success and failed decision. Confirm destructive actions and prevent duplicate submissions.
