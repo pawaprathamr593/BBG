@@ -74,6 +74,9 @@ Preserve existing mobile navigation, touch targets, keyboard operation, visible 
 - None for the authentication guard. Context-specific authorization continues to rely on existing server-provided permissions and backend enforcement.
 
 ## Implementation log
+- Added a shared workspace navigation registry so the sidebar and overview use the same context and permission filtering.
+- Added an explicit empty-permissions state on the overview rather than silently presenting an empty workspace.
+- Fixed principal-change detection so session restoration's initial null user ID to loaded profile ID does not clear workspace initialization.
 - Requirement created on approved branch HG_CODE_IMPROVEMENTS.
 - Added `authenticatedWorkspaceGuard` to the `/dashboard` parent route. It checks the existing `AuthService.isAuthenticated()` state after the app initializer's session-restore attempt and redirects unauthenticated users to `/login`.
 - Added `workspacePermissionGuard` to child routes. It checks the active Personal, Business or Platform context against the exact existing permission keys; Personal activity sections remain available without invented GLOBAL permission codes. Unknown or out-of-context sections redirect to `/dashboard`.
