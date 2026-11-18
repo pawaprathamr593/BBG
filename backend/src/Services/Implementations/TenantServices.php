@@ -141,13 +141,13 @@ final readonly class TenantServices implements ITenantServices
             $this->db,
             (int) $principal['data']['user_id'],
             $tenantId,
-            'TENANT_MEMBERS_VIEW',
+            'tenant.view',
         );
         if ($permission['status'] !== 'SUCCESS') {
             return $this->propagateFailure($permission, 'TenantServices::getTenantMembers');
         }
         if ($permission['data'] === []) {
-            $resArr['msgArr'][] = 'Tenant member-view permission is required.';
+            $resArr['msgArr'][] = 'tenant.view permission is required.';
             return $resArr;
         }
         $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
