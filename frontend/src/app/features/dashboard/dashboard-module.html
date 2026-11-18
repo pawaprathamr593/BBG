@@ -4,18 +4,18 @@
           <p class="intro">{{ description() }}</p>
         </div>
         <div class="heading-buttons">
-          @if (section() === 'profile') { <button class="secondary-action" type="button" (click)="editBusinessProfile()" [disabled]="busy()">Edit profile</button> }
-          @if (section() === 'storefront') {
+          @if (section() === 'profile' && can('business.update')) { <button class="secondary-action" type="button" (click)="editBusinessProfile()" [disabled]="busy()">Edit profile</button> }
+          @if (section() === 'storefront' && can('business.update')) {
             <button class="secondary-action" type="button" (click)="editStorefront()" [disabled]="busy()">Edit settings</button>
             <button class="secondary-action" type="button" (click)="toggleStorefront()" [disabled]="busy()">{{ storefrontStatus() === 'PUBLISHED' ? 'Unpublish' : 'Publish' }} storefront</button>
           }
-          @if (section() === 'promotions') { <button class="secondary-action" type="button" (click)="createPromotion()" [disabled]="busy()">+ New promotion</button> }
-          @if (section() === 'customers' && !activeTenantId()) {
+          @if (section() === 'promotions' && can('promotion.create')) { <button class="secondary-action" type="button" (click)="createPromotion()" [disabled]="busy()">+ New promotion</button> }
+          @if (section() === 'customers' && !activeTenantId() && can('user.update')) {
             <button class="secondary-action" type="button" (click)="editPersonalProfile()" [disabled]="busy()">Edit personal details</button>
             <button class="secondary-action" type="button" (click)="createAddress()" [disabled]="busy()">+ Add address</button>
           }
-          @if (section() === 'categories') { <button class="secondary-action" type="button" (click)="createCategory()" [disabled]="busy()">+ New category</button> }
-          @if (section() === 'moderation') {
+          @if (section() === 'categories' && can('admin.create')) { <button class="secondary-action" type="button" (click)="createCategory()" [disabled]="busy()">+ New category</button> }
+          @if (section() === 'moderation' && can('admin.view')) {
             <button class="secondary-action" type="button" (click)="loadModerationHistory()" [disabled]="moderationHistoryLoading()">
               {{ moderationHistoryLoading() ? 'Loading history…' : 'View moderation history' }}
             </button>
@@ -77,7 +77,7 @@
           </section>
         }
 
-        @if (section() === 'payment-qr-settings') {
+        @if (section() === 'payment-qr-settings' && can('subscription.update')) {
           <section class="qr-settings-card">
             <div class="section-title"><div><p class="eyebrow">PLATFORM PAYMENT SETTINGS</p><h2>UPI payment QR</h2><p>Changing the QR affects new subscription requests only. Existing requests retain their captured payment instructions.</p></div></div>
             @if (summary()?.['qr_url']) { <img class="payment-qr-preview" [src]="asUrl(summary()?.['qr_url'])" alt="Current BBG UPI payment QR"> }
@@ -99,7 +99,7 @@
                   <h3>{{ valueOf(plan, ['plan_name', 'name', 'plan_code']) }}</h3>
                   <strong class="plan-price">{{ valueOf(plan, ['price', 'amount']) }} {{ valueOf(plan, ['currency']) }}</strong>
                   <p>{{ valueOf(plan, ['description', 'plan_description']) }}</p>
-                  <button type="button" (click)="requestPlan(plan)" [disabled]="busy()">{{ pendingPlanId() === recordId(plan, 'plan_id') ? 'Requesting…' : 'Request this plan' }}</button>
+                  @if (can('subscription.create')) { <button type="button" (click)="requestPlan(plan)" [disabled]="busy()">{{ pendingPlanId() === recordId(plan, 'plan_id') ? 'Requesting…' : 'Request this plan' }}</button> }
                 </article>
               }
             </div>
@@ -188,7 +188,7 @@
                           @else if (media['url'] && media['media_type'] === 'AUDIO') { <audio controls [src]="asUrl(media['url'])" aria-label="Post audio attachment"></audio> }
                           @else if (media['url']) { <a [href]="asUrl(media['url'])" target="_blank" rel="noopener">Open {{ media['media_type'] }} attachment</a> }
                           @else { <span>{{ media['media_type'] }} attachment</span> }
-                          @if (statusOf(item).toUpperCase() !== 'PUBLISHED') { <button type="button" (click)="removePromotionAttachment(item,media)" [disabled]="busy()">Remove</button> }
+                          @if (statusOf(item).toUpperCase() !== 'PUBLISHED' && can('promotion.update')) { <button type="button" (click)="removePromotionAttachment(item,media)" [disabled]="busy()">Remove</button> }
                         </div>
                       }
                     </div>
@@ -197,20 +197,20 @@
                   @if (section() === 'subscriptions' && statusOf(item).toUpperCase() === 'PENDING' && item['latest_proof_review_status'] === 'PENDING') {
                     <p class="payment-instructions">Your receipt was submitted on {{ formatValue(item['latest_proof_submitted_on']) }} and is awaiting Platform Admin review.</p>
                   }
-                  @if (section() === 'subscriptions' && ['PENDING','REJECTED'].includes(statusOf(item).toUpperCase()) && item['latest_proof_review_status'] !== 'PENDING') {
+                  @if (section() === 'subscriptions' && can('subscription.update') && ['PENDING','REJECTED'].includes(statusOf(item).toUpperCase()) && item['latest_proof_review_status'] !== 'PENDING') {
                     <label class="upload-proof">Upload payment proof
                       <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" [disabled]="busy()" (change)="uploadProof($event, item)" />
                     </label>
-                    @if (proofDrafts()[recordId(item,'subscription_id')]) {
+                    @if (proofDrafts()[recordId(item,'subscription_id')] && can('subscription.update')) {
                       <div class="proof-ready" role="status">
                         <span>Receipt uploaded: {{ proofDrafts()[recordId(item,'subscription_id')].fileName }}</span>
                         <button type="button" (click)="submitProof(item)" [disabled]="busy()">Submit for Review</button>
                       </div>
                     }
                   }
-                  @if (actionsFor(item).length) {
+                  @if (visibleActionsFor(item).length) {
                     <div class="record-actions">
-                      @for (action of actionsFor(item); track action.key) {
+                      @for (action of visibleActionsFor(item); track action.key) {
                         <button type="button" [class.danger]="action.danger" (click)="runAction(action.key, item)" [disabled]="busy()">{{ action.label }}</button>
                       }
                     </div>
@@ -303,7 +303,7 @@
             </div>
             @if (promotionError()) { <p class="composer-error" role="alert">{{ promotionError() }}</p> }
             @if (promotionMediaBusy()) { <div class="composer-progress" role="status"><progress [value]="promotionUploadProgress()" max="100"></progress><span>Uploading attachments… {{ promotionUploadProgress() }}%</span></div> }
-            <footer><button type="button" class="refresh" (click)="closePromotionComposer()" [disabled]="promotionMediaBusy()">Cancel</button><button type="button" class="secondary-action" (click)="submitPromotion()" [disabled]="promotionMediaBusy() || !promotionContent().trim()">{{ promotionMediaBusy() ? 'Uploading…' : (promotionFiles().length ? 'Save post & upload media' : 'Create draft') }}</button></footer>
+            <footer><button type="button" class="refresh" (click)="closePromotionComposer()" [disabled]="promotionMediaBusy()">Cancel</button>@if (draftPromotionId() ? can('promotion.update') : can('promotion.create')) { <button type="button" class="secondary-action" (click)="submitPromotion()" [disabled]="promotionMediaBusy() || !promotionContent().trim()">{{ promotionMediaBusy() ? 'Uploading…' : (promotionFiles().length ? 'Save post & upload media' : 'Create draft') }}</button> } </footer>
           </section>
         </div>
       }
