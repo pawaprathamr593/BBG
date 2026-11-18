@@ -84,7 +84,8 @@ export class DashboardModule implements OnInit {
   readonly currentPage = signal(1);
   readonly pageSize = 25;
   readonly totalItems = signal(0);
-  readonly pageCount = computed(() => Math.max(1, Math.ceil(this.totalItems() / this.pageSize)));
+  readonly paginationPageSize = computed(() => this.section() === 'subscription-approval' ? this.pageSize * 2 : this.pageSize);
+  readonly pageCount = computed(() => Math.max(1, Math.ceil(this.totalItems() / this.paginationPageSize())));
   private loadSequence = 0;
   readonly filterSearch = signal('');
   readonly filterStatus = signal('');
@@ -410,7 +411,7 @@ export class DashboardModule implements OnInit {
           break;
         }
         case 'categories': {
-          const data = await this.request<ListResult>('/api/v1/admin/categories/list','adminParam','listAdminCategories',{page:this.currentPage(),page_size:100});
+          const data = await this.request<ListResult>('/api/v1/admin/categories/list','adminParam','listAdminCategories',{page:this.currentPage(),page_size:this.pageSize});
           this.setListResult(data); break;
         }
         case 'platform-users': {
