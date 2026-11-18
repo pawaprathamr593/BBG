@@ -10,7 +10,10 @@
             <button class="secondary-action" type="button" (click)="toggleStorefront()" [disabled]="busy()">{{ storefrontStatus() === 'PUBLISHED' ? 'Unpublish' : 'Publish' }} storefront</button>
           }
           @if (section() === 'promotions') { <button class="secondary-action" type="button" (click)="createPromotion()" [disabled]="busy()">+ New promotion</button> }
-          @if (section() === 'customers' && !activeTenantId()) { <button class="secondary-action" type="button" (click)="createAddress()" [disabled]="busy()">+ Add address</button> }
+          @if (section() === 'customers' && !activeTenantId()) {
+            <button class="secondary-action" type="button" (click)="editPersonalProfile()" [disabled]="busy()">Edit personal details</button>
+            <button class="secondary-action" type="button" (click)="createAddress()" [disabled]="busy()">+ Add address</button>
+          }
           @if (section() === 'categories') { <button class="secondary-action" type="button" (click)="createCategory()" [disabled]="busy()">+ New category</button> }
           <button class="refresh" type="button" (click)="load()" [disabled]="loading()">↻ Refresh</button>
         </div>
