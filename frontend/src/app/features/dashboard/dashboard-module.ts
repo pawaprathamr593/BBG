@@ -115,6 +115,8 @@ export class DashboardModule implements OnInit {
   readonly qrInstructions = signal('');
   readonly qrFile = signal<File | null>(null);
   readonly subscriptionReview = signal<DataRecord | null>(null);
+  readonly recordDetail = signal<DataRecord | null>(null);
+  readonly recordDetailTitle = signal('');
   readonly showPromotionComposer = signal(false);
   readonly promotionTitle = signal('');
   readonly promotionContent = signal('');
@@ -437,7 +439,7 @@ export class DashboardModule implements OnInit {
     if (this.section()==='subscription-approval' && status==='PENDING') return [{key:'approve-subscription',label:'Approve'},{key:'reject-subscription',label:'Reject',danger:true}];
     if (this.section()==='subscriptions' && ['ACTIVE','EXPIRED'].includes(status)) return [{key:'renew-subscription',label:'Renew subscription'}];
     if (this.section()==='moderation' && status==='OPEN') return [{key:'moderate',label:'Review report'}];
-    if (this.section()==='categories') return [{key:'delete-category',label:'Delete category',danger:true}];
+    if (this.section()==='categories') return [{key:'edit-category',label:'Edit category'},{key:'delete-category',label:'Delete category',danger:true}];
     return [];
   }
 
@@ -514,6 +516,31 @@ export class DashboardModule implements OnInit {
         const remove = action==='delete-address';
         if (remove && !window.confirm('Delete this saved address?')) return;
         path=remove?'/api/v1/customers/addresses/delete':'/api/v1/customers/addresses/default'; key='customerParam'; actionType=remove?'deleteMyAddress':'setDefaultAddress'; data={address_id:Number(item['address_id'] ?? item['id'])}; break;
+      }
+      case 'edit-category': {
+        const categoryId = Number(item['category_id'] ?? item['id'] ?? 0);
+        const code = window.prompt('Category code:', String(item['category_code'] ?? ''));
+        if (code === null) return;
+        const name = window.prompt('Category name:', String(item['category_name'] ?? ''));
+        if (name === null) return;
+        const type = window.prompt('Category type (BUSINESS or PRODUCT):', String(item['category_type'] ?? 'BUSINESS'));
+        if (type === null) return;
+        const description = window.prompt('Description:', String(item['description'] ?? ''));
+        if (description === null) return;
+        const parent = window.prompt('Parent category ID (optional):', String(item['parent_category_id'] ?? ''));
+        if (parent === null) return;
+        const order = window.prompt('Display order:', String(item['display_order'] ?? 0));
+        if (order === null || !categoryId || !code.trim() || !name.trim()) return;
+        const normalizedType = type.trim().toUpperCase();
+        if (!['BUSINESS', 'PRODUCT'].includes(normalizedType)) {
+          this.error.set('Category type must be BUSINESS or PRODUCT.');
+          return;
+        }
+        path='/api/v1/admin/categories/update'; actionType='updateCategory';
+        data={category_id:categoryId,category_code:code.trim().toUpperCase(),category_name:name.trim(),
+          category_type:normalizedType,description,parent_category_id:parent.trim() ? Number(parent) : null,
+          display_order:Number(order)};
+        break;
       }
       case 'delete-category':
         if (!window.confirm('Soft-delete this category? Categories referenced by active businesses or products cannot be deleted.')) return;
@@ -861,6 +888,36 @@ export class DashboardModule implements OnInit {
   subscriptionReviewHistory(): DataRecord[] {
     const history = this.subscriptionReview()?.['review_history'];
     return Array.isArray(history) ? history as DataRecord[] : [];
+  }
+
+  async openRecordDetail(item: DataRecord): Promise<void> {
+    if (this.busy()) return;
+    const section = this.section();
+    let path = '';
+    let actionType = '';
+    let actionData: DataRecord = {};
+    if (section === 'platform-users') {
+      path = '/api/v1/admin/users/detail';
+      actionType = 'getPlatformUser';
+      actionData = { user_id: Number(item['user_id'] ?? item['id']) };
+      this.recordDetailTitle.set('Platform user details');
+    } else if (section === 'business-approval') {
+      path = '/api/v1/admin/businesses/detail';
+      actionType = 'getBusinessForReview';
+      actionData = { business_id: Number(item['business_id'] ?? item['id']) };
+      this.recordDetailTitle.set('Business application details');
+    } else {
+      return;
+    }
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      this.recordDetail.set(await this.request<DataRecord>(path, 'adminParam', actionType, actionData));
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   async openSubscriptionReview(item: DataRecord): Promise<void> {
