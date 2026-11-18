@@ -53,7 +53,7 @@ Existing /dashboard/platform-users, /dashboard/business-approval, /dashboard/sub
 | Moderation | POST | /api/v1/admin/moderation/queue, action, history | Moderation actions | Existing |
 | Analytics | POST | /api/v1/admin/analytics/summary, trends | Analytics actions | Existing |
 | Safe health | POST | /api/v1/admin/health/summary | getSafeSystemHealth | Existing |
-| Payment QR settings | — | — | — | UNKNOWN; not in API V1 catalogue |
+| Payment QR settings read/upload/save | POST | /api/v1/admin/subscriptions/payment-qr/current, /upload-url, /save | getCurrentPaymentQrConfig, generatePaymentQrUploadUrl, savePaymentQrConfig | Route registry and backend workers exist on this branch; API V1 catalogue is stale and must be reconciled separately |
 
 ## 8. Permissions
 Reuse existing keys: PLATFORM_USERS_MANAGE, BUSINESS_APPROVE, SUBSCRIPTIONS_APPROVE, CATEGORIES_MANAGE, MODERATION_MANAGE, ANALYTICS_VIEW, SYSTEM_HEALTH_VIEW. Backend platform authorization is mandatory.
