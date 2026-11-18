@@ -54,6 +54,7 @@ interface DataRecord { [key: string]: unknown; }
     @keyframes spin{to{transform:rotate(360deg)}}
     @media(max-width:900px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.record-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.plans-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media(max-width:600px){.personal-profile-card{padding:16px}.personal-profile-details{grid-template-columns:1fr;gap:12px}.password-settings{align-items:flex-start;flex-direction:column}.password-form{grid-template-columns:1fr}.password-form-actions,.password-error{grid-column:1}.module-page{padding:28px 16px 54px}.page-heading{align-items:flex-start;flex-direction:column}.refresh{width:100%}.summary-grid{gap:8px}.summary-card{padding:13px}.summary-card strong{font-size:1.2rem}.record-card{padding:15px}.record-fields{grid-template-columns:1fr 1fr;gap:11px}.plans-grid{grid-template-columns:1fr}.section-title{align-items:flex-start}}
+    .bcn-record{display:grid;gap:8px;margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface-subtle)}.bcn-record>span{color:var(--text-secondary);font-size:.72rem;font-weight:700}.bcn-record>div{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}.bcn-record strong{min-width:0;overflow-wrap:anywhere;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9rem;letter-spacing:.02em}.bcn-record button{flex:0 0 auto;padding:7px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface-card);color:var(--text-primary);font:inherit;font-size:.72rem;font-weight:700;cursor:pointer}.bcn-record button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
   `],
 })
 export class DashboardModule implements OnInit {
@@ -421,7 +422,7 @@ export class DashboardModule implements OnInit {
   }
   statusOf(item: DataRecord): string { return String(item['approval_status'] ?? item['subscription_status'] ?? item['publication_status'] ?? item['order_status'] ?? item['enquiry_status'] ?? item['payment_status'] ?? item['report_status'] ?? item['account_status'] ?? item['customer_status'] ?? item['status'] ?? ''); }
   recordEntries(item: DataRecord): Array<{key:string;value:unknown}> {
-    const hidden = new Set(['id','tenant_id','user_id','business_id','subscription_id','promotion_id','order_id','report_id','created_by','updated_by','deleted_by','password_hash','access_token','refresh_token']);
+    const hidden = new Set(['id','tenant_id','user_id','business_id','subscription_id','promotion_id','order_id','report_id','bcn','created_by','updated_by','deleted_by','password_hash','access_token','refresh_token']);
     return Object.entries(item).filter(([key,value]) => !hidden.has(key) && value !== null && typeof value !== 'object').slice(0,8).map(([key,value])=>({key,value}));
   }
   actionsFor(item: DataRecord): Array<{key:string;label:string;danger?:boolean}> {
@@ -503,7 +504,15 @@ export class DashboardModule implements OnInit {
       default: return;
     }
     this.busy.set(true); this.error.set('');
-    try { await this.request(path,key,actionType,data); this.notice.set('The requested action was completed.'); await this.load(); }
+    try {
+      const result = await this.request<DataRecord>(path,key,actionType,data);
+      if (action === 'approve-subscription' && typeof result['bcn'] === 'string' && result['bcn'] !== '') {
+        this.notice.set(`Subscription approved. BBG Contribution Number: ${result['bcn']}`);
+      } else {
+        this.notice.set('The requested action was completed.');
+      }
+      await this.load();
+    }
     catch (error) { this.error.set(this.auth.errorMessage(error)); }
     finally { this.busy.set(false); }
   }
@@ -775,6 +784,22 @@ export class DashboardModule implements OnInit {
     try { await this.request(path,key,actionType,data); this.notice.set('Changes saved successfully.'); await this.load(); }
     catch(error) { this.error.set(this.auth.errorMessage(error)); }
     finally { this.busy.set(false); }
+  }
+
+  hasBcn(item: DataRecord): boolean {
+    return typeof item['bcn'] === 'string'
+      && item['bcn'] !== ''
+      && ['ACTIVE', 'EXPIRED', 'APPROVED'].includes(this.statusOf(item).toUpperCase());
+  }
+
+  async copyBcn(value: unknown): Promise<void> {
+    if (typeof value !== 'string' || value === '') return;
+    try {
+      await navigator.clipboard.writeText(value);
+      this.notice.set('BBG Contribution Number copied.');
+    } catch {
+      this.error.set('Could not copy the BCN. Please select and copy it manually.');
+    }
   }
 
   subscriptionReviewDetail(): DataRecord | null {
