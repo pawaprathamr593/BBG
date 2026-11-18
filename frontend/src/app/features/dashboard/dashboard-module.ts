@@ -117,6 +117,8 @@ export class DashboardModule implements OnInit {
   readonly subscriptionReview = signal<DataRecord | null>(null);
   readonly recordDetail = signal<DataRecord | null>(null);
   readonly recordDetailTitle = signal('');
+  readonly moderationHistory = signal<DataRecord[]>([]);
+  readonly moderationHistoryLoading = signal(false);
   readonly showPromotionComposer = signal(false);
   readonly promotionTitle = signal('');
   readonly promotionContent = signal('');
@@ -894,6 +896,25 @@ export class DashboardModule implements OnInit {
   subscriptionReviewHistory(): DataRecord[] {
     const history = this.subscriptionReview()?.['review_history'];
     return Array.isArray(history) ? history as DataRecord[] : [];
+  }
+
+  async loadModerationHistory(): Promise<void> {
+    if (this.moderationHistoryLoading()) return;
+    this.moderationHistoryLoading.set(true);
+    this.error.set('');
+    try {
+      const data = await this.request<{items?: DataRecord[]}>(
+        '/api/v1/admin/moderation/history',
+        'adminParam',
+        'listModerationHistory',
+        { page: 1, page_size: 25 },
+      );
+      this.moderationHistory.set(data.items ?? []);
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.moderationHistoryLoading.set(false);
+    }
   }
 
   async openRecordDetail(item: DataRecord): Promise<void> {
