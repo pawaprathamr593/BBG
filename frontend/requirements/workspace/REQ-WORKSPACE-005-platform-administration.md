@@ -78,7 +78,7 @@ Review screens remain usable on tablet/mobile; preserve theme tokens, focus and 
 
 ## Open questions
 - UNKNOWN: Confirm exact admin request DTO fields and reason requirements against backend workers.
-- UNKNOWN: Payment QR settings remain excluded pending an approved backend contract.
+- The API V1 catalogue does not yet document payment QR routes, although the route registry and AdminServices workers implement them on this branch. Reconcile the catalogue in a backend documentation task.
 
 ## Implementation log
 - Requirement created on approved branch HG_CODE_IMPROVEMENTS.
