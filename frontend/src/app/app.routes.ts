@@ -1,11 +1,12 @@
 import { Routes } from '@angular/router';
 import { WorkspaceLayout } from './features/workspace/workspace-layout';
 import { authenticatedWorkspaceGuard } from './core/auth/authenticated-workspace.guard';
+import { workspacePermissionGuard } from './core/workspace/workspace-permission.guard';
 
 export const routes: Routes = [
   { path: 'business/register', loadComponent: () => import('./features/business-registration/business-registration').then((m) => m.BusinessRegistration), title: 'Register your business | BBG' },
   { path: 'workspace', loadComponent: () => import('./features/business-workspace/business-workspace').then((m) => m.BusinessWorkspace), title: 'Business registration status | BBG' },
-  { path: 'dashboard', component: WorkspaceLayout, canActivate: [authenticatedWorkspaceGuard], children: [
+  { path: 'dashboard', component: WorkspaceLayout, canActivate: [authenticatedWorkspaceGuard], canActivateChild: [workspacePermissionGuard], children: [
     { path: '', loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard), title: 'BBG Dashboard | BBG' },
     { path: 'catalogue', loadComponent: () => import('./features/catalogue/catalogue').then((m) => m.Catalogue), title: 'Product Catalogue | BBG' },
     { path: ':section', loadComponent: () => import('./features/dashboard/dashboard-module').then((m) => m.DashboardModule), title: 'BBG Account & Business Module | BBG' },
