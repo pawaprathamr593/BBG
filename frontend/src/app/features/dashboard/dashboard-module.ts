@@ -10,6 +10,11 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
 type EnvelopeKey = 'authParam' | 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam' | 'tenantParam' | 'dashboardParam';
 interface ApiEnvelope<T = unknown> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION'; msgArr?: string[]; data?: T | []; }
 interface DataRecord { [key: string]: unknown; }
+interface ListResult {
+  items?: DataRecord[];
+  pagination?: { page?: number; page_size?: number; total?: number };
+}
+class StaleWorkspaceRequestError extends Error {}
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -76,6 +81,11 @@ export class DashboardModule implements OnInit {
   readonly unsupported = signal('');
   readonly unsupportedTitle = signal('This section is not available');
   readonly items = signal<DataRecord[]>([]);
+  readonly currentPage = signal(1);
+  readonly pageSize = 25;
+  readonly totalItems = signal(0);
+  readonly pageCount = computed(() => Math.max(1, Math.ceil(this.totalItems() / this.pageSize)));
+  private loadSequence = 0;
   readonly filterSearch = signal('');
   readonly filterStatus = signal('');
   readonly filterFrom = signal('');
@@ -264,31 +274,55 @@ export class DashboardModule implements OnInit {
     });
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.section.set(params.get('section') ?? 'profile');
+      this.currentPage.set(1);
       this.notice.set('');
       void this.load();
     });
   }
 
   private async request<T = unknown>(path: string, key: EnvelopeKey, actionType: string, actionData: DataRecord = {}): Promise<T> {
+    const loadId = this.loading() ? this.loadSequence : null;
+    const section = this.section();
+    const tenantId = this.workspace.activeTenantId();
+    const context = this.workspace.activeContext();
     const response = await firstValueFrom(this.http.post<ApiEnvelope<T>>(`${this.apiBaseUrl}${path}`, {
       [key]: { actionType, actionData },
     }));
+    if (loadId !== null && loadId !== this.loadSequence) throw new StaleWorkspaceRequestError();
+    if (section !== this.section() || tenantId !== this.workspace.activeTenantId() || context !== this.workspace.activeContext()) {
+      throw new StaleWorkspaceRequestError();
+    }
     if (response.status !== 'SUCCESS') throw new Error(response.msgArr?.join(' ') || 'The request could not be completed.');
     return response.data as T;
   }
 
+  private setListResult(result: ListResult): void {
+    const items = Array.isArray(result.items) ? result.items : [];
+    const total = Number(result.pagination?.total);
+    this.items.set(items);
+    this.totalItems.set(Number.isFinite(total) && total >= 0 ? total : items.length);
+  }
+
+  goToPage(page: number): void {
+    if (this.loading() || page < 1 || page > this.pageCount() || page === this.currentPage()) return;
+    this.currentPage.set(page);
+    void this.load();
+  }
+
   async load(): Promise<void> {
+    const loadId = ++this.loadSequence;
     this.loading.set(true); this.error.set(''); this.unsupported.set('');
-    this.items.set([]); this.summary.set(null); this.plans.set([]); this.moderationHistory.set([]); this.analyticsTrends.set([]);
+    this.items.set([]); this.totalItems.set(0); this.summary.set(null); this.plans.set([]); this.moderationHistory.set([]); this.analyticsTrends.set([]);
     try {
       await this.workspace.initialize();
+      if (loadId !== this.loadSequence) return;
       const tenantId = this.workspace.activeTenantId();
-      const pageData = { page: 1, page_size: 25, ...(tenantId ? { tenant_id: tenantId } : {}) };
+      const pageData = { page: this.currentPage(), page_size: this.pageSize, ...(tenantId ? { tenant_id: tenantId } : {}) };
       switch (this.section()) {
         case 'members': {
           if (!tenantId) return this.setUnsupported('Open Business Workspace to view team members.');
-          const data = await this.request<{items?:DataRecord[]}>('/api/v1/tenants/members/list','tenantParam','listTenantMembers',pageData);
-          this.items.set(data.items ?? []); break;
+          const data = await this.request<ListResult>('/api/v1/tenants/members/list','tenantParam','listTenantMembers',pageData);
+          this.setListResult(data); break;
         }
         case 'profile':
           if (!tenantId) return this.setUnsupported('Open Business Workspace to view your business profile.');
@@ -300,52 +334,52 @@ export class DashboardModule implements OnInit {
           break;
         case 'customers':
           if (tenantId) {
-            const data = await this.request<{items?:DataRecord[]}>('/api/v1/customers/tenant/list','customerParam','listTenantCustomers',pageData);
-            this.items.set(data.items ?? []);
+            const data = await this.request<ListResult>('/api/v1/customers/tenant/list','customerParam','listTenantCustomers',pageData);
+            this.setListResult(data);
             break;
           }
           {
             const profile = await this.auth.loadProfile();
             this.summary.set(profile as unknown as DataRecord);
             try {
-              const addresses = await this.request<{items?:DataRecord[]}>('/api/v1/customers/addresses/list','customerParam','listMyAddresses');
-              this.items.set(addresses.items ?? []);
+              const addresses = await this.request<ListResult>('/api/v1/customers/addresses/list','customerParam','listMyAddresses');
+              this.setListResult(addresses);
             } catch (addressError) {
-              this.items.set([]);
+              this.setListResult({ items: [] });
               this.notice.set('Your account details loaded, but saved addresses are temporarily unavailable. ' + this.auth.errorMessage(addressError));
             }
           }
           break;
         case 'orders':
           if (tenantId) {
-            const data = await this.request<{items?:DataRecord[]}>('/api/v1/orders/tenant/list','orderParam','listTenantOrders',pageData);
-            this.items.set(data.items ?? []);
+            const data = await this.request<ListResult>('/api/v1/orders/tenant/list','orderParam','listTenantOrders',pageData);
+            this.setListResult(data);
           } else {
-            const data = await this.request<{items?:DataRecord[]}>('/api/v1/orders/list','orderParam','listMyOrders',pageData);
-            this.items.set(data.items ?? []);
+            const data = await this.request<ListResult>('/api/v1/orders/list','orderParam','listMyOrders',pageData);
+            this.setListResult(data);
           }
           break;
         case 'enquiries':
           if (tenantId) {
-            const data = await this.request<{items?:DataRecord[]}>('/api/v1/enquiries/tenant/list','enquiryParam','listTenantEnquiries',pageData);
-            this.items.set(data.items ?? []);
+            const data = await this.request<ListResult>('/api/v1/enquiries/tenant/list','enquiryParam','listTenantEnquiries',pageData);
+            this.setListResult(data);
           } else {
-            const data = await this.request<{items?:DataRecord[]}>('/api/v1/enquiries/mine/list','enquiryParam','listMyEnquiries',{page:1,page_size:25});
-            this.items.set(data.items ?? []);
+            const data = await this.request<ListResult>('/api/v1/enquiries/mine/list','enquiryParam','listMyEnquiries',pageData);
+            this.setListResult(data);
           }
           break;
         case 'payments': {
           const data = tenantId
-            ? await this.request<{items?:DataRecord[]}>('/api/v1/payments/tenant/list','paymentParam','listTenantPayments',pageData)
-            : await this.request<{items?:DataRecord[]}>('/api/v1/payments/mine/list','paymentParam','listMyPayments',{page:1,page_size:25});
-          this.items.set(data.items ?? []);
+            ? await this.request<ListResult>('/api/v1/payments/tenant/list','paymentParam','listTenantPayments',pageData)
+            : await this.request<ListResult>('/api/v1/payments/mine/list','paymentParam','listMyPayments',pageData);
+          this.setListResult(data);
           break;
         }
         case 'promotions':
           if (!tenantId) return this.setUnsupported('Open Business Workspace to manage promotions.');
           {
-            const data = await this.request<{items?:DataRecord[]}>('/api/v1/promotions/mine/list','promotionParam','listMyPromotions',pageData);
-            this.items.set(data.items ?? []);
+            const data = await this.request<ListResult>('/api/v1/promotions/mine/list','promotionParam','listMyPromotions',pageData);
+            this.setListResult(data);
           }
           break;
         case 'subscriptions':
@@ -353,9 +387,9 @@ export class DashboardModule implements OnInit {
           {
             const [plans, subscriptions] = await Promise.all([
               this.request<{items?:DataRecord[]}>('/api/v1/subscriptions/plans/list','subscriptionParam','listActivePlans'),
-              this.request<{items?:DataRecord[]}>('/api/v1/subscriptions/mine/list','subscriptionParam','listMySubscriptions',pageData),
+              this.request<ListResult>('/api/v1/subscriptions/mine/list','subscriptionParam','listMySubscriptions',pageData),
             ]);
-            this.plans.set(plans.items ?? []); this.items.set(subscriptions.items ?? []);
+            this.plans.set(plans.items ?? []); this.setListResult(subscriptions);
           }
           break;
         case 'analytics':
@@ -376,23 +410,26 @@ export class DashboardModule implements OnInit {
           break;
         }
         case 'categories': {
-          const data = await this.request<{items?:DataRecord[]}>('/api/v1/admin/categories/list','adminParam','listAdminCategories',{page:1,page_size:100});
-          this.items.set(data.items ?? []); break;
+          const data = await this.request<ListResult>('/api/v1/admin/categories/list','adminParam','listAdminCategories',{page:this.currentPage(),page_size:100});
+          this.setListResult(data); break;
         }
         case 'platform-users': {
-          const data = await this.request<{items?:DataRecord[]}>('/api/v1/admin/users/list','adminParam','listPlatformUsers',{page:1,page_size:25});
-          this.items.set(data.items ?? []); break;
+          const data = await this.request<ListResult>('/api/v1/admin/users/list','adminParam','listPlatformUsers',{page:this.currentPage(),page_size:this.pageSize});
+          this.setListResult(data); break;
         }
         case 'business-approval': {
-          const data = await this.request<{items?:DataRecord[]}>('/api/v1/admin/businesses/pending/list','adminParam','listPendingBusinesses',{page:1,page_size:25});
-          this.items.set(data.items ?? []); break;
+          const data = await this.request<ListResult>('/api/v1/admin/businesses/pending/list','adminParam','listPendingBusinesses',{page:this.currentPage(),page_size:this.pageSize});
+          this.setListResult(data); break;
         }
         case 'subscription-approval': {
           const [pending, active] = await Promise.all([
-            this.request<{items?:DataRecord[]}>('/api/v1/admin/subscriptions/pending/list','adminParam','listPendingSubscriptions',{page:1,page_size:25}),
-            this.request<{items?:DataRecord[]}>('/api/v1/admin/subscriptions/active/list','adminParam','listActiveSubscriptions',{page:1,page_size:25}),
+            this.request<ListResult>('/api/v1/admin/subscriptions/pending/list','adminParam','listPendingSubscriptions',{page:this.currentPage(),page_size:this.pageSize}),
+            this.request<ListResult>('/api/v1/admin/subscriptions/active/list','adminParam','listActiveSubscriptions',{page:this.currentPage(),page_size:this.pageSize}),
           ]);
-          this.items.set([...(pending.items ?? []), ...(active.items ?? [])]); break;
+          this.setListResult({
+            items: [...(pending.items ?? []), ...(active.items ?? [])],
+            pagination: { total: Number(pending.pagination?.total ?? pending.items?.length ?? 0) + Number(active.pagination?.total ?? active.items?.length ?? 0) },
+          }); break;
         }
         case 'payment-qr-settings': {
           const data = await this.request<DataRecord>('/api/v1/admin/subscriptions/payment-qr/current','adminParam','getCurrentPaymentQrConfig');
@@ -404,8 +441,8 @@ export class DashboardModule implements OnInit {
           break;
         }
         case 'moderation': {
-          const data = await this.request<{items?:DataRecord[]}>('/api/v1/admin/moderation/queue','adminParam','listModerationQueue',{page:1,page_size:25});
-          this.items.set(data.items ?? []); break;
+          const data = await this.request<ListResult>('/api/v1/admin/moderation/queue','adminParam','listModerationQueue',{page:this.currentPage(),page_size:this.pageSize});
+          this.setListResult(data); break;
         }
         case 'system-health':
           this.summary.set(await this.request<DataRecord>('/api/v1/admin/health/summary','adminParam','getSafeSystemHealth'));
@@ -414,9 +451,11 @@ export class DashboardModule implements OnInit {
           this.setUnsupported('This dashboard section is not configured.');
       }
     } catch (error) {
-      this.error.set(this.auth.errorMessage(error));
+      if (loadId === this.loadSequence && !(error instanceof StaleWorkspaceRequestError)) {
+        this.error.set(this.auth.errorMessage(error));
+      }
     } finally {
-      this.loading.set(false);
+      if (loadId === this.loadSequence) this.loading.set(false);
     }
   }
 
