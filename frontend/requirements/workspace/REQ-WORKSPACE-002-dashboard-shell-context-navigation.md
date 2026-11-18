@@ -66,7 +66,7 @@ Preserve existing mobile navigation, touch targets, keyboard operation, visible 
 1. Only server-authorized contexts are selectable.
 2. Successful switching updates shell and navigation.
 3. Failed switching retains previous context and shows an error.
-4. Missing/unknown permission does not expose a protected destination.
+4. Missing/unknown permission does not expose a protected destination, including through direct URL navigation.
 5. Existing dashboard URLs and public/storefront shell behaviour remain unchanged.
 6. Unauthenticated requests to `/dashboard` and its child routes are redirected to `/login` after the startup session-restore attempt.
 
@@ -76,4 +76,5 @@ Preserve existing mobile navigation, touch targets, keyboard operation, visible 
 ## Implementation log
 - Requirement created on approved branch HG_CODE_IMPROVEMENTS.
 - Added `authenticatedWorkspaceGuard` to the `/dashboard` parent route. It checks the existing `AuthService.isAuthenticated()` state after the app initializer's session-restore attempt and redirects unauthenticated users to `/login`.
+- Added `workspacePermissionGuard` to child routes. It checks the active Personal, Business or Platform context against the exact existing permission keys; Personal activity sections remain available without invented GLOBAL permission codes. Unknown or out-of-context sections redirect to `/dashboard`.
 - Preserved all existing dashboard paths and context/permission semantics. Build and browser verification remain pending.
