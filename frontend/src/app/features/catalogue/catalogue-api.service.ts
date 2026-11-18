@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { filter, firstValueFrom, lastValueFrom, tap } from 'rxjs';
 import { API_BASE_URL } from '../../core/config/api-base-url';
 import { AuthService } from '../../core/auth/auth.service';
+import { environment } from '../../../environments/environment';
 
 export interface CatalogueApiResponse<T> {
   status: 'SUCCESS' | 'FAILED' | 'EXCEPTION';
@@ -131,9 +132,22 @@ export class CatalogueApiService {
     });
   }
 
+  private resolveProductMediaUploadUrl(uploadUrl: string): string {
+    if (environment.production) {
+      return uploadUrl;
+    }
+
+    const s3Url = new URL(uploadUrl);
+    if (s3Url.hostname !== 'bbg-839544975641-ap-south-1-an.s3.ap-south-1.amazonaws.com') {
+      throw new Error('The S3 upload URL does not match the configured local development proxy.');
+    }
+
+    return `/s3-upload${s3Url.pathname}${s3Url.search}`;
+  }
+
   async uploadAndLinkProductMedia(tenantId: number, productId: number, file: File, displayOrder: number, primary: boolean, onProgress?: (progress: number) => void): Promise<void> {
     const upload = await this.createProductMediaUploadUrl(tenantId, productId, file);
-    await lastValueFrom(this.http.put(upload.upload_url, file, {
+    await lastValueFrom(this.http.put(this.resolveProductMediaUploadUrl(upload.upload_url), file, {
       headers: new HttpHeaders(upload.headers ?? { 'Content-Type': file.type }),
       observe: 'events', reportProgress: true, responseType: 'text',
     }).pipe(
