@@ -238,7 +238,7 @@ final readonly class AdminDao
             [':tenant_id' => $tenantId, ':subscription_id' => $subscriptionId], 'getSubscriptionReviewHistory');
     }
 
-    public function allocateBcnSerial(ConnectionInterface $db): array
+    public function allocateBcnSerial(ConnectionInterface $db, int $adminId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         try {
@@ -255,9 +255,9 @@ final readonly class AdminDao
             }
             $next = $current + 1;
             $affected = $db->createCommand("UPDATE BBG_BCN_SERIAL_COUNTER
-                SET last_serial = :next_serial, updated_on = CURRENT_TIMESTAMP
+                SET last_serial = :next_serial, updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
                 WHERE id = 1 AND status = 'A' AND last_serial = :current_serial",
-                [':next_serial' => $next, ':current_serial' => $current])->execute();
+                [':next_serial' => $next, ':admin_id' => $adminId, ':current_serial' => $current])->execute();
             if ($affected !== 1) {
                 $resArr['msgArr'][] = 'The BCN serial number could not be allocated.';
                 return $resArr;
