@@ -104,7 +104,7 @@ final readonly class OrderDao
             [':tenant_id' => $tenantId, ':order_id' => $orderId], 'getOrderFulfilments');
     }
 
-    public function hasTenantOrderManagementPermission(ConnectionInterface $db, int $userId, int $tenantId, bool $lock = false): array
+    public function hasTenantOrderManagementPermission(ConnectionInterface $db, int $userId, int $tenantId, string $permissionCode, bool $lock = false): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $sql = "SELECT 1 AS allowed
@@ -119,14 +119,14 @@ final readonly class OrderDao
             INNER JOIN ROLES r ON r.id = ura.role_id AND r.scope_type = 'TENANT' AND r.status = 'A'
             INNER JOIN ROLE_PERMISSIONS rp ON rp.role_id = r.id AND rp.status = 'A'
             INNER JOIN PERMISSIONS p ON p.id = rp.permission_id
-                AND p.permission_code = 'ORDERS_MANAGE' AND p.module_code = 'ORDERS' AND p.status = 'A'
+                AND p.permission_code = :permission_code AND p.module_code = 'ORDER' AND p.status = 'A'
             WHERE u.id = :user_id AND u.status = 'A' AND u.account_status = 'ACTIVE'
                 AND tm.tenant_id = :tenant_id
             LIMIT 1";
         if ($lock) {
             $sql .= ' FOR UPDATE';
         }
-        return $this->one($db, $sql, [':user_id' => $userId, ':tenant_id' => $tenantId], 'hasTenantOrderManagementPermission');
+        return $this->one($db, $sql, [':user_id' => $userId, ':tenant_id' => $tenantId, ':permission_code' => $permissionCode], 'hasTenantOrderManagementPermission');
     }
 
     public function getTenantOrders(ConnectionInterface $db, int $tenantId, int $limit, int $offset): array
