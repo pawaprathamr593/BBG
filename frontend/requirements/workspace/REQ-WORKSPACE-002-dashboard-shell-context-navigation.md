@@ -51,7 +51,7 @@ Routes: existing /dashboard and /dashboard/:section. Requires authenticated sess
 | Tenant detail | POST | /api/v1/tenants/mine/detail | getMyTenant | Existing |
 
 ## 8. Permissions
-Reuse exact existing keys: BUSINESS_PROFILE_MANAGE, CATALOGUE_MANAGE, CUSTOMERS_MANAGE, ENQUIRIES_MANAGE, ORDERS_MANAGE, PAYMENTS_VIEW, PROMOTIONS_MANAGE, SUBSCRIPTIONS_MANAGE, TENANT_MEMBERS_VIEW, ANALYTICS_VIEW, PLATFORM_USERS_MANAGE, BUSINESS_APPROVE, SUBSCRIPTIONS_APPROVE, CATEGORIES_MANAGE, MODERATION_MANAGE, SYSTEM_HEALTH_VIEW. Unknown permission denies access. Personal GLOBAL navigation remains as currently implemented.
+Use the seeded permission catalogue returned by `getPermissions`: tenant view keys include `business.view`, `catalogue.view`, `customer.view`, `enquiry.view`, `order.view`, `payment.view`, `promotion.view`, `subscription.view`, `tenant.view` and `report.view`; platform view/review keys include `user.view`, `business.approve`, `subscription.approve`, `admin.view` and `report.view`; consumer keys include `user.view`, `order.own.view` and `enquiry.own.view`. `CONSUMER` rows may be returned with `PLATFORM` scope by the current demo seed and are treated as Personal-only in the frontend; they must never grant Platform Administration context. Unknown permission denies access. The SQL seed labels this matrix as a proposed starter policy.
 
 ## 9. Rules and validation
 Backend authorization is authoritative. Never trust browser-supplied tenant IDs without membership and backend checks. Tenant roles do not imply Platform access. Do not persist access tokens in browser storage. Preserve route paths and shell behaviour.
@@ -75,6 +75,7 @@ Preserve existing mobile navigation, touch targets, keyboard operation, visible 
 
 ## Implementation log
 - Added a shared workspace navigation registry so the sidebar and overview use the same context and permission filtering.
+- Replaced legacy synthetic permission names with exact seeded view/review permission codes; the Platform Admin and Platform Super Admin contexts remain separated from Consumer permissions.
 - Added an explicit empty-permissions state on the overview rather than silently presenting an empty workspace.
 - Fixed principal-change detection so session restoration's initial null user ID to loaded profile ID does not clear workspace initialization.
 - Requirement created on approved branch HG_CODE_IMPROVEMENTS.
