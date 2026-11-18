@@ -18,7 +18,7 @@ Consumers need a Personal workspace to manage their own profile and addresses an
 | Consumer / account holder | Mobile, tablet, desktop | Manage own profile, addresses, orders, enquiries and payments |
 
 ## 3. Scope
-**In scope:** Own profile read/update; own customer profile and address list/create/update/delete/default; own order, enquiry and payment lists/details; consumer summary; clear loading, empty, error and success feedback.
+**In scope:** Own profile read/update; own customer profile and address list/create/update/delete/default; own order and enquiry lists/details; consumer summary; clear loading, empty, error and success feedback. The own-payment API exists, but My Payments is not exposed until the seed defines a matching consumer permission.
 **Out of scope:** Other customers' records, tenant-wide directory, tenant order actions, business enquiry responses, payment gateway, refunds or new fields/endpoints.
 
 ## 4. Entry and context
