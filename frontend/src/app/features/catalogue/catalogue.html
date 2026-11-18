@@ -5,7 +5,7 @@
           <h1>Product catalogue</h1>
           <p class="subtitle">Manage your business products and categories in one place.</p>
         </div>
-        <button class="primary-button" type="button" [disabled]="!canManage() || !units().length" (click)="openCreate()">＋ Add product</button>
+        <button class="primary-button" type="button" [disabled]="!canCreate() || !units().length" (click)="openCreate()">＋ Add product</button>
       </header>
 
       @if (loading()) {
@@ -39,7 +39,7 @@
             @if (productsLoading()) {
               <div class="inline-state">Loading products…</div>
             } @else if (!products().length) {
-              <div class="empty-state"><span>▦</span><strong>No products found</strong><p>Add your first product or adjust the search term.</p><button class="primary-button" type="button" (click)="openCreate()">Add product</button></div>
+              <div class="empty-state"><span>▦</span><strong>No products found</strong><p>Add your first product or adjust the search term.</p>@if (canCreate()) { <button class="primary-button" type="button" (click)="openCreate()">Add product</button> }</div>
             } @else {
               <div class="table-wrap">
                 <table>
@@ -51,7 +51,7 @@
                         <td>{{ product.category_name || 'Uncategorised' }}</td>
                         <td>{{ product.selling_price | number:'1.2-2' }} <small>{{ product.unit_symbol || '' }}</small></td>
                         <td><span class="status" [class.published]="product.publication_status === 'PUBLISHED'">{{ product.publication_status }}</span></td>
-                        <td class="actions"><button type="button" (click)="edit(product)">Edit</button><button type="button" class="danger-link" (click)="removeProduct(product)">Delete</button></td>
+                        <td class="actions">@if (canUpdate()) { <button type="button" (click)="edit(product)">Edit</button> } @if (canDelete()) { <button type="button" class="danger-link" (click)="removeProduct(product)">Delete</button> }</td>
                       </tr>
                     }
                   </tbody>
@@ -66,11 +66,11 @@
             <form class="category-form" (ngSubmit)="addCategory()">
               <label>Category name<input name="categoryName" [(ngModel)]="categoryName" maxlength="120" required placeholder="e.g. Office furniture"></label>
               <label>Description <span class="optional">(optional)</span><input name="categoryDescription" [(ngModel)]="categoryDescription" maxlength="500" placeholder="Short description"></label>
-              <button class="secondary-button full-width" type="submit" [disabled]="savingCategory() || !categoryName.trim()"> {{ savingCategory() ? 'Adding…' : 'Add category' }} </button>
+              <button class="secondary-button full-width" type="submit" [disabled]="!canCreate() || savingCategory() || !categoryName.trim()"> {{ savingCategory() ? 'Adding…' : 'Add category' }} </button>
             </form>
             <ul class="category-list">
               @for (category of categories(); track category.id) {
-                <li><div><strong>{{ category.category_name }}</strong><small>{{ category.description || 'No description' }}</small></div><button type="button" class="icon-button" [attr.aria-label]="'Delete ' + category.category_name" (click)="removeCategory(category)">×</button></li>
+                <li><div><strong>{{ category.category_name }}</strong><small>{{ category.description || 'No description' }}</small></div>@if (canDelete()) { <button type="button" class="icon-button" [attr.aria-label]="'Delete ' + category.category_name" (click)="removeCategory(category)">×</button> }</li>
               } @empty { <li class="category-empty">No categories created yet.</li> }
             </ul>
           </aside>
@@ -119,7 +119,7 @@
                         @else if (media.url && media.media_type === 'DOCUMENT') { <a class="media-kind" [href]="media.url" target="_blank" rel="noopener">PDF</a> }
                         @else { <span class="media-kind">{{ media.media_type }}</span> }
                         <div><strong>{{ media.original_file_name }}</strong><small>{{ formatFileSize(media.file_size_bytes) }} · {{ media.is_primary ? 'Primary image' : media.media_type }}</small></div>
-                        <button type="button" class="icon-button" [disabled]="mediaBusy()" [attr.aria-label]="'Delete ' + media.original_file_name" (click)="removeExistingMedia(media)">×</button>
+                        @if (canUpdate()) { <button type="button" class="icon-button" [disabled]="mediaBusy()" [attr.aria-label]="'Delete ' + media.original_file_name" (click)="removeExistingMedia(media)">×</button> }
                       </div>
                     }
                   </div>
@@ -128,7 +128,7 @@
               </section>
               <p class="form-note">New products are saved as drafts. Publishing and product limits are validated by BBG based on your active subscription.</p>
               @if (formError()) { <p class="form-error" role="alert">{{ formError() }}</p> }
-              <footer><button type="button" class="secondary-button" (click)="closeForm()">Cancel</button><button type="submit" class="primary-button" [disabled]="saving()">{{ saving() ? 'Saving…' : 'Save product' }}</button></footer>
+              <footer><button type="button" class="secondary-button" (click)="closeForm()">Cancel</button><button type="submit" class="primary-button" [disabled]="saving() || (editingId() ? !canUpdate() : !canCreate())">{{ saving() ? 'Saving…' : 'Save product' }}</button></footer>
             </form>
           </section>
         </div>
