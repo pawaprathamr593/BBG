@@ -28,9 +28,12 @@
       @if (notice()) {
         <div class="notice" role="status">{{ notice() }}</div>
       }
+      @if (error() && (items().length > 0 || summary())) {
+        <div class="notice error" role="alert">{{ error() }}</div>
+      }
       @if (loading()) {
         <section class="state-panel" role="status"><span class="spinner"></span><div><strong>Loading {{ title().toLowerCase() }}</strong><p>Retrieving the latest information from BBG.</p></div></section>
-      } @else if (error()) {
+      } @else if (error() && !items().length && !summary()) {
         <section class="state-panel error" role="alert"><strong>We couldn’t load this section.</strong><p>{{ error() }}</p><button type="button" (click)="load()">Try again</button></section>
       } @else if (unsupported()) {
         <section class="state-panel"><span class="state-icon">ⓘ</span><strong>{{ unsupportedTitle() }}</strong><p>{{ unsupported() }}</p></section>
