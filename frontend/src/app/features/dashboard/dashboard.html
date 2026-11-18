@@ -41,16 +41,39 @@
           </section>
         }
 
-        @if (isPersonalContext() && personalShortcuts().length) {
-          <section class="personal-shortcuts">
-            <div><p class="eyebrow">MY ACCOUNT</p><h2>Your activity</h2><p>View your customer activity and personal account details.</p></div>
-            <div class="shortcut-grid">
-              @for (shortcut of personalShortcuts(); track shortcut.route) {
-                <a [routerLink]="shortcut.route"><span>{{ shortcut.icon }}</span><strong>{{ shortcut.title }}</strong><small>{{ shortcut.description }}</small></a>
+        <section class="modules-section" aria-labelledby="workspace-modules-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">{{ isPersonalContext() ? 'MY ACCOUNT' : isPlatformContext() ? 'PLATFORM ADMINISTRATION' : 'BUSINESS WORKSPACE' }}</p>
+              <h2 id="workspace-modules-heading">{{ isPersonalContext() ? 'Your account modules' : isPlatformContext() ? 'Administration modules' : 'Business modules' }}</h2>
+              <p>Open a module to continue working in this workspace.</p>
+            </div>
+            @if (moduleCards().length) {
+              <span class="module-count">{{ moduleCards().length }} available</span>
+            }
+          </div>
+          @if (moduleCards().length) {
+            <div class="module-grid">
+              @for (module of moduleCards(); track module.route) {
+                <a class="module-card" [routerLink]="module.route">
+                  <div class="module-top">
+                    <span class="module-icon"><app-workspace-nav-icon [name]="module.icon" /></span>
+                    <span class="access-indicator"><i></i>Available</span>
+                  </div>
+                  <h3>{{ module.label }}</h3>
+                  <p>{{ module.description }}</p>
+                  <div class="module-foot"><span>{{ isPersonalContext() ? 'PERSONAL' : isPlatformContext() ? 'PLATFORM' : 'BUSINESS' }}</span><span>Open module →</span></div>
+                </a>
               }
             </div>
-          </section>
-        }
+          } @else {
+            <section class="empty-modules" role="status">
+              <span class="empty-icon" aria-hidden="true">⌑</span>
+              <h3>No modules are assigned in this workspace</h3>
+              <p>Your account has no matching module permissions in this context. Ask your platform administrator to review the role and permission assignments. Your access will update when the server returns the relevant permissions.</p>
+            </section>
+          }
+        </section>
 
 
       }
