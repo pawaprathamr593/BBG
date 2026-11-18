@@ -73,6 +73,7 @@ Verify 360–390px, tablet and desktop; light and dark themes; no horizontal ove
 - UNKNOWN: Manual visual verification requires running frontend and authenticated test accounts for each context.
 
 ## Implementation log
+- Corrected workspace principal tracking so initial session restoration and profile loading do not invalidate the in-flight workspace initialization; account changes still clear prior-user context.
 - Requirement created on approved branch HG_CODE_IMPROVEMENTS.
 - Removed manual Bearer header construction from workspace dashboard API calls so the shared auth interceptor owns API authentication.
 - Dashboard summary loading now responds to active workspace context changes and ignores stale responses from an earlier context.
