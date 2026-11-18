@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Implementations;
 
 use App\Dao\BusinessDao;
+use App\Dao\TenantDao;
 use App\Services\Interfaces\IAuthServices;
 use App\Services\Interfaces\IBusinessServices;
 use Psr\Log\LoggerInterface;
@@ -16,6 +17,7 @@ final readonly class BusinessServices implements IBusinessServices
     public function __construct(
         private ConnectionInterface $db,
         private BusinessDao $dao,
+        private TenantDao $tenantDao,
         private IAuthServices $authServices,
         private LoggerInterface $logger,
     ) {}
@@ -125,6 +127,10 @@ final readonly class BusinessServices implements IBusinessServices
             return $this->propagateFailure($principal, 'BusinessServices::getBusinessApplication');
         }
         $tenantId = $this->positiveInt($actionData['tenant_id'] ?? 0) ?? 0;
+        if ($tenantId > 0) {
+            $access = $this->requireTenantPermission((int) $principal['data']['user_id'], $tenantId, 'business.view', 'BusinessServices::getBusinessApplication');
+            if ($access['status'] !== 'SUCCESS') return $access;
+        }
         $result = $this->dao->getMyBusinessApplication($this->db, (int) $principal['data']['user_id'], $tenantId);
         if ($result['status'] !== 'SUCCESS') {
             return $this->propagateFailure($result, 'BusinessServices::getBusinessApplication');
@@ -144,6 +150,8 @@ final readonly class BusinessServices implements IBusinessServices
         if ($resArr['status'] !== 'SUCCESS') {
             return $resArr;
         }
+        $entitlement = $this->requireTenantEntitlement((int) $resArr['data']['tenant_id'], 'business.profile', 'BusinessServices::getBusinessProfile');
+        if ($entitlement['status'] !== 'SUCCESS') return $entitlement;
         if (($resArr['data']['approval_status'] ?? '') !== 'APPROVED') {
             $resArr['status'] = 'FAILED';
             $resArr['msgArr'][] = 'Business profile is not approved.';
@@ -197,6 +205,11 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = 'business_id and tenant_id are required to update or resubmit an application.';
             return $resArr;
         }
+        if ($operation !== 'submit') {
+            $access = $this->requireTenantPermission($userId, $tenantId, 'business.update', 'BusinessServices::manageBusinessApplication');
+            if ($access['status'] !== 'SUCCESS') return $access;
+        }
+        // Initial business application submission is an authenticated onboarding flow.
         if ($operation === 'submit' && ($businessId > 0 || $tenantId > 0)) {
             $resArr['msgArr'][] = 'A new application must not include business_id or tenant_id.';
             return $resArr;
@@ -343,6 +356,10 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = 'A valid tenant_id is required.';
             return $resArr;
         }
+        $access = $this->requireTenantPermission((int) $principal['data']['user_id'], $tenantId, 'business.view', 'BusinessServices::getMyStorefront');
+        if ($access['status'] !== 'SUCCESS') return $access;
+        $entitlement = $this->requireTenantEntitlement($tenantId, 'storefront.enabled', 'BusinessServices::getMyStorefront');
+        if ($entitlement['status'] !== 'SUCCESS') return $entitlement;
         $business = $this->dao->getMyBusinessApplication($this->db, (int) $principal['data']['user_id'], $tenantId);
         if ($business['status'] !== 'SUCCESS' || $business['data'] === []) {
             return $this->propagateFailure($business, 'BusinessServices::getMyStorefront');
@@ -373,6 +390,10 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = 'A valid tenant_id is required.';
             return $resArr;
         }
+        $access = $this->requireTenantPermission($userId, $tenantId, 'business.update', 'BusinessServices::manageMyStorefront');
+        if ($access['status'] !== 'SUCCESS') return $access;
+        $entitlement = $this->requireTenantEntitlement($tenantId, 'storefront.enabled', 'BusinessServices::manageMyStorefront');
+        if ($entitlement['status'] !== 'SUCCESS') return $entitlement;
         $business = $this->dao->getMyBusinessApplication($this->db, $userId, $tenantId);
         if ($business['status'] !== 'SUCCESS' || $business['data'] === []) {
             return $this->propagateFailure($business, 'BusinessServices::manageMyStorefront');
@@ -497,6 +518,10 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = 'tenant_id, business_id and business_name are required.';
             return $resArr;
         }
+        $access = $this->requireTenantPermission((int) $principal['data']['user_id'], $tenantId, 'business.update', 'BusinessServices::manageBusinessProfile');
+        if ($access['status'] !== 'SUCCESS') return $access;
+        $entitlement = $this->requireTenantEntitlement($tenantId, 'business.profile', 'BusinessServices::manageBusinessProfile');
+        if ($entitlement['status'] !== 'SUCCESS') return $entitlement;
         $existing = $this->dao->getMyBusinessApplication($this->db, (int) $principal['data']['user_id'], $tenantId);
         if ($existing['status'] !== 'SUCCESS') {
             return $this->propagateFailure($existing, 'BusinessServices::manageBusinessProfile');
@@ -528,6 +553,30 @@ final readonly class BusinessServices implements IBusinessServices
             return $this->propagateFailure($resArr, 'BusinessServices::manageBusinessProfile');
         }
         return $resArr;
+    }
+
+    private function requireTenantPermission(int $userId, int $tenantId, string $permissionCode, string $context): array
+    {
+        $permission = $this->tenantDao->hasTenantPermission($this->db, $userId, $tenantId, $permissionCode);
+        if ($permission['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($permission, $context);
+        }
+        if ($permission['data'] === []) {
+            return ['status' => 'FAILED', 'msgArr' => [$permissionCode . ' permission is required for this tenant.'], 'data' => []];
+        }
+        return ['status' => 'SUCCESS', 'msgArr' => [], 'data' => []];
+    }
+
+    private function requireTenantEntitlement(int $tenantId, string $entitlementCode, string $context): array
+    {
+        $entitlement = $this->tenantDao->hasTenantEntitlement($this->db, $tenantId, $entitlementCode);
+        if ($entitlement['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($entitlement, $context);
+        }
+        if ($entitlement['data'] === []) {
+            return ['status' => 'FAILED', 'msgArr' => ['An active subscription with ' . $entitlementCode . ' entitlement is required.'], 'data' => []];
+        }
+        return ['status' => 'SUCCESS', 'msgArr' => [], 'data' => []];
     }
 
     private function principal(array $actionData): array
