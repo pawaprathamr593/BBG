@@ -120,7 +120,7 @@ final readonly class PromotionServices implements IPromotionServices
     private function getMyPromotions(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'promotion.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'PromotionServices::getMyPromotions');
         }
@@ -162,7 +162,7 @@ final readonly class PromotionServices implements IPromotionServices
     private function getMyPromotion(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'promotion.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'PromotionServices::getMyPromotion');
         }
@@ -187,7 +187,7 @@ final readonly class PromotionServices implements IPromotionServices
     private function getMyPromotionMedia(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'promotion.view');
         if ($context['status'] !== 'SUCCESS') return $this->propagateFailure($context, 'PromotionServices::getMyPromotionMedia');
         $promotionId = $this->positiveInt($actionData['promotion_id'] ?? null);
         if ($promotionId === null) {
@@ -214,15 +214,17 @@ final readonly class PromotionServices implements IPromotionServices
     private function generatePromotionMediaUploadUrl(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'promotion.update');
         if ($context['status'] !== 'SUCCESS') return $this->propagateFailure($context, 'PromotionServices::generatePromotionMediaUploadUrl');
         $tenantId = (int) $context['data']['tenant_id'];
-        $dailyEntitlement = $this->dao->getActivePromotionDailyLimit($this->db, $tenantId);
-        if ($dailyEntitlement['status'] !== 'SUCCESS') return $this->propagateFailure($dailyEntitlement, 'PromotionServices::generatePromotionMediaUploadUrl');
-        $dailyLimit = $dailyEntitlement['data']['entitlement_value'] ?? null;
-        if (!is_numeric($dailyLimit) || (int) $dailyLimit < 1) {
-            $resArr['msgArr'][] = 'An active subscription with a valid DAILY_PROMOTION_LIMIT entitlement is required for post media.';
+        $promotionEntitlement = $this->dao->hasPromotionEntitlement($this->db, $tenantId);
+        if ($promotionEntitlement['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($promotionEntitlement, 'PromotionServices::generatePromotionMediaUploadUrl');
+        }
+        if ($promotionEntitlement['data'] === []) {
+            $resArr['msgArr'][] = 'An active subscription with promotions.enabled entitlement is required.';
             return $resArr;
+        }
         }
         $promotionId = $this->positiveInt($actionData['promotion_id'] ?? null);
         $fileName = $this->requiredText($actionData['original_file_name'] ?? '', 255);
@@ -259,17 +261,19 @@ final readonly class PromotionServices implements IPromotionServices
     private function managePromotionMedia(array $actionData, string $operation): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, $operation === 'delete' ? 'promotion.delete' : 'promotion.update');
         if ($context['status'] !== 'SUCCESS') return $this->propagateFailure($context, 'PromotionServices::managePromotionMedia');
         $tenantId = (int) $context['data']['tenant_id'];
         $userId = (int) $context['data']['user_id'];
         if ($operation === 'link') {
-            $dailyEntitlement = $this->dao->getActivePromotionDailyLimit($this->db, $tenantId);
-            if ($dailyEntitlement['status'] !== 'SUCCESS') return $this->propagateFailure($dailyEntitlement, 'PromotionServices::managePromotionMedia');
-            $dailyLimit = $dailyEntitlement['data']['entitlement_value'] ?? null;
-            if (!is_numeric($dailyLimit) || (int) $dailyLimit < 1) {
-                $resArr['msgArr'][] = 'An active subscription with a valid DAILY_PROMOTION_LIMIT entitlement is required for post media.';
-                return $resArr;
+            $promotionEntitlement = $this->dao->hasPromotionEntitlement($this->db, $tenantId);
+        if ($promotionEntitlement['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($promotionEntitlement, 'PromotionServices::managePromotionMedia');
+        }
+        if ($promotionEntitlement['data'] === []) {
+            $resArr['msgArr'][] = 'An active subscription with promotions.enabled entitlement is required.';
+            return $resArr;
+        }
             }
         }
         $promotionId = $this->positiveInt($actionData['promotion_id'] ?? null);
@@ -360,7 +364,7 @@ final readonly class PromotionServices implements IPromotionServices
     private function getMyPromotionEngagement(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'promotion.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'PromotionServices::getMyPromotionEngagement');
         }
@@ -385,7 +389,7 @@ final readonly class PromotionServices implements IPromotionServices
     private function manageMyPromotion(array $actionData, string $operation): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, match ($operation) { 'create' => 'promotion.create', 'delete' => 'promotion.delete', default => 'promotion.update' });
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'PromotionServices::manageMyPromotion');
         }
@@ -469,13 +473,12 @@ final readonly class PromotionServices implements IPromotionServices
         }
 
         if ($operation === 'create') {
-            $entitlement = $this->dao->getActivePromotionDailyLimit($this->db, $tenantId);
+            $entitlement = $this->dao->hasPromotionEntitlement($this->db, $tenantId);
             if ($entitlement['status'] !== 'SUCCESS') {
                 return $this->propagateFailure($entitlement, 'PromotionServices::manageMyPromotion');
             }
-            $dailyLimit = $entitlement['data']['entitlement_value'] ?? null;
-            if (!is_numeric($dailyLimit) || (int) $dailyLimit < 1) {
-                $resArr['msgArr'][] = 'An active subscription with a valid DAILY_PROMOTION_LIMIT entitlement is required to create promotions.';
+            if ($entitlement['data'] === []) {
+                $resArr['msgArr'][] = 'An active subscription with promotions.enabled entitlement is required.';
                 return $resArr;
             }
             return $this->dao->insertPromotion($this->db, $tenantId, $title, $content, $validUntil, $userId);
@@ -486,50 +489,20 @@ final readonly class PromotionServices implements IPromotionServices
     private function getPromotionQuota(int $tenantId, int $userId, int $promotionId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $entitlement = $this->dao->getActivePromotionDailyLimit($this->db, $tenantId);
+        $entitlement = $this->dao->hasPromotionEntitlement($this->db, $tenantId);
         if ($entitlement['status'] !== 'SUCCESS') {
             return $this->propagateFailure($entitlement, 'PromotionServices::getPromotionQuota');
         }
-        $limit = $entitlement['data']['entitlement_value'] ?? null;
-        if (!is_numeric($limit) || (int) $limit < 1) {
-            $resArr['msgArr'][] = 'An active subscription with a valid DAILY_PROMOTION_LIMIT entitlement is required to publish promotions.';
+        if ($entitlement['data'] === []) {
+            $resArr['msgArr'][] = 'An active subscription with promotions.enabled entitlement is required to publish promotions.';
             return $resArr;
         }
-
-        $tenant = $this->tenantDao->getMyTenant($this->db, $userId, $tenantId);
-        if ($tenant['status'] !== 'SUCCESS' || $tenant['data'] === []) {
-            return $this->propagateFailure($tenant, 'PromotionServices::getPromotionQuota');
-        }
-        $timezoneName = trim((string) ($tenant['data']['timezone'] ?? 'UTC'));
-        try {
-            $timezone = new \DateTimeZone($timezoneName !== '' ? $timezoneName : 'UTC');
-            $localStart = new \DateTimeImmutable('today', $timezone);
-            $localEnd = $localStart->modify('+1 day');
-            $utc = new \DateTimeZone('UTC');
-            $startUtc = $localStart->setTimezone($utc)->format('Y-m-d H:i:s');
-            $endUtc = $localEnd->setTimezone($utc)->format('Y-m-d H:i:s');
-        } catch (\Throwable $exception) {
-            $resArr['msgArr'][] = 'The tenant timezone is invalid; promotion publishing is blocked until it is corrected.';
-            return $resArr;
-        }
-
-        $count = $this->dao->countTenantPromotionsPublishedInRange(
-            $this->db, $tenantId, $startUtc, $endUtc, $promotionId,
-        );
-        if ($count['status'] !== 'SUCCESS') {
-            return $this->propagateFailure($count, 'PromotionServices::getPromotionQuota');
-        }
-        if ((int) ($count['data']['total'] ?? 0) >= (int) $limit) {
-            $resArr['msgArr'][] = 'The tenant daily promotion publishing limit has been reached for its local calendar day.';
-            return $resArr;
-        }
-
         $resArr['status'] = 'SUCCESS';
-        $resArr['data'] = ['daily_limit' => (int) $limit];
+        $resArr['data'] = ['enabled' => true];
         return $resArr;
     }
 
-    private function tenantContext(array $actionData): array
+    private function tenantContext(array $actionData, string $permissionCode): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $principal = $this->authServices->getAuth([
@@ -545,13 +518,13 @@ final readonly class PromotionServices implements IPromotionServices
             return $resArr;
         }
         $permission = $this->tenantDao->hasTenantPermission(
-            $this->db, (int) $principal['data']['user_id'], $tenantId, 'PROMOTIONS_MANAGE',
+            $this->db, (int) $principal['data']['user_id'], $tenantId, $permissionCode,
         );
         if ($permission['status'] !== 'SUCCESS') {
             return $this->propagateFailure($permission, 'PromotionServices::tenantContext');
         }
         if ($permission['data'] === []) {
-            $resArr['msgArr'][] = 'PROMOTIONS_MANAGE permission is required for this tenant.';
+            $resArr['msgArr'][] = 'The required promotion permission is missing for this tenant.';
             return $resArr;
         }
         $resArr['status'] = 'SUCCESS';
