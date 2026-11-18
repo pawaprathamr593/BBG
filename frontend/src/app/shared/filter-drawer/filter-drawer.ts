@@ -1,5 +1,6 @@
 import {
   AfterViewChecked,
+  ChangeDetectionStrategy,
   Component,
   ElementRef,
   EventEmitter,
@@ -15,54 +16,8 @@ import {
 @Component({
   selector: 'app-filter-drawer',
   standalone: true,
-  template: `
-    <button
-      #trigger
-      class="filter-fab"
-      type="button"
-      [attr.aria-expanded]="open"
-      aria-haspopup="dialog"
-      aria-controls="bbg-filter-drawer"
-      aria-label="Open advanced filters"
-      (click)="openChange.emit(true)">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 6h16M7 12h10m-7 6h4" />
-        <circle cx="8" cy="6" r="1.5" />
-        <circle cx="15" cy="12" r="1.5" />
-        <circle cx="12" cy="18" r="1.5" />
-      </svg>
-      <span>Filters</span>
-      @if (activeCount > 0) {
-        <span class="filter-count" aria-label="{{ activeCount }} active filters">{{ activeCount }}</span>
-      }
-    </button>
-
-    @if (open) {
-      <div class="filter-backdrop" aria-hidden="true" (click)="close()"></div>
-      <section
-        #drawer
-        id="bbg-filter-drawer"
-        class="filter-drawer"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="bbg-filter-title">
-        <header class="drawer-header">
-          <div>
-            <p class="drawer-eyebrow">REFINE RESULTS</p>
-            <h2 id="bbg-filter-title">Filters</h2>
-          </div>
-          <button class="drawer-close" type="button" aria-label="Close filters" data-autofocus (click)="close()">×</button>
-        </header>
-        <div class="drawer-body">
-          <ng-content />
-        </div>
-        <footer class="drawer-footer">
-          <button class="drawer-reset" type="button" (click)="reset.emit()">Reset</button>
-          <button class="drawer-apply" type="button" (click)="apply.emit()">Apply Filters</button>
-        </footer>
-      </section>
-    }
-  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './filter-drawer.html',
   styles: [`
     :host{display:contents}
     .filter-fab{position:fixed;z-index:29;inset-inline-end:max(20px,env(safe-area-inset-right));inset-block-end:max(22px,env(safe-area-inset-bottom));display:inline-flex;min-width:58px;min-height:54px;align-items:center;justify-content:center;gap:9px;padding:0 17px;color:#17231b;background:#f5d928;border:1px solid #e5ca17;border-radius:999px;box-shadow:0 8px 28px rgba(16,42,27,.24);font:inherit;font-size:.82rem;font-weight:850;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease}

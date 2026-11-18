@@ -1,0 +1,28 @@
+    <main class="registration-page">
+      <section class="registration-card">
+        <a class="back-link" href="/" (click)="goHome($event)">← Back to BBG</a>
+        <p class="eyebrow">JOIN THE BBG BUSINESS NETWORK</p>
+        <h1>Register your business</h1>
+        <p class="intro">Tell us about your business. After registration, you can choose a plan, complete the payment and submit your receipt for review.</p>
+
+        @if (error()) { <div class="notice error" role="alert">{{ error() }}</div> }
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+          <div class="field-grid">
+            <label class="field full"><span>Business name *</span><input formControlName="business_name" maxlength="180" placeholder="Your registered business name" (input)="updateSlug()" /><small>Use the name customers know your business by.</small></label>
+            <label class="field full"><span>Storefront URL *</span><div class="slug-control"><span>bbg.in/store/</span><input formControlName="business_slug" maxlength="200" placeholder="your-business-name" /></div><small>Lowercase letters, numbers and hyphens only.</small></label>
+            <label class="field"><span>Business email *</span><input type="email" formControlName="business_email" maxlength="190" placeholder="name@business.com" /></label>
+            <label class="field"><span>Business phone *</span><input type="tel" formControlName="business_phone" maxlength="25" placeholder="+91 98765 43210" /></label>
+            <label class="field"><span>WhatsApp number</span><input type="tel" formControlName="whatsapp_number" maxlength="25" placeholder="Optional" /></label>
+            <label class="field"><span>Postal code *</span><input formControlName="postal_code" maxlength="15" placeholder="PIN code" /></label>
+            <label class="field full"><span>Business description</span><textarea formControlName="business_description" rows="4" maxlength="5000" placeholder="Describe your products, services and what makes your business unique."></textarea></label>
+            <label class="field full"><span>Address line 1 *</span><input formControlName="address_line_1" maxlength="190" placeholder="Building, street and area" /></label>
+            <label class="field full"><span>Address line 2</span><input formControlName="address_line_2" maxlength="190" placeholder="Landmark, suite or floor (optional)" /></label>
+            <label class="field"><span>City *</span><input formControlName="city" maxlength="100" placeholder="City" /></label>
+            <label class="field"><span>State *</span><input formControlName="state" maxlength="100" placeholder="State" /></label>
+          </div>
+          <div class="form-note"><strong>What happens next?</strong><span>After you submit your business details, you’ll continue to plan selection and payment. Your subscription becomes active only after the BBG team approves your payment proof.</span></div>
+          <button class="submit-button" type="submit" [disabled]="busy()">{{ busy() ? 'Submitting application…' : 'Submit business registration' }} <span aria-hidden="true">→</span></button>
+        </form>
+      </section>
+    </main>
+  

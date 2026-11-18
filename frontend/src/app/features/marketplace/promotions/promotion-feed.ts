@@ -4,23 +4,7 @@ import { MarketplaceApiService, MarketplacePromotion } from '../../../core/marke
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-promotion-feed',
-  template: `
-    <main class="page">
-      <section class="intro"><p class="eyebrow">OFFERS FROM THE BBG COMMUNITY</p><h1>Discover <span>promotions</span></h1><p class="lead">Keep up with the latest public promotions shared by businesses on BBG.</p></section>
-      <section class="content">
-        <div class="heading"><div><p class="eyebrow">WHAT'S HAPPENING</p><h2>Latest promotions</h2></div><span>{{ promotions().length }} available</span></div>
-        @if (loading()) { <div class="state" role="status">Loading promotions…</div> }
-        @else if (error()) { <div class="state error" role="alert">{{ error() }}</div> }
-        @else if (promotions().length) {
-          <div class="grid">
-            @for (promotion of promotions(); track promotion.id) {
-              <article class="card"><div class="ribbon">BBG PROMOTION</div><p class="business">{{ promotion.business_name }}</p><h3>{{ promotion.post_title }}</h3><p class="description">{{ promotion.post_content }}</p><div class="dates"><time [attr.datetime]="promotion.published_on">Published {{ formatDate(promotion.published_on) }}</time>@if (promotion.valid_until) { <time [attr.datetime]="promotion.valid_until">Valid until {{ formatDate(promotion.valid_until) }}</time> }</div></article>
-            }
-          </div>
-        } @else { <div class="empty"><div class="gift">✦</div><h3>No active promotions right now</h3><p>When businesses publish public promotions, they will show up here.</p></div> }
-      </section>
-    </main>
-  `,
+  templateUrl: './promotion-feed.html',
   styles: [`
     :host{display:block}.page{min-height:65vh;padding-bottom:64px;background:var(--surface-page)}.intro{position:relative;isolation:isolate;overflow:hidden;padding:78px max(24px,calc((100vw - 1180px)/2)) 66px;color:#fff;background:radial-gradient(ellipse at 88% 12%,rgba(245,217,40,.22),transparent 27%),radial-gradient(ellipse at 8% 100%,rgba(107,174,126,.28),transparent 38%),linear-gradient(120deg,#0d3425,#174d35 58%,#246747);border-radius:0 0 26px 26px;box-shadow:0 18px 48px rgba(17,64,43,.12)}
     .intro::before{position:absolute;z-index:-1;top:-155px;right:8%;width:380px;height:380px;border:1px solid rgba(255,255,255,.17);border-radius:50%;box-shadow:0 0 0 36px rgba(255,255,255,.035),0 0 0 76px rgba(255,255,255,.025);content:""}.intro::after{position:absolute;z-index:-1;right:22%;bottom:-110px;width:200px;height:200px;background:rgba(245,217,40,.13);border-radius:50%;filter:blur(2px);content:""}.intro>*{position:relative;z-index:1}

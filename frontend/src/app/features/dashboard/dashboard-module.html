@@ -1,0 +1,224 @@
+    <main class="module-page">
+      <header class="page-heading">
+        <div>
+          <p class="intro">{{ description() }}</p>
+        </div>
+        <div class="heading-buttons">
+          @if (section() === 'profile') { <button class="secondary-action" type="button" (click)="editBusinessProfile()" [disabled]="busy()">Edit profile</button> }
+          @if (section() === 'storefront') {
+            <button class="secondary-action" type="button" (click)="editStorefront()" [disabled]="busy()">Edit settings</button>
+            <button class="secondary-action" type="button" (click)="toggleStorefront()" [disabled]="busy()">{{ storefrontStatus() === 'PUBLISHED' ? 'Unpublish' : 'Publish' }} storefront</button>
+          }
+          @if (section() === 'promotions') { <button class="secondary-action" type="button" (click)="createPromotion()" [disabled]="busy()">+ New promotion</button> }
+          @if (section() === 'customers' && !activeTenantId()) { <button class="secondary-action" type="button" (click)="createAddress()" [disabled]="busy()">+ Add address</button> }
+          @if (section() === 'categories') { <button class="secondary-action" type="button" (click)="createCategory()" [disabled]="busy()">+ New category</button> }
+          <button class="refresh" type="button" (click)="load()" [disabled]="loading()">↻ Refresh</button>
+        </div>
+      </header>
+
+
+      @if (notice()) {
+        <div class="notice" role="status">{{ notice() }}</div>
+      }
+      @if (loading()) {
+        <section class="state-panel" role="status"><span class="spinner"></span><div><strong>Loading {{ title().toLowerCase() }}</strong><p>Retrieving the latest information from BBG.</p></div></section>
+      } @else if (error()) {
+        <section class="state-panel error" role="alert"><strong>We couldn’t load this section.</strong><p>{{ error() }}</p><button type="button" (click)="load()">Try again</button></section>
+      } @else if (unsupported()) {
+        <section class="state-panel"><span class="state-icon">ⓘ</span><strong>{{ unsupportedTitle() }}</strong><p>{{ unsupported() }}</p></section>
+      } @else {
+        @if (summaryEntries().length && !(section() === 'customers' && !activeTenantId())) {
+          <section class="summary-grid" aria-label="Summary">
+            @for (entry of summaryEntries(); track entry.key) {
+              <article class="summary-card"><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></article>
+            }
+          </section>
+        }
+
+        @if (section() === 'customers' && !activeTenantId() && summary()) {
+          <section class="personal-profile-card" aria-labelledby="personal-profile-title">
+            <div class="personal-profile-heading">
+              <div><p class="eyebrow">YOUR BBG ACCOUNT</p><h2 id="personal-profile-title">Personal details</h2><p>These details belong to your BBG account and are used across your customer activity.</p></div>
+              <span class="profile-avatar">{{ profileInitials() }}</span>
+            </div>
+            <div class="personal-profile-details">
+              <div><span>Full name</span><strong>{{ summary()?.['full_name'] || 'Not provided' }}</strong></div>
+              <div><span>Email address</span><strong>{{ summary()?.['email'] || 'Not provided' }}</strong></div>
+              <div><span>Mobile number</span><strong>{{ summary()?.['mobile'] || 'Not provided' }}</strong></div>
+            </div>
+            <div class="password-settings">
+              <div><strong>Account password</strong><p>{{ summary()?.['has_password'] ? 'A password is already set for your account.' : 'You signed in without a password. You can set one to also sign in using your email or mobile number.' }}</p></div>
+              @if (!showPasswordForm()) {
+                <button class="secondary-action" type="button" (click)="openPasswordForm()">{{ summary()?.['has_password'] ? 'Change password' : 'Set password' }}</button>
+              }
+            </div>
+            @if (showPasswordForm()) {
+              <form class="password-form" (submit)="$event.preventDefault(); updatePassword()">
+                @if (summary()?.['has_password']) {
+                  <label>Current password<input type="password" autocomplete="current-password" [value]="currentPassword()" (input)="currentPassword.set(inputValue($event))" required></label>
+                }
+                <label>New password<input type="password" autocomplete="new-password" minlength="8" [value]="newPassword()" (input)="newPassword.set(inputValue($event))" required></label>
+                <label>Confirm new password<input type="password" autocomplete="new-password" minlength="8" [value]="confirmPassword()" (input)="confirmPassword.set(inputValue($event))" required></label>
+                @if (passwordError()) { <p class="password-error" role="alert">{{ passwordError() }}</p> }
+                <div class="password-form-actions"><button class="refresh" type="button" (click)="closePasswordForm()" [disabled]="busy()">Cancel</button><button class="secondary-action" type="submit" [disabled]="busy()">{{ busy() ? 'Saving…' : (summary()?.['has_password'] ? 'Update password' : 'Set password') }}</button></div>
+              </form>
+            }
+          </section>
+        }
+
+        @if (section() === 'payment-qr-settings') {
+          <section class="qr-settings-card">
+            <div class="section-title"><div><p class="eyebrow">PLATFORM PAYMENT SETTINGS</p><h2>UPI payment QR</h2><p>Changing the QR affects new subscription requests only. Existing requests retain their captured payment instructions.</p></div></div>
+            @if (summary()?.['qr_url']) { <img class="payment-qr-preview" [src]="asUrl(summary()?.['qr_url'])" alt="Current BBG UPI payment QR"> }
+            <label>Payee name<input type="text" maxlength="150" [value]="qrPayeeName()" (input)="qrPayeeName.set(inputValue($event))" placeholder="BBG account name"></label>
+            <label>UPI ID<input type="text" maxlength="150" [value]="qrUpiId()" (input)="qrUpiId.set(inputValue($event))" placeholder="payments@upi"></label>
+            <label>Payment instructions<textarea rows="3" maxlength="1000" [value]="qrInstructions()" (input)="qrInstructions.set(inputValue($event))" placeholder="Optional instructions for business owners"></textarea></label>
+            <label>New QR image<input type="file" accept="image/jpeg,image/png,image/webp" (change)="setPaymentQrFile($event)" [disabled]="busy()"><small>JPG, PNG or WEBP, up to 10 MB. Uploading a new QR creates a new version.</small></label>
+            @if (qrFile()) { <p class="qr-file-name">Selected: {{ qrFile()?.name }}</p> }
+            <button type="button" class="secondary-action" (click)="savePaymentQrConfig()" [disabled]="busy() || !qrPayeeName().trim() || !qrUpiId().trim() || !qrFile()">{{ busy() ? 'Saving…' : 'Save payment QR configuration' }}</button>
+          </section>
+        }
+
+        @if (section() === 'subscriptions' && plans().length) {
+          <section class="plans-section">
+            <div class="section-title"><div><p class="eyebrow">AVAILABLE PLANS</p><h2>Choose a business plan</h2></div></div>
+            <div class="plans-grid">
+              @for (plan of plans(); track recordId(plan, 'plan_id')) {
+                <article class="plan-card">
+                  <h3>{{ valueOf(plan, ['plan_name', 'name', 'plan_code']) }}</h3>
+                  <strong class="plan-price">{{ valueOf(plan, ['price', 'amount']) }} {{ valueOf(plan, ['currency']) }}</strong>
+                  <p>{{ valueOf(plan, ['description', 'plan_description']) }}</p>
+                  <button type="button" (click)="requestPlan(plan)" [disabled]="busy()">{{ pendingPlanId() === recordId(plan, 'plan_id') ? 'Requesting…' : 'Request this plan' }}</button>
+                </article>
+              }
+            </div>
+          </section>
+        }
+
+        @if (filteredItems().length) {
+          <section class="records-section">
+            <div class="section-title">
+              <div><p class="eyebrow">LIVE RECORDS</p><h2>{{ recordsHeading() }}</h2></div>
+              <span class="record-count">{{ filteredItems().length }} shown</span>
+            </div>
+            <div class="records-list">
+              @for (item of filteredItems(); track recordId(item, 'id')) {
+                <article class="record-card">
+                  <div class="record-head">
+                    <div><strong>{{ recordTitle(item) }}</strong><span>{{ recordSubtitle(item) }}</span></div>
+                    @if (statusOf(item)) { <span class="status-chip" [class]="statusClass(statusOf(item))">{{ humanize(statusOf(item)) }}</span> }
+                  </div>
+                  <div class="record-fields">
+                    @for (entry of recordEntries(item); track entry.key) {
+                      <div><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
+                    }
+                  </div>
+                  @if (section() === 'subscription-approval') {
+                    <button type="button" class="secondary-action" (click)="openSubscriptionReview(item)" [disabled]="busy()">View business details, receipts & history</button>
+                  }
+                  @if (section() === 'subscriptions' && item['payment_qr_url']) {
+                    <div class="subscription-payment-qr">
+                      <img [src]="asUrl(item['payment_qr_url'])" alt="UPI payment QR for this subscription">
+                      <div><strong>Pay using UPI</strong><span>{{ item['payment_payee_name'] }}</span><span>{{ item['payment_upi_id'] }}</span><small>QR version {{ item['payment_qr_version'] }} · retained for this request</small></div>
+                    </div>
+                    @if (item['payment_instructions']) { <p class="payment-instructions">{{ item['payment_instructions'] }}</p> }
+                  }
+                  @if (section() === 'promotions' && mediaOf(item).length) {
+                    <div class="post-media-strip" aria-label="Post attachments">
+                      @for (media of mediaOf(item); track media['id']) {
+                        <div class="post-media-item">
+                          @if (media['url'] && media['media_type'] === 'IMAGE') { <img [src]="asUrl(media['url'])" [alt]="'Post image ' + media['id']"> }
+                          @else if (media['url'] && media['media_type'] === 'VIDEO') { <video controls [src]="asUrl(media['url'])" aria-label="Post video attachment"></video> }
+                          @else if (media['url'] && media['media_type'] === 'AUDIO') { <audio controls [src]="asUrl(media['url'])" aria-label="Post audio attachment"></audio> }
+                          @else if (media['url']) { <a [href]="asUrl(media['url'])" target="_blank" rel="noopener">Open {{ media['media_type'] }} attachment</a> }
+                          @else { <span>{{ media['media_type'] }} attachment</span> }
+                          @if (statusOf(item).toUpperCase() !== 'PUBLISHED') { <button type="button" (click)="removePromotionAttachment(item,media)" [disabled]="busy()">Remove</button> }
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  @if (section() === 'subscriptions' && statusOf(item).toUpperCase() === 'PENDING' && item['latest_proof_review_status'] === 'PENDING') {
+                    <p class="payment-instructions">Your receipt was submitted on {{ formatValue(item['latest_proof_submitted_on']) }} and is awaiting Platform Admin review.</p>
+                  }
+                  @if (section() === 'subscriptions' && ['PENDING','REJECTED'].includes(statusOf(item).toUpperCase()) && item['latest_proof_review_status'] !== 'PENDING') {
+                    <label class="upload-proof">Upload payment proof
+                      <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" [disabled]="busy()" (change)="uploadProof($event, item)" />
+                    </label>
+                    @if (proofDrafts()[recordId(item,'subscription_id')]) {
+                      <div class="proof-ready" role="status">
+                        <span>Receipt uploaded: {{ proofDrafts()[recordId(item,'subscription_id')].fileName }}</span>
+                        <button type="button" (click)="submitProof(item)" [disabled]="busy()">Submit for Review</button>
+                      </div>
+                    }
+                  }
+                  @if (actionsFor(item).length) {
+                    <div class="record-actions">
+                      @for (action of actionsFor(item); track action.key) {
+                        <button type="button" [class.danger]="action.danger" (click)="runAction(action.key, item)" [disabled]="busy()">{{ action.label }}</button>
+                      }
+                    </div>
+                  }
+                </article>
+              }
+            </div>
+          </section>
+        } @else if (!summaryEntries().length && !(section() === 'subscriptions' && plans().length)) {
+          <section class="state-panel empty"><span class="state-icon">⌑</span><strong>Nothing to show yet</strong><p>There are no records available for this section in your current area.</p></section>
+        }
+      }
+      @if (subscriptionReview()) {
+        <div class="composer-backdrop" (click)="subscriptionReview.set(null)">
+          <section class="promotion-composer subscription-review-dialog" role="dialog" aria-modal="true" aria-labelledby="subscription-review-title" (click)="$event.stopPropagation()">
+            <header><div><p class="eyebrow">PLATFORM ADMIN / SUBSCRIPTION REVIEW</p><h2 id="subscription-review-title">Subscription #{{ subscriptionReviewDetail()?.['id'] }}</h2><p>Business registration, selected plan, captured payment instructions and submission history.</p></div><button type="button" class="composer-close" (click)="subscriptionReview.set(null)">×</button></header>
+            @if (subscriptionReviewDetail(); as detail) {
+              <h3>Business details</h3>
+              <div class="review-detail-grid">
+                @for (key of ['tenant_code','tenant_type','tenant_status','business_name','business_slug','business_description','primary_category_id','business_email','business_phone','whatsapp_number','logo_path','cover_image_path','address_line_1','address_line_2','city','state','postal_code','country_code','latitude','longitude','business_approval_status','business_publication_status','business_rejection_reason']; track key) {
+                  <div><span>{{ humanize(key) }}</span><strong>{{ detail[key] || '—' }}</strong></div>
+                }
+              </div>
+              <h3>Plan & payment instructions</h3>
+              <div class="review-detail-grid">
+                @for (key of ['plan_name','plan_code','billing_cycle','amount','currency','subscription_status','payment_payee_name','payment_upi_id','payment_qr_version','payment_instructions']; track key) {
+                  <div><span>{{ humanize(key) }}</span><strong>{{ detail[key] || '—' }}</strong></div>
+                }
+              </div>
+              @if (detail['payment_qr_file_url']) { <img class="payment-qr-preview" [src]="asUrl(detail['payment_qr_file_url'])" alt="Captured payment QR"> }
+            }
+            <h3>Payment receipts</h3>
+            @for (proof of subscriptionReviewProofs(); track $index) {
+              <div class="review-history-row"><div><strong>{{ proof['review_status'] }}</strong><span>{{ proof['payment_reference'] || 'No payment reference' }} · {{ formatValue(proof['submitted_on']) }}</span></div>@if (proof['proof_file_url']) { <a [href]="asUrl(proof['proof_file_url'])" target="_blank" rel="noopener">Open receipt</a> }</div>
+            } @empty { <p>No receipt submissions were found.</p> }
+            <h3>Decision history</h3>
+            @for (entry of subscriptionReviewHistory(); track $index) {
+              <div class="review-history-row"><div><strong>{{ entry['decision'] }}</strong><span>{{ entry['review_reason'] || 'No rejection reason recorded' }}</span><small>{{ entry['reviewer_name'] || 'System' }} · {{ formatValue(entry['reviewed_on']) }}</small></div></div>
+            } @empty { <p>No review decisions have been recorded yet.</p> }
+          </section>
+        </div>
+      }
+      @if (showPromotionComposer()) {
+        <div class="composer-backdrop" (click)="closePromotionComposer()">
+          <section class="promotion-composer" role="dialog" aria-modal="true" aria-labelledby="promotion-composer-title" (click)="$event.stopPropagation()">
+            <header><div><p class="eyebrow">BUSINESS WORKSPACE / PROMOTIONS</p><h2 id="promotion-composer-title">Create promotion</h2><p>Prepare your post and attach multiple media files.</p></div><button type="button" class="composer-close" (click)="closePromotionComposer()" [disabled]="promotionMediaBusy()">×</button></header>
+            <label>Post title <input type="text" maxlength="180" [value]="promotionTitle()" (input)="setPromotionField('title',$event)" placeholder="e.g. Festive season offer"></label>
+            <label>Post content <textarea rows="5" maxlength="10000" [value]="promotionContent()" (input)="setPromotionField('content',$event)" placeholder="Tell customers about your offer…" required></textarea></label>
+            <label>Valid until <input type="datetime-local" [value]="promotionValidUntil()" (input)="setPromotionField('validUntil',$event)"><small>Optional. Leave blank for no expiry date.</small></label>
+            <div class="post-upload-zone">
+              <div class="post-file-picker" (dragover)="allowPromotionMediaDrop($event)" (drop)="dropPromotionMedia($event)"><span>＋</span><strong>Add media files</strong><small>Images, videos, audio and PDF · multiple selection · max 100 MB per file</small><input type="file" aria-label="Add promotion media files" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,application/pdf,text/plain,text/csv,application/rtf" (change)="selectPromotionMedia($event)" [disabled]="promotionMediaBusy()"></div>
+              @if (promotionFiles().length) {
+                <div class="post-file-list">
+                  @for (file of promotionFiles(); track $index) {
+                    <div><span>{{ mediaLabel(file.type) }}</span><strong>{{ file.name }}</strong><small>{{ fileSize(file.size) }}</small><button type="button" (click)="removePromotionMedia($index)" [disabled]="promotionMediaBusy()">Remove</button></div>
+                  }
+                </div>
+              }
+            </div>
+            @if (promotionError()) { <p class="composer-error" role="alert">{{ promotionError() }}</p> }
+            @if (promotionMediaBusy()) { <div class="composer-progress" role="status"><progress [value]="promotionUploadProgress()" max="100"></progress><span>Uploading attachments… {{ promotionUploadProgress() }}%</span></div> }
+            <footer><button type="button" class="refresh" (click)="closePromotionComposer()" [disabled]="promotionMediaBusy()">Cancel</button><button type="button" class="secondary-action" (click)="submitPromotion()" [disabled]="promotionMediaBusy() || !promotionContent().trim()">{{ promotionMediaBusy() ? 'Uploading…' : (promotionFiles().length ? 'Save post & upload media' : 'Create draft') }}</button></footer>
+          </section>
+        </div>
+      }
+    </main>
+  

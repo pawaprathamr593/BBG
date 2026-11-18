@@ -1,22 +1,12 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MarketplaceApiService } from '../../../core/marketplace/marketplace-api.service';
 
 @Component({
   selector: 'app-marketplace-item-placeholder',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
-  template: `
-    <main class="detail-page">
-      <section class="detail-card">
-        <p class="eyebrow">BBG MARKETPLACE</p>
-        <span class="item-type">{{ itemType }}</span>
-        <h1>{{ itemType }} details are coming soon</h1>
-        <p class="message">This destination is ready for the dedicated {{ itemType.toLowerCase() }} page. Its full profile and details will appear here once that page and its API are implemented.</p>
-        <p class="reference">Reference: <strong>{{ identifier }}</strong></p>
-        <a [routerLink]="directoryLink">← Back to {{ itemType === 'Business' ? 'businesses' : 'marketplace' }}</a>
-      </section>
-    </main>
-  `,
+  templateUrl: './marketplace-item-placeholder.html',
   styles: [`
     :host{display:block}.detail-page{display:grid;min-height:62vh;place-items:center;padding:48px 20px;background:var(--surface-page)}
     .detail-card{width:min(620px,100%);padding:clamp(25px,5vw,44px);background:var(--surface-card);border:1px solid var(--border);border-radius:18px;text-align:center}

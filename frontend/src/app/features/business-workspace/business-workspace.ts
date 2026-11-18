@@ -8,31 +8,7 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-business-workspace',
   standalone: true,
-  template: `
-    <main class="status-page">
-      @if (loading()) {
-        <section class="status-card loading"><span class="spinner"></span><div><strong>Opening your business workspace</strong><p>Checking your registration status…</p></div></section>
-      } @else if (error()) {
-        <section class="status-card"><p class="eyebrow">BBG BUSINESS WORKSPACE</p><h1>We couldn’t load your registration</h1><p>{{ error() }}</p><button type="button" (click)="load()">Try again</button></section>
-      } @else if (application(); as business) {
-        <section class="status-card">
-          <p class="eyebrow">BBG BUSINESS WORKSPACE</p>
-          <div class="status-heading"><div><h1>{{ business.business_name }}</h1><p>{{ business.business_slug }}</p></div><span class="status-pill" [attr.data-status]="business.approval_status">{{ statusLabel(business.approval_status) }}</span></div>
-          <div class="status-symbol" [attr.data-status]="business.approval_status">{{ business.approval_status === 'APPROVED' ? '✓' : business.approval_status === 'REJECTED' ? '!' : '…' }}</div>
-          @if (business.approval_status === 'PENDING') {
-            <h2>Registration under review</h2><p>Your business registration has been submitted successfully. Our team is reviewing the information. This workspace is currently limited to checking your registration status.</p>
-          } @else if (business.approval_status === 'REJECTED') {
-            <h2>Further information is required</h2><p>Your business registration was not approved in its current form. Please contact BBG support for guidance.</p>
-            @if (business.rejection_reason) { <div class="reason"><strong>Review note</strong><span>{{ business.rejection_reason }}</span></div> }
-          } @else {
-            <h2>Business approved</h2><p>Your business registration is approved. Opening your business workspace…</p>
-          }
-          <div class="business-summary"><span><small>Business</small><strong>{{ business.business_name }}</strong></span><span><small>Registration status</small><strong>{{ statusLabel(business.approval_status) }}</strong></span><span><small>Location</small><strong>{{ locationLabel(business) }}</strong></span></div>
-          <button class="market-button" type="button" (click)="visitMarketplace()">Visit marketplace <span aria-hidden="true">↗</span></button>
-        </section>
-      }
-    </main>
-  `,
+  templateUrl: './business-workspace.html',
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}.status-page{display:grid;min-height:65vh;place-items:start center;padding:54px 18px 76px}
     .status-card{width:min(760px,100%);padding:clamp(22px,4vw,42px);background:var(--surface-card);border:1px solid var(--border);border-radius:18px;box-shadow:0 16px 48px rgba(18,45,30,.055)}

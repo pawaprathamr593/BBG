@@ -1,0 +1,161 @@
+    @if (context.detail(); as data) {
+      <main class="home-page">
+        <section class="page-hero home-hero" aria-labelledby="storefront-title">
+          @if (data.business.cover_image_path) {
+            <img class="home-cover" [src]="data.business.cover_image_path" [alt]="brandName + ' storefront cover'" fetchpriority="high" />
+          }
+          <div class="home-shade" aria-hidden="true"></div>
+          <div class="hero-inner">
+            <p class="eyebrow"><span>OFFICIAL STOREFRONT</span><i></i> {{ data.business.category_name || 'OUR BUSINESS' }}</p>
+            <div class="store-identity">
+              @if (data.business.logo_path) {
+                <img class="store-logo" [src]="data.business.logo_path" [alt]="brandName + ' logo'" />
+              }
+              <div class="identity-copy">
+                <span class="identity-caption">WELCOME TO</span>
+                <h1 id="storefront-title">{{ brandName }}<b>.</b></h1>
+              </div>
+            </div>
+            <p class="hero-description">{{ data.storefront.description || data.business.business_description || 'Explore this business storefront and get in touch for products, services and more information.' }}</p>
+            <div class="hero-actions">
+              <a class="primary-button" [routerLink]="['/store', data.business.business_slug, 'products']">Explore catalogue <span aria-hidden="true">↗</span></a>
+              <a class="secondary-button" [routerLink]="['/store', data.business.business_slug, 'contact']">Contact the store</a>
+              <button class="share-button" type="button" (click)="shareStore()" aria-label="Share this store">↗ <span>Share store</span></button>
+            </div>
+            @if (shareFeedback()) { <p class="share-feedback" role="status">{{ shareFeedback() }}</p> }
+          </div>
+        </section>
+
+        <section class="store-meta-band" aria-label="Storefront information">
+            <div class="hero-meta">
+              <span><i aria-hidden="true">✓</i> Official BBG storefront</span>
+              @if (data.storefront.accept_online_orders) { <span><i aria-hidden="true">✓</i> Online orders available</span> }
+              @if (data.business.city || data.business.state) {
+                <span><i aria-hidden="true">⌖</i> {{ data.business.city }}{{ data.business.city && data.business.state ? ', ' : '' }}{{ data.business.state }}</span>
+              }
+            </div>
+        </section>
+
+        @if (data.business.business_phone || (data.storefront.whatsapp_enabled && data.business.whatsapp_number) || hasDirections(data) || data.business.business_email) {
+        <section class="quick-actions" aria-label="Quick store actions">
+          @if (data.business.business_phone) {
+            <a [href]="'tel:' + data.business.business_phone"><span class="quick-icon" aria-hidden="true">☎</span><span><strong>Call store</strong><small>{{ data.business.business_phone }}</small></span></a>
+          }
+          @if (data.storefront.whatsapp_enabled && data.business.whatsapp_number) {
+            <a [href]="whatsappUrl(data.business.whatsapp_number)" target="_blank" rel="noopener noreferrer"><span class="quick-icon" aria-hidden="true">◉</span><span><strong>WhatsApp</strong><small>Chat with the business</small></span></a>
+          }
+          @if (hasDirections(data)) {
+            <a [href]="directionsUrl(data)" target="_blank" rel="noopener noreferrer"><span class="quick-icon" aria-hidden="true">⌖</span><span><strong>Directions</strong><small>{{ data.business.city || data.business.state || 'Find the store' }}</small></span></a>
+          }
+          @if (data.business.business_email) {
+            <a [href]="'mailto:' + data.business.business_email"><span class="quick-icon" aria-hidden="true">✉</span><span><strong>Email store</strong><small>{{ data.business.business_email }}</small></span></a>
+          }
+        </section>
+        }
+
+        @if (promotions().length) {
+          <section class="promotion-ticker" aria-label="Current store promotions">
+            <span class="promo-label">STORE OFFER</span>
+            <div class="promo-copy">
+              <strong>{{ promotions()[0].post_title }}</strong>
+              <span>{{ promotions()[0].post_content }}</span>
+            </div>
+            @if (promotions()[0].valid_until) { <time [attr.datetime]="promotions()[0].valid_until">Until {{ formatDate(promotions()[0].valid_until!) }}</time> }
+          </section>
+        }
+
+        <section class="shopping-benefits" aria-label="Store information">
+          <div><span class="benefit-icon" aria-hidden="true">◇</span><span><strong>Shop directly</strong><small>Explore products from {{ brandName }}</small></span></div>
+          <div><span class="benefit-icon" aria-hidden="true">↗</span><span><strong>Talk to the business</strong><small>Get product and pricing information</small></span></div>
+          @if (data.storefront.accept_online_orders) {
+            <div><span class="benefit-icon" aria-hidden="true">✓</span><span><strong>Online ordering</strong><small>This storefront accepts online orders</small></span></div>
+          } @else {
+            <div><span class="benefit-icon" aria-hidden="true">⌖</span><span><strong>Find the business</strong><small>{{ data.business.city || data.business.state || 'Contact details available' }}</small></span></div>
+          }
+        </section>
+
+        <section id="featured-products" class="products-section" aria-labelledby="products-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">THE COLLECTION</p>
+              <h2 id="products-heading">Explore our catalogue</h2>
+              <p>Explore the products and offerings currently published by {{ brandName }}.</p>
+            </div>
+            <a class="view-all" [routerLink]="['/store', data.business.business_slug, 'products']">View full catalogue <span aria-hidden="true">→</span></a>
+          </div>
+
+          @if (categories().length > 1) {
+            <nav class="category-pills" aria-label="Filter catalogue by category">
+              <button type="button" [class.active]="selectedCategory() === 'all'" (click)="selectCategory('all')">All</button>
+              @for (category of categories(); track category) {
+                <button type="button" [class.active]="selectedCategory() === category" (click)="selectCategory(category)">{{ category }}</button>
+              }
+            </nav>
+          }
+
+          @if (loading()) {
+            <div class="product-grid" aria-label="Loading products">
+              @for (item of skeletons; track item) { <div class="product-skeleton"><span></span><i></i><i></i><b></b></div> }
+            </div>
+          } @else if (products().length) {
+            @if (filteredProducts().length) {
+              <div class="product-grid">
+                @for (product of filteredProducts(); track product.id; let index = $index) {
+                  <a class="product-card" [routerLink]="product.offering_type === 'SERVICE' ? ['/store', data.business.business_slug, 'contact'] : ['/store', data.business.business_slug, 'products', productRoute(product)]" [queryParams]="product.offering_type === 'SERVICE' ? { subject: 'Service enquiry: ' + product.product_name } : null">
+                  <div class="product-image" [class.image-alt]="index % 2 === 1">
+                    <span class="category-tag">{{ product.offering_type === 'SERVICE' ? 'SERVICE' : (product.category_name || 'PRODUCT') }}</span>
+                    <span class="product-initial">{{ product.product_name.slice(0, 1).toUpperCase() }}</span>
+                  </div>
+                  <div class="product-details">
+                    @if (product.brand_name && product.offering_type !== 'SERVICE') { <span class="product-brand">{{ product.brand_name }}</span> }
+                    <h3>{{ product.product_name }}</h3>
+                    <p>{{ product.description || (product.offering_type === 'SERVICE' ? 'Contact the business for service details and availability.' : 'View product details and contact the business for more information.') }}</p>
+                    <div class="product-purchase">
+                      @if (product.offering_type === 'SERVICE') {
+                        <strong class="enquire-price">Request details</strong>
+                        <span>Contact store <b aria-hidden="true">→</b></span>
+                      } @else {
+                        @if (data.storefront.show_prices && product.selling_price !== undefined) {
+                          <strong>{{ data.storefront.currency || '' }} {{ product.selling_price }}</strong>
+                        } @else { <strong class="enquire-price">Enquire for price</strong> }
+                        <span>View details <b aria-hidden="true">→</b></span>
+                      }
+                    </div>
+                  </div>
+                </a>
+                }
+              </div>
+            } @else {
+              <div class="empty-products"><span aria-hidden="true">⌕</span><div><h3>No offerings in this category</h3><p>Choose another category to explore the catalogue.</p></div><button type="button" class="empty-filter-action" (click)="selectCategory('all')">Show all</button></div>
+            }
+          } @else {
+            <div class="empty-products">
+              <span aria-hidden="true">⌕</span>
+              <div><h3>Catalogue coming soon</h3><p>{{ brandName }} has not published any products or service offerings to this storefront yet. Please check back later or contact the business.</p></div>
+              <a [routerLink]="['/store', data.business.business_slug, 'contact']">Contact the business →</a>
+            </div>
+          }
+        </section>
+
+        @if (data.storefront.description || data.business.business_description) {
+          <section class="merchant-story">
+            <div class="story-copy">
+              <p class="eyebrow">THE PEOPLE BEHIND THE STORE</p>
+              <h2>A little about {{ brandName }}</h2>
+              <p>{{ data.storefront.description || data.business.business_description }}</p>
+              <a [routerLink]="['/store', data.business.business_slug, 'about']">Get to know the business <span aria-hidden="true">↗</span></a>
+            </div>
+          </section>
+        }
+
+        <section class="store-contact">
+          <div>
+            <p class="eyebrow">NEED A HAND?</p>
+            <h2>Looking for something in particular?</h2>
+            <p>Get in touch with {{ brandName }} for product details, availability or pricing.</p>
+          </div>
+          <a [routerLink]="['/store', data.business.business_slug, 'contact']">Contact the store <span aria-hidden="true">↗</span></a>
+        </section>
+      </main>
+    }
+  

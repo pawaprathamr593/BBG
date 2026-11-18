@@ -16,39 +16,7 @@ interface PlanEnvelope {
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-marketplace-about',
   imports: [RouterLink],
-  template: `
-    <main class="page">
-      <section class="hero"><p class="eyebrow">ABOUT BBG</p><h1>Build. Grow. <span>Connect.</span></h1><p class="lead">A business management and marketplace platform designed to bring businesses, entrepreneurs and customers closer together.</p><a routerLink="/businesses" class="primary-link">Explore businesses <span aria-hidden="true">→</span></a><div class="orb orb-one"></div><div class="orb orb-two"></div></section>
-      <section class="story"><div><p class="eyebrow">OUR PURPOSE</p><h2>One place to discover and connect</h2></div><div class="story-copy"><p>BBG brings business discovery and marketplace experiences together. Visitors can explore business profiles, browse categories and keep up with public promotions.</p><p>For entrepreneurs, BBG provides a place to build a business presence and reach a wider community. The platform is designed to make discovery clearer and connections easier.</p></div></section>
-      <section class="values"><div class="value"><span>01</span><h3>Discover</h3><p>Explore businesses and offerings across marketplace categories.</p></div><div class="value"><span>02</span><h3>Grow</h3><p>Give businesses a digital presence and a way to share promotions.</p></div><div class="value"><span>03</span><h3>Connect</h3><p>Make it easier for people and businesses to find each other.</p></div></section>
-      <section class="plans-section" aria-labelledby="plans-title">
-        <div class="plans-heading"><p class="eyebrow">BBG PLANS</p><h2 id="plans-title">Choose the right plan for your business</h2><p>Explore the currently available plans and find the right fit as your business grows.</p></div>
-        @if (plansLoading()) {
-          <p class="plans-state" role="status">Loading available plans…</p>
-        } @else if (plansError()) {
-          <p class="plans-state" role="alert">{{ plansError() }}</p>
-        } @else if (plans().length) {
-          <div class="plans-grid">
-            @for (plan of plans(); track plan['plan_id'] ?? plan['id'] ?? plan['plan_code'] ?? $index) {
-              <article class="plan-card">
-                <p class="plan-label">{{ display(plan, ['plan_type','plan_code','billing_cycle']) || 'BUSINESS PLAN' }}</p>
-                <h3>{{ display(plan, ['plan_name','name']) || 'BBG Business Plan' }}</h3>
-                <p class="plan-price">{{ display(plan, ['currency']) }} {{ display(plan, ['price','amount']) || 'Contact us' }}<span>{{ display(plan, ['billing_period','billing_cycle']) ? ' / ' + display(plan, ['billing_period','billing_cycle']) : '' }}</span></p>
-                <p class="plan-description">{{ display(plan, ['description','plan_description']) || 'A plan to support your business on BBG.' }}</p>
-                @if (display(plan, ['features','feature_list'])) {
-                  <p class="plan-features">{{ display(plan, ['features','feature_list']) }}</p>
-                }
-                <a routerLink="/register" class="plan-link">Get started <span aria-hidden="true">→</span></a>
-              </article>
-            }
-          </div>
-        } @else {
-          <p class="plans-state">There are no active plans available right now. Please check back soon.</p>
-        }
-      </section>
-      <section class="closing"><div><p class="eyebrow">START EXPLORING</p><h2>Find your next business connection.</h2><p>Discover the BBG marketplace and see what's available.</p></div><a routerLink="/categories">Browse categories <span aria-hidden="true">→</span></a></section>
-    </main>
-  `,
+  templateUrl: './marketplace-about.html',
   styles: [`
     :host{display:block}.page{padding-bottom:64px;background:var(--surface-page)}.hero{position:relative;isolation:isolate;overflow:hidden;padding:92px max(24px,calc((100vw - 1180px)/2)) 98px;color:#fff;background:radial-gradient(ellipse at 86% 14%,rgba(245,217,40,.2),transparent 26%),radial-gradient(ellipse at 6% 100%,rgba(107,174,126,.3),transparent 38%),linear-gradient(115deg,#0d3425,#174d35 58%,#246747);border-radius:0 0 28px 28px;box-shadow:0 20px 52px rgba(17,64,43,.13)}
     .hero::before{position:absolute;z-index:-1;top:-180px;right:8%;width:470px;height:470px;border:1px solid rgba(255,255,255,.17);border-radius:50%;box-shadow:0 0 0 38px rgba(255,255,255,.035),0 0 0 82px rgba(255,255,255,.025);content:""}.hero::after{position:absolute;z-index:-1;right:21%;bottom:-130px;width:250px;height:250px;background:rgba(245,217,40,.13);border-radius:50%;filter:blur(2px);content:""}

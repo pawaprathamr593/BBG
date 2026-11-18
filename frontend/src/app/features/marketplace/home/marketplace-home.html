@@ -1,0 +1,244 @@
+    <main class="marketplace-home">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">BUSINESS MANAGEMENT &amp; MARKETPLACE PLATFORM</p>
+          <h1 id="hero-title">Discover businesses.<br /><span>Find opportunities.</span></h1>
+          <p class="hero-description">Explore products and connect with businesses on BBG.</p>
+
+          <form class="marketplace-search" role="search" (submit)="submitSearch($event)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.5 4.5"></path></svg>
+            <label class="sr-only" for="marketplace-query">Search businesses or products</label>
+            <input id="marketplace-query" name="query" type="search" placeholder="Search businesses or products..." autocomplete="off" />
+            <button type="submit" aria-label="Search marketplace">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12h14M12.5 5.5 19 12l-6.5 6.5"></path></svg>
+            </button>
+          </form>
+          <button class="business-register-button" type="button" (click)="startBusinessRegistration($event)">Register your business <span aria-hidden="true">→</span></button>
+          <div class="hero-links" aria-label="Quick links">
+            <span>Start exploring</span>
+            <a routerLink="/products">Products</a>
+            <i aria-hidden="true"></i>
+            <a href="#businesses">Businesses</a>
+            <i aria-hidden="true"></i>
+            <a href="#promotions">Promotions</a>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="visual-glow"></div>
+          <div class="visual-sun"></div>
+          <div class="city city-back">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="city city-front">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="visual-ground"></div>
+          <div class="visual-leaf leaf-one"></div>
+          <div class="visual-leaf leaf-two"></div>
+        </div>
+        <div class="hero-stripe stripe-one" aria-hidden="true"></div>
+        <div class="hero-stripe stripe-two" aria-hidden="true"></div>
+      </section>
+
+      <section class="marketplace-stats" aria-label="Live BBG marketplace statistics">
+          <div class="hero-stats" aria-label="Live BBG marketplace statistics">
+            @if (homeStats(); as stats) {
+              <div class="hero-stat"><strong>{{ formatCount(stats.businesses_registered) }}</strong><span>Public businesses</span></div>
+              <div class="hero-stat"><strong>{{ formatCount(stats.platform_users) }}</strong><span>Platform users</span></div>
+              <div class="hero-stat"><strong>{{ formatCount(stats.products_listed) }}</strong><span>Products listed</span></div>
+              <div class="hero-stat"><strong>{{ formatCount(stats.orders_completed) }}</strong><span>Orders completed</span></div>
+            } @else {
+              @for (label of statLabels; track label) {
+                <div class="hero-stat hero-stat-loading"><strong>—</strong><span>{{ label }}</span></div>
+              }
+            }
+          </div>
+      </section>
+
+      <section class="content-section categories-section" id="categories" aria-labelledby="categories-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">FIND YOUR SPACE</p>
+            <h2 id="categories-title">Browse product categories</h2>
+          </div>
+          <span class="section-note">Browse the BBG marketplace</span>
+        </div>
+        @if (loading()) {
+          <p class="state-message" role="status">Loading marketplace categories…</p>
+        } @else if (loadError()) {
+          <p class="state-message state-error" role="alert">{{ loadError() }}</p>
+        } @else if (categories().length) {
+          <div class="category-grid">
+            @for (category of categories(); track category.id) {
+              <a class="category-card" [routerLink]="['/products']" [queryParams]="{ category_id: category.id }">
+                <span class="category-mark" aria-hidden="true">{{ category.category_name.slice(0, 1).toUpperCase() }}</span>
+                <span class="category-name">{{ category.category_name }}</span>
+                @if (category.description) { <span class="category-description">{{ category.description }}</span> }
+              </a>
+            }
+          </div>
+        } @else {
+          <div class="category-empty">
+            <div class="category-empty-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M4 19V8.5L12 4l8 4.5V19M8 19v-5h8v5M8 9h.01M12 9h.01M16 9h.01"></path></svg>
+            </div>
+            <div><h3>No public categories yet</h3><p>Business categories published on BBG will appear here.</p></div>
+          </div>
+        }
+      </section>
+
+      <section class="content-section businesses-section" id="businesses" aria-labelledby="businesses-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">MEET THE COMMUNITY</p>
+            <h2 id="businesses-title">{{ businessesHeading() }}</h2>
+          </div>
+          <span class="section-note">{{ businessesNote() }}</span>
+        </div>
+        @if (searchLoading()) {
+          <p class="state-message" role="status">Searching published businesses…</p>
+        } @else if (searchError()) {
+          <p class="state-message state-error" role="alert">{{ searchError() }}</p>
+        } @else if (businesses().length) {
+          <div class="business-grid">
+            @for (business of businesses(); track business.id) {
+              <article class="business-card">
+                <div class="business-card-top">
+                  <span class="business-avatar" aria-hidden="true">{{ business.business_name.slice(0, 1).toUpperCase() }}</span>
+                  @if (!searchActive() && business.rank) { <span class="business-rank">#{{ business.rank }}</span> }
+                  @if (business.category_name) { <span class="business-category">{{ business.category_name }}</span> }
+                </div>
+                <h3>{{ business.business_name }}</h3>
+                <p class="business-location">{{ locationLabel(business) }}</p>
+                @if (business.business_description) {
+                  <p class="business-description">{{ business.business_description }}</p>
+                }
+                @if (!searchActive() && business.popularity) {
+                  <div class="business-metrics" aria-label="Business engagement">
+                    <span>{{ business.popularity.views }} views</span>
+                    <span>{{ business.popularity.enquiries }} enquiries</span>
+                  </div>
+                }
+                <div class="business-card-footer">
+                  @if (business.accept_online_orders) { <span>Online orders</span> }
+                  @if (business.whatsapp_enabled) { <span>WhatsApp</span> }
+                </div>
+                <a class="card-action" [routerLink]="['/store', business.business_slug]">Explore business <span aria-hidden="true">→</span></a>
+              </article>
+            }
+          </div>
+        } @else {
+          <div class="category-empty">
+            <div class="category-empty-icon" aria-hidden="true">⌕</div>
+            <div><h3>No published businesses found</h3><p>Try another search, or check back as more businesses publish their storefronts.</p></div>
+          </div>
+        }
+      </section>
+
+      <section class="content-section" id="recent-businesses" aria-labelledby="recent-businesses-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">NEW TO THE MARKETPLACE</p>
+            <h2 id="recent-businesses-title">Recently published businesses</h2>
+          </div>
+          <span class="section-note">Newest published storefronts</span>
+        </div>
+        @if (loading()) {
+          <p class="state-message" role="status">Loading recently published businesses…</p>
+        } @else if (recentBusinesses().length) {
+          <div class="business-grid">
+            @for (business of recentBusinesses(); track business.id) {
+              <article class="business-card">
+                <div class="business-card-top">
+                  <span class="business-avatar" aria-hidden="true">{{ business.business_name.slice(0, 1).toUpperCase() }}</span>
+                  @if (business.category_name) { <span class="business-category">{{ business.category_name }}</span> }
+                </div>
+                <h3>{{ business.business_name }}</h3>
+                <p class="business-location">{{ locationLabel(business) }}</p>
+                @if (business.business_description) {
+                  <p class="business-description">{{ business.business_description }}</p>
+                }
+                @if (business.created_on) {
+                  <time class="item-date" [attr.datetime]="business.created_on">Added {{ formatDate(business.created_on) }}</time>
+                }
+                <a class="card-action" [routerLink]="['/store', business.business_slug]">Explore business <span aria-hidden="true">→</span></a>
+              </article>
+            }
+          </div>
+          <p class="data-note">Only approved, published storefronts are shown. Ordering currently uses profile creation time because the business schema does not yet store a separate publication timestamp.</p>
+        } @else {
+          <p class="state-message">No recently published businesses are available yet.</p>
+        }
+      </section>
+
+      <section class="content-section" id="recent-products" aria-labelledby="recent-products-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">FRESH FINDS</p>
+            <h2 id="recent-products-title">Recently published products</h2>
+          </div>
+          <span class="section-note">Products from published BBG storefronts</span>
+        </div>
+        @if (loading()) {
+          <p class="state-message" role="status">Loading recently published products…</p>
+        } @else if (recentProducts().length) {
+          <div class="product-grid">
+            @for (product of recentProducts(); track product.id) {
+              <article class="product-card">
+                <div class="product-card-mark" aria-hidden="true">BBG</div>
+                @if (product.category_name) { <span class="business-category">{{ product.category_name }}</span> }
+                <h3>{{ product.product_name }}</h3>
+                @if (product.brand_name) { <p class="product-brand">{{ product.brand_name }}</p> }
+                @if (product.description) { <p class="product-description">{{ product.description }}</p> }
+                @if (product.selling_price !== undefined) {
+                  <p class="product-price">{{ formatPrice(product.selling_price) }} <span>/ {{ product.unit.symbol }}</span></p>
+                } @else {
+                  <p class="product-price product-price-hidden">Contact business for price</p>
+                }
+                <p class="product-business">From {{ product.business.business_name }}</p>
+                <time class="item-date" [attr.datetime]="product.created_on">Added {{ formatDate(product.created_on) }}</time>
+                <a class="card-action" [routerLink]="['/store', product.business.business_slug, 'products', (product.slug || slugifyProduct(product.product_name)) + '-' + (product.public_id || product.id)]">View product <span aria-hidden="true">→</span></a>
+              </article>
+            }
+          </div>
+          <p class="data-note">Only active products from approved, published storefronts are shown. Ordering currently uses product creation time because the product schema does not yet store a separate publication timestamp.</p>
+        } @else {
+          <p class="state-message">No recently published products are available yet.</p>
+        }
+      </section>
+
+      <section class="promotion-banner" id="promotions" aria-labelledby="promotions-title">
+        <div class="promotion-copy">
+          <p class="section-kicker">GROW TOGETHER</p>
+          <h2 id="promotions-title">Latest business promotions</h2>
+          <p>Current public promotions published by businesses on BBG.</p>
+        </div>
+        @if (loading()) {
+          <p class="promotion-state" role="status">Loading promotions…</p>
+        } @else if (promotions().length) {
+          <div class="promotion-grid">
+            @for (promotion of promotions(); track promotion.id) {
+              <article class="promotion-card">
+                <span class="promotion-business">{{ promotion.business_name }}</span>
+                <h3>{{ promotion.post_title }}</h3>
+                <p>{{ promotion.post_content }}</p>
+                <time [attr.datetime]="promotion.published_on">{{ formatDate(promotion.published_on) }}</time>
+              </article>
+            }
+          </div>
+        } @else {
+          <p class="promotion-state">There are no active public promotions right now.</p>
+        }
+      </section>
+
+      <section class="entrepreneur-callout" aria-labelledby="entrepreneur-title">
+        <div>
+          <p class="section-kicker">BUILT FOR BUSINESS</p>
+          <h2 id="entrepreneur-title">Have a business to grow?</h2>
+          <p>Create your business presence and connect with the BBG community.</p>
+        </div>
+        <button class="entrepreneur-register-button" type="button" (click)="startBusinessRegistration($event)">Register your business <span aria-hidden="true">→</span></button>
+      </section>
+    </main>
+  

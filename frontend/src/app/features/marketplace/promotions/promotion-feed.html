@@ -1,0 +1,16 @@
+    <main class="page">
+      <section class="intro"><p class="eyebrow">OFFERS FROM THE BBG COMMUNITY</p><h1>Discover <span>promotions</span></h1><p class="lead">Keep up with the latest public promotions shared by businesses on BBG.</p></section>
+      <section class="content">
+        <div class="heading"><div><p class="eyebrow">WHAT'S HAPPENING</p><h2>Latest promotions</h2></div><span>{{ promotions().length }} available</span></div>
+        @if (loading()) { <div class="state" role="status">Loading promotions…</div> }
+        @else if (error()) { <div class="state error" role="alert">{{ error() }}</div> }
+        @else if (promotions().length) {
+          <div class="grid">
+            @for (promotion of promotions(); track promotion.id) {
+              <article class="card"><div class="ribbon">BBG PROMOTION</div><p class="business">{{ promotion.business_name }}</p><h3>{{ promotion.post_title }}</h3><p class="description">{{ promotion.post_content }}</p><div class="dates"><time [attr.datetime]="promotion.published_on">Published {{ formatDate(promotion.published_on) }}</time>@if (promotion.valid_until) { <time [attr.datetime]="promotion.valid_until">Valid until {{ formatDate(promotion.valid_until) }}</time> }</div></article>
+            }
+          </div>
+        } @else { <div class="empty"><div class="gift">✦</div><h3>No active promotions right now</h3><p>When businesses publish public promotions, they will show up here.</p></div> }
+      </section>
+    </main>
+  

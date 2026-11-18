@@ -11,65 +11,7 @@ import { BusinessRegistrationApiService } from '../../core/business/business-reg
   selector: 'app-dashboard',
   standalone: true,
   imports: [RouterLink],
-  template: `
-    <main class="workspace">
-      <section class="workspace-heading">
-        <div>
-          <p class="heading-copy">Good {{ greeting() }}, {{ firstName() }}.</p>
-          
-        </div>
-      </section>
-
-      @if (loading()) {
-        <section class="loading-panel" role="status"><span class="loader"></span><div><strong>Preparing your account</strong><p>Checking your roles and available permissions…</p></div></section>
-      } @else if (error()) {
-        <section class="message-panel error-panel" role="alert"><strong>We couldn’t load this area.</strong><p>{{ error() }}</p><button type="button" (click)="reload()">Try again</button></section>
-      } @else {
-        <section class="context-banner">
-          <div class="context-symbol" aria-hidden="true">{{ selectedTenant() ? '⌂' : '◎' }}</div>
-          <div class="context-copy">
-            <span>{{ isPersonalContext() ? 'PERSONAL ACCOUNT' : isPlatformContext() ? 'PLATFORM ADMINISTRATION' : 'BUSINESS WORKSPACE' }}</span>
-            <strong>{{ selectedTenant() ? 'Business Workspace' : isPlatformContext() ? 'BBG Platform' : 'My Account' }}</strong>
-            <p>{{ isPersonalContext() ? 'Your personal orders, enquiries, payments and profile in one place.' : isPlatformContext() ? 'Manage BBG platform operations using your assigned administrator permissions.' : 'Manage your business operations using your assigned permissions.' }}</p>
-          </div>
-          @if (!isPersonalContext()) {
-            <div class="role-list">
-              @for (role of roleCodes(); track role) { <span class="role-chip">{{ roleLabel(role) }}</span> }
-              @if (!roleCodes().length) { <span class="role-chip muted">No assigned roles in this context</span> }
-            </div>
-          }
-        </section>
-
-        @if (summaryLoading()) {
-          <div class="summary-loading">Loading available activity…</div>
-        } @else if (summaryError()) {
-          <div class="summary-notice">{{ summaryError() }}</div>
-        } @else if (summaryCards().length) {
-          <section class="metrics-grid" aria-label="Account and business summary">
-            @for (metric of summaryCards(); track metric.label) {
-              <article class="metric-card">
-                <span class="metric-icon">{{ metric.icon }}</span>
-                <div><strong>{{ metric.value }}</strong><span>{{ metric.label }}</span></div>
-              </article>
-            }
-          </section>
-        }
-
-        @if (isPersonalContext() && personalShortcuts().length) {
-          <section class="personal-shortcuts">
-            <div><p class="eyebrow">MY ACCOUNT</p><h2>Your activity</h2><p>View your customer activity and personal account details.</p></div>
-            <div class="shortcut-grid">
-              @for (shortcut of personalShortcuts(); track shortcut.route) {
-                <a [routerLink]="shortcut.route"><span>{{ shortcut.icon }}</span><strong>{{ shortcut.title }}</strong><small>{{ shortcut.description }}</small></a>
-              }
-            </div>
-          </section>
-        }
-
-
-      }
-    </main>
-  `,
+  templateUrl: './dashboard.html',
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
     .workspace{width:100%;max-width:none;box-sizing:border-box;margin:0;padding:36px 32px 60px}

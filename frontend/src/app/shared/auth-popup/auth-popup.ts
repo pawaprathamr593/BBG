@@ -1,10 +1,11 @@
-import { Component, HostListener, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, inject } from '@angular/core';
 import { AuthDialogService } from '../../core/auth/auth-dialog.service';
 import { AuthExperienceComponent } from '../auth-experience/auth-experience';
 
 @Component({
   selector: 'app-auth-popup',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [AuthExperienceComponent],
   templateUrl: './auth-popup.html',
   styleUrl: './auth-popup.scss',
