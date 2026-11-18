@@ -69,20 +69,87 @@ final readonly class BusinessDao
             $existing = $db->createCommand(
                 "SELECT id FROM ROLES WHERE role_code = 'TENANT_OWNER' AND scope_type = 'TENANT' AND status = 'A' LIMIT 1",
             )->queryOne();
+
             if (is_array($existing) && isset($existing['id'])) {
-                $resArr['status'] = 'SUCCESS';
-                $resArr['data'] = ['id' => (int) $existing['id']];
-                return $resArr;
+                $roleId = (int) $existing['id'];
+            } else {
+                $db->createCommand(
+                    "INSERT INTO ROLES (role_code, role_name, scope_type, description, status)
+                     VALUES ('TENANT_OWNER', 'Tenant Owner', 'TENANT',
+                        'Owner of an approved BBG tenant workspace.', 'A')",
+                )->execute();
+                $roleId = (int) $db->getLastInsertId();
             }
-            $db->createCommand(
-                "INSERT INTO ROLES (role_code, role_name, scope_type, description, status)
-                 VALUES ('TENANT_OWNER', 'Tenant Owner', 'TENANT',
-                    'Owner of an approved BBG tenant workspace.', 'A')",
-            )->execute();
+
+            $permissions = $this->ensureTenantOwnerPermissions($db, $roleId);
+            if ($permissions['status'] !== 'SUCCESS') {
+                return $permissions;
+            }
+
             $resArr['status'] = 'SUCCESS';
-            $resArr['data'] = ['id' => (int) $db->getLastInsertId()];
+            $resArr['data'] = ['id' => $roleId];
         } catch (Throwable $exception) {
             return $this->error('ensureTenantOwnerRole', $exception);
+        }
+        return $resArr;
+    }
+
+    /**
+     * Keep the TENANT_OWNER role aligned with the approved business workspace
+     * permission catalogue. Safe to call repeatedly for new and existing roles.
+     */
+    private function ensureTenantOwnerPermissions(ConnectionInterface $db, int $roleId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $permissionCodes = [
+            'BUSINESS_PROFILE_MANAGE',
+            'CATALOGUE_MANAGE',
+            'CUSTOMERS_MANAGE',
+            'ENQUIRIES_MANAGE',
+            'ORDERS_MANAGE',
+            'PAYMENTS_VIEW',
+            'PROMOTIONS_MANAGE',
+            'SUBSCRIPTIONS_MANAGE',
+            'TENANT_MEMBERS_VIEW',
+            'ANALYTICS_VIEW',
+        ];
+
+        try {
+            $placeholders = [];
+            $params = [':role_id' => $roleId];
+            foreach ($permissionCodes as $index => $permissionCode) {
+                $placeholder = ':permission_' . $index;
+                $placeholders[] = $placeholder;
+                $params[$placeholder] = $permissionCode;
+            }
+            $inClause = implode(', ', $placeholders);
+
+            $available = $db->createCommand(
+                "SELECT COUNT(DISTINCT permission_code) AS permission_count
+                 FROM PERMISSIONS
+                 WHERE status = 'A' AND permission_code IN ($inClause)",
+                array_diff_key($params, [':role_id' => true]),
+            )->queryOne();
+
+            if (!is_array($available) || (int) ($available['permission_count'] ?? 0) !== count($permissionCodes)) {
+                $resArr['msgArr'][] = 'The TENANT_OWNER permission catalogue is incomplete. Seed all 10 approved business permissions before assigning this role.';
+                return $resArr;
+            }
+
+            $db->createCommand(
+                "INSERT INTO ROLE_PERMISSIONS
+                    (role_id, permission_id, status, created_by, updated_by)
+                 SELECT :role_id, p.id, 'A', NULL, NULL
+                 FROM PERMISSIONS p
+                 WHERE p.status = 'A' AND p.permission_code IN ($inClause)
+                 ON DUPLICATE KEY UPDATE status = 'A', updated_on = CURRENT_TIMESTAMP",
+                $params,
+            )->execute();
+
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['role_id' => $roleId, 'permission_count' => count($permissionCodes)];
+        } catch (Throwable $exception) {
+            return $this->error('ensureTenantOwnerPermissions', $exception);
         }
         return $resArr;
     }
