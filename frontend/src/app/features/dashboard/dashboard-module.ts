@@ -354,7 +354,7 @@ export class DashboardModule implements OnInit {
           }
           break;
         case 'analytics':
-          if (tenantId) this.summary.set(await this.request<DataRecord>('/api/v1/dashboard/entrepreneur/summary','dashboardParam','getTenantSummary',{tenant_id:tenantId}));
+          if (tenantId) this.summary.set(await this.request<DataRecord>('/api/v1/dashboard/entrepreneur/summary','dashboardParam','getEntrepreneurDashboard',{tenant_id:tenantId}));
           else return this.setUnsupported('Business analytics require Business Workspace access.');
           break;
         case 'platform-analytics':
