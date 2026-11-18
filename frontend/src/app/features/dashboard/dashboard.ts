@@ -4,13 +4,15 @@ import { AuthService } from '../../core/auth/auth.service';
 import { DashboardApiService } from '../../core/dashboard/dashboard-api.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
 import { BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
+import { WorkspaceNavIconComponent } from '../workspace/workspace-nav-icon';
+import { getWorkspaceNavItems, WorkspaceNavigationContext } from '../workspace/workspace-navigation';
 
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, WorkspaceNavIconComponent],
   templateUrl: './dashboard.html',
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
@@ -112,14 +114,10 @@ export class Dashboard implements OnInit {
   readonly selectedTenant = computed(() => this.tenants().find((tenant) => tenant.id === this.selectedTenantId()) ?? null);
   readonly isPlatformContext = computed(() => this.selectedTenantId() === null && this.permissions().some((permission) => permission.scope_type === 'PLATFORM'));
   readonly isPersonalContext = computed(() => this.selectedTenantId() === null && !this.isPlatformContext());
-  readonly personalShortcuts = computed(() => {
-    const definitions = [
-      { permission: 'CUSTOMER_PROFILE_VIEW', title: 'My Profile & Addresses', description: 'Manage your details and saved delivery addresses.', icon: '♙', route: '/dashboard/customers' },
-      { permission: 'ORDERS_VIEW', title: 'My Orders', description: 'Track orders placed with BBG businesses.', icon: '▤', route: '/dashboard/orders' },
-      { permission: 'ENQUIRIES_VIEW', title: 'My Enquiries', description: 'Continue your conversations with businesses.', icon: '↗', route: '/dashboard/enquiries' },
-      { permission: 'PAYMENTS_VIEW', title: 'My Payments', description: 'Review your customer payment activity.', icon: '₹', route: '/dashboard/payments' },
-    ];
-    return this.isPersonalContext() ? definitions : [];
+  readonly moduleCards = computed(() => {
+    const context = this.workspace.activeContext();
+    if (!context) return [];
+    return getWorkspaceNavItems(context as WorkspaceNavigationContext, this.permissions());
   });
   readonly roleCodes = computed(() => [...new Set(this.permissions().map((permission) => permission.role_code))]);
   readonly firstName = computed(() => (this.auth.user()?.full_name || 'there').trim().split(/\s+/)[0]);
