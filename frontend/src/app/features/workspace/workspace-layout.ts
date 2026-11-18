@@ -121,6 +121,7 @@ export class WorkspaceLayout implements OnInit {
   readonly visibleNavItems = computed(() => getWorkspaceNavItems(
     this.activeTenantId() !== null ? 'BUSINESS' : this.activeContext() ?? 'PERSONAL',
     this.permissions(),
+    this.workspace.activeTenant()?.active_entitlements ?? null,
   ));
 
   async ngOnInit(): Promise<void> {
