@@ -85,7 +85,7 @@ Preserve BBG responsive patterns, dialogs/drawers, theme tokens and accessible f
 - UNKNOWN: Live S3 bucket/CORS configuration for end-to-end media/proof verification.
 - UNKNOWN: Tenant analytics beyond entrepreneur summary and promotion engagement.
 
-- The current `AuthDao::getUserPermissions` and `TenantDao::hasTenantPermission` queries do not enforce `PLAN_ENTITLEMENTS`; backend plan-based authorization remains a separate required backend task.
+- The current `AuthDao::getUserPermissions` and `TenantDao::hasTenantPermission` queries do not enforce `PLAN_ENTITLEMENTS`; backend plan-based authorization remains a separate required backend task. In addition, current backend service checks still query legacy uppercase keys such as `CATALOGUE_MANAGE`, `CUSTOMERS_MANAGE`, `ENQUIRIES_MANAGE`, `PAYMENTS_VIEW`, `PROMOTIONS_MANAGE`, `SUBSCRIPTIONS_MANAGE` and `TENANT_MEMBERS_VIEW`, which are absent from the uploaded seed permission catalogue. Frontend visibility now follows the seed, but protected API calls will remain denied until the backend permission checks are aligned.
 ## Implementation log
 - Corrected the tenant-owner authorization policy: permissions must be derived from the tenant's approved active plan entitlements, not granted as a static TENANT_OWNER role-wide set. Removed the unconditional role mapping; plan-entitlement enforcement remains to be implemented and verified.
 - Added business module cards to the workspace overview from the same permission-filtered navigation registry used by the sidebar; cards link to the existing business routes.
