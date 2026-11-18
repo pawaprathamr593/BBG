@@ -441,7 +441,7 @@ final readonly class AdminDao
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->many($db, "SELECT ts.id AS subscription_id, ts.tenant_id, t.tenant_name,
-            p.plan_name, ts.starts_on, ts.ends_on, ts.renewal_due_on, ts.amount, ts.currency, ts.bcn
+            p.plan_name, ts.subscription_status, ts.starts_on, ts.ends_on, ts.renewal_due_on, ts.amount, ts.currency, ts.bcn
             FROM TENANT_SUBSCRIPTIONS ts
             INNER JOIN TENANTS t ON t.id = ts.tenant_id AND t.status = 'A'
             INNER JOIN PLANS p ON p.id = ts.plan_id AND p.status = 'A'
