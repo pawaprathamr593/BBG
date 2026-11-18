@@ -1,33 +1,46 @@
 import { inject } from '@angular/core';
 import { CanActivateChildFn, Router } from '@angular/router';
 import { WorkspaceContextService } from '../workspace/workspace-context.service';
+import { hasActiveEntitlement, hasWorkspacePermission } from '../../features/workspace/workspace-navigation';
 
 const BUSINESS_PERMISSIONS: Record<string, string> = {
-  profile: 'BUSINESS_PROFILE_MANAGE',
-  storefront: 'BUSINESS_PROFILE_MANAGE',
-  catalogue: 'CATALOGUE_MANAGE',
-  customers: 'CUSTOMERS_MANAGE',
-  enquiries: 'ENQUIRIES_MANAGE',
-  orders: 'ORDERS_MANAGE',
-  payments: 'PAYMENTS_VIEW',
-  promotions: 'PROMOTIONS_MANAGE',
-  subscriptions: 'SUBSCRIPTIONS_MANAGE',
-  members: 'TENANT_MEMBERS_VIEW',
-  analytics: 'ANALYTICS_VIEW',
+  profile: 'business.view',
+  storefront: 'business.view',
+  catalogue: 'catalogue.view',
+  customers: 'customer.view',
+  enquiries: 'enquiry.view',
+  orders: 'order.view',
+  payments: 'payment.view',
+  promotions: 'promotion.view',
+  subscriptions: 'subscription.view',
+  members: 'tenant.view',
+  analytics: 'report.view',
+};
+
+const BUSINESS_ENTITLEMENTS: Record<string, string> = {
+  profile: 'business.profile',
+  storefront: 'business.profile',
+  catalogue: 'catalogue.enabled',
+  promotions: 'promotions.enabled',
+  analytics: 'advanced.reports.enabled',
 };
 
 const PLATFORM_PERMISSIONS: Record<string, string> = {
-  'platform-users': 'PLATFORM_USERS_MANAGE',
-  'business-approval': 'BUSINESS_APPROVE',
-  'subscription-approval': 'SUBSCRIPTIONS_APPROVE',
-  'payment-qr-settings': 'SUBSCRIPTIONS_APPROVE',
-  moderation: 'MODERATION_MANAGE',
-  categories: 'CATEGORIES_MANAGE',
-  'platform-analytics': 'ANALYTICS_VIEW',
-  'system-health': 'SYSTEM_HEALTH_VIEW',
+  'platform-users': 'user.view',
+  'business-approval': 'business.approve',
+  'subscription-approval': 'subscription.approve',
+  'payment-qr-settings': 'subscription.update',
+  moderation: 'admin.view',
+  categories: 'admin.view',
+  'platform-analytics': 'report.view',
+  'system-health': 'admin.view',
 };
 
-const PERSONAL_SECTIONS = new Set(['customers', 'enquiries', 'orders', 'payments']);
+const PERSONAL_PERMISSIONS: Record<string, string> = {
+  customers: 'user.view',
+  enquiries: 'enquiry.own.view',
+  orders: 'order.own.view',
+};
 
 /**
  * Prevents direct navigation to workspace sections that are not available in
