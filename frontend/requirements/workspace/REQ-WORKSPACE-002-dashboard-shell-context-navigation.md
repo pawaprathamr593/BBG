@@ -51,7 +51,7 @@ Routes: existing /dashboard and /dashboard/:section. Requires authenticated sess
 | Tenant detail | POST | /api/v1/tenants/mine/detail | getMyTenant | Existing |
 
 ## 8. Permissions
-Use the seeded permission catalogue returned by `getPermissions`: tenant view keys include `business.view`, `catalogue.view`, `customer.view`, `enquiry.view`, `order.view`, `payment.view`, `promotion.view`, `subscription.view`, `tenant.view` and `report.view`; platform view/review keys include `user.view`, `business.approve`, `subscription.approve`, `admin.view` and `report.view`; consumer keys include `user.view`, `order.own.view` and `enquiry.own.view`. `CONSUMER` rows may be returned with `PLATFORM` scope by the current demo seed and are treated as Personal-only in the frontend; they must never grant Platform Administration context. Unknown permission denies access. The SQL seed labels this matrix as a proposed starter policy.
+Use the seeded permission catalogue returned by `getPermissions`: tenant view keys include `business.view`, `catalogue.view`, `customer.view`, `enquiry.view`, `order.view`, `payment.view`, `promotion.view`, `subscription.view`, `tenant.view` and `report.view`; platform view/review keys include `user.view`, `business.approve`, `subscription.approve`, `admin.view` and `report.view`; consumer keys include `user.view`, `order.own.view` and `enquiry.own.view`. `CONSUMER` rows may be returned with `PLATFORM` scope by the current demo seed and are treated as Personal-only in the frontend; they must never grant Platform Administration context. Unknown permission denies access. The SQL seed labels this matrix as a proposed starter policy. The current backend role-permission response does not itself apply plan-entitlement filtering.
 
 ## 9. Rules and validation
 Backend authorization is authoritative. Never trust browser-supplied tenant IDs without membership and backend checks. Tenant roles do not imply Platform access. Do not persist access tokens in browser storage. Preserve route paths and shell behaviour.
@@ -73,6 +73,7 @@ Preserve existing mobile navigation, touch targets, keyboard operation, visible 
 ## Open questions
 - None for the authentication guard. Context-specific authorization continues to rely on existing server-provided permissions and backend enforcement.
 
+- Isolated `CONSUMER` permission rows from Platform Administration context; the demo seed's `PLATFORM` scope is treated as Personal-only in the UI pending correction of the seed/backend role-scope mismatch.
 ## Implementation log
 - Added a shared workspace navigation registry so the sidebar and overview use the same context and permission filtering.
 - Replaced legacy synthetic permission names with exact seeded view/review permission codes; the Platform Admin and Platform Super Admin contexts remain separated from Consumer permissions.
