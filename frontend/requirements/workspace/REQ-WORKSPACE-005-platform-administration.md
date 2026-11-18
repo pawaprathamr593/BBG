@@ -19,7 +19,7 @@ Authorized Platform Admins need a controlled workspace for user administration, 
 
 ## 3. Scope
 **In scope:** Users list/detail/suspend/restore; business approval queue/detail/approve/reject/reopen; subscription pending/active/detail/approve/reject; categories list/create/update/delete/stats; moderation queue/action/history; analytics summary/trends; safe health summary.
-**Out of scope:** Assigning platform roles; gateway/refunds/reconciliation; payment QR configuration; secrets/raw infrastructure data; unsupported moderation targets or new endpoints.
+**Out of scope:** Assigning platform roles; gateway/refunds/reconciliation; secrets/raw infrastructure data; unsupported moderation targets or new endpoints. Payment QR configuration is in scope because its routes and backend workers exist on this branch; it only configures instructions for new subscription requests and does not settle payments.
 
 ## 4. Entry and context
 Existing /dashboard/platform-users, /dashboard/business-approval, /dashboard/subscription-approval, /dashboard/categories, /dashboard/moderation, /dashboard/platform-analytics and /dashboard/system-health. Requires trusted platform-scoped role and permissions.
