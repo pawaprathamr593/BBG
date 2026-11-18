@@ -87,3 +87,4 @@ Preserve BBG responsive patterns, dialogs/drawers, theme tokens and accessible f
 
 ## Implementation log
 - Requirement created on approved branch HG_CODE_IMPROVEMENTS.
+- Added tenant-scoped order, enquiry, payment and subscription detail views using the existing API V1 routes and read actions; the backend remains responsible for tenant membership and record ownership.
