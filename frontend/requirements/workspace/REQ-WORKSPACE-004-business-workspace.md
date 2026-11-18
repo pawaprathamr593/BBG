@@ -86,7 +86,7 @@ Preserve BBG responsive patterns, dialogs/drawers, theme tokens and accessible f
 - UNKNOWN: Tenant analytics beyond entrepreneur summary and promotion engagement.
 
 ## Implementation log
-- Backend RBAC now idempotently assigns all 10 approved business permission codes to the TENANT_OWNER role when the role is ensured; existing tenant-owner mappings are backfilled by the new SQL seed.
+- Corrected the tenant-owner authorization policy: permissions must be derived from the tenant's approved active plan entitlements, not granted as a static TENANT_OWNER role-wide set. Removed the unconditional role mapping; plan-entitlement enforcement remains to be implemented and verified.
 - Added business module cards to the workspace overview from the same permission-filtered navigation registry used by the sidebar; cards link to the existing business routes.
 - Requirement created on approved branch HG_CODE_IMPROVEMENTS.
 - Added tenant-scoped order, enquiry, payment and subscription detail views using the existing API V1 routes and read actions; the backend remains responsible for tenant membership and record ownership.
