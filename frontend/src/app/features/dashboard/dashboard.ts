@@ -5,7 +5,7 @@ import { DashboardApiService } from '../../core/dashboard/dashboard-api.service'
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
 import { BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
 import { WorkspaceNavIconComponent } from '../workspace/workspace-nav-icon';
-import { getWorkspaceNavItems, type WorkspaceNavigationContext } from '../workspace/workspace-navigation';
+import { getWorkspaceNavItems } from '../workspace/workspace-navigation';
 
 
 @Component({
@@ -117,7 +117,7 @@ export class Dashboard implements OnInit {
   readonly moduleCards = computed(() => {
     const context = this.workspace.activeContext();
     if (!context) return [];
-    return getWorkspaceNavItems(context as WorkspaceNavigationContext, this.permissions());
+    return getWorkspaceNavItems(context, this.permissions());
   });
   readonly roleCodes = computed(() => [...new Set(this.permissions().map((permission) => permission.role_code))]);
   readonly firstName = computed(() => (this.auth.user()?.full_name || 'there').trim().split(/\s+/)[0]);
