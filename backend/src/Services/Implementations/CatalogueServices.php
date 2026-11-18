@@ -135,7 +135,7 @@ final readonly class CatalogueServices implements ICatalogueServices
     private function getTenantProductCategories(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'catalogue.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'CatalogueServices::getTenantProductCategories');
         }
@@ -151,7 +151,7 @@ final readonly class CatalogueServices implements ICatalogueServices
     private function getTenantProducts(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'catalogue.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'CatalogueServices::getTenantProducts');
         }
@@ -191,7 +191,7 @@ final readonly class CatalogueServices implements ICatalogueServices
     private function getTenantProduct(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'catalogue.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'CatalogueServices::getTenantProduct');
         }
@@ -216,7 +216,7 @@ final readonly class CatalogueServices implements ICatalogueServices
     private function getProductMedia(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'catalogue.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'CatalogueServices::getProductMedia');
         }
@@ -262,7 +262,7 @@ final readonly class CatalogueServices implements ICatalogueServices
     private function manageTenantProductCategory(array $actionData, string $operation): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, match ($operation) { 'create' => 'catalogue.create', 'update' => 'catalogue.update', 'delete' => 'catalogue.delete', default => '' });
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'CatalogueServices::manageTenantProductCategory');
         }
@@ -318,7 +318,7 @@ final readonly class CatalogueServices implements ICatalogueServices
     private function manageTenantProduct(array $actionData, string $operation): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, match ($operation) { 'create' => 'catalogue.create', 'update' => 'catalogue.update', 'delete' => 'catalogue.delete', default => '' });
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'CatalogueServices::manageTenantProduct');
         }
@@ -513,14 +513,14 @@ final readonly class CatalogueServices implements ICatalogueServices
             }
         }
 
-        if (!in_array($entitlements['PRODUCT_MANAGEMENT'] ?? '', ['1', 'TRUE', 'YES'], true)) {
-            $resArr['msgArr'][] = 'An active subscription with PRODUCT_MANAGEMENT entitlement is required for product management.';
+        if (!in_array($entitlements['catalogue.enabled'] ?? '', ['1', 'TRUE', 'YES'], true)) {
+            $resArr['msgArr'][] = 'An active subscription with catalogue.enabled entitlement is required for product management.';
             return $resArr;
         }
 
-        $limit = $entitlements['PRODUCT_LIMIT'] ?? null;
+        $limit = $entitlements['product.limit'] ?? null;
         if ($limit !== null && $limit !== 'UNLIMITED' && (!is_numeric($limit) || (int) $limit < 0)) {
-            $resArr['msgArr'][] = 'The active subscription PRODUCT_LIMIT entitlement is invalid.';
+            $resArr['msgArr'][] = 'The active subscription product.limit entitlement is invalid.';
             return $resArr;
         }
 
@@ -532,7 +532,7 @@ final readonly class CatalogueServices implements ICatalogueServices
     private function generateProductMediaUploadUrl(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, 'catalogue.update');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'CatalogueServices::generateProductMediaUploadUrl');
         }
@@ -599,7 +599,7 @@ final readonly class CatalogueServices implements ICatalogueServices
     private function manageProductMedia(array $actionData, string $operation): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->tenantContext($actionData);
+        $context = $this->tenantContext($actionData, $operation === 'delete' ? 'catalogue.delete' : 'catalogue.update');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'CatalogueServices::manageProductMedia');
         }
@@ -752,7 +752,7 @@ final readonly class CatalogueServices implements ICatalogueServices
         }
     }
 
-    private function tenantContext(array $actionData): array
+    private function tenantContext(array $actionData, string $permissionCode): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $principal = $this->authServices->getAuth([
@@ -769,13 +769,13 @@ final readonly class CatalogueServices implements ICatalogueServices
             return $resArr;
         }
         $permission = $this->tenantDao->hasTenantPermission(
-            $this->db, (int) $principal['data']['user_id'], $tenantId, 'CATALOGUE_MANAGE',
+            $this->db, (int) $principal['data']['user_id'], $tenantId, $permissionCode,
         );
         if ($permission['status'] !== 'SUCCESS') {
             return $this->propagateFailure($permission, 'CatalogueServices::tenantContext');
         }
         if ($permission['data'] === []) {
-            $resArr['msgArr'][] = 'CATALOGUE_MANAGE permission is required for this tenant.';
+            $resArr['msgArr'][] = 'The required catalogue permission is missing for this tenant.';
             return $resArr;
         }
         $resArr['status'] = 'SUCCESS';
