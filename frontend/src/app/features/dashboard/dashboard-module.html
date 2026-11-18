@@ -162,7 +162,7 @@
                       <div><strong>{{ item['bcn'] }}</strong><button type="button" (click)="copyBcn(item['bcn'])">Copy</button></div>
                     </div>
                   }
-                  @if (section() === 'platform-users' || section() === 'business-approval') {
+                  @if (['platform-users','business-approval','orders','enquiries','payments'].includes(section())) {
                     <button type="button" class="secondary-action" (click)="openRecordDetail(item)" [disabled]="busy()">View details</button>
                   }
                   @if (section() === 'subscription-approval') {
@@ -223,11 +223,11 @@
         <div class="composer-backdrop" (click)="recordDetail.set(null)">
           <section class="promotion-composer subscription-review-dialog" role="dialog" aria-modal="true" aria-labelledby="record-detail-title" (click)="$event.stopPropagation()">
             <header>
-              <div><p class="eyebrow">PLATFORM ADMINISTRATION</p><h2 id="record-detail-title">{{ recordDetailTitle() }}</h2></div>
+              <div><p class="eyebrow">{{ contextLabel() }}</p><h2 id="record-detail-title">{{ recordDetailTitle() }}</h2></div>
               <button type="button" class="composer-close" (click)="recordDetail.set(null)" aria-label="Close details">×</button>
             </header>
             <div class="review-detail-grid">
-              @for (entry of recordEntries(detail); track entry.key) {
+              @for (entry of detailEntries(detail); track entry.key) {
                 <div><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
               }
             </div>
