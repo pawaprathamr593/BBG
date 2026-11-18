@@ -348,6 +348,7 @@ export class DashboardModule implements OnInit {
           }
           {
             const profile = await this.auth.loadProfile();
+            if (loadId !== this.loadSequence) return;
             this.summary.set(profile as unknown as DataRecord);
             try {
               const addresses = await this.request<ListResult>('/api/v1/customers/addresses/list','customerParam','listMyAddresses');
