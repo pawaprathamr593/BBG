@@ -122,6 +122,9 @@
                       <div><strong>{{ item['bcn'] }}</strong><button type="button" (click)="copyBcn(item['bcn'])">Copy</button></div>
                     </div>
                   }
+                  @if (section() === 'platform-users' || section() === 'business-approval') {
+                    <button type="button" class="secondary-action" (click)="openRecordDetail(item)" [disabled]="busy()">View details</button>
+                  }
                   @if (section() === 'subscription-approval') {
                     <button type="button" class="secondary-action" (click)="openSubscriptionReview(item)" [disabled]="busy()">View business details, receipts & history</button>
                   }
@@ -175,6 +178,21 @@
         } @else if (!summaryEntries().length && !(section() === 'subscriptions' && plans().length)) {
           <section class="state-panel empty"><span class="state-icon">⌑</span><strong>Nothing to show yet</strong><p>There are no records available for this section in your current area.</p></section>
         }
+      }
+      @if (recordDetail(); as detail) {
+        <div class="composer-backdrop" (click)="recordDetail.set(null)">
+          <section class="promotion-composer subscription-review-dialog" role="dialog" aria-modal="true" aria-labelledby="record-detail-title" (click)="$event.stopPropagation()">
+            <header>
+              <div><p class="eyebrow">PLATFORM ADMINISTRATION</p><h2 id="record-detail-title">{{ recordDetailTitle() }}</h2></div>
+              <button type="button" class="composer-close" (click)="recordDetail.set(null)" aria-label="Close details">×</button>
+            </header>
+            <div class="review-detail-grid">
+              @for (entry of recordEntries(detail); track entry.key) {
+                <div><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
+              }
+            </div>
+          </section>
+        </div>
       }
       @if (subscriptionReview()) {
         <div class="composer-backdrop" (click)="subscriptionReview.set(null)">
