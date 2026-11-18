@@ -60,10 +60,10 @@ Existing /dashboard, /dashboard/profile, /dashboard/catalogue, /dashboard/member
 | Customer directory | POST | /api/v1/customers/tenant/list | listTenantCustomers | Route and worker exist on this branch; API V1 catalogue is stale and should be reconciled separately |
 
 ## 8. Permissions
-Use exact tenant permission codes from the seed: `business.view`, `catalogue.view`, `customer.view`, `enquiry.view`, `order.view`, `payment.view`, `promotion.view`, `subscription.view`, `tenant.view` and `report.view`. The frontend also consumes `active_entitlements` returned by the existing tenant-list API: `business.profile`, `catalogue.enabled`, `promotions.enabled` and `advanced.reports.enabled` gate the corresponding workspace entries. The seed does not define customer, enquiry, order, payment, team or subscription entitlements; these remain permission-gated only until product policy defines plan entitlements. Backend authorization remains authoritative.
+Use exact tenant permission codes from the seed: `business.view`, `catalogue.view`, `customer.view`, `enquiry.view`, `order.view`, `payment.view`, `promotion.view`, `subscription.view`, `tenant.view` and `report.view`. The frontend also consumes `active_entitlements` returned by the existing tenant-list API: `business.profile`, `storefront.enabled`, `catalogue.enabled`, `promotions.enabled` and `advanced.reports.enabled` gate the corresponding workspace entries. The seed does not define customer, enquiry, order, payment, team or subscription entitlements; these remain permission-gated only until product policy defines plan entitlements. Backend authorization remains authoritative.
 
 ## 9. Rules and validation
-Tenant ID is not an authorization grant. Order transitions limited to backend-supported lifecycle. Payments read-only. Subscription proof uses presigned upload + submit and does not approve/settle. Product media uses documented presigned upload/link. No tenant customer list until documented.
+Tenant ID is not an authorization grant. The current backend permission queries do not yet apply plan entitlements when resolving effective permissions; frontend entitlement checks are UX-only until backend enforcement is implemented. Order transitions limited to backend-supported lifecycle. Payments read-only. Subscription proof uses presigned upload + submit and does not approve/settle. Product media uses documented presigned upload/link. No tenant customer list until documented.
 
 ## 10. UI states
 Loading, empty, error/retry, success, validation, saving/disabled and upload progress/failure. Prevent duplicate mutations and confirm destructive actions.
@@ -85,6 +85,7 @@ Preserve BBG responsive patterns, dialogs/drawers, theme tokens and accessible f
 - UNKNOWN: Live S3 bucket/CORS configuration for end-to-end media/proof verification.
 - UNKNOWN: Tenant analytics beyond entrepreneur summary and promotion engagement.
 
+- The current `AuthDao::getUserPermissions` and `TenantDao::hasTenantPermission` queries do not enforce `PLAN_ENTITLEMENTS`; backend plan-based authorization remains a separate required backend task.
 ## Implementation log
 - Corrected the tenant-owner authorization policy: permissions must be derived from the tenant's approved active plan entitlements, not granted as a static TENANT_OWNER role-wide set. Removed the unconditional role mapping; plan-entitlement enforcement remains to be implemented and verified.
 - Added business module cards to the workspace overview from the same permission-filtered navigation registry used by the sidebar; cards link to the existing business routes.
