@@ -73,7 +73,7 @@ Review screens remain usable on tablet/mobile; preserve theme tokens, focus and 
 3. Successful decisions refresh server-confirmed lifecycle state.
 4. Failed decisions never show false success.
 5. Subscription proof is reviewed through existing admin APIs.
-6. No fabricated payment QR configuration workflow exists.
+6. Payment QR configuration uses the branch-implemented read, presigned upload and save operations; it never marks a customer order or payment as settled.
 7. Health UI exposes only safe summary data.
 
 ## Open questions
