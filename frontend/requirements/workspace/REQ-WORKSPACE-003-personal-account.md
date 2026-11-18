@@ -22,7 +22,7 @@ Consumers need a Personal workspace to manage their own profile and addresses an
 **Out of scope:** Other customers' records, tenant-wide directory, tenant order actions, business enquiry responses, payment gateway, refunds or new fields/endpoints.
 
 ## 4. Entry and context
-Existing /dashboard, /dashboard/customers, /dashboard/orders, /dashboard/enquiries and /dashboard/payments. Requires authenticated Personal context; APIs scope data to the authenticated principal.
+Existing /dashboard, /dashboard/customers, /dashboard/orders and /dashboard/enquiries. `/dashboard/payments` remains unavailable in Personal context because the seed has no consumer own-payment permission. Requires authenticated Personal context; APIs scope data to the authenticated principal.
 
 ## 5. Flow
 1. Open Personal context.
