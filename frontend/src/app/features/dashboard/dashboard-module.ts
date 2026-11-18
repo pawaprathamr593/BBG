@@ -6,6 +6,7 @@ import { filter, firstValueFrom, lastValueFrom, tap } from 'rxjs';
 import { API_BASE_URL } from '../../core/config/api-base-url';
 import { AuthService } from '../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
+import { hasWorkspacePermission } from '../../core/workspace/workspace-access';
 
 type EnvelopeKey = 'authParam' | 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam' | 'tenantParam' | 'dashboardParam';
 interface ApiEnvelope<T = unknown> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION'; msgArr?: string[]; data?: T | []; }
@@ -15,6 +16,29 @@ interface ListResult {
   pagination?: { page?: number; page_size?: number; total?: number };
 }
 class StaleWorkspaceRequestError extends Error {}
+
+const ACTION_PERMISSION_CODES: Record<string, string> = {
+  'confirm-order': 'order.update',
+  'cancel-order': 'order.update',
+  'reply-enquiry': 'enquiry.update',
+  'close-enquiry': 'enquiry.update',
+  'manage-post-media': 'promotion.update',
+  'publish-promotion': 'promotion.update',
+  'unpublish-promotion': 'promotion.update',
+  'edit-address': 'user.update',
+  'default-address': 'user.update',
+  'delete-address': 'user.update',
+  'suspend-user': 'user.update',
+  'restore-user': 'user.update',
+  'approve-business': 'business.approve',
+  'reject-business': 'business.approve',
+  'renew-subscription': 'subscription.create',
+  'approve-subscription': 'subscription.approve',
+  'reject-subscription': 'subscription.approve',
+  moderate: 'admin.update',
+  'edit-category': 'admin.update',
+  'delete-category': 'admin.delete',
+};
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -74,8 +98,7 @@ export class DashboardModule implements OnInit {
   readonly loading = signal(false);
   readonly busy = signal(false);
   readonly activeTenantId = this.workspace.activeTenantId;
-  readonly isPersonalContext = computed(() => this.workspace.activeTenantId() === null
-    && !this.workspace.permissions().some((permission) => permission.scope_type === 'PLATFORM'));
+  readonly isPersonalContext = computed(() => this.workspace.activeContext() === 'PERSONAL');
   readonly error = signal('');
   readonly notice = signal('');
   readonly unsupported = signal('');
@@ -515,6 +538,22 @@ export class DashboardModule implements OnInit {
     visit(item, '', 0);
     return entries;
   }
+  can(permissionCode: string): boolean {
+    const context = this.workspace.activeContext();
+    if (!context) return false;
+    const scope = context === 'BUSINESS' ? 'TENANT' : context === 'PLATFORM' ? 'PLATFORM' : 'GLOBAL';
+    return hasWorkspacePermission(this.workspace.permissions(), scope, permissionCode);
+  }
+
+  canAction(action: string): boolean {
+    const permissionCode = ACTION_PERMISSION_CODES[action];
+    return permissionCode !== undefined && this.can(permissionCode);
+  }
+
+  visibleActionsFor(item: DataRecord): Array<{key:string;label:string;danger?:boolean}> {
+    return this.actionsFor(item).filter((action) => this.canAction(action.key));
+  }
+
   actionsFor(item: DataRecord): Array<{key:string;label:string;danger?:boolean}> {
     const status = this.statusOf(item).toUpperCase();
     if (this.section()==='orders' && this.workspace.activeTenantId()!==null && !['CANCELLED','COMPLETED','DELIVERED'].includes(status)) return [{key:'confirm-order',label:'Confirm order'},{key:'cancel-order',label:'Cancel order',danger:true}];
@@ -533,7 +572,7 @@ export class DashboardModule implements OnInit {
   }
 
   async runAction(action: string, item: DataRecord): Promise<void> {
-    if (this.busy()) return;
+    if (this.busy() || !this.canAction(action)) return;
     const tenantId = this.workspace.activeTenantId();
     const id = this.recordId(item);
     let path = ''; let key: EnvelopeKey = 'adminParam'; let actionType = ''; let data: DataRecord = {};
