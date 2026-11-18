@@ -75,3 +75,5 @@ Mobile-first forms and lists; no horizontal overflow; preserve keyboard access, 
 
 ## Implementation log
 - Requirement created on approved branch HG_CODE_IMPROVEMENTS.
+- Added personal profile editing through the existing auth profile update API.
+- Added saved-address editing through the existing customer address update API; existing create/default/delete actions remain intact.
