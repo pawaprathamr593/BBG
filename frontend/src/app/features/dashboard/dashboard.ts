@@ -41,7 +41,7 @@ import { getWorkspaceNavItems, type WorkspaceNavigationContext } from '../worksp
     .section-heading .eyebrow{margin-bottom:7px}.section-heading h2{margin:0;font-size:1.55rem;letter-spacing:-.035em}.section-heading p:not(.eyebrow){margin:7px 0 0;color:var(--text-secondary);font-size:.82rem}
     .module-count{padding:7px 10px;color:var(--text-secondary);background:var(--surface-subtle);border:1px solid var(--border);border-radius:8px;font-size:.72rem;font-weight:750;white-space:nowrap}
     .module-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
-    .module-card{min-height:190px;padding:20px;background:var(--surface-card);border:1px solid var(--border);border-radius:14px;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+    .module-card{display:block;min-height:190px;padding:20px;color:var(--text-primary);text-decoration:none;background:var(--surface-card);border:1px solid var(--border);border-radius:14px;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
     .module-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--brand) 38%,var(--border));box-shadow:0 10px 26px rgba(20,35,26,.06)}
     .module-top{display:flex;align-items:center;justify-content:space-between;gap:10px}.module-icon{display:grid;width:42px;height:42px;place-items:center;color:var(--brand);background:var(--brand-soft);border-radius:11px;font-size:1.2rem}
     .access-indicator{display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:.65rem;font-weight:700}.access-indicator i{width:7px;height:7px;background:#2e9c67;border-radius:50%}
