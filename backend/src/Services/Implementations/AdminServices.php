@@ -166,7 +166,7 @@ final readonly class AdminServices implements IAdminServices
     private function getPlatformUsers(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'PLATFORM_USERS_MANAGE');
+        $context = $this->platformContext($actionData, 'user.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getPlatformUsers');
         }
@@ -191,7 +191,7 @@ final readonly class AdminServices implements IAdminServices
     private function getPlatformUser(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'PLATFORM_USERS_MANAGE');
+        $context = $this->platformContext($actionData, 'user.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getPlatformUser');
         }
@@ -212,7 +212,7 @@ final readonly class AdminServices implements IAdminServices
     private function managePlatformUser(array $actionData, string $newStatus): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'PLATFORM_USERS_MANAGE');
+        $context = $this->platformContext($actionData, 'user.update');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::managePlatformUser');
         }
@@ -228,7 +228,7 @@ final readonly class AdminServices implements IAdminServices
     private function getPendingBusinesses(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'BUSINESS_APPROVE');
+        $context = $this->platformContext($actionData, 'business.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getPendingBusinesses');
         }
@@ -252,7 +252,7 @@ final readonly class AdminServices implements IAdminServices
     private function getBusinessForReview(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'BUSINESS_APPROVE');
+        $context = $this->platformContext($actionData, 'business.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getBusinessForReview');
         }
@@ -273,7 +273,7 @@ final readonly class AdminServices implements IAdminServices
     private function manageBusinessDecision(array $actionData, string $newStatus): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'BUSINESS_APPROVE');
+        $context = $this->platformContext($actionData, 'business.approve');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::manageBusinessDecision');
         }
@@ -323,7 +323,7 @@ final readonly class AdminServices implements IAdminServices
     private function getPendingSubscriptions(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'SUBSCRIPTIONS_APPROVE');
+        $context = $this->platformContext($actionData, 'subscription.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getPendingSubscriptions');
         }
@@ -347,7 +347,7 @@ final readonly class AdminServices implements IAdminServices
     private function getSubscriptionForReview(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'SUBSCRIPTIONS_APPROVE');
+        $context = $this->platformContext($actionData, 'subscription.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getSubscriptionForReview');
         }
@@ -385,7 +385,7 @@ final readonly class AdminServices implements IAdminServices
     private function getCurrentPaymentQrConfig(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'SUBSCRIPTIONS_APPROVE');
+        $context = $this->platformContext($actionData, 'subscription.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getCurrentPaymentQrConfig');
         }
@@ -404,7 +404,7 @@ final readonly class AdminServices implements IAdminServices
     private function generatePaymentQrUploadUrl(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'SUBSCRIPTIONS_APPROVE');
+        $context = $this->platformContext($actionData, 'subscription.update');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::generatePaymentQrUploadUrl');
         }
@@ -430,7 +430,7 @@ final readonly class AdminServices implements IAdminServices
     private function savePaymentQrConfig(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'SUBSCRIPTIONS_APPROVE');
+        $context = $this->platformContext($actionData, 'subscription.update');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::savePaymentQrConfig');
         }
@@ -487,7 +487,7 @@ final readonly class AdminServices implements IAdminServices
     private function getActiveSubscriptions(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'SUBSCRIPTIONS_APPROVE');
+        $context = $this->platformContext($actionData, 'subscription.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getActiveSubscriptions');
         }
@@ -511,7 +511,7 @@ final readonly class AdminServices implements IAdminServices
     private function manageSubscriptionDecision(array $actionData, bool $approve): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'SUBSCRIPTIONS_APPROVE');
+        $context = $this->platformContext($actionData, 'subscription.approve');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::manageSubscriptionDecision');
         }
@@ -642,7 +642,7 @@ final readonly class AdminServices implements IAdminServices
     private function getAdminCategories(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'CATEGORIES_MANAGE');
+        $context = $this->platformContext($actionData, 'admin.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getAdminCategories');
         }
@@ -667,7 +667,7 @@ final readonly class AdminServices implements IAdminServices
     private function getCategoryStatistics(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'CATEGORIES_MANAGE');
+        $context = $this->platformContext($actionData, 'admin.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getCategoryStatistics');
         }
@@ -688,7 +688,13 @@ final readonly class AdminServices implements IAdminServices
     private function manageCategory(array $actionData, string $operation): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'CATEGORIES_MANAGE');
+        $permissionCode = match ($operation) {
+            'create' => 'admin.create',
+            'update' => 'admin.update',
+            'delete' => 'admin.delete',
+            default => '',
+        };
+        $context = $this->platformContext($actionData, $permissionCode);
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::manageCategory');
         }
@@ -742,7 +748,7 @@ final readonly class AdminServices implements IAdminServices
     private function getAdminAnalyticsSummary(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'ANALYTICS_VIEW');
+        $context = $this->platformContext($actionData, 'report.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getAdminAnalyticsSummary');
         }
@@ -758,7 +764,7 @@ final readonly class AdminServices implements IAdminServices
     private function getAdminAnalyticsTrends(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'ANALYTICS_VIEW');
+        $context = $this->platformContext($actionData, 'report.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getAdminAnalyticsTrends');
         }
@@ -782,7 +788,7 @@ final readonly class AdminServices implements IAdminServices
     private function getModerationQueue(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'MODERATION_MANAGE');
+        $context = $this->platformContext($actionData, 'admin.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getModerationQueue');
         }
@@ -806,7 +812,7 @@ final readonly class AdminServices implements IAdminServices
     private function getModerationHistory(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'MODERATION_MANAGE');
+        $context = $this->platformContext($actionData, 'admin.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getModerationHistory');
         }
@@ -830,7 +836,7 @@ final readonly class AdminServices implements IAdminServices
     private function manageModerationAction(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'MODERATION_MANAGE');
+        $context = $this->platformContext($actionData, 'admin.update');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::manageModerationAction');
         }
@@ -899,7 +905,7 @@ final readonly class AdminServices implements IAdminServices
     private function getSafeSystemHealth(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'SYSTEM_HEALTH_VIEW');
+        $context = $this->platformContext($actionData, 'admin.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getSafeSystemHealth');
         }
