@@ -162,7 +162,7 @@
                       <div><strong>{{ item['bcn'] }}</strong><button type="button" (click)="copyBcn(item['bcn'])">Copy</button></div>
                     </div>
                   }
-                  @if (['platform-users','business-approval','orders','enquiries','payments'].includes(section())) {
+                  @if (['platform-users','business-approval','orders','enquiries','payments'].includes(section()) || (section() === 'subscriptions' && activeTenantId() !== null)) {
                     <button type="button" class="secondary-action" (click)="openRecordDetail(item)" [disabled]="busy()">View details</button>
                   }
                   @if (section() === 'subscription-approval') {
