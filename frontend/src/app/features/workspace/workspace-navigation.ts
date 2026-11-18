@@ -1,5 +1,6 @@
 import type { DashboardPermission } from '../../core/dashboard/dashboard-api.service';
 import { hasActiveEntitlement, hasWorkspacePermission } from '../../core/workspace/workspace-access';
+import type { WorkspacePermissionScope } from '../../core/workspace/workspace-access';
 
 export type WorkspaceNavigationContext = 'PERSONAL' | 'BUSINESS' | 'PLATFORM';
 
