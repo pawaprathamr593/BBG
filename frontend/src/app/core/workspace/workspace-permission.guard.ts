@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateChildFn, Router } from '@angular/router';
 import { WorkspaceContextService } from '../workspace/workspace-context.service';
-import { hasActiveEntitlement, hasWorkspacePermission } from '../../features/workspace/workspace-navigation';
+import { hasActiveEntitlement, hasWorkspacePermission } from './workspace-access';
 
 const BUSINESS_PERMISSIONS: Record<string, string> = {
   profile: 'business.view',
