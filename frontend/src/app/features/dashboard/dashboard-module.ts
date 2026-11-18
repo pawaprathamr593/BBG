@@ -431,7 +431,7 @@ export class DashboardModule implements OnInit {
     if (this.section()==='promotions') return status==='PUBLISHED'
       ? [{key:'unpublish-promotion',label:'Unpublish'}]
       : [{key:'manage-post-media',label:'Manage media'},{key:'publish-promotion',label:'Publish'}];
-    if (this.section()==='customers' && this.workspace.activeTenantId()===null && (item['address_id'] || item['id'])) return [{key:'default-address',label:'Set as default'},{key:'delete-address',label:'Delete address',danger:true}];
+    if (this.section()==='customers' && this.workspace.activeTenantId()===null && (item['address_id'] || item['id'])) return [{key:'edit-address',label:'Edit address'},{key:'default-address',label:'Set as default'},{key:'delete-address',label:'Delete address',danger:true}];
     if (this.section()==='platform-users') return status==='SUSPENDED' ? [{key:'restore-user',label:'Restore account'}] : [{key:'suspend-user',label:'Suspend account',danger:true}];
     if (this.section()==='business-approval' && status==='PENDING') return [{key:'approve-business',label:'Approve'},{key:'reject-business',label:'Reject',danger:true}];
     if (this.section()==='subscription-approval' && status==='PENDING') return [{key:'approve-subscription',label:'Approve'},{key:'reject-subscription',label:'Reject',danger:true}];
@@ -482,6 +482,33 @@ export class DashboardModule implements OnInit {
           dates = { starts_on: startsOn.trim(), ends_on: endsOn.trim() };
         }
         path=action==='approve-subscription'?'/api/v1/admin/subscriptions/approve':'/api/v1/admin/subscriptions/reject'; actionType=action==='approve-subscription'?'approveSubscription':'rejectSubscription'; data={subscription_id:Number(item['subscription_id'] ?? item['id']),...dates,...(reason?{reason:reason.trim()}:{})}; break;
+      }
+      case 'edit-address': {
+        const addressId = Number(item['address_id'] ?? item['id'] ?? 0);
+        const line1 = window.prompt('Address line 1 (required):', String(item['address_line_1'] ?? ''));
+        if (line1 === null) return;
+        if (!line1.trim()) { this.error.set('Address line 1 is required.'); return; }
+        const recipient = window.prompt('Recipient name:', String(item['recipient_name'] ?? ''));
+        if (recipient === null) return;
+        const mobile = window.prompt('Mobile number:', String(item['mobile'] ?? ''));
+        if (mobile === null) return;
+        const line2 = window.prompt('Address line 2:', String(item['address_line_2'] ?? ''));
+        if (line2 === null) return;
+        const city = window.prompt('City:', String(item['city'] ?? ''));
+        if (city === null) return;
+        const state = window.prompt('State:', String(item['state'] ?? ''));
+        if (state === null) return;
+        const postal = window.prompt('Postal code:', String(item['postal_code'] ?? ''));
+        if (postal === null) return;
+        const country = window.prompt('Country code (2 letters):', String(item['country_code'] ?? 'IN'));
+        if (country === null) return;
+        const label = window.prompt('Address label:', String(item['address_label'] ?? 'Home'));
+        if (label === null || !addressId) return;
+        path='/api/v1/customers/addresses/update'; key='customerParam'; actionType='updateMyAddress';
+        data={address_id:addressId,address_line_1:line1.trim(),recipient_name:recipient,mobile,
+          address_line_2:line2,city,state,postal_code:postal,country_code:country.trim().toUpperCase(),
+          address_label:label,is_default:item['is_default'] ? 1 : 0};
+        break;
       }
       case 'default-address': case 'delete-address': {
         const remove = action==='delete-address';
@@ -747,6 +774,26 @@ export class DashboardModule implements OnInit {
     } catch (error) {
       this.passwordError.set(this.auth.errorMessage(error));
     } finally { this.busy.set(false); }
+  }
+
+  async editPersonalProfile(): Promise<void> {
+    const current = this.summary();
+    if (!current || this.busy()) return;
+    const fullName = window.prompt('Full name:', String(current['full_name'] ?? ''));
+    if (fullName === null) return;
+    const email = window.prompt('Email address:', String(current['email'] ?? ''));
+    if (email === null) return;
+    const mobile = window.prompt('Mobile number:', String(current['mobile'] ?? ''));
+    if (mobile === null) return;
+    if (!fullName.trim()) {
+      this.error.set('Full name is required.');
+      return;
+    }
+    await this.performAction('/api/v1/auth/profile/update', 'authParam', 'updateProfile', {
+      full_name: fullName.trim(),
+      email: email.trim(),
+      mobile: mobile.trim(),
+    });
   }
 
   async createAddress(): Promise<void> {
