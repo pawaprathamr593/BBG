@@ -211,7 +211,7 @@ final readonly class AdminDao
             LEFT JOIN TENANT_SUBSCRIPTION_PAYMENT_INSTRUCTIONS instructions
                 ON instructions.tenant_id = ts.tenant_id AND instructions.subscription_id = ts.id
                 AND instructions.status = 'A'
-            WHERE ts.id = :id AND ts.status = 'A' LIMIT 1",
+            WHERE ts.id = :id AND ts.status = 'A' LIMIT 1 FOR UPDATE",
             [':id' => $subscriptionId], 'getSubscriptionForReview');
     }
 
