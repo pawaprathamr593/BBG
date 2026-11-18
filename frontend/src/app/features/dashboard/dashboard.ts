@@ -117,7 +117,7 @@ export class Dashboard implements OnInit {
   readonly moduleCards = computed(() => {
     const context = this.workspace.activeContext();
     if (!context) return [];
-    return getWorkspaceNavItems(context, this.permissions());
+    return getWorkspaceNavItems(context, this.permissions(), this.selectedTenant()?.active_entitlements ?? null);
   });
   readonly roleCodes = computed(() => [...new Set(this.permissions().map((permission) => permission.role_code))]);
   readonly firstName = computed(() => (this.auth.user()?.full_name || 'there').trim().split(/\s+/)[0]);
