@@ -28,40 +28,6 @@ final readonly class PromotionDao
             LIMIT 1", [':tenant_id' => $tenantId], 'hasPromotionEntitlement');
     }
 
-    public function getActivePromotionDailyLimit(ConnectionInterface $db, int $tenantId): array
-    {
-        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        return $this->one($db, "SELECT pe.entitlement_value
-            FROM TENANT_SUBSCRIPTIONS ts
-            INNER JOIN PLAN_ENTITLEMENTS pe ON pe.plan_id = ts.plan_id
-                AND pe.entitlement_code = 'DAILY_PROMOTION_LIMIT' AND pe.status = 'A'
-            WHERE ts.tenant_id = :tenant_id AND ts.subscription_status = 'ACTIVE'
-                AND ts.status = 'A'
-                AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
-                AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
-            ORDER BY ts.starts_on DESC, ts.id DESC LIMIT 1",
-            [':tenant_id' => $tenantId], 'getActivePromotionDailyLimit');
-    }
-
-    public function countTenantPromotionsPublishedInRange(
-        ConnectionInterface $db,
-        int $tenantId,
-        string $startUtc,
-        string $endUtc,
-        int $excludePromotionId,
-    ): array {
-        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        return $this->one($db, "SELECT COUNT(*) AS total
-            FROM PROMOTIONAL_POSTS
-            WHERE tenant_id = :tenant_id AND status = 'A'
-                AND publication_status = 'PUBLISHED'
-                AND published_on >= :start_utc AND published_on < :end_utc
-                AND id <> :exclude_id",
-            [':tenant_id' => $tenantId, ':start_utc' => $startUtc,
-             ':end_utc' => $endUtc, ':exclude_id' => $excludePromotionId],
-            'countTenantPromotionsPublishedInRange');
-    }
-
     public function getMyPromotions(ConnectionInterface $db, int $tenantId, int $limit, int $offset): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
