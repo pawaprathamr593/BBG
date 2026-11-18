@@ -60,7 +60,7 @@ Existing /dashboard, /dashboard/profile, /dashboard/catalogue, /dashboard/member
 | Customer directory | POST | /api/v1/customers/tenant/list | listTenantCustomers | Route and worker exist on this branch; API V1 catalogue is stale and should be reconciled separately |
 
 ## 8. Permissions
-Reuse existing keys: BUSINESS_PROFILE_MANAGE, CATALOGUE_MANAGE, CUSTOMERS_MANAGE, ENQUIRIES_MANAGE, ORDERS_MANAGE, PAYMENTS_VIEW, PROMOTIONS_MANAGE, SUBSCRIPTIONS_MANAGE, TENANT_MEMBERS_VIEW, ANALYTICS_VIEW. Backend authorization remains authoritative.
+Use exact tenant permission codes from the seed: `business.view`, `catalogue.view`, `customer.view`, `enquiry.view`, `order.view`, `payment.view`, `promotion.view`, `subscription.view`, `tenant.view` and `report.view`. The frontend also consumes `active_entitlements` returned by the existing tenant-list API: `business.profile`, `catalogue.enabled`, `promotions.enabled` and `advanced.reports.enabled` gate the corresponding workspace entries. The seed does not define customer, enquiry, order, payment, team or subscription entitlements; these remain permission-gated only until product policy defines plan entitlements. Backend authorization remains authoritative.
 
 ## 9. Rules and validation
 Tenant ID is not an authorization grant. Order transitions limited to backend-supported lifecycle. Payments read-only. Subscription proof uses presigned upload + submit and does not approve/settle. Product media uses documented presigned upload/link. No tenant customer list until documented.
@@ -91,3 +91,4 @@ Preserve BBG responsive patterns, dialogs/drawers, theme tokens and accessible f
 - Requirement created on approved branch HG_CODE_IMPROVEMENTS.
 - Added tenant-scoped order, enquiry, payment and subscription detail views using the existing API V1 routes and read actions; the backend remains responsible for tenant membership and record ownership.
 - Added previous/next pagination to supported tenant record lists, using server-reported totals.
+- Replaced legacy synthetic permission names with the seed's exact tenant view permissions and applied only explicitly defined plan entitlement flags to Profile, Catalogue, Promotions and Analytics navigation/direct routes.
