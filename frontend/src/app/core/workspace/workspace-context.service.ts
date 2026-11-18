@@ -97,10 +97,10 @@ export class WorkspaceContextService {
   async switchToMyAccount(): Promise<void> {
     await this.initialize();
     const allPermissions = await this.api.getPermissions(0);
-    this.platformPermissions.set(allPermissions);
+    this.platformPermissions.set(allPermissions.filter(isPlatformAdministratorPermission));
     this.activeTenantId.set(null);
     this.activeContext.set('PERSONAL');
-    this.permissions.set(allPermissions.filter((permission) => permission.scope_type === 'GLOBAL'));
+    this.permissions.set(allPermissions.filter(isPersonalPermission));
     this.persistActiveWorkspace(null);
     this.persistActiveContext('PERSONAL');
   }
@@ -108,9 +108,9 @@ export class WorkspaceContextService {
   async switchToPlatformAdministration(): Promise<void> {
     await this.initialize();
     const allPermissions = await this.api.getPermissions(0);
-    const platformPermissions = allPermissions.filter((permission) => permission.scope_type === 'PLATFORM');
+    const platformPermissions = allPermissions.filter(isPlatformAdministratorPermission);
     if (!platformPermissions.length) throw new Error('You do not have Platform Administration access.');
-    this.platformPermissions.set(allPermissions);
+    this.platformPermissions.set(platformPermissions);
     this.activeTenantId.set(null);
     this.activeContext.set('PLATFORM');
     this.permissions.set(platformPermissions);
@@ -171,7 +171,9 @@ export class WorkspaceContextService {
           ? 'PLATFORM'
           : hasPlatformAccess ? 'PLATFORM' : 'GLOBAL';
       const permissions = restoredTenantId === null
-        ? savedPermissions.filter((permission) => permission.scope_type === defaultScope)
+        ? defaultScope === 'PLATFORM'
+          ? savedPermissions.filter(isPlatformAdministratorPermission)
+          : savedPermissions.filter(isPersonalPermission)
         : await this.api.getPermissions(restoredTenantId);
 
       this.activeTenantId.set(restoredTenantId);
