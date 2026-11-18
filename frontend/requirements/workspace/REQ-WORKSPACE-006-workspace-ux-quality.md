@@ -64,6 +64,9 @@ Verify 360–390px, tablet and desktop; light and dark themes; no horizontal ove
 5. Keyboard users can reach and operate controls/dialogs with visible focus.
 6. Mobile and both themes remain usable without horizontal overflow.
 7. Backend permission/ownership denial does not reveal protected data.
+8. Paginated record lists expose working previous/next navigation using server-reported totals.
+9. A stale response from a previous route or workspace context cannot overwrite the active section's data.
+10. Logout or account changes clear in-memory tenant and permission context.
 
 ## Open questions
 - UNKNOWN: Confirm test commands and workspace test coverage from package.json and test files.
@@ -75,3 +78,4 @@ Verify 360–390px, tablet and desktop; light and dark themes; no horizontal ove
 - Dashboard summary loading now responds to active workspace context changes and ignores stale responses from an earlier context.
 - Workspace context is cleared when the authenticated principal logs out or changes, preventing prior-user tenant and permission state from remaining in memory.
 - Added detail rendering for nested record responses while suppressing token, credential, hash and raw-payload fields.
+- Added server-backed pagination to workspace record lists and stale-load protection when the user changes section or workspace context.
