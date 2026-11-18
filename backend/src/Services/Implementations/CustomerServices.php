@@ -143,12 +143,12 @@ final readonly class CustomerServices implements ICustomerServices
             $resArr['msgArr'][] = 'A valid tenant_id is required.';
             return $resArr;
         }
-        $permission = $this->tenantDao->hasTenantPermission($this->db, $userId, $tenantId, 'CUSTOMERS_MANAGE');
+        $permission = $this->tenantDao->hasTenantPermission($this->db, $userId, $tenantId, 'customer.view');
         if ($permission['status'] !== 'SUCCESS') {
             return $this->propagateFailure($permission, 'CustomerServices::getTenantCustomers');
         }
         if ($permission['data'] === []) {
-            $resArr['msgArr'][] = 'You do not have permission to view this tenant customer directory.';
+            $resArr['msgArr'][] = 'You do not have customer.view permission is required to view this tenant customer directory.';
             return $resArr;
         }
         $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
