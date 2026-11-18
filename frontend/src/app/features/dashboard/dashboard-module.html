@@ -218,7 +218,7 @@
                 <p class="records-filter-empty">No records match the current filters on this page. Adjust or reset the filters to see more results.</p>
               }
             </div>
-            @if (totalItems() > pageSize) {
+            @if (totalItems() > paginationPageSize()) {
               <nav class="records-pagination" aria-label="Record pages">
                 <button type="button" (click)="goToPage(currentPage() - 1)" [disabled]="loading() || currentPage() <= 1">Previous</button>
                 <span>Page {{ currentPage() }} of {{ pageCount() }} · {{ totalItems() }} records</span>
