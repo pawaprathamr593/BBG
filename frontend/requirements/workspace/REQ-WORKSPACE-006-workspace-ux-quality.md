@@ -45,7 +45,7 @@ Applies to existing /dashboard shell and current workspace sections. Context and
 Existing feature-specific POST routes and module envelopes only. No new API routes.
 
 ## 8. Permissions
-Reuse exact existing workspace permission keys. Backend authorization governs resource access and mutation. Unknown permission denies access.
+Use exact permission codes returned by the current backend permission API and seeded catalogue. Unknown permission denies access. Frontend visibility remains a UX control; backend authorization governs resource access and mutation.
 
 ## 9. Rules and validation
 Treat network data as untrusted and narrow it. No any, speculative DTO fields or endpoints. Keep HTTP in services, use signals consistently, takeUntilDestroyed for long-lived subscriptions, preserve auth interceptor and in-memory token design, and use existing CSS custom properties.
