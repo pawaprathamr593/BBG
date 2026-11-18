@@ -1,12 +1,14 @@
 import type { DashboardPermission } from '../../core/dashboard/dashboard-api.service';
 
 export type WorkspaceNavigationContext = 'PERSONAL' | 'BUSINESS' | 'PLATFORM';
+export type WorkspacePermissionScope = 'TENANT' | 'PLATFORM' | 'GLOBAL';
 
 export interface WorkspaceNavItem {
   label: string;
   route: string;
-  permission: string | null;
-  scope: 'TENANT' | 'PLATFORM' | 'GLOBAL';
+  permission: string;
+  scope: WorkspacePermissionScope;
+  entitlement: string | null;
   icon: string;
   description: string;
 }
@@ -15,183 +17,218 @@ const WORKSPACE_NAV_ITEMS: WorkspaceNavItem[] = [
   {
     label: 'Profile & storefront',
     route: '/dashboard/profile',
-    permission: 'BUSINESS_PROFILE_MANAGE',
+    permission: 'business.view',
     scope: 'TENANT',
+    entitlement: 'business.profile',
     icon: 'store',
     description: 'Manage your business profile and storefront presence.',
   },
   {
     label: 'Catalogue',
     route: '/dashboard/catalogue',
-    permission: 'CATALOGUE_MANAGE',
+    permission: 'catalogue.view',
     scope: 'TENANT',
+    entitlement: 'catalogue.enabled',
     icon: 'package',
     description: 'Create and maintain products in your business catalogue.',
   },
   {
     label: 'Customers',
     route: '/dashboard/customers',
-    permission: 'CUSTOMERS_MANAGE',
+    permission: 'customer.view',
     scope: 'TENANT',
+    entitlement: null,
     icon: 'users',
     description: 'Review customers connected to your business.',
   },
   {
     label: 'Enquiries',
     route: '/dashboard/enquiries',
-    permission: 'ENQUIRIES_MANAGE',
+    permission: 'enquiry.view',
     scope: 'TENANT',
+    entitlement: null,
     icon: 'message-square',
     description: 'Respond to incoming customer enquiries.',
   },
   {
     label: 'Orders',
     route: '/dashboard/orders',
-    permission: 'ORDERS_MANAGE',
+    permission: 'order.view',
     scope: 'TENANT',
+    entitlement: null,
     icon: 'shopping-bag',
     description: 'Review and process business orders.',
   },
   {
     label: 'Payments',
     route: '/dashboard/payments',
-    permission: 'PAYMENTS_VIEW',
+    permission: 'payment.view',
     scope: 'TENANT',
+    entitlement: null,
     icon: 'wallet',
     description: 'Review payment activity for your business.',
   },
   {
     label: 'Promotions',
     route: '/dashboard/promotions',
-    permission: 'PROMOTIONS_MANAGE',
+    permission: 'promotion.view',
     scope: 'TENANT',
+    entitlement: 'promotions.enabled',
     icon: 'megaphone',
     description: 'Create and manage business promotions.',
   },
   {
     label: 'Subscriptions',
     route: '/dashboard/subscriptions',
-    permission: 'SUBSCRIPTIONS_MANAGE',
+    permission: 'subscription.view',
     scope: 'TENANT',
+    entitlement: null,
     icon: 'badge-check',
     description: 'Review plans, subscriptions and renewals.',
   },
   {
     label: 'Team & access',
     route: '/dashboard/members',
-    permission: 'TENANT_MEMBERS_VIEW',
+    permission: 'tenant.view',
     scope: 'TENANT',
+    entitlement: null,
     icon: 'users-round',
     description: 'View members and their workspace access.',
   },
   {
     label: 'Analytics',
     route: '/dashboard/analytics',
-    permission: 'ANALYTICS_VIEW',
+    permission: 'report.view',
     scope: 'TENANT',
+    entitlement: 'advanced.reports.enabled',
     icon: 'chart-no-axes-combined',
     description: 'Review supported business performance metrics.',
   },
   {
     label: 'Platform users',
     route: '/dashboard/platform-users',
-    permission: 'PLATFORM_USERS_MANAGE',
+    permission: 'user.view',
     scope: 'PLATFORM',
+    entitlement: null,
     icon: 'user-cog',
     description: 'Review and manage platform user accounts.',
   },
   {
     label: 'Business approvals',
     route: '/dashboard/business-approval',
-    permission: 'BUSINESS_APPROVE',
+    permission: 'business.approve',
     scope: 'PLATFORM',
+    entitlement: null,
     icon: 'building-check',
     description: 'Review business registration applications.',
   },
   {
     label: 'Subscription approvals',
     route: '/dashboard/subscription-approval',
-    permission: 'SUBSCRIPTIONS_APPROVE',
+    permission: 'subscription.approve',
     scope: 'PLATFORM',
+    entitlement: null,
     icon: 'credit-card',
     description: 'Review business subscription requests.',
   },
   {
     label: 'Marketplace categories',
     route: '/dashboard/categories',
-    permission: 'CATEGORIES_MANAGE',
+    permission: 'admin.view',
     scope: 'PLATFORM',
+    entitlement: null,
     icon: 'tags',
     description: 'Manage marketplace categories and taxonomy.',
   },
   {
     label: 'Moderation',
     route: '/dashboard/moderation',
-    permission: 'MODERATION_MANAGE',
+    permission: 'admin.view',
     scope: 'PLATFORM',
+    entitlement: null,
     icon: 'shield-check',
     description: 'Review reported marketplace content.',
   },
   {
     label: 'Platform analytics',
     route: '/dashboard/platform-analytics',
-    permission: 'ANALYTICS_VIEW',
+    permission: 'report.view',
     scope: 'PLATFORM',
+    entitlement: null,
     icon: 'chart-column',
     description: 'Review platform-level analytics and trends.',
   },
   {
     label: 'System health',
     route: '/dashboard/system-health',
-    permission: 'SYSTEM_HEALTH_VIEW',
+    permission: 'admin.view',
     scope: 'PLATFORM',
+    entitlement: null,
     icon: 'activity',
     description: 'Review safe platform operational health.',
   },
   {
     label: 'My Orders',
     route: '/dashboard/orders',
-    permission: null,
+    permission: 'order.own.view',
     scope: 'GLOBAL',
+    entitlement: null,
     icon: 'receipt-text',
     description: 'Track orders placed with BBG businesses.',
   },
   {
     label: 'My Enquiries',
     route: '/dashboard/enquiries',
-    permission: null,
+    permission: 'enquiry.own.view',
     scope: 'GLOBAL',
+    entitlement: null,
     icon: 'messages-square',
     description: 'Continue conversations with businesses.',
   },
   {
-    label: 'My Payments',
-    route: '/dashboard/payments',
-    permission: null,
-    scope: 'GLOBAL',
-    icon: 'hand-coins',
-    description: 'Review your customer payment activity.',
-  },
-  {
     label: 'My Profile & Addresses',
     route: '/dashboard/customers',
-    permission: null,
+    permission: 'user.view',
     scope: 'GLOBAL',
+    entitlement: null,
     icon: 'contact-round',
     description: 'Manage your personal details and saved addresses.',
   },
 ];
 
+export function hasWorkspacePermission(
+  permissions: DashboardPermission[],
+  scope: WorkspacePermissionScope,
+  permissionCode: string,
+): boolean {
+  return permissions.some((permission) => {
+    const matchesScope = permission.scope_type === scope
+      || (scope === 'GLOBAL' && permission.scope_type === 'PLATFORM' && permission.role_code === 'CONSUMER');
+    return matchesScope && permission.permission_code === permissionCode;
+  });
+}
+
+export function hasActiveEntitlement(
+  activeEntitlements: string | null | undefined,
+  entitlementCode: string,
+): boolean {
+  if (!activeEntitlements) return false;
+  return activeEntitlements.split(';').some((entry) => {
+    const [code, value] = entry.split('=', 2);
+    return code?.trim() === entitlementCode && value?.trim().toLowerCase() === 'true';
+  });
+}
+
 export function getWorkspaceNavItems(
   context: WorkspaceNavigationContext,
   permissions: DashboardPermission[],
+  activeEntitlements: string | null = null,
 ): WorkspaceNavItem[] {
   const scope = context === 'BUSINESS' ? 'TENANT' : context === 'PLATFORM' ? 'PLATFORM' : 'GLOBAL';
   return WORKSPACE_NAV_ITEMS.filter((item) => {
-    if (item.scope !== scope) return false;
-    if (item.permission === null) return true;
-    return permissions.some((permission) =>
-      permission.scope_type === item.scope && permission.permission_code === item.permission,
-    );
+    if (item.scope !== scope || !hasWorkspacePermission(permissions, item.scope, item.permission)) {
+      return false;
+    }
+    return item.entitlement === null || hasActiveEntitlement(activeEntitlements, item.entitlement);
   });
 }
