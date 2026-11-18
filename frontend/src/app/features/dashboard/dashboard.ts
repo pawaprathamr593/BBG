@@ -5,7 +5,7 @@ import { DashboardApiService } from '../../core/dashboard/dashboard-api.service'
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
 import { BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
 import { WorkspaceNavIconComponent } from '../workspace/workspace-nav-icon';
-import { getWorkspaceNavItems, WorkspaceNavigationContext } from '../workspace/workspace-navigation';
+import { getWorkspaceNavItems, type WorkspaceNavigationContext } from '../workspace/workspace-navigation';
 
 
 @Component({
