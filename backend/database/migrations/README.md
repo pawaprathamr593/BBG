@@ -31,6 +31,10 @@ The seeds do not alter table structures. Review each script before execution and
 - Deploy the matching `CustomerServices` / `CustomerDao` code only after the migration is applied. My Account address operations no longer require `tenant_id` and derive ownership from the authenticated user profile.
 - See `../docs/BBG_DATABASE_DESIGN_V2.3_GLOBAL_MY_ACCOUNT_ADDRESSES.md` for ownership, compatibility and rollout rules.
 
+### `20261118_001_bbg_contribution_number.sql`
+
+Adds nullable unique `TENANT_SUBSCRIPTIONS.bcn` and the single-row `BBG_BCN_SERIAL_COUNTER` used for global, transaction-locked serial allocation. It does not backfill subscriptions approved before BCN was introduced. Apply only after verifying the physical `TENANT_SUBSCRIPTIONS` schema and taking a backup; this migration is not run automatically by the application.
+
 ## Locked data conventions
 
 - All tables use the five required common columns: `status`, `created_by`, `created_on`, `updated_by`, `updated_on`.
