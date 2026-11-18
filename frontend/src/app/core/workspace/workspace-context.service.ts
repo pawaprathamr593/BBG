@@ -7,6 +7,14 @@ const ACTIVE_WORKSPACE_KEY = 'bbg.activeWorkspaceId';
 const ACTIVE_CONTEXT_KEY = 'bbg.activeContext';
 const LAST_WORKSPACE_KEY = 'bbg.lastWorkspaceId';
 
+function isPlatformAdministratorPermission(permission: DashboardPermission): boolean {
+  return permission.scope_type === 'PLATFORM' && permission.role_code !== 'CONSUMER';
+}
+
+function isPersonalPermission(permission: DashboardPermission): boolean {
+  return permission.scope_type === 'GLOBAL' || permission.role_code === 'CONSUMER';
+}
+
 @Injectable({ providedIn: 'root' })
 export class WorkspaceContextService {
   private readonly auth = inject(AuthService);
@@ -145,7 +153,7 @@ export class WorkspaceContextService {
         this.api.getPermissions(0),
       ]);
       this.tenants.set(tenants);
-      this.platformPermissions.set(savedPermissions);
+      this.platformPermissions.set(savedPermissions.filter(isPlatformAdministratorPermission));
 
       const savedId = this.readActiveWorkspace();
       const restoredTenantId = savedId !== null && tenants.some((tenant) => tenant.id === savedId)
@@ -156,7 +164,7 @@ export class WorkspaceContextService {
       this.lastActiveTenantId.set(lastTenantId);
       if (restoredTenantId !== null) this.persistLastWorkspace(restoredTenantId);
       const savedContext = this.readActiveContext();
-      const hasPlatformAccess = savedPermissions.some((permission) => permission.scope_type === 'PLATFORM');
+      const hasPlatformAccess = savedPermissions.some(isPlatformAdministratorPermission);
       const defaultScope = savedContext === 'PERSONAL'
         ? 'GLOBAL'
         : savedContext === 'PLATFORM' && hasPlatformAccess
