@@ -57,7 +57,7 @@ Existing /dashboard, /dashboard/profile, /dashboard/catalogue, /dashboard/member
 | Tenant payments | POST | /api/v1/payments/tenant/list, detail | Tenant payment actions | Existing, read-only |
 | Promotions | POST | /api/v1/promotions/mine/list, mine/detail, create, update, delete, publish, unpublish, engagement | Promotion actions | Existing |
 | Subscriptions | POST | /api/v1/subscriptions/plans/list, mine/list, mine/detail, request, renewal/request, proofs/upload-url, proofs/submit | Subscription actions | Existing; live S3 requires configuration |
-| Customer directory | — | — | — | UNKNOWN; /api/v1/customers/tenant/list is absent from API V1 catalogue |
+| Customer directory | POST | /api/v1/customers/tenant/list | listTenantCustomers | Route and backend worker exist on this branch; API V1 catalogue is stale and must be reconciled separately |
 
 ## 8. Permissions
 Reuse existing keys: BUSINESS_PROFILE_MANAGE, CATALOGUE_MANAGE, CUSTOMERS_MANAGE, ENQUIRIES_MANAGE, ORDERS_MANAGE, PAYMENTS_VIEW, PROMOTIONS_MANAGE, SUBSCRIPTIONS_MANAGE, TENANT_MEMBERS_VIEW, ANALYTICS_VIEW. Backend authorization remains authoritative.
