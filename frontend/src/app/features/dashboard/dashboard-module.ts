@@ -119,6 +119,7 @@ export class DashboardModule implements OnInit {
   readonly recordDetailTitle = signal('');
   readonly moderationHistory = signal<DataRecord[]>([]);
   readonly moderationHistoryLoading = signal(false);
+  readonly analyticsTrends = signal<DataRecord[]>([]);
   readonly showPromotionComposer = signal(false);
   readonly promotionTitle = signal('');
   readonly promotionContent = signal('');
@@ -278,7 +279,7 @@ export class DashboardModule implements OnInit {
 
   async load(): Promise<void> {
     this.loading.set(true); this.error.set(''); this.unsupported.set('');
-    this.items.set([]); this.summary.set(null); this.plans.set([]); this.moderationHistory.set([]);
+    this.items.set([]); this.summary.set(null); this.plans.set([]); this.moderationHistory.set([]); this.analyticsTrends.set([]);
     try {
       await this.workspace.initialize();
       const tenantId = this.workspace.activeTenantId();
@@ -361,9 +362,19 @@ export class DashboardModule implements OnInit {
           if (tenantId) this.summary.set(await this.request<DataRecord>('/api/v1/dashboard/entrepreneur/summary','dashboardParam','getEntrepreneurDashboard',{tenant_id:tenantId}));
           else return this.setUnsupported('Business analytics require Business Workspace access.');
           break;
-        case 'platform-analytics':
-          this.summary.set(await this.request<DataRecord>('/api/v1/admin/analytics/summary','adminParam','getAdminAnalyticsSummary'));
+        case 'platform-analytics': {
+          const endDate = new Date().toISOString().slice(0, 10);
+          const startDate = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+          const [summary, trends] = await Promise.all([
+            this.request<DataRecord>('/api/v1/admin/analytics/summary','adminParam','getAdminAnalyticsSummary'),
+            this.request<{items?: DataRecord[]}>('/api/v1/admin/analytics/trends','adminParam','getAdminAnalyticsTrends',{
+              start_date:startDate,end_date:endDate,
+            }),
+          ]);
+          this.summary.set(summary);
+          this.analyticsTrends.set(trends.items ?? []);
           break;
+        }
         case 'categories': {
           const data = await this.request<{items?:DataRecord[]}>('/api/v1/admin/categories/list','adminParam','listAdminCategories',{page:1,page_size:100});
           this.items.set(data.items ?? []); break;
