@@ -77,3 +77,4 @@ Mobile-first forms and lists; no horizontal overflow; preserve keyboard access, 
 - Requirement created on approved branch HG_CODE_IMPROVEMENTS.
 - Added personal profile editing through the existing auth profile update API.
 - Added saved-address editing through the existing customer address update API; existing create/default/delete actions remain intact.
+- Added detail views for the current user's order, enquiry and payment records using the existing `getMyOrder`, `getMyEnquiry` and `getMyPayment` routes/actions.
