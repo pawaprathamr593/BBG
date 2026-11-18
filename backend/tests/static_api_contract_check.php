@@ -77,8 +77,8 @@ if (
     $catalogueDao === false
     || $catalogueService === false
     || !str_contains($catalogueDao, 'getActiveProductEntitlements')
-    || !str_contains($catalogueService, 'PRODUCT_MANAGEMENT')
-    || !str_contains($catalogueService, 'PRODUCT_LIMIT')
+    || !str_contains($catalogueService, "'catalogue.enabled'")
+    || !str_contains($catalogueService, "'product.limit'")
     || !str_contains($catalogueService, 'productMediaSignatureMatches')
     || !str_contains($catalogueService, "'video/mp4'")
     || !str_contains($catalogueService, "'audio/mpeg'")
