@@ -142,6 +142,8 @@ export class Dashboard implements OnInit {
         return;
       }
       if (!this.auth.user()) await this.auth.loadProfile();
+      const previousContext = this.workspace.activeContext();
+      const previousTenantId = this.workspace.activeTenantId();
       await this.workspace.initialize();
       const ownerTenant = this.workspace.tenants().find((tenant) =>
         (tenant.role_codes ?? '').split(',').map((role) => role.trim()).includes('TENANT_OWNER'),
@@ -162,7 +164,10 @@ export class Dashboard implements OnInit {
       this.loading.set(false);
       // The same refresh trigger handles initial load, manual refresh and
       // Personal/Business/Platform context changes consistently.
-      this.summaryRefreshVersion.update((version) => version + 1);
+      if (previousContext === this.workspace.activeContext()
+        && previousTenantId === this.workspace.activeTenantId()) {
+        this.summaryRefreshVersion.update((version) => version + 1);
+      }
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
       this.loading.set(false);
