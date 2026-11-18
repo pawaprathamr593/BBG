@@ -424,7 +424,7 @@ export class DashboardModule implements OnInit {
 
   readonly recordsHeading = computed(() => this.section() === 'customers' ? 'Saved addresses' : this.title());
   recordId(item: DataRecord, preferred = 'id'): number {
-    const value = item[preferred] ?? item['id'] ?? item['address_id'] ?? item['category_id'] ?? item['business_id'] ?? item['subscription_id'] ?? item['promotion_id'] ?? item['order_id'] ?? item['report_id'] ?? item['user_id'];
+    const value = item[preferred] ?? item['id'] ?? item['address_id'] ?? item['category_id'] ?? item['business_id'] ?? item['subscription_id'] ?? item['promotion_id'] ?? item['order_id'] ?? item['enquiry_id'] ?? item['payment_id'] ?? item['report_id'] ?? item['user_id'];
     return Number(value ?? 0);
   }
   valueOf(item: DataRecord, keys: string[]): string { for (const key of keys) if (item[key] !== null && item[key] !== undefined && item[key] !== '') return this.formatValue(item[key]); return '—'; }
@@ -436,8 +436,31 @@ export class DashboardModule implements OnInit {
   }
   statusOf(item: DataRecord): string { return String(item['approval_status'] ?? item['subscription_status'] ?? item['publication_status'] ?? item['order_status'] ?? item['enquiry_status'] ?? item['payment_status'] ?? item['report_status'] ?? item['account_status'] ?? item['customer_status'] ?? item['status'] ?? ''); }
   recordEntries(item: DataRecord): Array<{key:string;value:unknown}> {
-    const hidden = new Set(['id','tenant_id','user_id','business_id','subscription_id','promotion_id','order_id','report_id','bcn','created_by','updated_by','deleted_by','password_hash','access_token','refresh_token']);
+    const hidden = new Set(['id','tenant_id','user_id','business_id','subscription_id','promotion_id','order_id','enquiry_id','payment_id','report_id','bcn','created_by','updated_by','deleted_by','password_hash','access_token','refresh_token']);
     return Object.entries(item).filter(([key,value]) => !hidden.has(key) && value !== null && typeof value !== 'object').slice(0,8).map(([key,value])=>({key,value}));
+  }
+
+  detailEntries(item: DataRecord): Array<{key:string;value:unknown}> {
+    const entries: Array<{key:string;value:unknown}> = [];
+    const visit = (value: unknown, path: string, depth: number): void => {
+      if (value === null || value === undefined || depth > 3 || entries.length >= 60) return;
+      if (Array.isArray(value)) {
+        value.forEach((entry, index) => visit(entry, path ? path + ' ' + (index + 1) : String(index + 1), depth + 1));
+        return;
+      }
+      if (typeof value === 'object') {
+        for (const [key, nested] of Object.entries(value as DataRecord)) {
+          if (/password|token|secret|credential|authorization|hash|raw_payload/i.test(key)) continue;
+          if (['created_by','updated_by','deleted_by','tenant_id','user_id','business_id'].includes(key)) continue;
+          visit(nested, path ? path + '.' + key : key, depth + 1);
+          if (entries.length >= 60) break;
+        }
+        return;
+      }
+      if (path) entries.push({ key: path, value });
+    };
+    visit(item, '', 0);
+    return entries;
   }
   actionsFor(item: DataRecord): Array<{key:string;label:string;danger?:boolean}> {
     const status = this.statusOf(item).toUpperCase();
@@ -931,9 +954,12 @@ export class DashboardModule implements OnInit {
   async openRecordDetail(item: DataRecord): Promise<void> {
     if (this.busy()) return;
     const section = this.section();
+    const tenantId = this.workspace.activeTenantId();
     let path = '';
+    let key: EnvelopeKey = 'adminParam';
     let actionType = '';
     let actionData: DataRecord = {};
+
     if (section === 'platform-users') {
       path = '/api/v1/admin/users/detail';
       actionType = 'getPlatformUser';
@@ -944,13 +970,39 @@ export class DashboardModule implements OnInit {
       actionType = 'getBusinessForReview';
       actionData = { business_id: Number(item['business_id'] ?? item['id']) };
       this.recordDetailTitle.set('Business application details');
+    } else if (section === 'orders') {
+      const orderId = Number(item['order_id'] ?? item['id'] ?? 0);
+      if (!orderId) return;
+      key = 'orderParam';
+      path = tenantId ? '/api/v1/orders/tenant/detail' : '/api/v1/orders/detail';
+      actionType = tenantId ? 'getTenantOrder' : 'getMyOrder';
+      actionData = { order_id: orderId, ...(tenantId ? { tenant_id: tenantId } : {}) };
+      this.recordDetailTitle.set('Order details');
+    } else if (section === 'enquiries') {
+      const enquiryId = Number(item['enquiry_id'] ?? item['id'] ?? 0);
+      if (!enquiryId) return;
+      key = 'enquiryParam';
+      path = tenantId ? '/api/v1/enquiries/tenant/detail' : '/api/v1/enquiries/mine/detail';
+      actionType = tenantId ? 'getTenantEnquiry' : 'getMyEnquiry';
+      actionData = { enquiry_id: enquiryId, ...(tenantId ? { tenant_id: tenantId } : {}) };
+      this.recordDetailTitle.set('Enquiry details');
+    } else if (section === 'payments') {
+      const paymentId = Number(item['payment_id'] ?? item['id'] ?? 0);
+      if (!paymentId) return;
+      key = 'paymentParam';
+      path = tenantId ? '/api/v1/payments/tenant/detail' : '/api/v1/payments/mine/detail';
+      actionType = tenantId ? 'getTenantPayment' : 'getMyPayment';
+      actionData = { payment_id: paymentId, ...(tenantId ? { tenant_id: tenantId } : {}) };
+      this.recordDetailTitle.set('Payment details');
     } else {
       return;
     }
+
     this.busy.set(true);
     this.error.set('');
+    this.recordDetail.set(null);
     try {
-      this.recordDetail.set(await this.request<DataRecord>(path, 'adminParam', actionType, actionData));
+      this.recordDetail.set(await this.request<DataRecord>(path, key, actionType, actionData));
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
