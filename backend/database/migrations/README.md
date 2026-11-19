@@ -68,6 +68,12 @@ Creates `CONTENT_LIKES` and `PRODUCT_MEDIA` when they are not already present. T
 
 
 
+## 20261119_001 — Business geolocation precision
+
+File: `20261119_001_business_profile_geolocation_precision.sql`
+
+Adds missing `BUSINESS_PROFILES.latitude` / `longitude` columns or widens existing columns to `DECIMAL(10,7)` so browser-captured coordinates are not rounded to two decimal places. The script is idempotent but must be applied only after confirming the active database/schema and taking a backup. It is not executed automatically by the application. Verify the resulting column definitions before deploying the coordinate-writing backend code.
+
 ## 20261117_002 — Subscription payment and review workflow
 
 File: `20261117_002_subscription_payment_review_workflow.sql`
