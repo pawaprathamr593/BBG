@@ -173,6 +173,33 @@ final readonly class BusinessDao
         return $resArr;
     }
 
+    public function getMyBusinessApplications(ConnectionInterface $db, int $userId): array
+    {
+        return $this->many(
+            $db,
+            "SELECT bp.id AS business_id, bp.tenant_id, bp.business_name, bp.business_slug,
+                    bp.business_description, bp.primary_category_id, bp.business_phone,
+                    bp.whatsapp_number, bp.business_email, bp.address_line_1, bp.address_line_2,
+                    bp.city, bp.state, bp.postal_code, bp.country_code, bp.approval_status,
+                    bp.approved_by, bp.approved_on, bp.rejection_reason, bp.publication_status,
+                    t.tenant_name, t.tenant_status
+             FROM BUSINESS_PROFILES bp
+             INNER JOIN TENANTS t ON t.id = bp.tenant_id AND t.status = 'A'
+             INNER JOIN TENANT_MEMBERSHIPS tm ON tm.tenant_id = bp.tenant_id
+                AND tm.user_id = :user_id AND tm.membership_status = 'ACTIVE' AND tm.status = 'A'
+             INNER JOIN USER_ROLE_ASSIGNMENTS ura ON ura.tenant_id = bp.tenant_id
+                AND ura.user_id = :user_id AND ura.status = 'A'
+                AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
+             INNER JOIN ROLES r ON r.id = ura.role_id
+                AND r.scope_type = 'TENANT' AND r.status = 'A'
+                AND r.role_code = 'TENANT_OWNER'
+             WHERE bp.status = 'A'
+             ORDER BY bp.id DESC",
+            [':user_id' => $userId],
+            'getMyBusinessApplications',
+        );
+    }
+
     public function getMyBusinessApplication(ConnectionInterface $db, int $userId, int $tenantId = 0): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
