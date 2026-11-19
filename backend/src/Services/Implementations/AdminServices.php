@@ -932,7 +932,15 @@ final readonly class AdminServices implements IAdminServices
         if ($principal['status'] !== 'SUCCESS') {
             return $this->propagateFailure($principal, 'AdminServices::platformContext');
         }
-        $permission = $this->dao->hasPlatformPermission($this->db, (int) $principal['data']['user_id'], $permissionCode);
+        // Map service-level capability names to the platform RBAC seed codes.
+        $platformPermissionCode = match ($permissionCode) {
+            'business.view', 'business.approve' => 'BUSINESS_APPROVE',
+            'subscription.view', 'subscription.update', 'subscription.approve' => 'SUBSCRIPTIONS_APPROVE',
+            default => $permissionCode,
+        };
+        $permission = $this->dao->hasPlatformPermission(
+            $this->db, (int) $principal['data']['user_id'], $platformPermissionCode,
+        );
         if ($permission['status'] !== 'SUCCESS') {
             return $this->propagateFailure($permission, 'AdminServices::platformContext');
         }
