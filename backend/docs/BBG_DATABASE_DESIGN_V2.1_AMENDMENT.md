@@ -109,3 +109,15 @@ Migration constraints/indexes: primary key `id`; indexes `(application_id, revie
 ## 6. Version and scope note
 
 This amendment changes the documented canonical table count from 68 to 70 by adopting only `CARTS` and `CART_ITEMS`. It does not change the mandatory common-column convention, A/Z soft deletion, existing table definitions, payment model, or the physical foreign-key policy. It does not claim that a live database has been inspected or migrated.
+
+## 6. Business profile geolocation precision amendment
+
+Migration `20261119_001_business_profile_geolocation_precision.sql` updates the active `BUSINESS_PROFILES` geolocation columns used by the current Business Core Services/DAO flow:
+
+| Column | Current definition after migration | Notes |
+|---|---|---|
+| `latitude` | `DECIMAL(10,7) NULL` | Preserves seven decimal places from browser Geolocation API |
+| `longitude` | `DECIMAL(10,7) NULL` | Preserves seven decimal places from browser Geolocation API |
+| `location_accuracy_m` | `DECIMAL(10,2) NULL` | Optional reported horizontal accuracy in metres |
+
+The migration is additive/idempotent: it adds missing columns and widens existing coordinate columns. It does not add a map SDK or reverse-geocoding dependency. The application keeps address text independently editable; browser geolocation supplies coordinates and accuracy, not a postal address. Apply only after confirming the active database/schema and taking a backup. The migration is covered by the MySQL 8.4 CI workflow.
