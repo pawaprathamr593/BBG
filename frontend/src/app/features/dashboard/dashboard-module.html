@@ -181,6 +181,14 @@
           @if (decisionKind() === 'reject-business' || decisionKind() === 'reject-subscription') {
             <label class="workspace-message-label">Reason<textarea rows="5" maxlength="2000" [value]="decisionReason()" (input)="decisionReason.set(inputValue($event))" required placeholder="Provide a clear reason for this decision."></textarea></label>
           }
+          @if (decisionKind() === 'approve-business' && decisionItem()?.['subscription_status'] === 'PENDING') {
+            <p class="workspace-edit-hint">This action verifies the pending payment proof, activates the selected subscription, approves the business and publishes its storefront in one transaction.</p>
+            <label class="workspace-message-label">Subscription starts on<input type="datetime-local" [value]="decisionStartsOn()" (input)="decisionStartsOn.set(inputValue($event))" required></label>
+            <label class="workspace-message-label">Subscription ends on<input type="datetime-local" [value]="decisionEndsOn()" (input)="decisionEndsOn.set(inputValue($event))" required></label>
+          }
+          @if (decisionKind() === 'approve-business' && decisionItem()?.['subscription_status'] === 'ACTIVE') {
+            <p class="workspace-edit-hint">An active subscription already exists. This action approves the business and activates its storefront.</p>
+          }
           @if (decisionKind() === 'approve-subscription') {
             <label class="workspace-message-label">Subscription starts on<input type="datetime-local" [value]="decisionStartsOn()" (input)="decisionStartsOn.set(inputValue($event))" required></label>
             <label class="workspace-message-label">Subscription ends on<input type="datetime-local" [value]="decisionEndsOn()" (input)="decisionEndsOn.set(inputValue($event))" required></label>
