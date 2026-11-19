@@ -186,3 +186,5 @@ Every data-driven module/section must handle applicable states:
 - Remaining implementation scope: extract the other record-oriented Business and Platform workflows and their action/drawer orchestration into focused feature components without changing their current API contracts. The current branch intentionally remains `in-progress` until those extractions and the required verification are complete.
 
 - Extracted the Personal Addresses book into its own feature component. It now owns create/edit/default/delete actions, uses the existing customer-address endpoints and refreshes the authenticated user's address list only after successful mutations.
+
+- Extracted the Personal Addresses book into its own feature component. It owns create/edit/default/delete actions, uses the existing customer-address endpoints and refreshes the authenticated user's address list only after successful mutations.
