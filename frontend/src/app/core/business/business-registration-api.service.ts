@@ -103,6 +103,7 @@ export interface ApplicationSubscription {
   plan_name: string;
   billing_cycle: string;
   subscription_status: string;
+  rejection_reason?: string | null;
   amount: string | number;
   currency: string;
   payment_payee_name: string;
