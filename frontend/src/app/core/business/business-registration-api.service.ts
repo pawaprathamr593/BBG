@@ -104,6 +104,7 @@ export interface ApplicationSubscription {
   billing_cycle: string;
   subscription_status: string;
   rejection_reason?: string | null;
+  latest_proof_review_status?: string | null;
   amount: string | number;
   currency: string;
   payment_payee_name: string;
@@ -236,6 +237,43 @@ export class BusinessRegistrationApiService {
     return (response.data as { items: SubscriptionPlan[] }).items ?? [];
   }
 
+
+
+  async listOwnedSubscriptions(tenantId: number): Promise<ApplicationSubscription[]> {
+    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ items: ApplicationSubscription[] }>>(
+      `${this.apiBaseUrl}/api/v1/subscriptions/application/list`,
+      { subscriptionParam: { actionData: { tenant_id: tenantId } } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to load business subscriptions.');
+    }
+    return (response.data as { items: ApplicationSubscription[] }).items ?? [];
+  }
+
+  async requestApplicationSubscriptionUpgrade(tenantId: number, subscriptionId: number, planId: number): Promise<ApplicationSubscription> {
+    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription }>>(
+      `${this.apiBaseUrl}/api/v1/subscriptions/application/upgrade/request`,
+      { subscriptionParam: { actionData: { tenant_id: tenantId, subscription_id: subscriptionId, plan_id: planId } } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to create the subscription upgrade request.');
+    }
+    return (response.data as { subscription: ApplicationSubscription }).subscription;
+  }
+
+  async requestApplicationSubscriptionRenewal(tenantId: number, subscriptionId: number): Promise<ApplicationSubscription> {
+    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription }>>(
+      `${this.apiBaseUrl}/api/v1/subscriptions/application/renewal/request`,
+      { subscriptionParam: { actionData: { tenant_id: tenantId, subscription_id: subscriptionId } } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to create the subscription renewal request.');
+    }
+    return (response.data as { subscription: ApplicationSubscription }).subscription;
+  }
 
   async getCurrentApplicationSubscription(businessId: number, tenantId: number): Promise<ApplicationSubscription | null> {
     const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription | null }>>(
