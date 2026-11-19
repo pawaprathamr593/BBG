@@ -188,3 +188,5 @@ Every data-driven module/section must handle applicable states:
 - Extracted the Personal Addresses book into its own feature component. It now owns create/edit/default/delete actions, uses the existing customer-address endpoints and refreshes the authenticated user's address list only after successful mutations.
 
 - Extracted the Personal Addresses book into its own feature component. It owns create/edit/default/delete actions, uses the existing customer-address endpoints and refreshes the authenticated user's address list only after successful mutations.
+
+- Added component-destruction guards to the extracted feature modules so late async responses do not update destroyed views or trigger stale parent refreshes after navigation/context changes.

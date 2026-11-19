@@ -34,7 +34,7 @@ Custom tenant roles can use this same model later: the dashboard resolves permis
 - `Catalogue` remains its own lazy feature page with separate Products and Categories sections and a shared right-side drawer for product/category creation.
 - `WorkspaceRecordsModule` is the shared presentational record-list component for record-oriented modules. It receives typed card models and emits user actions; it does not call APIs.
 - `WorkspaceDrawer` is the common right-side drawer shell used by workspace add/edit forms, including mobile safe-area handling, Escape/backdrop close, focus management and body-scroll restoration.
-- `WorkspaceModuleApiService` centralizes context-checked API requests for extracted feature components. Existing endpoints, action names and envelope keys are retained.
+- `WorkspaceModuleApiService` centralizes context-checked API requests for extracted feature components. Existing endpoints, action names and envelope keys are retained. Feature components also ignore late mutation results after teardown.
 
 ## Current scope and limitations
 

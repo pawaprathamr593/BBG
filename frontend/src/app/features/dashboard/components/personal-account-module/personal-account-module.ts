@@ -78,7 +78,7 @@ export class PersonalAccountModule {
         ...(this.hasPassword()?{current_password:this.currentPassword()}:{}),new_password:newPassword,
       },'authParam');
       if(!this.alive)return;
-      this.passwordDrawerOpen.set(false);this.refreshRequested.emit();
+      this.passwordDrawerOpen.set(false);this.currentPassword.set('');this.newPassword.set('');this.confirmPassword.set('');this.refreshRequested.emit();
     }catch(error){if(this.alive)this.passwordError.set(this.auth.errorMessage(error));}
     finally{if(this.alive)this.busy.set(false);}
   }
