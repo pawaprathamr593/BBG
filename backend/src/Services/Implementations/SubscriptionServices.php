@@ -47,6 +47,9 @@ final readonly class SubscriptionServices implements ISubscriptionServices
                 case 'getApplicationSubscription':
                     $resArr = $this->getApplicationSubscription($actionData);
                     break;
+                case 'listApplicationSubscriptions':
+                    $resArr = $this->listApplicationSubscriptions($actionData);
+                    break;
                 case 'listMySubscriptions':
                     $resArr = $this->getMySubscriptions($actionData);
                     break;
@@ -432,6 +435,33 @@ final readonly class SubscriptionServices implements ISubscriptionServices
     }
 
 
+
+
+    private function listApplicationSubscriptions(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->applicationOwnerContext($actionData);
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'SubscriptionServices::listApplicationSubscriptions');
+        }
+        $tenantId = (int) $context['data']['application']['tenant_id'];
+        $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
+        $pageSize = min(50, $this->positiveInt($actionData['page_size'] ?? 20) ?? 20);
+        $rows = $this->dao->getTenantSubscriptions($this->db, $tenantId, $pageSize, ($page - 1) * $pageSize);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'SubscriptionServices::listApplicationSubscriptions');
+        }
+        foreach ($rows['data'] as &$row) {
+            if (!empty($row['payment_qr_file_path'])) {
+                $row['payment_qr_url'] = $this->s3Storage->createDownloadUrl((string) $row['payment_qr_file_path']);
+            }
+            unset($row['payment_qr_file_path']);
+        }
+        unset($row);
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['items' => $rows['data']];
+        return $resArr;
+    }
 
     private function getApplicationSubscription(array $actionData): array
     {
