@@ -532,7 +532,7 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = 'Only an approved business owner can configure its storefront.';
             return $resArr;
         }
-        $entitlement = $this->requireTenantEntitlement($tenantId, 'storefront.enabled', 'BusinessServices::getOwnedStorefront');
+        $entitlement = $this->requireTenantEntitlement($tenantId, 'STOREFRONT_ACCESS', 'BusinessServices::getOwnedStorefront');
         if ($entitlement['status'] !== 'SUCCESS') return $entitlement;
         $settings = $this->dao->getStorefrontSettings($this->db, $tenantId);
         if ($settings['status'] !== 'SUCCESS' || $settings['data'] === []) {
@@ -557,7 +557,7 @@ final readonly class BusinessServices implements IBusinessServices
         }
         $access = $this->requireTenantPermission((int) $principal['data']['user_id'], $tenantId, 'business.view', 'BusinessServices::getMyStorefront');
         if ($access['status'] !== 'SUCCESS') return $access;
-        $entitlement = $this->requireTenantEntitlement($tenantId, 'storefront.enabled', 'BusinessServices::getMyStorefront');
+        $entitlement = $this->requireTenantEntitlement($tenantId, 'STOREFRONT_ACCESS', 'BusinessServices::getMyStorefront');
         if ($entitlement['status'] !== 'SUCCESS') return $entitlement;
         $business = $this->dao->getMyBusinessApplication($this->db, (int) $principal['data']['user_id'], $tenantId);
         if ($business['status'] !== 'SUCCESS' || $business['data'] === []) {
@@ -593,7 +593,7 @@ final readonly class BusinessServices implements IBusinessServices
             $access = $this->requireTenantPermission($userId, $tenantId, 'business.update', 'BusinessServices::manageMyStorefront');
             if ($access['status'] !== 'SUCCESS') return $access;
         }
-        $entitlement = $this->requireTenantEntitlement($tenantId, 'storefront.enabled', 'BusinessServices::manageMyStorefront');
+        $entitlement = $this->requireTenantEntitlement($tenantId, 'STOREFRONT_ACCESS', 'BusinessServices::manageMyStorefront');
         if ($entitlement['status'] !== 'SUCCESS') return $entitlement;
         $business = $ownerScoped
             ? $this->dao->getOwnedBusinessApplication($this->db, $userId, $tenantId)
