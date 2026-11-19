@@ -120,7 +120,7 @@ final readonly class AuthServices implements IAuthServices
                 $transaction->commit();
                 $created['msgArr'][] = 'Account created successfully.';
                 $created['data']['role_code'] = 'CONSUMER';
-                $created['data']['role_scope'] = 'GLOBAL';
+                $created['data']['role_scope'] = 'PLATFORM';
                 return $created;
             } catch (Throwable $exception) {
                 if ($transaction->isActive()) {
