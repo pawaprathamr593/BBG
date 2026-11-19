@@ -156,6 +156,19 @@ export class BusinessRegistrationApiService {
     return (response.data as { items: SubscriptionPlan[] }).items ?? [];
   }
 
+
+  async getCurrentApplicationSubscription(businessId: number, tenantId: number): Promise<ApplicationSubscription | null> {
+    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription | null }>>(
+      `${this.apiBaseUrl}/api/v1/subscriptions/application/current`,
+      { subscriptionParam: { actionData: { business_id: businessId, tenant_id: tenantId } } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to restore your payment request.');
+    }
+    return (response.data as { subscription: ApplicationSubscription | null }).subscription ?? null;
+  }
+
   async requestApplicationSubscription(businessId: number, tenantId: number, planId: number): Promise<ApplicationSubscription> {
     const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription }>>(
       `${this.apiBaseUrl}/api/v1/subscriptions/application/request`,
