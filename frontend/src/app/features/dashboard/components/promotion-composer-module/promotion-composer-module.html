@@ -10,7 +10,7 @@
     <small>Optional. Leave blank for no expiry date.</small>
   </label>
   <div class="post-upload-zone">
-    <div class="post-file-picker" (dragover)="filesDropped.emit($event)" (drop)="filesDropped.emit($event)">
+    <div class="post-file-picker" (dragover)="dragOver.emit($event)" (drop)="filesDropped.emit($event)">
       <span>＋</span><strong>Add media files</strong>
       <small>Images, videos, audio and PDF · multiple selection · max 100 MB per file</small>
       <input type="file" aria-label="Add promotion media files" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,application/pdf,text/plain,text/csv,application/rtf" (change)="filesSelected.emit($event)" [disabled]="busy()">

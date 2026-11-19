@@ -21,6 +21,7 @@ export class PromotionComposerModule {
   readonly contentInput = output<Event>();
   readonly validUntilInput = output<Event>();
   readonly filesSelected = output<Event>();
+  readonly dragOver = output<DragEvent>();
   readonly filesDropped = output<DragEvent>();
   readonly fileRemoved = output<number>();
   readonly cancel = output<void>();

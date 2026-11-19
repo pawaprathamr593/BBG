@@ -9,7 +9,7 @@
         <article class="record-card">
           <div class="record-head">
             <div><strong>{{ card.title }}</strong><span>{{ card.subtitle }}</span></div>
-            @if (card.status) { <span class="status-chip" [class]="card.statusClass">{{ card.status.replaceAll('_', ' ') }}</span> }
+            @if (card.status) { <span class="status-chip" [class]="card.statusClass">{{ card.status }}</span> }
           </div>
           @if (card.fields.length) {
             <div class="record-fields">

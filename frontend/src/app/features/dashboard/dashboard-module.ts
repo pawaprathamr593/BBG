@@ -647,7 +647,7 @@ export class DashboardModule implements OnInit {
       record: item,
       title: this.recordTitle(item),
       subtitle: this.recordSubtitle(item),
-      status,
+      status: status ? this.humanize(status) : '',
       statusClass: this.statusClass(status),
       fields: this.recordEntries(item).map((entry) => ({
         key: entry.key, label: this.humanize(entry.key), value: this.formatValue(entry.value),

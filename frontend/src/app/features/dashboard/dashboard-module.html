@@ -347,6 +347,7 @@
           (contentInput)="setPromotionField('content',$event)"
           (validUntilInput)="setPromotionField('validUntil',$event)"
           (filesSelected)="selectPromotionMedia($event)"
+          (dragOver)="allowPromotionMediaDrop($event)"
           (filesDropped)="dropPromotionMedia($event)"
           (fileRemoved)="removePromotionMedia($event)"
           (cancel)="closePromotionComposer()"
