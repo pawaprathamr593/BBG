@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
-import { BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
+import { BusinessApplication, BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
