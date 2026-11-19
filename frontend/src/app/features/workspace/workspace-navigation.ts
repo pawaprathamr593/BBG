@@ -204,9 +204,11 @@ export function getWorkspaceNavItems(
 ): WorkspaceNavItem[] {
   const scope = context === 'BUSINESS' ? 'TENANT' : context === 'PLATFORM' ? 'PLATFORM' : 'GLOBAL';
   return WORKSPACE_NAV_ITEMS.filter((item) => {
-    if (item.scope !== scope || !hasWorkspacePermission(permissions, item.scope, item.permission)) {
-      return false;
-    }
+    if (item.scope !== scope) return false;
+    const isOwnerOnlyTeamAccess = context === 'BUSINESS'
+      && item.route === '/dashboard/members'
+      && permissions.some((permission) => permission.scope_type === 'TENANT' && permission.role_code === 'TENANT_OWNER');
+    if (!isOwnerOnlyTeamAccess && !hasWorkspacePermission(permissions, item.scope, item.permission)) return false;
     return item.entitlement === null || hasActiveEntitlement(activeEntitlements, item.entitlement);
   });
 }
