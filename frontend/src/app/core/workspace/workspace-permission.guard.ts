@@ -63,7 +63,7 @@ export const workspacePermissionGuard: CanActivateChildFn = async (route) => {
   if (context === 'PERSONAL') {
     const requiredPermission = PERSONAL_PERMISSIONS[section];
     const allowed = requiredPermission !== undefined
-      && hasWorkspacePermission(workspace.permissions(), 'GLOBAL', requiredPermission);
+      && hasWorkspacePermission(workspace.permissions(), 'PLATFORM', requiredPermission);
     return allowed ? true : router.createUrlTree(['/dashboard']);
   }
 
