@@ -206,6 +206,10 @@ export class MarketplaceHome implements OnInit {
     void this.router.navigate(['/store', product.business.business_slug, 'products', slug]);
   }
 
+  protected openBusinessSlug(businessSlug: string): void {
+    void this.router.navigate(['/store', businessSlug]);
+  }
+
   protected openPromotion(promotion: MarketplacePromotion): void {
     void this.router.navigate(['/store', promotion.business_slug]);
   }
