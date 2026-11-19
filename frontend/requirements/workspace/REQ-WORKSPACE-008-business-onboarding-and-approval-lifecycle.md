@@ -123,7 +123,7 @@ All current paths below are confirmed from backend/config/common/routes.php. Req
 | Get business application | POST | /api/v1/business/application/get | businessParam | Existing; currently returns one application, not a collection |
 | Update pending application | POST | /api/v1/business/application/update | businessParam | Existing |
 | Resubmit rejected application | POST | /api/v1/business/application/resubmit | businessParam | Existing |
-| List all my business applications | POST | UNKNOWN | businessParam | Required; action/contract not implemented |
+| List all my business applications | POST | /api/v1/business/applications/mine/list | businessParam | Implemented in current branch; authenticated owner-scoped query |
 | Save/resume application draft | POST | UNKNOWN | businessParam | Required; action/contract and draft persistence mapping not implemented |
 | List active plans | POST | /api/v1/subscriptions/plans/list | subscriptionParam | Existing |
 | Request subscription for a business | POST | /api/v1/subscriptions/request | subscriptionParam | Existing; confirm compatibility with pending onboarding |
@@ -179,7 +179,7 @@ Loading, draft-saving, saved, validation, upload progress, upload retry, submiss
 
 ## 11. Responsive and theme
 
-Mobile-first wizard with compact progress on narrow screens. Map interaction remains usable on touch devices; provide address search and keyboard-accessible coordinate entry/adjustment fallback. Admin queue and drawer work on desktop/tablet/mobile; narrow drawers use existing full-width treatment. Preserve BBG light/dark tokens, focus styles, reduced-motion support and accessible labels.
+Mobile-first onboarding form with optional browser location capture and keyboard-accessible editable address/coordinate fields. Admin queue and drawer work on desktop/tablet/mobile; narrow drawers use existing full-width treatment. Admin queue and drawer work on desktop/tablet/mobile; narrow drawers use existing full-width treatment. Preserve BBG light/dark tokens, focus styles, reduced-motion support and accessible labels.
 
 ## 12. Acceptance criteria
 
@@ -217,7 +217,8 @@ Mobile-first wizard with compact progress on narrow screens. Map interaction rem
 
 ## Implementation log
 
-- Requirement drafted on feature/business-onboarding-lifecycle.
-- Current-code findings: initial registration rejects a second owner application; frontend redirects to workspace/subscriptions immediately after submission; getMyBusinessApplication returns one row; BUSINESS_APPLICATIONS is not used by the current registration service; public route is /store/:businessSlug.
-- Location decision updated: use optional browser Geolocation API; no map SDK or reverse-geocoding provider. Coordinates and address text are separate; address fields remain editable.
-- Implementation is in progress.
+- Requirement drafted and updated on feature/business-onboarding-lifecycle.
+- Implemented: authenticated owner-scoped business application list endpoint; multiple independent business registrations no longer blocked by an existing owned business; registration page lists existing businesses and keeps a durable success message instead of switching into a pending tenant; optional browser Geolocation capture for latitude/longitude; address fields remain editable; backend validates and persists optional coordinates using the documented BUSINESS_PROFILES latitude/longitude fields.
+- Location decision: browser Geolocation API only; no map SDK or reverse-geocoding provider. Browser geolocation returns coordinates, not a postal address, so address text remains manually editable.
+- Not yet implemented: full draft/resume state machine, plan selection and payment wizard orchestration, unified transactional business/subscription approval, admin drawer/queue changes, subscription upgrades, team invitations/role assignment, and public storefront lifecycle reconciliation.
+- Verification limitation: repository source was reviewed and edited through GitHub; Angular/PHP builds and live database schema were not run/verified in this environment. Confirm deployed coordinate column precision before release; the proposed DB design currently specifies DOUBLE(10,2), which is too coarse for precise location capture.
