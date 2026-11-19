@@ -495,6 +495,14 @@ export class StorefrontSection {
     }
   }
 
+  protected openProduct(product: MarketplaceProduct, businessSlug: string): void {
+    void this.router.navigate(['/store', businessSlug, 'products', this.productRoute(product)]);
+  }
+
+  protected openBusiness(businessSlug: string): void {
+    void this.router.navigate(['/store', businessSlug]);
+  }
+
   productRoute(product: MarketplaceProduct): string {
     const slug = product.slug || product.product_name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
     return slug + '-' + (product.public_id || product.id);
