@@ -67,7 +67,7 @@
                   <p class="notice success" role="status">This subscription is active.</p>
                 } @else if (canSubmitProof()) {
                   <div class="payment-upload">
-                    <label class="field"><span>Payment reference / UTR</span><input [value]="paymentReference()" (input)="paymentReference.set($any($event.target).value)" maxlength="120" placeholder="Optional transaction reference" /></label>
+                    <label class="field"><span>Payment reference / UTR</span><input [value]="paymentReference()" (input)="updatePaymentReference($event)" maxlength="120" placeholder="Optional transaction reference" /></label>
                     <label class="field"><span>Upload payment receipt *</span><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" (change)="setReceiptFile($event)" /></label>
                     @if (receiptFile(); as file) { <small>Selected: {{ file.name }}</small> }
                     @if (uploadProgress() > 0 && uploadProgress() < 100) { <small>Uploading receipt: {{ uploadProgress() }}%</small> }
