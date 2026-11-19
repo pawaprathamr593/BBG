@@ -211,7 +211,7 @@ final readonly class BusinessDao
             "SELECT bp.id AS business_id, bp.tenant_id, bp.business_name, bp.business_slug,
                     bp.business_description, bp.primary_category_id, bp.business_phone,
                     bp.whatsapp_number, bp.business_email, bp.address_line_1, bp.address_line_2,
-                    bp.city, bp.state, bp.postal_code, bp.country_code, bp.approval_status,
+                    bp.city, bp.state, bp.postal_code, bp.country_code, bp.latitude, bp.longitude, bp.approval_status,
                     bp.approved_by, bp.approved_on, bp.rejection_reason, bp.publication_status,
                     t.tenant_name, t.tenant_status
              FROM BUSINESS_PROFILES bp
