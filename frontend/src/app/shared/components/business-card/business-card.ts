@@ -32,8 +32,8 @@ import type { BusinessCardModel } from '../../models/marketplace-card.models';
         }
         @if (showMetrics() && business().popularity) {
           <div class="metrics">
-            <span>{{ business().popularity!.views }} views</span>
-            <span>{{ business().popularity!.enquiries }} enquiries</span>
+            <span>{{ business().popularity?.views ?? 0 }} views</span>
+            <span>{{ business().popularity?.enquiries ?? 0 }} enquiries</span>
           </div>
         }
         @if (showCreated() && business().created_on) {
