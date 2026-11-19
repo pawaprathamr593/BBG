@@ -19,6 +19,7 @@ import { ModerationHistoryModule, ModerationHistoryItem } from './components/mod
 import { WorkspaceSummaryModule, WorkspaceSummaryItem } from './components/workspace-summary-module/workspace-summary-module';
 import { PaymentQrSettingsModule } from './components/payment-qr-settings-module/payment-qr-settings-module';
 import { PlatformCategoriesModule } from './components/platform-categories-module/platform-categories-module';
+import { PersonalAddressesModule } from './components/personal-addresses-module/personal-addresses-module';
 
 type EnvelopeKey = 'authParam' | 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam' | 'tenantParam' | 'dashboardParam';
 interface ApiEnvelope<T = unknown> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION'; msgArr?: string[]; data?: T | []; }
@@ -26,11 +27,6 @@ interface DataRecord { [key: string]: unknown; }
 interface ListResult {
   items?: DataRecord[];
   pagination?: { page?: number; page_size?: number; total?: number };
-}
-interface AddressForm {
-  recipient_name: string; mobile: string; address_line_1: string; address_line_2: string;
-  city: string; state: string; postal_code: string; country_code: string; address_label: string;
-  is_default: boolean;
 }
 type DecisionKind = 'reject-business' | 'approve-subscription' | 'reject-subscription' | 'moderate';
 class StaleWorkspaceRequestError extends Error {}
@@ -43,9 +39,6 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
   'manage-post-media': 'promotion.update',
   'publish-promotion': 'promotion.update',
   'unpublish-promotion': 'promotion.update',
-  'edit-address': 'user.update',
-  'default-address': 'user.update',
-  'delete-address': 'user.update',
   'suspend-user': 'user.update',
   'restore-user': 'user.update',
   'approve-business': 'business.approve',
@@ -60,7 +53,7 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-dashboard-module',
   standalone: true,
-  imports: [WorkspaceDrawer, BusinessProfileModule, StorefrontModule, WorkspaceRecordsModule, PersonalAccountModule, SubscriptionPlansModule, PromotionComposerModule, PlatformAnalyticsModule, ModerationHistoryModule, WorkspaceSummaryModule, PaymentQrSettingsModule, PlatformCategoriesModule],
+  imports: [WorkspaceDrawer, BusinessProfileModule, StorefrontModule, WorkspaceRecordsModule, PersonalAccountModule, SubscriptionPlansModule, PromotionComposerModule, PlatformAnalyticsModule, ModerationHistoryModule, WorkspaceSummaryModule, PaymentQrSettingsModule, PlatformCategoriesModule, PersonalAddressesModule],
   templateUrl: './dashboard-module.html',
   styleUrl: './dashboard-module.scss',
 })
@@ -118,15 +111,9 @@ export class DashboardModule implements OnInit {
   readonly summaryCardModels = computed<WorkspaceSummaryItem[]>(() => this.summaryEntries().map((entry) => ({
     key: entry.key, label: this.humanize(entry.key), value: this.formatValue(entry.value),
   })));
-  readonly showAddressDrawer = signal(false);
   readonly storefrontDetails = computed(() => {
     const value = this.summary()?.['storefront'];
     return value && typeof value === 'object' && !Array.isArray(value) ? value as DataRecord : null;
-  });
-  readonly addressEditingId = signal<number | null>(null);
-  readonly addressForm = signal<AddressForm>({
-    recipient_name: '', mobile: '', address_line_1: '', address_line_2: '', city: '', state: '',
-    postal_code: '', country_code: 'IN', address_label: 'Home', is_default: false,
   });
   readonly showReplyDrawer = signal(false);
   readonly showPaymentQrDrawer = signal(false);
@@ -638,7 +625,6 @@ export class DashboardModule implements OnInit {
     if (this.section()==='promotions') return status==='PUBLISHED'
       ? [{key:'unpublish-promotion',label:'Unpublish'}]
       : [{key:'manage-post-media',label:'Manage media'},{key:'publish-promotion',label:'Publish'}];
-    if (this.section()==='customers' && this.workspace.activeTenantId()===null && (item['address_id'] || item['id'])) return [{key:'edit-address',label:'Edit address'},{key:'default-address',label:'Set as default'},{key:'delete-address',label:'Delete address',danger:true}];
     if (this.section()==='platform-users') return status==='SUSPENDED' ? [{key:'restore-user',label:'Restore account'}] : [{key:'suspend-user',label:'Suspend account',danger:true}];
     if (this.section()==='business-approval' && status==='PENDING') return [{key:'approve-business',label:'Approve'},{key:'reject-business',label:'Reject',danger:true}];
     if (this.section()==='subscription-approval' && status==='PENDING') return [{key:'approve-subscription',label:'Approve'},{key:'reject-subscription',label:'Reject',danger:true}];
@@ -682,14 +668,6 @@ export class DashboardModule implements OnInit {
       case 'approve-subscription': case 'reject-subscription':
         this.openDecisionDrawer(action, item);
         return;
-      case 'edit-address':
-        this.openAddressEditor(item);
-        return;
-      case 'default-address': case 'delete-address': {
-        const remove = action==='delete-address';
-        if (remove && !window.confirm('Delete this saved address?')) return;
-        path=remove?'/api/v1/customers/addresses/delete':'/api/v1/customers/addresses/default'; key='customerParam'; actionType=remove?'deleteMyAddress':'setDefaultAddress'; data={address_id:Number(item['address_id'] ?? item['id'])}; break;
-      }
       case 'moderate':
         this.openDecisionDrawer('moderate', item);
         return;
@@ -893,55 +871,6 @@ export class DashboardModule implements OnInit {
     if (!this.can('subscription.update')) return;
     this.error.set('');
     this.showPaymentQrDrawer.set(true);
-  }
-
-  createAddress(): void {
-    if (!this.can('user.update')) return;
-    this.addressEditingId.set(null);
-    this.addressForm.set({
-      recipient_name: '', mobile: '', address_line_1: '', address_line_2: '', city: '', state: '',
-      postal_code: '', country_code: 'IN', address_label: 'Home', is_default: false,
-    });
-    this.error.set('');
-    this.showAddressDrawer.set(true);
-  }
-
-  openAddressEditor(item: DataRecord): void {
-    const addressId = Number(item['address_id'] ?? item['id'] ?? 0);
-    if (!addressId || !this.can('user.update')) return;
-    this.addressEditingId.set(addressId);
-    this.addressForm.set({
-      recipient_name: String(item['recipient_name'] ?? ''), mobile: String(item['mobile'] ?? ''),
-      address_line_1: String(item['address_line_1'] ?? ''), address_line_2: String(item['address_line_2'] ?? ''),
-      city: String(item['city'] ?? ''), state: String(item['state'] ?? ''),
-      postal_code: String(item['postal_code'] ?? ''), country_code: String(item['country_code'] ?? 'IN'),
-      address_label: String(item['address_label'] ?? 'Home'), is_default: Number(item['is_default'] ?? 0) === 1,
-    });
-    this.error.set('');
-    this.showAddressDrawer.set(true);
-  }
-
-  updateAddressField(field: keyof AddressForm, event: Event): void {
-    const target = event.target as HTMLInputElement;
-    const value = target.type === 'checkbox' ? target.checked : target.value;
-    this.addressForm.update((form) => ({ ...form, [field]: value }) as AddressForm);
-  }
-
-  async saveAddress(): Promise<void> {
-    const form = this.addressForm();
-    if (!form.address_line_1.trim()) { this.error.set('Address line 1 is required.'); return; }
-    const editingId = this.addressEditingId();
-    const payload = {
-      address_line_1: form.address_line_1.trim(), recipient_name: form.recipient_name.trim(),
-      mobile: form.mobile.trim(), address_line_2: form.address_line_2.trim(), city: form.city.trim(),
-      state: form.state.trim(), postal_code: form.postal_code.trim(),
-      country_code: form.country_code.trim().toUpperCase(), address_label: form.address_label.trim(),
-      ...(editingId !== null ? { address_id: editingId, is_default: form.is_default ? 1 : 0 } : {}),
-    };
-    const saved = editingId === null
-      ? await this.performAction('/api/v1/customers/addresses/create', 'customerParam', 'createMyAddress', payload)
-      : await this.performAction('/api/v1/customers/addresses/update', 'customerParam', 'updateMyAddress', payload);
-    if (saved) this.showAddressDrawer.set(false);
   }
 
   openDecisionDrawer(kind: DecisionKind, item: DataRecord): void {

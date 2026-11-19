@@ -5,9 +5,6 @@
         </div>
         <div class="heading-buttons">
           @if (section() === 'promotions' && can('promotion.create')) { <button class="secondary-action" type="button" (click)="createPromotion()" [disabled]="busy()">+ New promotion</button> }
-          @if (section() === 'customers' && !activeTenantId() && can('user.update')) {
-            <button class="secondary-action" type="button" (click)="createAddress()" [disabled]="busy()">+ Add address</button>
-          }
           <button class="refresh" type="button" (click)="load()" [disabled]="loading()">↻ Refresh</button>
         </div>
       </header>
@@ -38,11 +35,8 @@
         }
 
         @if (section() === 'customers' && !activeTenantId() && summary(); as personalProfile) {
-          <app-personal-account-module
-            [profile]="personalProfile"
-            [canEdit]="can('user.update')"
-            (refreshRequested)="load()"
-          />
+          <app-personal-account-module [profile]="personalProfile" [canEdit]="can('user.update')" (refreshRequested)="load()" />
+          <app-personal-addresses-module [addresses]="items()" [canManage]="can('user.update')" (refreshRequested)="load()" />
         }
 
         @if (section() === 'payment-qr-settings' && can('subscription.update')) {
@@ -74,7 +68,7 @@
         @if (section() === 'moderation' && moderationHistoryItems().length) {
           <app-moderation-history-module [items]="moderationHistoryItems()" />
         }
-        @if (section() !== 'categories' && (filteredItems().length || totalItems() > 0)) {
+        @if (!(section() === 'customers' && !activeTenantId()) && section() !== 'categories' && (filteredItems().length || totalItems() > 0)) {
           <app-workspace-records-module
             [heading]="recordsHeading()"
             [cards]="recordCardModels()"
@@ -198,24 +192,7 @@
         </form>
       </app-workspace-drawer>
 
-<app-workspace-drawer [open]="showAddressDrawer()" [title]="addressEditingId() === null ? 'Add address' : 'Edit address'" description="Maintain your saved delivery address." (closed)="showAddressDrawer.set(false)">
-        <form class="workspace-edit-form" (submit)="$event.preventDefault(); saveAddress()">
-          <div class="workspace-edit-grid">
-            <label>Address label<input [value]="addressForm().address_label" (input)="updateAddressField('address_label',$event)" maxlength="80" placeholder="Home"></label>
-            <label>Recipient name<input [value]="addressForm().recipient_name" (input)="updateAddressField('recipient_name',$event)"></label>
-            <label>Mobile number<input type="tel" [value]="addressForm().mobile" (input)="updateAddressField('mobile',$event)"></label>
-            <label>Address line 1<input [value]="addressForm().address_line_1" (input)="updateAddressField('address_line_1',$event)" required></label>
-            <label class="full">Address line 2<input [value]="addressForm().address_line_2" (input)="updateAddressField('address_line_2',$event)"></label>
-            <label>City<input [value]="addressForm().city" (input)="updateAddressField('city',$event)"></label>
-            <label>State<input [value]="addressForm().state" (input)="updateAddressField('state',$event)"></label>
-            <label>Postal code<input [value]="addressForm().postal_code" (input)="updateAddressField('postal_code',$event)"></label>
-            <label>Country code<input [value]="addressForm().country_code" (input)="updateAddressField('country_code',$event)" maxlength="2"></label>
-          </div>
-          @if (addressEditingId() !== null) { <label class="drawer-checkbox"><input type="checkbox" [checked]="addressForm().is_default" (change)="updateAddressField('is_default',$event)"> Set as default address</label> }
-          @if (error()) { <p class="workspace-edit-error" role="alert">{{ error() }}</p> }
-          <footer><button type="button" class="refresh" (click)="showAddressDrawer.set(false)" [disabled]="busy()">Cancel</button><button type="submit" class="secondary-action" [disabled]="busy() || !addressForm().address_line_1.trim()">{{ busy() ? 'Saving…' : (addressEditingId() === null ? 'Add address' : 'Save address') }}</button></footer>
-        </form>
-      </app-workspace-drawer>
+
 
       
 
