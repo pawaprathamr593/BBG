@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { FilterDrawer } from '../../../shared/filter-drawer/filter-drawer';
 import { BusinessCard } from '../../../shared/components/business-card/business-card';
+import type { BusinessCardModel } from '../../../shared/models/marketplace-card.models';
 import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory } from '../../../core/marketplace/marketplace-api.service';
 
 type BusinessFilterKey = 'categoryId' | 'city' | 'state';
@@ -92,7 +93,7 @@ export class BusinessDirectory implements OnInit {
 
   protected search(): void { this.page.set(1); this.load(); }
 
-  protected openBusiness(business: MarketplaceBusiness): void {
+  protected openBusiness(business: BusinessCardModel): void {
     void this.router.navigate(['/store', business.business_slug]);
   }
 
