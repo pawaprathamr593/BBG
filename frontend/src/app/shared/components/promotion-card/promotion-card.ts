@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import type { PromotionCardModel } from '../../models/marketplace-card.models';
+import type { CardMediaModel, PromotionCardModel } from '../../models/marketplace-card.models';
 
 @Component({
   selector: 'app-promotion-card',
@@ -12,9 +12,9 @@ import type { PromotionCardModel } from '../../models/marketplace-card.models';
       <div class="business">{{ promotion().business_name }}</div>
       <h3>{{ promotion().post_title }}</h3>
       <p class="content">{{ promotion().post_content }}</p>
-      @if (promotion().media?.length) {
+      @if (mediaItems().length > 0) {
         <div class="media-grid">
-          @for (media of promotion().media; track media.id; let index = $index) {
+          @for (media of mediaItems(); track media.id; let index = $index) {
             @if (index < mediaLimit()) {
               @if (media.url && media.media_type === 'IMAGE') {
                 <img [src]="media.url" [alt]="media.original_file_name || promotion().post_title" loading="lazy">
@@ -28,7 +28,7 @@ import type { PromotionCardModel } from '../../models/marketplace-card.models';
             }
           }
         </div>
-        @if (promotion().media!.length > mediaLimit()) { <p class="more-media">+{{ (promotion().media?.length ?? 0) - mediaLimit() }} more attachments</p> }
+        @if (mediaItems().length > mediaLimit()) { <p class="more-media">+{{ mediaItems().length - mediaLimit() }} more attachments</p> }
       }
       <div class="footer">
         <time [attr.datetime]="promotion().published_on">Published {{ promotion().published_on | date:'mediumDate' }}</time>
@@ -46,4 +46,8 @@ export class PromotionCard {
   readonly label = input('BBG PROMOTION');
   readonly mediaLimit = input(4);
   readonly selected = output<PromotionCardModel>();
+
+  protected mediaItems(): CardMediaModel[] {
+    return this.promotion().media ?? [];
+  }
 }
