@@ -93,3 +93,26 @@ The client-provided MIME type and size are used only to request an upload URL; t
 - A successful upload-URL response does not mean the proof was submitted or approved. The client must upload to S3 and then call the submit endpoint.
 - S3 credentials remain server-side in environment configuration. Never commit real credentials.
 - Live S3 upload and download verification still requires a configured bucket, IAM permissions, credentials and end-to-end testing.
+
+
+## 5. Application-owner onboarding and subscription-change endpoints
+
+The multi-business onboarding flow uses additional routes with the same `subscriptionParam` envelope:
+
+| Operation | Route | Action |
+| --- | --- | --- |
+| Create initial application subscription | `POST /api/v1/subscriptions/application/request` | `requestApplicationSubscription` |
+| Restore current application payment | `POST /api/v1/subscriptions/application/current` | `getApplicationSubscription` |
+| List subscriptions for an owned business | `POST /api/v1/subscriptions/application/list` | `listApplicationSubscriptions` |
+| Create application proof upload URL | `POST /api/v1/subscriptions/application/proofs/upload-url` | `generateApplicationProofUploadUrl` |
+| Submit application proof | `POST /api/v1/subscriptions/application/proofs/submit` | `submitApplicationSubscriptionProof` |
+| Request plan upgrade | `POST /api/v1/subscriptions/application/upgrade/request` | `requestApplicationSubscriptionUpgrade` |
+| Request renewal | `POST /api/v1/subscriptions/application/renewal/request` | `requestApplicationSubscriptionRenewal` |
+
+These operations do not use or alter the tenant RBAC permission evaluation. Core Services resolves the bearer principal and verifies that the user has an active TENANT_OWNER membership for the supplied tenant and that the business profile belongs to that tenant. Upgrade and renewal operations require an approved business; initial onboarding payment requires a DRAFT business profile.
+
+For initial onboarding, the business remains DRAFT after the subscription request is created. It transitions to PENDING only after the uploaded receipt has been verified and its proof metadata has been inserted. If the owner returns before submitting proof, the current pending payment request and its QR snapshot are returned rather than creating another subscription.
+
+For upgrades and renewals, the new pending subscription stores `upgrade_from_subscription_id`. The existing subscription remains active while payment is pending or rejected. The existing Admin subscription approval transaction activates the replacement and expires the linked previous subscription only after the proof is approved. Rejection leaves the previous subscription unchanged.
+
+The same S3 object verification rules described above apply to application-owner proof uploads. These endpoints still require configured S3 credentials, bucket CORS allowing the browser's presigned PUT, and an end-to-end upload test.
