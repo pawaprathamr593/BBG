@@ -105,6 +105,11 @@ export class BusinessWorkspace implements OnInit {
     });
   }
 
+  manageSubscription(business: BusinessApplication): void {
+    if (business.approval_status !== 'APPROVED') return;
+    void this.router.navigate(['/business/subscriptions'], { queryParams: { tenant_id: business.tenant_id } });
+  }
+
   manageStorefront(business: BusinessApplication): void {
     if (business.approval_status !== 'APPROVED') return;
     void this.router.navigate(['/business/storefront'], { queryParams: { tenant_id: business.tenant_id } });
