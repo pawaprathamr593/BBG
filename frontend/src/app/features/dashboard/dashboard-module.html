@@ -98,6 +98,18 @@
         (closed)="recordDetail.set(null)">
         @if (recordDetail(); as detail) {
           <div class="record-detail-content">
+            @if (detail['receipt_url']) {
+              <section class="record-detail-section">
+                <h3>Payment receipt</h3>
+                <a [href]="asUrl(detail['receipt_url'])" target="_blank" rel="noopener noreferrer">Open uploaded receipt</a>
+              </section>
+            }
+            @if (detail['payment_qr_url']) {
+              <section class="record-detail-section">
+                <h3>Payment instructions snapshot</h3>
+                <img class="payment-qr-preview" [src]="asUrl(detail['payment_qr_url'])" alt="Payment QR captured for this subscription" />
+              </section>
+            }
             @for (group of detailGroups(detail); track group.title) {
               <section class="record-detail-section">
                 <h3>{{ group.title }}</h3>
