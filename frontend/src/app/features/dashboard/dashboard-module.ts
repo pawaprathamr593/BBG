@@ -229,7 +229,7 @@ export class DashboardModule implements OnInit {
       { key: 'analytics', label: 'Analytics', path: '/dashboard/analytics' },
       { key: 'platform-users', label: 'Users', path: '/dashboard/platform-users' },
       { key: 'business-approval', label: 'Business reviews', path: '/dashboard/business-approval' },
-      { key: 'subscription-approval', label: 'Plan reviews', path: '/dashboard/subscription-approval' },
+      { key: 'subscription-approval', label: 'Business onboarding & payments', path: '/dashboard/subscription-approval' },
       { key: 'payment-qr-settings', label: 'Payment QR settings', path: '/dashboard/payment-qr-settings' },
       { key: 'moderation', label: 'Moderation', path: '/dashboard/moderation' },
       { key: 'system-health', label: 'System health', path: '/dashboard/system-health' },
@@ -312,7 +312,7 @@ export class DashboardModule implements OnInit {
     categories: { title: 'Marketplace categories', description: 'Review the category taxonomy used by marketplace listings.' },
     'platform-users': { title: 'Platform users', description: 'Review platform accounts and suspend or restore eligible users.' },
     'business-approval': { title: 'Business approvals', description: 'Review pending business applications and process approval decisions.' },
-    'subscription-approval': { title: 'Subscription approvals', description: 'Review pending subscription requests and process decisions.' },
+    'subscription-approval': { title: 'Business onboarding reviews', description: 'Review submitted business details, selected plans and payment receipts before activating a business workspace.' },
     'payment-qr-settings': { title: 'Payment QR settings', description: 'Manage the UPI payment QR used for new subscription requests.' },
     moderation: { title: 'Marketplace moderation', description: 'Review reported marketplace content and record moderation decisions.' },
     'system-health': { title: 'System health', description: 'Review safe operational health information exposed to platform staff.' },
@@ -577,6 +577,11 @@ export class DashboardModule implements OnInit {
     return title === '—' ? 'Record' : title;
   }
   recordSubtitle(item: DataRecord): string {
+    if (this.section() === 'subscription-approval') {
+      const plan = String(item['plan_name'] ?? 'Plan not available');
+      const status = String(item['subscription_status'] ?? 'PENDING');
+      return plan + ' · ' + this.humanize(status);
+    }
     return this.valueOf(item,['email','business_category','category_type','customer_name','address_line_1','city','mobile','created_at','created_on','order_status','enquiry_status','subscription_status']);
   }
   statusOf(item: DataRecord): string { return String(item['approval_status'] ?? item['subscription_status'] ?? item['publication_status'] ?? item['order_status'] ?? item['enquiry_status'] ?? item['payment_status'] ?? item['report_status'] ?? item['account_status'] ?? item['customer_status'] ?? item['status'] ?? ''); }
