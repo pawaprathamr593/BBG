@@ -64,6 +64,19 @@ export class BusinessRegistrationApiService {
     return new HttpHeaders({ Authorization: `Bearer ${this.auth.accessToken() ?? ''}` });
   }
 
+
+  async getMyApplications(): Promise<BusinessApplication[]> {
+    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ items: BusinessApplication[] }>>(
+      `${this.apiBaseUrl}/api/v1/business/application/list`,
+      { businessParam: { actionData: {} } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to load your business applications.');
+    }
+    return (response.data as { items: BusinessApplication[] }).items ?? [];
+  }
+
   async getMyApplication(tenantId = 0): Promise<BusinessApplication | null> {
     try {
       const response = await firstValueFrom(this.http.post<BusinessApiResponse<BusinessApplication>>(
