@@ -18,6 +18,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
     public function __construct(
         private ConnectionInterface $db,
         private SubscriptionDao $dao,
+        private BusinessDao $businessDao,
         private TenantDao $tenantDao,
         private IAuthServices $authServices,
         private AwsS3Storage $s3Storage,
@@ -78,6 +79,15 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             switch ((string) $subscriptionParam['actionType']) {
                 case 'requestSubscription':
                     $resArr = $this->manageSubscriptionRequest($actionData, false);
+                    break;
+                case 'requestApplicationSubscription':
+                    $resArr = $this->requestApplicationSubscription($actionData);
+                    break;
+                case 'generateApplicationProofUploadUrl':
+                    $resArr = $this->generateApplicationProofUploadUrl($actionData);
+                    break;
+                case 'submitApplicationSubscriptionProof':
+                    $resArr = $this->submitApplicationSubscriptionProof($actionData);
                     break;
                 case 'requestSubscriptionRenewal':
                     $resArr = $this->manageSubscriptionRequest($actionData, true);
@@ -409,6 +419,256 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             }
             throw $exception;
         }
+    }
+
+
+    private function requestApplicationSubscription(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->applicationOwnerContext($actionData);
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'SubscriptionServices::requestApplicationSubscription');
+        }
+        $application = $context['data']['application'];
+        if (($application['approval_status'] ?? '') !== 'DRAFT') {
+            $resArr['msgArr'][] = 'A subscription plan can only be selected for a saved business draft.';
+            return $resArr;
+        }
+        $tenantId = (int) $application['tenant_id'];
+        $userId = (int) $context['data']['user_id'];
+        $planId = $this->positiveInt($actionData['plan_id'] ?? null);
+        if ($planId === null) {
+            $resArr['msgArr'][] = 'A valid plan_id is required.';
+            return $resArr;
+        }
+        $plan = $this->dao->getPlan($this->db, $planId);
+        if ($plan['status'] !== 'SUCCESS' || $plan['data'] === []) {
+            return $this->propagateFailure($plan, 'SubscriptionServices::requestApplicationSubscription');
+        }
+        $active = $this->dao->hasActiveSubscription($this->db, $tenantId);
+        if ($active['status'] !== 'SUCCESS') return $this->propagateFailure($active, 'SubscriptionServices::requestApplicationSubscription');
+        if ($active['data'] !== []) {
+            $resArr['msgArr'][] = 'This business already has an active subscription.';
+            return $resArr;
+        }
+        $pending = $this->dao->hasPendingSubscription($this->db, $tenantId);
+        if ($pending['status'] !== 'SUCCESS') return $this->propagateFailure($pending, 'SubscriptionServices::requestApplicationSubscription');
+        if ($pending['data'] !== []) {
+            $resArr['msgArr'][] = 'A subscription request already exists for this business.';
+            return $resArr;
+        }
+        $qrConfig = $this->dao->getActivePaymentQrConfig($this->db);
+        if ($qrConfig['status'] !== 'SUCCESS') return $this->propagateFailure($qrConfig, 'SubscriptionServices::requestApplicationSubscription');
+        if ($qrConfig['data'] === []) {
+            $resArr['msgArr'][] = 'Subscription payments are not configured yet. Please contact BBG support.';
+            return $resArr;
+        }
+        $transaction = $this->db->beginTransaction();
+        try {
+            $created = $this->dao->insertSubscription(
+                $this->db, $tenantId, $planId, $userId,
+                (string) $plan['data']['price'], (string) $plan['data']['currency'],
+            );
+            if ($created['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($created, 'SubscriptionServices::requestApplicationSubscription');
+            }
+            $subscriptionId = (int) $created['data']['id'];
+            $snapshot = $this->dao->insertSubscriptionPaymentInstructions(
+                $this->db, $tenantId, $subscriptionId, $userId, $qrConfig['data'],
+            );
+            if ($snapshot['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($snapshot, 'SubscriptionServices::requestApplicationSubscription');
+            }
+            $transaction->commit();
+            $details = $this->dao->getTenantSubscription($this->db, $tenantId, $subscriptionId);
+            if ($details['status'] !== 'SUCCESS' || $details['data'] === []) {
+                return $this->propagateFailure($details, 'SubscriptionServices::requestApplicationSubscription');
+            }
+            $data = $details['data'];
+            if (!empty($data['payment_qr_file_path'])) {
+                $data['payment_qr_url'] = $this->s3Storage->createDownloadUrl((string) $data['payment_qr_file_path']);
+            }
+            unset($data['payment_qr_file_path']);
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = [
+                'business_id' => (int) $application['business_id'],
+                'tenant_id' => $tenantId,
+                'subscription' => $data,
+            ];
+            return $resArr;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) $transaction->rollBack();
+            throw $exception;
+        }
+    }
+
+    private function generateApplicationProofUploadUrl(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->applicationOwnerContext($actionData);
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'SubscriptionServices::generateApplicationProofUploadUrl');
+        }
+        $tenantId = (int) $context['data']['application']['tenant_id'];
+        $subscriptionId = $this->positiveInt($actionData['subscription_id'] ?? null);
+        $fileName = $this->requiredText($actionData['original_file_name'] ?? '', 255);
+        $mimeType = strtolower($this->requiredText($actionData['mime_type'] ?? '', 100) ?? '');
+        $fileSize = $this->positiveInt($actionData['file_size_bytes'] ?? null);
+        $mimeExtensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'application/pdf' => 'pdf'];
+        if ($subscriptionId === null || $fileName === null || !isset($mimeExtensions[$mimeType])
+            || $fileSize === null || $fileSize > $this->s3Storage->getMaxUploadBytes()) {
+            $resArr['msgArr'][] = 'A valid subscription_id, file name, supported proof MIME type and permitted file_size_bytes are required.';
+            return $resArr;
+        }
+        $subscription = $this->dao->getTenantSubscription($this->db, $tenantId, $subscriptionId);
+        if ($subscription['status'] !== 'SUCCESS' || $subscription['data'] === []) {
+            return $this->propagateFailure($subscription, 'SubscriptionServices::generateApplicationProofUploadUrl');
+        }
+        if (!in_array($subscription['data']['subscription_status'], ['PENDING', 'REJECTED'], true)) {
+            $resArr['msgArr'][] = 'Payment proof can only be uploaded for pending or rejected subscription requests.';
+            return $resArr;
+        }
+        $pendingProof = $this->dao->hasPendingProof($this->db, $tenantId, $subscriptionId);
+        if ($pendingProof['status'] !== 'SUCCESS') return $this->propagateFailure($pendingProof, 'SubscriptionServices::generateApplicationProofUploadUrl');
+        if ($pendingProof['data'] !== []) {
+            $resArr['msgArr'][] = 'A payment proof is already awaiting review.';
+            return $resArr;
+        }
+        $key = 'tenants/' . $tenantId . '/subscription-proofs/' . $subscriptionId . '/'
+            . bin2hex(random_bytes(16)) . '.' . $mimeExtensions[$mimeType];
+        $presigned = $this->s3Storage->createUploadUrl($key, $mimeType);
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = [
+            'upload_url' => $presigned['url'], 'object_key' => $key, 'method' => 'PUT',
+            'headers' => ['Content-Type' => $mimeType], 'expires_in' => $presigned['expires_in'],
+        ];
+        return $resArr;
+    }
+
+    private function submitApplicationSubscriptionProof(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->applicationOwnerContext($actionData);
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'SubscriptionServices::submitApplicationSubscriptionProof');
+        }
+        $application = $context['data']['application'];
+        $tenantId = (int) $application['tenant_id'];
+        $businessId = (int) $application['business_id'];
+        $userId = (int) $context['data']['user_id'];
+        $subscriptionId = $this->positiveInt($actionData['subscription_id'] ?? null);
+        $proofPath = $this->requiredText($actionData['proof_file_path'] ?? '', 500);
+        $expectedPattern = '/^tenants\/' . $tenantId . '\/subscription-proofs\/' . ($subscriptionId ?? 0) . '\/[a-f0-9]{32}\.(jpg|png|webp|pdf)$/D';
+        if ($subscriptionId === null || $proofPath === null || preg_match($expectedPattern, $proofPath) !== 1) {
+            $resArr['msgArr'][] = 'A subscription_id and server-issued proof_file_path are required.';
+            return $resArr;
+        }
+        try {
+            $storedObject = $this->s3Storage->headObject($proofPath);
+            $actualMimeType = strtolower((string) ($storedObject['ContentType'] ?? ''));
+            $actualFileSize = (int) ($storedObject['ContentLength'] ?? 0);
+            $signature = $this->s3Storage->getObjectPrefix($proofPath);
+            $signatureValid = match ($actualMimeType) {
+                'image/jpeg' => str_starts_with($signature, "\xFF\xD8\xFF"),
+                'image/png' => str_starts_with($signature, "\x89PNG\r\n\x1A\n"),
+                'image/webp' => str_starts_with($signature, 'RIFF') && substr($signature, 8, 4) === 'WEBP',
+                'application/pdf' => str_starts_with($signature, '%PDF-'),
+                default => false,
+            };
+            $expectedExtensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'application/pdf' => 'pdf'];
+            if (!$signatureValid || ($expectedExtensions[$actualMimeType] ?? '') !== strtolower(pathinfo($proofPath, PATHINFO_EXTENSION))
+                || $actualFileSize < 1 || $actualFileSize > $this->s3Storage->getMaxUploadBytes()) {
+                $resArr['msgArr'][] = 'Uploaded subscription proof failed file type, content signature or file size verification.';
+                return $resArr;
+            }
+        } catch (Throwable $exception) {
+            $this->logger->warning('Application subscription proof S3 object verification failed.', [
+                'tenant_id' => $tenantId, 'subscription_id' => $subscriptionId, 'exception' => $exception,
+            ]);
+            $resArr['msgArr'][] = 'Subscription proof object could not be verified in storage.';
+            return $resArr;
+        }
+        $subscription = $this->dao->getTenantSubscription($this->db, $tenantId, $subscriptionId);
+        if ($subscription['status'] !== 'SUCCESS' || $subscription['data'] === []) {
+            return $this->propagateFailure($subscription, 'SubscriptionServices::submitApplicationSubscriptionProof');
+        }
+        if (!in_array($subscription['data']['subscription_status'], ['PENDING', 'REJECTED'], true)) {
+            $resArr['msgArr'][] = 'Payment proof can only be submitted for pending or rejected subscription requests.';
+            return $resArr;
+        }
+        $pendingProof = $this->dao->hasPendingProof($this->db, $tenantId, $subscriptionId);
+        if ($pendingProof['status'] !== 'SUCCESS') return $this->propagateFailure($pendingProof, 'SubscriptionServices::submitApplicationSubscriptionProof');
+        if ($pendingProof['data'] !== []) {
+            $resArr['msgArr'][] = 'A payment proof is already awaiting review.';
+            return $resArr;
+        }
+        $transaction = $this->db->beginTransaction();
+        try {
+            $proof = $this->dao->insertSubscriptionProof(
+                $this->db, $tenantId, $subscriptionId, $userId,
+                $this->nullableText($actionData['payment_reference'] ?? null, 120), $proofPath,
+            );
+            if ($proof['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($proof, 'SubscriptionServices::submitApplicationSubscriptionProof');
+            }
+            if (($subscription['data']['subscription_status'] ?? '') === 'REJECTED') {
+                $reopened = $this->dao->setRejectedSubscriptionPending($this->db, $tenantId, $subscriptionId, $userId);
+                if ($reopened['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($reopened, 'SubscriptionServices::submitApplicationSubscriptionProof');
+                }
+            }
+            if (($application['approval_status'] ?? '') === 'DRAFT') {
+                $submitted = $this->businessDao->setBusinessApplicationPendingAfterPayment($this->db, $tenantId, $businessId, $userId);
+                if ($submitted['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($submitted, 'SubscriptionServices::submitApplicationSubscriptionProof');
+                }
+            }
+            $transaction->commit();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = [
+                'business_id' => $businessId, 'tenant_id' => $tenantId,
+                'subscription_id' => $subscriptionId, 'proof_id' => (int) ($proof['data']['id'] ?? 0),
+                'approval_status' => 'PENDING', 'subscription_status' => 'PENDING',
+            ];
+            return $resArr;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) $transaction->rollBack();
+            throw $exception;
+        }
+    }
+
+    private function applicationOwnerContext(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->authServices->getAuth([
+            'actionType' => 'getPrincipal',
+            'actionData' => ['action' => 'getPrincipal', '_accessToken' => (string) ($actionData['_accessToken'] ?? '')],
+        ]);
+        if ($principal['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'SubscriptionServices::applicationOwnerContext');
+        }
+        $businessId = $this->positiveInt($actionData['business_id'] ?? null);
+        $tenantId = $this->positiveInt($actionData['tenant_id'] ?? null);
+        if ($businessId === null || $tenantId === null) {
+            $resArr['msgArr'][] = 'Valid business_id and tenant_id are required.';
+            return $resArr;
+        }
+        $application = $this->businessDao->getOwnedBusinessApplication(
+            $this->db, (int) $principal['data']['user_id'], $tenantId,
+        );
+        if ($application['status'] !== 'SUCCESS' || $application['data'] === []
+            || (int) $application['data']['business_id'] !== $businessId) {
+            $resArr['msgArr'][] = 'The authenticated user does not own this business application.';
+            return $resArr;
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['user_id' => (int) $principal['data']['user_id'], 'application' => $application['data']];
+        return $resArr;
     }
 
     private function tenantContext(array $actionData, string $permissionCode): array
