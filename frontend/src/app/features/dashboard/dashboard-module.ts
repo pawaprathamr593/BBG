@@ -612,6 +612,33 @@ export class DashboardModule implements OnInit {
     visit(item, '', 0);
     return entries;
   }
+
+  detailGroups(item: DataRecord): Array<{title:string;entries:Array<{key:string;value:unknown}>}> {
+    const groups = new Map<string, Array<{key:string;value:unknown}>>();
+    const labels: Array<{title:string;pattern:RegExp}> = [
+      {title:'Contact information',pattern:/(email|phone|mobile|whatsapp|contact|website|social)/i},
+      {title:'Address information',pattern:/(address|street|city|state|province|postal|zip|country|latitude|longitude|location)/i},
+      {title:'Status & timeline',pattern:/(status|approval|publication|verified|active|created|updated|submitted|reviewed|expires|expiry|date|time)/i},
+      {title:'Business & profile',pattern:/(business|tenant|company|profile|category|description|logo|cover|name|slug)/i},
+      {title:'Payment & order',pattern:/(payment|amount|currency|price|tax|total|order|invoice|transaction|billing|subscription|plan)/i},
+    ];
+    for (const entry of this.detailEntries(item)) {
+      const separator = entry.key.indexOf('.');
+      const root = separator >= 0 ? entry.key.slice(0, separator) : '';
+      const field = separator >= 0 ? entry.key.slice(separator + 1) : entry.key;
+      const title = root
+        ? this.humanize(root)
+        : labels.find((label) => label.pattern.test(field))?.title ?? 'Additional information';
+      const entries = groups.get(title) ?? [];
+      entries.push({key:field.replace(/\.(\d+)/g, ' · Item $1').replace(/\./g,' · '),value:entry.value});
+      groups.set(title,entries);
+    }
+    return Array.from(groups, ([title,entries]) => ({title,entries}));
+  }
+
+  isLongDetail(value: unknown): boolean {
+    return typeof value === 'string' && (value.length > 120 || value.includes('\\n'));
+  }
   can(permissionCode: string): boolean {
     const context = this.workspace.activeContext();
     if (!context) return false;
