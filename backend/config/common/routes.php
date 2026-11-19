@@ -141,6 +141,8 @@ return [
     Route::post('/api/v1/subscriptions/mine/detail')->action([SubscriptionController::class, 'actionGetSubscription'])->name('api/v1/subscriptions/mine/detail'),
     Route::post('/api/v1/subscriptions/request')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/request'),
     Route::post('/api/v1/subscriptions/application/request')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/application/request'),
+    Route::post('/api/v1/subscriptions/application/upgrade/request')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/application/upgrade/request'),
+    Route::post('/api/v1/subscriptions/application/renewal/request')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/application/renewal/request'),
     Route::post('/api/v1/subscriptions/application/proofs/upload-url')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/application/proofs/upload-url'),
     Route::post('/api/v1/subscriptions/application/proofs/submit')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/application/proofs/submit'),
     Route::post('/api/v1/subscriptions/renewal/request')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/renewal/request'),
