@@ -59,6 +59,17 @@
             <div class="promo-copy">
               <strong>{{ promotions()[0].post_title }}</strong>
               <span>{{ promotions()[0].post_content }}</span>
+              @if (promotions()[0].media?.length) {
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+                  @for (media of promotions()[0].media; track media.id) {
+                    @if (media.url && media.media_type === 'IMAGE') {
+                      <img [src]="media.url" [alt]="media.original_file_name || promotions()[0].post_title" loading="lazy" style="width:84px;height:64px;object-fit:cover;border-radius:7px">
+                    } @else if (media.url && media.media_type === 'VIDEO') {
+                      <video [src]="media.url" controls preload="metadata" style="width:130px;height:74px;background:#111;border-radius:7px"></video>
+                    }
+                  }
+                </div>
+              }
             </div>
             @if (promotions()[0].valid_until) { <time [attr.datetime]="promotions()[0].valid_until">Until {{ formatDate(promotions()[0].valid_until!) }}</time> }
           </section>
