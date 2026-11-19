@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { Router } from '@angular/router';
 import { MarketplaceApiService, MarketplacePromotion } from '../../../core/marketplace/marketplace-api.service';
 import { PromotionCard } from '../../../shared/components/promotion-card/promotion-card';
+import type { PromotionCardModel } from '../../../shared/models/marketplace-card.models';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,7 +38,7 @@ export class PromotionFeed implements OnInit {
     });
   }
 
-  protected openBusiness(promotion: MarketplacePromotion): void {
+  protected openBusiness(promotion: PromotionCardModel): void {
     void this.router.navigate(['/store', promotion.business_slug]);
   }
 
