@@ -531,6 +531,7 @@ export class DashboardModule implements OnInit {
 
   private toRecordCardModel(item: DataRecord): WorkspaceRecordCardModel {
     const status = this.statusOf(item);
+    const businessReview = this.section() === 'business-approval';
     const subscriptionId = this.recordId(item, 'subscription_id');
     const proof = this.proofDrafts()[subscriptionId];
     const media = this.mediaOf(item).map((entry) => ({
@@ -550,12 +551,14 @@ export class DashboardModule implements OnInit {
       id: this.recordId(item, 'id'),
       record: item,
       title: this.recordTitle(item),
-      subtitle: this.recordSubtitle(item),
+      subtitle: businessReview ? `Selected plan: ${this.valueOf(item, ['plan_name'])}` : this.recordSubtitle(item),
       status: status ? this.humanize(status) : '',
       statusClass: this.statusClass(status),
-      fields: this.recordEntries(item).map((entry) => ({
-        key: entry.key, label: this.humanize(entry.key), value: this.formatValue(entry.value),
-      })),
+      fields: businessReview
+        ? [{ key: 'plan_name', label: 'Selected plan', value: this.valueOf(item, ['plan_name']) }]
+        : this.recordEntries(item).map((entry) => ({
+          key: entry.key, label: this.humanize(entry.key), value: this.formatValue(entry.value),
+        })),
       bcn: this.hasBcn(item) ? String(item['bcn']) : null,
       showDetail: ['platform-users','business-approval','orders','enquiries','payments'].includes(this.section())
         || (this.section() === 'subscriptions' && this.activeTenantId() !== null),
