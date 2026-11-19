@@ -1,5 +1,5 @@
 import { DOCUMENT } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, effect, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, effect, inject, input, output } from '@angular/core';
 
 @Component({
   selector: 'app-workspace-drawer',
@@ -16,17 +16,20 @@ export class WorkspaceDrawer {
 
   private readonly document = inject(DOCUMENT);
   private readonly element = inject(ElementRef<HTMLElement>);
+  private readonly destroyRef = inject(DestroyRef);
   private previousOverflow = '';
   private previousFocus: HTMLElement | null = null;
   private wasOpen = false;
 
   constructor() {
+    this.destroyRef.onDestroy(() => {
+      if (this.wasOpen) this.document.body.style.overflow = this.previousOverflow;
+    });
     effect(() => {
       const isOpen = this.open();
       if (isOpen && !this.wasOpen) {
-        this.previousFocus = this.document.activeElement instanceof HTMLElement
-          ? this.document.activeElement
-          : null;
+        const activeElement = this.document.activeElement;
+        this.previousFocus = activeElement?.nodeType === 1 ? activeElement as HTMLElement : null;
         this.previousOverflow = this.document.body.style.overflow;
         this.document.body.style.overflow = 'hidden';
         queueMicrotask(() => this.focusInitialControl());

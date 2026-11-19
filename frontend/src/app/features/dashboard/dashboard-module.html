@@ -394,6 +394,7 @@
         </form>
       </app-workspace-drawer>
       <app-workspace-drawer [open]="showPromotionComposer()" title="Create promotion" description="Prepare your post and attach multiple media files." (closed)="closePromotionComposer()">
+        <div class="promotion-drawer-form">
             <label>Post title <input type="text" maxlength="180" [value]="promotionTitle()" (input)="setPromotionField('title',$event)" placeholder="e.g. Festive season offer"></label>
             <label>Post content <textarea rows="5" maxlength="10000" [value]="promotionContent()" (input)="setPromotionField('content',$event)" placeholder="Tell customers about your offer…" required></textarea></label>
             <label>Valid until <input type="datetime-local" [value]="promotionValidUntil()" (input)="setPromotionField('validUntil',$event)"><small>Optional. Leave blank for no expiry date.</small></label>
@@ -410,6 +411,7 @@
             @if (promotionError()) { <p class="composer-error" role="alert">{{ promotionError() }}</p> }
             @if (promotionMediaBusy()) { <div class="composer-progress" role="status"><progress [value]="promotionUploadProgress()" max="100"></progress><span>Uploading attachments… {{ promotionUploadProgress() }}%</span></div> }
             <footer><button type="button" class="refresh" (click)="closePromotionComposer()" [disabled]="promotionMediaBusy()">Cancel</button>@if (draftPromotionId() ? can('promotion.update') : can('promotion.create')) { <button type="button" class="secondary-action" (click)="submitPromotion()" [disabled]="promotionMediaBusy() || !promotionContent().trim()">{{ promotionMediaBusy() ? 'Uploading…' : (promotionFiles().length ? 'Save post & upload media' : 'Create draft') }}</button> } </footer>
+        </div>
       </app-workspace-drawer>
     </main>
   

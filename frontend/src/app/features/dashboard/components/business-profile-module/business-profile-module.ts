@@ -30,6 +30,6 @@ export class BusinessProfileModule {
   }
 
   status(): string {
-    return String(this.business()['approval_status'] ?? this.business()['business_status'] ?? 'On record');
+    return String(this.business()['approval_status'] ?? this.business()['business_approval_status'] ?? this.business()['business_status'] ?? 'On record');
   }
 }

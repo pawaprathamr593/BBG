@@ -128,6 +128,11 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
 
     .qr-settings-card .summary-grid{margin:18px 0}
     .qr-settings-card .summary-card strong{overflow-wrap:anywhere;font-size:.82rem;letter-spacing:0}
+
+    .promotion-drawer-form{display:grid;gap:13px}
+    .promotion-drawer-form>label{display:grid;gap:7px;color:var(--text-primary);font-size:.76rem;font-weight:750}
+    .promotion-drawer-form input[type=text],.promotion-drawer-form input[type=datetime-local],.promotion-drawer-form textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.82rem}
+    .promotion-drawer-form footer{display:flex;justify-content:flex-end;gap:9px;margin-top:8px}
   `],
 })
 export class DashboardModule implements OnInit {
@@ -822,7 +827,7 @@ export class DashboardModule implements OnInit {
   updateStorefrontField(field: keyof StorefrontForm, event: Event): void {
     const target = event.target as HTMLInputElement | HTMLTextAreaElement;
     const value = target instanceof HTMLInputElement && target.type === 'checkbox' ? target.checked : target.value;
-    this.storefrontForm.update((form) => ({ ...form, [field]: value }));
+    this.storefrontForm.update((form) => ({ ...form, [field]: value }) as StorefrontForm);
   }
 
   async saveStorefront(): Promise<void> {
@@ -1093,7 +1098,7 @@ export class DashboardModule implements OnInit {
   updateAddressField(field: keyof AddressForm, event: Event): void {
     const target = event.target as HTMLInputElement;
     const value = target.type === 'checkbox' ? target.checked : target.value;
-    this.addressForm.update((form) => ({ ...form, [field]: value }));
+    this.addressForm.update((form) => ({ ...form, [field]: value }) as AddressForm);
   }
 
   async saveAddress(): Promise<void> {
@@ -1143,7 +1148,7 @@ export class DashboardModule implements OnInit {
 
   updateCategoryField(field: keyof CategoryForm, event: Event): void {
     const value = (event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value;
-    this.categoryForm.update((form) => ({ ...form, [field]: value }));
+    this.categoryForm.update((form) => ({ ...form, [field]: value }) as CategoryForm);
   }
 
   async saveCategory(): Promise<void> {

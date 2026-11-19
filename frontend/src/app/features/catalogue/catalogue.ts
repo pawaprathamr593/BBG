@@ -69,6 +69,9 @@ const emptyProduct = (): ProductForm => ({
     .category-drawer-form footer{display:flex;justify-content:flex-end;gap:9px;margin-top:8px}
     .media-item .media-thumb{width:72px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}
     .media-item .media-preview{width:116px;height:68px;max-width:100%;border-radius:8px;background:#111;object-fit:contain}
+    .catalogue-sections .categories-panel{order:0}
+    .workspace-drawer-body form>footer{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}
+    .workspace-drawer-body form>footer button{min-height:40px}
     @media(max-width:600px){.catalogue-sections{gap:14px}.categories-panel .panel-heading{align-items:flex-start;flex-direction:column}}
   `],
 })
