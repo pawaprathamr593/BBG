@@ -46,6 +46,7 @@ final class BusinessController
             '/api/v1/business/profile/get' => 'getMyBusinessProfile',
             '/api/v1/business/verification/get' => 'getBusinessVerification',
             '/api/v1/business/storefront/get' => 'getMyStorefront',
+            '/api/v1/business/storefront/owner/get' => 'getOwnedStorefront',
         ];
         $manageActions = [
             '/api/v1/business/application/submit' => 'submitBusinessApplication',
@@ -54,8 +55,11 @@ final class BusinessController
             '/api/v1/business/application/resubmit' => 'resubmitBusinessApplication',
             '/api/v1/business/profile/update' => 'updateMyBusinessProfile',
             '/api/v1/business/storefront/update' => 'updateMyStorefront',
+            '/api/v1/business/storefront/owner/update' => 'updateOwnedStorefront',
             '/api/v1/business/storefront/publish' => 'publishMyStorefront',
+            '/api/v1/business/storefront/owner/publish' => 'publishOwnedStorefront',
             '/api/v1/business/storefront/unpublish' => 'unpublishMyStorefront',
+            '/api/v1/business/storefront/owner/unpublish' => 'unpublishOwnedStorefront',
         ];
         $action = $manage ? ($manageActions[$path] ?? '') : ($getActions[$path] ?? '');
         if ($action === '') {
