@@ -1,24 +1,38 @@
-    <main class="status-page">
-      @if (loading()) {
-        <section class="status-card loading"><span class="spinner"></span><div><strong>Opening your business workspace</strong><p>Checking your registration status…</p></div></section>
-      } @else if (error()) {
-        <section class="status-card"><p class="eyebrow">BBG BUSINESS WORKSPACE</p><h1>We couldn’t load your registration</h1><p>{{ error() }}</p><button type="button" (click)="load()">Try again</button></section>
-      } @else if (application(); as business) {
-        <section class="status-card">
-          <p class="eyebrow">BBG BUSINESS WORKSPACE</p>
-          <div class="status-heading"><div><h1>{{ business.business_name }}</h1><p>{{ business.business_slug }}</p></div><span class="status-pill" [attr.data-status]="business.approval_status">{{ statusLabel(business.approval_status) }}</span></div>
-          <div class="status-symbol" [attr.data-status]="business.approval_status">{{ business.approval_status === 'APPROVED' ? '✓' : business.approval_status === 'REJECTED' ? '!' : '…' }}</div>
-          @if (business.approval_status === 'PENDING') {
-            <h2>Registration under review</h2><p>Your business registration has been submitted successfully. Our team is reviewing the information. This workspace is currently limited to checking your registration status.</p>
-          } @else if (business.approval_status === 'REJECTED') {
-            <h2>Further information is required</h2><p>Your business registration was not approved in its current form. Please contact BBG support for guidance.</p>
-            @if (business.rejection_reason) { <div class="reason"><strong>Review note</strong><span>{{ business.rejection_reason }}</span></div> }
-          } @else {
-            <h2>Business approved</h2><p>Your business registration is approved. Opening your business workspace…</p>
-          }
-          <div class="business-summary"><span><small>Business</small><strong>{{ business.business_name }}</strong></span><span><small>Registration status</small><strong>{{ statusLabel(business.approval_status) }}</strong></span><span><small>Location</small><strong>{{ locationLabel(business) }}</strong></span></div>
-          <button class="market-button" type="button" (click)="visitMarketplace()">Visit marketplace <span aria-hidden="true">↗</span></button>
-        </section>
-      }
-    </main>
-  
+<main class="status-page">
+  @if (loading()) {
+    <section class="status-card loading"><span class="spinner"></span><div><strong>Loading your business applications</strong><p>Checking your registrations…</p></div></section>
+  } @else if (error()) {
+    <section class="status-card"><p class="eyebrow">BBG BUSINESS WORKSPACE</p><h1>We couldn’t load your registrations</h1><p>{{ error() }}</p><button type="button" (click)="load()">Try again</button></section>
+  } @else {
+    <section class="status-card">
+      <p class="eyebrow">BBG BUSINESS WORKSPACE</p>
+      <div class="status-heading"><div><h1>Your businesses</h1><p>Manage your registrations and approved workspaces from one place.</p></div></div>
+      <div class="application-list">
+        @for (business of applications(); track business.business_id) {
+          <article class="application-card">
+            <div class="application-heading">
+              <div><h2>{{ business.business_name }}</h2><p>{{ business.business_slug }}</p></div>
+              <span class="status-pill" [attr.data-status]="business.approval_status">{{ statusLabel(business.approval_status) }}</span>
+            </div>
+            <div class="business-summary">
+              <span><small>Location</small><strong>{{ locationLabel(business) }}</strong></span>
+              <span><small>Registration status</small><strong>{{ statusLabel(business.approval_status) }}</strong></span>
+              <span><small>Storefront</small><strong>{{ business.publication_status || 'Not published' }}</strong></span>
+            </div>
+            @if (business.approval_status === 'APPROVED') {
+              <button class="market-button" type="button" (click)="openWorkspace(business)">Open business workspace <span aria-hidden="true">→</span></button>
+            } @else if (business.approval_status === 'REJECTED') {
+              <p class="application-note">Your application needs attention. Check the review note or contact BBG support.</p>
+              @if (business.rejection_reason) { <div class="reason"><strong>Review note</strong><span>{{ business.rejection_reason }}</span></div> }
+            } @else if (business.approval_status === 'DRAFT') {
+              <p class="application-note">This application has not been submitted yet.</p>
+            } @else {
+              <p class="application-note">Your business registration has been submitted. Our team is reviewing it.</p>
+            }
+          </article>
+        }
+      </div>
+      <button class="market-button" type="button" (click)="visitMarketplace()">Visit marketplace <span aria-hidden="true">↗</span></button>
+    </section>
+  }
+</main>
