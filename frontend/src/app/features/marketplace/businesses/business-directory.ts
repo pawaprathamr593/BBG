@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FilterDrawer } from '../../../shared/filter-drawer/filter-drawer';
+import { BusinessCard } from '../../../shared/components/business-card/business-card';
 import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory } from '../../../core/marketplace/marketplace-api.service';
 
 type BusinessFilterKey = 'categoryId' | 'city' | 'state';
@@ -14,7 +15,7 @@ interface BusinessFilterValues {
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-business-directory',
-  imports: [FormsModule, RouterLink, FilterDrawer],
+  imports: [FormsModule, RouterLink, FilterDrawer, BusinessCard],
   templateUrl: './business-directory.html',
   styles: [`
     :host{display:block}.page{min-height:65vh;padding:0 0 64px;background:var(--surface-page)}
@@ -47,6 +48,7 @@ interface BusinessFilterValues {
 })
 export class BusinessDirectory implements OnInit {
   private readonly api = inject(MarketplaceApiService);
+  private readonly router = inject(Router);
   protected query = '';
   protected readonly filtersOpen = signal(false);
   protected draftFilters: BusinessFilterValues = this.defaultFilters();
@@ -89,6 +91,10 @@ export class BusinessDirectory implements OnInit {
   }
 
   protected search(): void { this.page.set(1); this.load(); }
+
+  protected openBusiness(business: MarketplaceBusiness): void {
+    void this.router.navigate(['/store', business.business_slug]);
+  }
 
   protected setFiltersOpen(open: boolean): void {
     this.draftFilters = { ...this.appliedFilters() };
