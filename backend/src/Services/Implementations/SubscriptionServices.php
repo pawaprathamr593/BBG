@@ -44,6 +44,9 @@ final readonly class SubscriptionServices implements ISubscriptionServices
                 case 'listActivePlans':
                     $resArr = $this->getActivePlans($actionData);
                     break;
+                case 'getApplicationSubscription':
+                    $resArr = $this->getApplicationSubscription($actionData);
+                    break;
                 case 'listMySubscriptions':
                     $resArr = $this->getMySubscriptions($actionData);
                     break;
@@ -422,6 +425,45 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         }
     }
 
+
+
+    private function getApplicationSubscription(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->applicationOwnerContext($actionData);
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'SubscriptionServices::getApplicationSubscription');
+        }
+        $tenantId = (int) $context['data']['application']['tenant_id'];
+        $rows = $this->dao->getTenantSubscriptions($this->db, $tenantId, 10, 0);
+        if ($rows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($rows, 'SubscriptionServices::getApplicationSubscription');
+        }
+        $current = null;
+        foreach ($rows['data'] as $row) {
+            if (in_array($row['subscription_status'] ?? '', ['PENDING', 'REJECTED'], true)) {
+                $current = $row;
+                break;
+            }
+        }
+        if ($current === null) {
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['subscription' => null];
+            return $resArr;
+        }
+        $details = $this->dao->getTenantSubscription($this->db, $tenantId, (int) $current['id']);
+        if ($details['status'] !== 'SUCCESS' || $details['data'] === []) {
+            return $this->propagateFailure($details, 'SubscriptionServices::getApplicationSubscription');
+        }
+        $data = $details['data'];
+        if (!empty($data['payment_qr_file_path'])) {
+            $data['payment_qr_url'] = $this->s3Storage->createDownloadUrl((string) $data['payment_qr_file_path']);
+        }
+        unset($data['payment_qr_file_path']);
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['subscription' => $data];
+        return $resArr;
+    }
 
     private function requestApplicationSubscription(array $actionData): array
     {
