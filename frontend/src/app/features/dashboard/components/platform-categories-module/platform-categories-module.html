@@ -30,7 +30,14 @@
     <label>Category code<input name="categoryCode" [ngModel]="form().category_code" (ngModelChange)="updateField('category_code',$event)" maxlength="80" required></label>
     <label>Category name<input name="categoryName" [ngModel]="form().category_name" (ngModelChange)="updateField('category_name',$event)" maxlength="150" required></label>
     <label>Category type<select name="categoryType" [ngModel]="form().category_type" (ngModelChange)="updateField('category_type',$event)"><option value="BUSINESS">Business</option><option value="PRODUCT">Product</option></select></label>
-    <label>Parent category ID<input type="number" name="parentCategory" min="1" [ngModel]="form().parent_category_id" (ngModelChange)="updateField('parent_category_id',$event)"></label>
+    <label>Parent category
+      <select name="parentCategory" [ngModel]="form().parent_category_id" (ngModelChange)="updateField('parent_category_id',$event)">
+        <option value="">No parent category</option>
+        @for (parent of parentCategories(); track categoryId(parent)) {
+          <option [value]="categoryId(parent)">{{ name(parent) }}</option>
+        }
+      </select>
+    </label>
     <label>Display order<input type="number" name="displayOrder" min="0" step="1" [ngModel]="form().display_order" (ngModelChange)="updateField('display_order',$event)"></label>
     <label>Description<textarea name="description" rows="4" [ngModel]="form().description" (ngModelChange)="updateField('description',$event)"></textarea></label>
     @if (error()) { <p class="module-error" role="alert">{{ error() }}</p> }
