@@ -48,7 +48,7 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
   'renew-subscription': 'subscription.create',
   'approve-subscription': 'subscription.approve',
   'reject-subscription': 'subscription.approve',
-  moderate: 'admin.update',
+  moderate: 'moderation.manage',
 };
 
 @Component({
@@ -268,10 +268,10 @@ export class DashboardModule implements OnInit {
       'business-approval': 'business.approve',
       'subscription-approval': 'subscription.approve',
       'payment-qr-settings': 'subscription.update',
-      moderation: 'admin.view',
-      categories: 'admin.view',
+      moderation: 'moderation.manage',
+      categories: 'categories.manage',
       'platform-analytics': 'report.view',
-      'system-health': 'admin.view',
+      'system-health': 'system.health.view',
     };
     const personalRequirements: Record<string, string> = {
       customers: 'user.view',
