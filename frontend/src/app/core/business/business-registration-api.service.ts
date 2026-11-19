@@ -54,6 +54,40 @@ export interface BusinessApplicationPayload {
   longitude: number | null;
 }
 
+
+export interface SubscriptionPlan {
+  id: number;
+  plan_code: string;
+  plan_name: string;
+  description: string | null;
+  billing_cycle: string;
+  price: string | number;
+  currency: string;
+  entitlements: string | null;
+}
+
+export interface ApplicationSubscription {
+  id: number;
+  plan_id: number;
+  plan_name: string;
+  billing_cycle: string;
+  subscription_status: string;
+  amount: string | number;
+  currency: string;
+  payment_payee_name: string;
+  payment_upi_id: string;
+  payment_qr_url: string | null;
+  payment_instructions: string | null;
+}
+
+interface UploadUrlResponse {
+  upload_url: string;
+  object_key: string;
+  method: 'PUT';
+  headers: Record<string, string>;
+  expires_in: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class BusinessRegistrationApiService {
   private readonly http = inject(HttpClient);
@@ -94,6 +128,79 @@ export class BusinessRegistrationApiService {
         if (messages.includes('No business application is associated')) return null;
       }
       throw error;
+    }
+  }
+
+
+  async saveDraft(payload: BusinessApplicationPayload, businessId?: number, tenantId?: number): Promise<{ business_id: number; tenant_id: number; approval_status: string }> {
+    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ business_id: number; tenant_id: number; approval_status: string }>>(
+      `${this.apiBaseUrl}/api/v1/business/application/draft/save`,
+      { businessParam: { actionData: { ...payload, ...(businessId ? { business_id: businessId, tenant_id: tenantId } : {}) } } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Your business draft could not be saved.');
+    }
+    return response.data as { business_id: number; tenant_id: number; approval_status: string };
+  }
+
+  async getActivePlans(): Promise<SubscriptionPlan[]> {
+    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ items: SubscriptionPlan[] }>>(
+      `${this.apiBaseUrl}/api/v1/subscriptions/plans/list`,
+      { subscriptionParam: { actionData: {} } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to load subscription plans.');
+    }
+    return (response.data as { items: SubscriptionPlan[] }).items ?? [];
+  }
+
+  async requestApplicationSubscription(businessId: number, tenantId: number, planId: number): Promise<ApplicationSubscription> {
+    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription }>>(
+      `${this.apiBaseUrl}/api/v1/subscriptions/application/request`,
+      { subscriptionParam: { actionData: { business_id: businessId, tenant_id: tenantId, plan_id: planId } } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to create the subscription payment request.');
+    }
+    return (response.data as { subscription: ApplicationSubscription }).subscription;
+  }
+
+  async uploadApplicationPaymentProof(
+    businessId: number,
+    tenantId: number,
+    subscriptionId: number,
+    file: File,
+    paymentReference: string,
+  ): Promise<void> {
+    const uploadResponse = await firstValueFrom(this.http.post<BusinessApiResponse<UploadUrlResponse>>(
+      `${this.apiBaseUrl}/api/v1/subscriptions/application/proofs/upload-url`,
+      { subscriptionParam: { actionData: {
+        business_id: businessId, tenant_id: tenantId, subscription_id: subscriptionId,
+        original_file_name: file.name, mime_type: file.type, file_size_bytes: file.size,
+      } } },
+      { headers: this.headers },
+    ));
+    if (uploadResponse.status !== 'SUCCESS' || !uploadResponse.data || Array.isArray(uploadResponse.data)) {
+      throw new Error(uploadResponse.msgArr?.join(' ') || 'Unable to prepare the payment receipt upload.');
+    }
+    const upload = uploadResponse.data as UploadUrlResponse;
+    await firstValueFrom(this.http.put(upload.upload_url, file, {
+      headers: new HttpHeaders(upload.headers),
+      responseType: 'text',
+    }));
+    const submitResponse = await firstValueFrom(this.http.post<BusinessApiResponse<{ proof_id: number }>>(
+      `${this.apiBaseUrl}/api/v1/subscriptions/application/proofs/submit`,
+      { subscriptionParam: { actionData: {
+        business_id: businessId, tenant_id: tenantId, subscription_id: subscriptionId,
+        proof_file_path: upload.object_key, payment_reference: paymentReference || null,
+      } } },
+      { headers: this.headers },
+    ));
+    if (submitResponse.status !== 'SUCCESS') {
+      throw new Error(submitResponse.msgArr?.join(' ') || 'Unable to submit the payment receipt.');
     }
   }
 
