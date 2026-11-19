@@ -56,7 +56,7 @@ export class PlatformCategoriesModule {
     if(!(id===null?this.canCreate():this.canUpdate()))return;
     if(!form.category_code.trim()||!form.category_name.trim()){this.error.set('Category code and name are required.');return;}
     if((parentId!==null&&(!Number.isInteger(parentId)||parentId<1||parentId===id))||!Number.isInteger(displayOrder)||displayOrder<0){
-      this.error.set('Enter a valid parent category ID and a non-negative display order.');return;
+      this.error.set('Choose a valid parent category and enter a non-negative display order.');return;
     }
     if(this.busy())return;this.busy.set(true);this.error.set('');
     const payload={
@@ -85,6 +85,16 @@ export class PlatformCategoriesModule {
     }catch(error){this.error.set(this.auth.errorMessage(error));}
     finally{this.busy.set(false);}
   }
+  parentCategories(): CategoryRecord[] {
+    const currentId = this.editingId();
+    const type = this.form().category_type;
+    return this.categories().filter((category) => {
+      const id = Number(category['category_id'] ?? category['id'] ?? 0);
+      return id > 0 && id !== currentId
+        && String(category['category_type'] ?? 'BUSINESS').toUpperCase() === type;
+    });
+  }
+  categoryId(category:CategoryRecord):number{return Number(category['category_id']??category['id']??0);}
   name(category:CategoryRecord):string{return String(category['category_name']??'Unnamed category');}
   code(category:CategoryRecord):string{return String(category['category_code']??'');}
   description(category:CategoryRecord):string{return String(category['description']??'No description provided');}
