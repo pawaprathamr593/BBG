@@ -183,7 +183,8 @@ $onboardingContracts = [
         && str_contains($routes, '/api/v1/business/storefront/owner/publish')
         && str_contains($routes, '/api/v1/business/storefront/owner/unpublish')
         && str_contains(file_get_contents($root . '/src/Services/Implementations/BusinessServices.php'), 'getOwnedStorefront')
-        && str_contains(file_get_contents($root . '/src/Services/Implementations/BusinessServices.php'), 'ownerScoped'),
+        && str_contains(file_get_contents($root . '/src/Services/Implementations/BusinessServices.php'), 'ownerScoped')
+        && str_contains(file_get_contents($root . '/src/Services/Implementations/BusinessServices.php'), 'STOREFRONT_ACCESS'),
     str_contains($routes, '/api/v1/business/application/list')
         && str_contains($routes, '/api/v1/business/application/draft/save')
         && str_contains($routes, '/api/v1/subscriptions/application/request')
