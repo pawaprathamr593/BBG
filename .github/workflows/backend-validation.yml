@@ -90,10 +90,12 @@ jobs:
         env:
           MYSQL_PWD: root
         run: |
-          count=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='bbg' AND table_name IN ('BUSINESS_APPLICATIONS','BUSINESS_APPLICATION_DOCUMENTS','BUSINESS_APPLICATION_REVIEWS','CARTS','CART_ITEMS','BUSINESS_PROFILES','CATEGORIES','TENANT_PRODUCT_CATEGORIES','UNITS_OF_MEASURE','PRODUCTS','PRODUCT_VARIANTS','STOREFRONT_SETTINGS','CUSTOMER_IDENTITIES','TENANT_CUSTOMERS','CUSTOMER_ADDRESSES','ORDERS','ORDER_ITEMS','ORDER_STATUS_HISTORY','ORDER_FULFILMENTS','CONTENT_VIEWS','CONTENT_LIKES','PRODUCT_MEDIA','CUSTOMER_ENQUIRIES','USER_IDENTITIES','PLATFORM_PAYMENT_QR_CONFIG','TENANT_SUBSCRIPTION_PAYMENT_INSTRUCTIONS','TENANT_SUBSCRIPTION_REVIEW_HISTORY')")
-          test "$count" -eq 27
+          count=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='bbg' AND table_name IN ('BUSINESS_APPLICATIONS','BUSINESS_APPLICATION_DOCUMENTS','BUSINESS_APPLICATION_REVIEWS','CARTS','CART_ITEMS','BUSINESS_PROFILES','CATEGORIES','TENANT_PRODUCT_CATEGORIES','UNITS_OF_MEASURE','PRODUCTS','PRODUCT_VARIANTS','STOREFRONT_SETTINGS','CUSTOMER_IDENTITIES','TENANT_CUSTOMERS','CUSTOMER_ADDRESSES','ORDERS','ORDER_ITEMS','ORDER_STATUS_HISTORY','ORDER_FULFILMENTS','CONTENT_VIEWS','CONTENT_LIKES','PRODUCT_MEDIA','CUSTOMER_ENQUIRIES','USER_IDENTITIES','PLATFORM_PAYMENT_QR_CONFIG','TENANT_SUBSCRIPTION_PAYMENT_INSTRUCTIONS','TENANT_SUBSCRIPTION_REVIEW_HISTORY','TENANT_INVITATIONS')")
+          test "$count" -eq 28
           generated=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='bbg' AND extra LIKE '%STORED GENERATED%' AND table_name IN ('CARTS','CART_ITEMS')")
           test "$generated" -eq 4
+          upgrade_column=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='bbg' AND table_name='TENANT_SUBSCRIPTIONS' AND column_name='upgrade_from_subscription_id'")
+          test "$upgrade_column" -eq 1
       - name: Verify global Consumer role seed and idempotent account assignment
         env:
           MYSQL_PWD: root
