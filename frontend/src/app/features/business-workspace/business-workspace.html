@@ -24,6 +24,7 @@
                 <button class="market-button" type="button" (click)="openWorkspace(business)">Open business workspace <span aria-hidden="true">→</span></button>
                 <button class="market-button secondary-market-button" type="button" (click)="manageTeam(business)">Manage team</button>
                 <button class="market-button secondary-market-button" type="button" (click)="manageStorefront(business)">Configure storefront</button>
+                <button class="market-button secondary-market-button" type="button" (click)="manageSubscription(business)">Manage subscription</button>
               </div>
             } @else if (business.approval_status === 'REJECTED') {
               <p class="application-note">Your application needs attention. Check the review note or contact BBG support.</p>
