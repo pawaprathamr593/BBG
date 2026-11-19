@@ -65,6 +65,7 @@ export class BusinessRegistration implements OnInit {
     postal_code: ['', [Validators.required, Validators.maxLength(15)]],
     latitude: [''],
     longitude: [''],
+    location_accuracy_m: [''],
   });
 
   async ngOnInit(): Promise<void> {
@@ -103,6 +104,7 @@ export class BusinessRegistration implements OnInit {
         ...values,
         latitude: values.latitude === '' ? null : Number(values.latitude),
         longitude: values.longitude === '' ? null : Number(values.longitude),
+        location_accuracy_m: values.location_accuracy_m === '' ? null : Number(values.location_accuracy_m),
         tenant_type: 'BUSINESS',
         country_code: 'IN',
       });
@@ -226,6 +228,11 @@ export class BusinessRegistration implements OnInit {
     }
   }
 
+  clearLocationAccuracy(): void {
+    this.form.controls.location_accuracy_m.setValue('');
+    this.locationAccuracy.set(null);
+  }
+
   getMyLocation(): void {
     this.locationMessage.set('');
     this.locationAccuracy.set(null);
@@ -239,6 +246,7 @@ export class BusinessRegistration implements OnInit {
         this.form.patchValue({
           latitude: position.coords.latitude.toFixed(7),
           longitude: position.coords.longitude.toFixed(7),
+          location_accuracy_m: String(position.coords.accuracy),
         });
         this.locationAccuracy.set(Math.round(position.coords.accuracy));
         this.locationMessage.set('Coordinates captured. Review and edit the business address fields below before submitting.');
