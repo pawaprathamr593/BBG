@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Implementations;
 
+use App\Dao\BusinessDao;
 use App\Dao\SubscriptionDao;
 use App\Dao\TenantDao;
 use App\Services\Interfaces\IAuthServices;
