@@ -1,8 +1,17 @@
 @if (open()) {
   <div class="workspace-drawer-backdrop" aria-hidden="true" (click)="requestClose()"></div>
-  <aside class="workspace-drawer" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="workspace-drawer-title" [attr.aria-describedby]="description() ? 'workspace-drawer-description' : null">
+  <aside
+    class="workspace-drawer"
+    [class.workspace-drawer-compact]="width() === 'compact'"
+    [class.workspace-drawer-offset]="offsetHeader()"
+    role="dialog"
+    aria-modal="true"
+    tabindex="-1"
+    aria-labelledby="workspace-drawer-title"
+    [attr.aria-describedby]="description() ? 'workspace-drawer-description' : null">
     <header class="workspace-drawer-header">
-      <div>
+      <div class="workspace-drawer-heading">
+        @if (eyebrow()) { <p class="workspace-drawer-eyebrow">{{ eyebrow() }}</p> }
         <h2 id="workspace-drawer-title">{{ title() }}</h2>
         @if (description()) { <p id="workspace-drawer-description">{{ description() }}</p> }
       </div>
@@ -11,5 +20,6 @@
     <div class="workspace-drawer-body">
       <ng-content />
     </div>
+    <ng-content select="[workspace-drawer-footer]" />
   </aside>
 }
