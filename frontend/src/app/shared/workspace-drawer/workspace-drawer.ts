@@ -60,7 +60,7 @@ export class WorkspaceDrawer {
     const focusable = this.focusableElements();
     if (!focusable.length) {
       event.preventDefault();
-      this.element.nativeElement.querySelector<HTMLElement>('.workspace-drawer')?.focus();
+      this.element.nativeElement.querySelector('.workspace-drawer') as HTMLElement | null?.focus();
       return;
     }
     const first = focusable[0];
@@ -88,8 +88,8 @@ export class WorkspaceDrawer {
   }
 
   private focusableElements(): HTMLElement[] {
-    return Array.from(this.element.nativeElement.querySelectorAll<HTMLElement>(
+    return Array.from(this.element.nativeElement.querySelectorAll(
       '.workspace-drawer button:not([disabled]), .workspace-drawer input:not([disabled]), .workspace-drawer select:not([disabled]), .workspace-drawer textarea:not([disabled]), .workspace-drawer a[href], .workspace-drawer [tabindex="0"]',
-    )).filter((element) => element.getAttribute('aria-hidden') !== 'true');
+    ) as NodeListOf<HTMLElement>).filter((element) => element.getAttribute('aria-hidden') !== 'true');
   }
 }
