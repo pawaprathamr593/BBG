@@ -125,6 +125,7 @@ final readonly class BusinessDao
         string $countryCode,
         ?float $latitude,
         ?float $longitude,
+        ?float $locationAccuracyM,
         int $userId,
     ): array {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
@@ -133,12 +134,12 @@ final readonly class BusinessDao
                 "INSERT INTO BUSINESS_PROFILES
                     (tenant_id, business_name, business_slug, business_description, primary_category_id,
                      business_phone, whatsapp_number, business_email, address_line_1, address_line_2,
-                     city, state, postal_code, country_code, latitude, longitude,
+                     city, state, postal_code, country_code, latitude, longitude, location_accuracy_m,
                      approval_status, publication_status, status, created_by, updated_by)
                  VALUES
                     (:tenant_id, :business_name, :business_slug, :description, :category_id,
                      :phone, :whatsapp, :email, :address1, :address2,
-                     :city, :state, :postal, :country, :latitude, :longitude,
+                     :city, :state, :postal, :country, :latitude, :longitude, :location_accuracy_m,
                      'PENDING', 'DRAFT', 'A', :user_id, :user_id)",
                 [
                     ':tenant_id' => $tenantId, ':business_name' => $businessName, ':business_slug' => $businessSlug,
@@ -146,7 +147,8 @@ final readonly class BusinessDao
                     ':phone' => $businessPhone, ':whatsapp' => $whatsappNumber, ':email' => $businessEmail,
                     ':address1' => $addressLine1, ':address2' => $addressLine2, ':city' => $city,
                     ':state' => $state, ':postal' => $postalCode, ':country' => $countryCode,
-                    ':latitude' => $latitude, ':longitude' => $longitude, ':user_id' => $userId,
+                    ':latitude' => $latitude, ':longitude' => $longitude,
+                    ':location_accuracy_m' => $locationAccuracyM, ':user_id' => $userId,
                 ],
             )->execute();
             $resArr['status'] = 'SUCCESS';
@@ -183,7 +185,7 @@ final readonly class BusinessDao
             "SELECT bp.id AS business_id, bp.tenant_id, bp.business_name, bp.business_slug,
                     bp.business_description, bp.primary_category_id, bp.business_phone,
                     bp.whatsapp_number, bp.business_email, bp.address_line_1, bp.address_line_2,
-                    bp.city, bp.state, bp.postal_code, bp.country_code, bp.latitude, bp.longitude, bp.approval_status,
+                    bp.city, bp.state, bp.postal_code, bp.country_code, bp.latitude, bp.longitude, bp.location_accuracy_m, bp.approval_status,
                     bp.approved_by, bp.approved_on, bp.rejection_reason, bp.publication_status,
                     t.tenant_name, t.tenant_status
              FROM BUSINESS_PROFILES bp
@@ -252,6 +254,7 @@ final readonly class BusinessDao
         string $countryCode,
         ?float $latitude,
         ?float $longitude,
+        ?float $locationAccuracyM,
         bool $resubmit,
     ): array {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
@@ -264,6 +267,7 @@ final readonly class BusinessDao
                         address_line_2 = :address2, city = :city, state = :state,
                         postal_code = :postal, country_code = :country,
                         latitude = :latitude, longitude = :longitude,
+                        location_accuracy_m = :location_accuracy_m,
                         approval_status = CASE WHEN :resubmit = 1 THEN 'PENDING' ELSE approval_status END,
                         rejection_reason = CASE WHEN :resubmit = 1 THEN NULL ELSE rejection_reason END,
                         approved_by = CASE WHEN :resubmit = 1 THEN NULL ELSE approved_by END,
@@ -279,7 +283,8 @@ final readonly class BusinessDao
                 ':address1' => $addressLine1, ':address2' => $addressLine2, ':city' => $city,
                 ':state' => $state, ':postal' => $postalCode, ':country' => $countryCode,
                 ':latitude' => $latitude, ':longitude' => $longitude,
-                ':resubmit' => $resubmit ? 1 : 0, ':user_id' => $userId,
+                ':location_accuracy_m' => $locationAccuracyM,
+                ':resubmit => $resubmit ? 1 : 0, ':user_id' => $userId,
                 ':business_id' => $businessId, ':tenant_id' => $tenantId,
             ])->execute();
             if ($affected !== 1) {
