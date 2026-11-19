@@ -120,9 +120,9 @@ export class BusinessRegistration implements OnInit {
         }
       },
       error => {
-        const message = error.code === error.PERMISSION_DENIED
+        const message = error.code === GeolocationPositionError.PERMISSION_DENIED
           ? 'Location permission was denied. You can still enter the business address manually.'
-          : error.code === error.TIMEOUT
+          : error.code === GeolocationPositionError.TIMEOUT
             ? 'Location request timed out. Please try again or enter the address manually.'
             : 'Unable to retrieve your location. You can enter the address manually.';
         this.locationNotice.set(message);
