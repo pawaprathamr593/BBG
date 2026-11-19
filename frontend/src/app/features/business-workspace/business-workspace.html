@@ -25,7 +25,8 @@
               <p class="application-note">Your application needs attention. Check the review note or contact BBG support.</p>
               @if (business.rejection_reason) { <div class="reason"><strong>Review note</strong><span>{{ business.rejection_reason }}</span></div> }
             } @else if (business.approval_status === 'DRAFT') {
-              <p class="application-note">This application has not been submitted yet.</p>
+              <p class="application-note">This application is saved as a draft. Continue where you left off.</p>
+              <button class="market-button" type="button" (click)="resumeDraft(business)">Continue application <span aria-hidden="true">→</span></button>
             } @else {
               @if (rejectedPaymentBusinessIds().includes(business.business_id)) {
                 <p class="application-note">Your payment proof needs attention. Upload a corrected receipt to send it for review again.</p>
@@ -37,7 +38,10 @@
           </article>
         }
       </div>
-      <button class="market-button" type="button" (click)="visitMarketplace()">Visit marketplace <span aria-hidden="true">↗</span></button>
+      <div class="workspace-actions">
+        <button class="market-button" type="button" (click)="registerAnotherBusiness()">+ Register another business</button>
+        <button class="market-button secondary-market-button" type="button" (click)="visitMarketplace()">Visit marketplace <span aria-hidden="true">↗</span></button>
+      </div>
     </section>
   }
 </main>
