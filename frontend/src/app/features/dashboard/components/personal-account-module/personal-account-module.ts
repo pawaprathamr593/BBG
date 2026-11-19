@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, input, output, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { WorkspaceModuleApiService } from '../../../../core/workspace/workspace-module-api.service';
@@ -22,6 +22,9 @@ export class PersonalAccountModule {
   readonly newPassword=signal('');
   readonly confirmPassword=signal('');
   private readonly auth=inject(AuthService);
+  private readonly destroyRef=inject(DestroyRef);
+  private alive=true;
+  constructor(){this.destroyRef.onDestroy(()=>{this.alive=false;});}
   private readonly api=inject(WorkspaceModuleApiService);
 
   inputValue(event: Event): string { return (event.target as HTMLInputElement).value; }
@@ -47,9 +50,10 @@ export class PersonalAccountModule {
       await this.api.request('/api/v1/auth/profile/update','updateProfile',{
         full_name:form.full_name.trim(),email:form.email.trim(),mobile:form.mobile.trim(),
       },'authParam');
+      if(!this.alive)return;
       this.profileDrawerOpen.set(false);this.refreshRequested.emit();
     }catch(error){this.error.set(this.auth.errorMessage(error));}
-    finally{this.busy.set(false);}
+    finally{if(this.alive)this.busy.set(false);}
   }
 
   openPassword():void {
@@ -73,8 +77,9 @@ export class PersonalAccountModule {
       await this.api.request('/api/v1/auth/password/update','setPassword',{
         ...(this.hasPassword()?{current_password:this.currentPassword()}:{}),new_password:newPassword,
       },'authParam');
+      if(!this.alive)return;
       this.passwordDrawerOpen.set(false);this.refreshRequested.emit();
-    }catch(error){this.passwordError.set(this.auth.errorMessage(error));}
+    }catch(error){if(this.alive)this.passwordError.set(this.auth.errorMessage(error));}
     finally{this.busy.set(false);}
   }
 }

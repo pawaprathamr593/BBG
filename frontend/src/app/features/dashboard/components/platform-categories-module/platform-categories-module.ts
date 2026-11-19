@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, input, output, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { WorkspaceModuleApiService } from '../../../../core/workspace/workspace-module-api.service';
@@ -25,7 +25,10 @@ export class PlatformCategoriesModule {
   readonly drawerOpen=signal(false);readonly editingId=signal<number|null>(null);
   readonly form=signal<CategoryForm>(emptyForm());readonly busy=signal(false);
   readonly error=signal('');readonly notice=signal('');
-  private readonly auth=inject(AuthService);private readonly api=inject(WorkspaceModuleApiService);
+  private readonly auth=inject(AuthService);
+  private readonly destroyRef=inject(DestroyRef);
+  private alive=true;
+  constructor(){this.destroyRef.onDestroy(()=>{this.alive=false;});}private readonly api=inject(WorkspaceModuleApiService);
 
   create():void{
     if(!this.canCreate()||this.busy())return;
@@ -63,10 +66,12 @@ export class PlatformCategoriesModule {
     try{
       await this.api.request(id===null?'/api/v1/admin/categories/create':'/api/v1/admin/categories/update',
         id===null?'createCategory':'updateCategory',id===null?payload:{category_id:id,...payload},'adminParam');
+      if(!this.alive)return;
       this.notice.set(id===null?'Category created.':'Category updated.');
+      if(!this.alive)return;
       this.drawerOpen.set(false);this.refreshRequested.emit();
     }catch(error){this.error.set(this.auth.errorMessage(error));}
-    finally{this.busy.set(false);}
+    finally{if(this.alive)this.busy.set(false);}
   }
   async remove(category:CategoryRecord):Promise<void>{
     if(!this.canDelete()||this.busy())return;
@@ -75,6 +80,7 @@ export class PlatformCategoriesModule {
     this.busy.set(true);this.error.set('');
     try{
       await this.api.request('/api/v1/admin/categories/delete','deleteCategory',{category_id:id},'adminParam');
+      if(!this.alive)return;
       this.notice.set('Category deleted.');this.refreshRequested.emit();
     }catch(error){this.error.set(this.auth.errorMessage(error));}
     finally{this.busy.set(false);}

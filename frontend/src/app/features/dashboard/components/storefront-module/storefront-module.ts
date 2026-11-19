@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, input, output, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../../../core/workspace/workspace-context.service';
@@ -18,6 +18,9 @@ export class StorefrontModule {
   readonly saving=signal(false);
   readonly error=signal('');
   private readonly auth=inject(AuthService);
+  private readonly destroyRef=inject(DestroyRef);
+  private alive=true;
+  constructor(){this.destroyRef.onDestroy(()=>{this.alive=false;});}
   private readonly workspace=inject(WorkspaceContextService);
   private readonly api=inject(WorkspaceModuleApiService);
   readonly fields=[
@@ -49,9 +52,10 @@ export class StorefrontModule {
         show_prices:form.show_prices,accept_online_orders:form.accept_online_orders,whatsapp_enabled:form.whatsapp_enabled,
         whatsapp_number:form.whatsapp_enabled?form.whatsapp_number.trim():'',theme_code:form.theme_code.trim(),
       });
+      if(!this.alive)return;
       this.drawerOpen.set(false);this.refreshRequested.emit();
-    }catch(error){this.error.set(this.auth.errorMessage(error));}
-    finally{this.saving.set(false);}
+    }catch(error){if(this.alive)this.error.set(this.auth.errorMessage(error));}
+    finally{if(this.alive)this.saving.set(false);}
   }
   async togglePublication():Promise<void>{
     if(!this.canEdit()||this.saving())return;

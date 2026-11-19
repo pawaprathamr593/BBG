@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, input, output, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { WorkspaceModuleApiService } from '../../../../core/workspace/workspace-module-api.service';
@@ -36,19 +36,19 @@ export class PersonalAddressesModule {
   try{
    await this.api.request(id===null?'/api/v1/customers/addresses/create':'/api/v1/customers/addresses/update',
     id===null?'createMyAddress':'updateMyAddress',payload,'customerParam');
-   this.notice.set(id===null?'Address added.':'Address updated.');this.drawerOpen.set(false);this.refreshRequested.emit();
-  }catch(error){this.error.set(this.auth.errorMessage(error));}finally{this.busy.set(false);}
+   if(!this.alive)return;this.notice.set(id===null?'Address added.':'Address updated.');this.drawerOpen.set(false);this.refreshRequested.emit();
+  }catch(error){if(this.alive)this.error.set(this.auth.errorMessage(error));}finally{if(this.alive)this.busy.set(false);}
  }
  async setDefault(address:Address):Promise<void>{
   const id=Number(address['address_id']??address['id']??0);if(!id||!this.canManage()||this.busy())return;
   this.busy.set(true);this.error.set('');
-  try{await this.api.request('/api/v1/customers/addresses/default','setDefaultAddress',{address_id:id},'customerParam');this.notice.set('Default address updated.');this.refreshRequested.emit();}
-  catch(error){this.error.set(this.auth.errorMessage(error));}finally{this.busy.set(false);}
+  try{await this.api.request('/api/v1/customers/addresses/default','setDefaultAddress',{address_id:id},'customerParam');if(!this.alive)return;this.notice.set('Default address updated.');this.refreshRequested.emit();}
+  catch(error){this.error.set(this.auth.errorMessage(error));}finally{if(this.alive)this.busy.set(false);}
  }
  async remove(address:Address):Promise<void>{
   const id=Number(address['address_id']??address['id']??0);if(!id||!this.canManage()||this.busy())return;
   if(!window.confirm('Delete this saved address?'))return;this.busy.set(true);this.error.set('');
-  try{await this.api.request('/api/v1/customers/addresses/delete','deleteMyAddress',{address_id:id},'customerParam');this.notice.set('Address deleted.');this.refreshRequested.emit();}
+  try{await this.api.request('/api/v1/customers/addresses/delete','deleteMyAddress',{address_id:id},'customerParam');if(!this.alive)return;this.notice.set('Address deleted.');this.refreshRequested.emit();}
   catch(error){this.error.set(this.auth.errorMessage(error));}finally{this.busy.set(false);}
  }
  label(address:Address):string{return String(address['address_label']??'Address');}

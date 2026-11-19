@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, input, output, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../../../core/workspace/workspace-context.service';
@@ -18,6 +18,9 @@ export class BusinessProfileModule {
   readonly error=signal('');
   readonly form=signal<ProfileForm>(emptyForm());
   private readonly auth=inject(AuthService);
+  private readonly destroyRef=inject(DestroyRef);
+  private alive=true;
+  constructor(){this.destroyRef.onDestroy(()=>{this.alive=false;});}
   private readonly workspace=inject(WorkspaceContextService);
   private readonly api=inject(WorkspaceModuleApiService);
   readonly fields=[
@@ -50,9 +53,10 @@ export class BusinessProfileModule {
         business_description:form.business_description.trim(),address_line_1:form.address_line_1.trim(),
         address_line_2:form.address_line_2.trim(),city:form.city.trim(),state:form.state.trim(),postal_code:form.postal_code.trim(),
       });
+      if(!this.alive)return;
       this.drawerOpen.set(false);this.refreshRequested.emit();
-    }catch(error){this.error.set(this.auth.errorMessage(error));}
-    finally{this.saving.set(false);}
+    }catch(error){if(this.alive)this.error.set(this.auth.errorMessage(error));}
+    finally{if(this.alive)this.saving.set(false);}
   }
   display(value:unknown):string{return value===null||value===undefined||value===''?'Not provided':String(value);}
   status():string{return String(this.business()['approval_status']??this.business()['business_approval_status']??this.business()['business_status']??'On record');}
