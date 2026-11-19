@@ -200,10 +200,13 @@ export class DashboardModule implements OnInit {
     if (!source) return [];
     const entries: Array<{key:string;value:unknown}> = [];
     for (const [key, value] of Object.entries(source)) {
+      if (this.isInternalField(key)) continue;
       if (value !== null && typeof value !== 'object') entries.push({key,value});
       else if (value && typeof value === 'object' && !Array.isArray(value)) {
         for (const [nestedKey, nestedValue] of Object.entries(value as DataRecord)) {
-          if (nestedValue === null || typeof nestedValue !== 'object') entries.push({key: nestedKey, value: nestedValue});
+          if (!this.isInternalField(nestedKey) && (nestedValue === null || typeof nestedValue !== 'object')) {
+            entries.push({key: nestedKey, value: nestedValue});
+          }
         }
       }
     }
@@ -568,15 +571,24 @@ export class DashboardModule implements OnInit {
   }
   valueOf(item: DataRecord, keys: string[]): string { for (const key of keys) if (item[key] !== null && item[key] !== undefined && item[key] !== '') return this.formatValue(item[key]); return '—'; }
   recordTitle(item: DataRecord): string {
-    return this.valueOf(item,['business_name','tenant_name','display_name','address_label','plan_name','post_title','category_name','order_number','enquiry_number','payment_reference','full_name','name','email','report_number','id']);
+    const title = this.valueOf(item,['business_name','tenant_name','display_name','address_label','plan_name','post_title','category_name','order_number','enquiry_number','payment_reference','full_name','name','email','report_number']);
+    return title === '—' ? 'Record' : title;
   }
   recordSubtitle(item: DataRecord): string {
     return this.valueOf(item,['email','business_category','category_type','customer_name','address_line_1','city','mobile','created_at','created_on','order_status','enquiry_status','subscription_status']);
   }
   statusOf(item: DataRecord): string { return String(item['approval_status'] ?? item['subscription_status'] ?? item['publication_status'] ?? item['order_status'] ?? item['enquiry_status'] ?? item['payment_status'] ?? item['report_status'] ?? item['account_status'] ?? item['customer_status'] ?? item['status'] ?? ''); }
+  private isInternalField(key: string): boolean {
+    return /^(?:id|.*_id|id_.*|uuid|.*_uuid)$/i.test(key)
+      || /^(?:created_by|updated_by|deleted_by|bcn|password_hash|access_token|refresh_token|authorization|raw_payload)$/i.test(key)
+      || /(?:password|token|secret|credential|authorization|hash|raw_payload)/i.test(key);
+  }
+
   recordEntries(item: DataRecord): Array<{key:string;value:unknown}> {
-    const hidden = new Set(['id','tenant_id','user_id','business_id','subscription_id','promotion_id','order_id','enquiry_id','payment_id','report_id','bcn','created_by','updated_by','deleted_by','password_hash','access_token','refresh_token']);
-    return Object.entries(item).filter(([key,value]) => !hidden.has(key) && value !== null && typeof value !== 'object').slice(0,8).map(([key,value])=>({key,value}));
+    return Object.entries(item)
+      .filter(([key,value]) => !this.isInternalField(key) && value !== null && typeof value !== 'object')
+      .slice(0,8)
+      .map(([key,value])=>({key,value}));
   }
 
   detailEntries(item: DataRecord): Array<{key:string;value:unknown}> {
@@ -589,8 +601,7 @@ export class DashboardModule implements OnInit {
       }
       if (typeof value === 'object') {
         for (const [key, nested] of Object.entries(value as DataRecord)) {
-          if (/password|token|secret|credential|authorization|hash|raw_payload/i.test(key)) continue;
-          if (['created_by','updated_by','deleted_by','tenant_id','user_id','business_id'].includes(key)) continue;
+          if (this.isInternalField(key)) continue;
           visit(nested, path ? path + '.' + key : key, depth + 1);
           if (entries.length >= 60) break;
         }
