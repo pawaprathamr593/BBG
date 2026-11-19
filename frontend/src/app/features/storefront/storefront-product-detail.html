@@ -12,12 +12,28 @@
 
         <article class="product-layout">
           <div class="visual-column">
-            <div class="product-visual" [class.visual-alt]="(data.product.category_name?.length || 0) % 2 === 0">
-              <span class="visual-kicker">{{ data.product.category_name || 'PRODUCT DETAILS' }}</span>
-              <span class="visual-monogram">{{ data.product.product_name.slice(0, 1).toUpperCase() }}</span>
-              <span class="visual-orbit"></span>
-              <span class="visual-caption">BBG / {{ data.product.product_code }}</span>
-            </div>
+            @if (data.product.media?.length) {
+              <div class="product-gallery" style="display:grid;gap:12px">
+                @for (media of data.product.media; track media.id) {
+                  @if (media.url && media.media_type === 'IMAGE') {
+                    <img [src]="media.url" [alt]="media.original_file_name || data.product.product_name" loading="lazy" style="width:100%;max-height:520px;object-fit:contain;background:var(--surface-card);border:1px solid var(--border);border-radius:10px">
+                  } @else if (media.url && media.media_type === 'VIDEO') {
+                    <video [src]="media.url" controls preload="metadata" style="width:100%;max-height:520px;background:#111;border-radius:10px"></video>
+                  } @else if (media.url && media.media_type === 'AUDIO') {
+                    <audio [src]="media.url" controls style="width:100%"></audio>
+                  } @else if (media.url && media.media_type === 'DOCUMENT') {
+                    <a [href]="media.url" target="_blank" rel="noopener noreferrer">{{ media.original_file_name || 'Open product document' }}</a>
+                  }
+                }
+              </div>
+            } @else {
+              <div class="product-visual" [class.visual-alt]="(data.product.category_name?.length || 0) % 2 === 0">
+                <span class="visual-kicker">{{ data.product.category_name || 'PRODUCT DETAILS' }}</span>
+                <span class="visual-monogram">{{ data.product.product_name.slice(0, 1).toUpperCase() }}</span>
+                <span class="visual-orbit"></span>
+                <span class="visual-caption">BBG / {{ data.product.product_code }}</span>
+              </div>
+            }
             <div class="visual-note"><span aria-hidden="true">✳</span><p>Product information provided by {{ businessName }}.</p></div>
           </div>
 

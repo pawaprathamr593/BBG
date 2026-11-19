@@ -140,7 +140,7 @@ final readonly class CatalogueDao
             p.publication_status, p.product_status,
             (SELECT pm.file_path FROM PRODUCT_MEDIA pm
                 WHERE pm.tenant_id = p.tenant_id AND pm.product_id = p.id
-                    AND pm.media_type = 'IMAGE' AND pm.status = 'A'
+                    AND pm.media_type = 'IMAGE' AND pm.media_status = 'ACTIVE' AND pm.status = 'A'
                 ORDER BY pm.is_primary DESC, pm.display_order ASC, pm.id ASC LIMIT 1) AS primary_media_path
             FROM PRODUCTS p
             JOIN UNITS_OF_MEASURE u ON u.id = p.base_unit_id AND u.status = 'A'
@@ -263,7 +263,7 @@ final readonly class CatalogueDao
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->many($db, "SELECT id, variant_id, media_type, mime_type, file_path, original_file_name,
             file_size_bytes, alt_text, caption, thumbnail_path, width_px, height_px, display_order, is_primary, media_status
-            FROM PRODUCT_MEDIA WHERE tenant_id = :tenant_id AND product_id = :product_id AND status = 'A'
+            FROM PRODUCT_MEDIA WHERE tenant_id = :tenant_id AND product_id = :product_id AND media_status = 'ACTIVE' AND status = 'A'
             ORDER BY display_order ASC, id ASC",
             [':tenant_id' => $tenantId, ':product_id' => $productId], 'getProductMedia');
     }
