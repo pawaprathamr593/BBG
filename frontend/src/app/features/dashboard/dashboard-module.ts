@@ -594,7 +594,7 @@ export class DashboardModule implements OnInit {
   detailEntries(item: DataRecord): Array<{key:string;value:unknown}> {
     const entries: Array<{key:string;value:unknown}> = [];
     const visit = (value: unknown, path: string, depth: number): void => {
-      if (value === null || value === undefined || depth > 3 || entries.length >= 60) return;
+      if (value === null || value === undefined || depth > 8) return;
       if (Array.isArray(value)) {
         value.forEach((entry, index) => visit(entry, path ? path + ' ' + (index + 1) : String(index + 1), depth + 1));
         return;
@@ -603,7 +603,6 @@ export class DashboardModule implements OnInit {
         for (const [key, nested] of Object.entries(value as DataRecord)) {
           if (this.isInternalField(key)) continue;
           visit(nested, path ? path + '.' + key : key, depth + 1);
-          if (entries.length >= 60) break;
         }
         return;
       }
