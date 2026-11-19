@@ -18,6 +18,8 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
     h2{margin:0 0 8px;font-size:1.2rem}.status-card>p:not(.eyebrow){max-width:620px;color:var(--text-secondary);font-size:.88rem;line-height:1.65}
     .business-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:25px;padding:17px;background:var(--surface-subtle);border:1px solid var(--border);border-radius:12px}.business-summary span{display:grid;gap:5px;min-width:0}.business-summary small{color:var(--text-secondary);font-size:.68rem}.business-summary strong{overflow-wrap:anywhere;font-size:.8rem}
     .reason{display:grid;gap:5px;margin-top:15px;padding:14px;background:var(--surface-subtle);border-radius:9px;font-size:.8rem}.reason span{color:var(--text-secondary);line-height:1.55}
+    .application-list{display:grid;gap:14px;margin-top:24px}.application-card{padding:18px;background:var(--surface-subtle);border:1px solid var(--border);border-radius:12px}.application-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.application-heading h2{margin:0;font-size:1.05rem}.application-heading p{margin:5px 0 0;color:var(--text-secondary);font-size:.75rem}.application-note{margin:14px 0 0;color:var(--text-secondary);font-size:.8rem;line-height:1.55}.application-card .business-summary{margin-top:15px;background:var(--surface-card)}.status-pill[data-status="DRAFT"]{color:var(--text-secondary)}
+
     .market-button,.status-card button{margin-top:24px;padding:11px 16px;color:#fff;background:var(--brand);border:0;border-radius:9px;font:inherit;font-size:.8rem;font-weight:750;cursor:pointer}.loading{display:flex;align-items:center;gap:15px}.loading p{margin:4px 0 0;color:var(--text-secondary);font-size:.8rem}.spinner{width:25px;height:25px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
     @media(max-width:600px){.status-page{padding:28px 12px 50px}.status-heading{flex-direction:column}.business-summary{grid-template-columns:1fr}}
   `],
@@ -30,7 +32,7 @@ export class BusinessWorkspace implements OnInit {
 
   readonly loading = signal(true);
   readonly error = signal('');
-  readonly application = signal<BusinessApplication | null>(null);
+  readonly applications = signal<BusinessApplication[]>([]);
 
   ngOnInit(): void { void this.load(); }
 
@@ -43,18 +45,12 @@ export class BusinessWorkspace implements OnInit {
         return;
       }
       if (!this.auth.user()) await this.auth.loadProfile();
-      const application = await this.api.getMyApplication();
-      if (!application) {
+      const applications = await this.api.getMyApplications();
+      if (!applications.length) {
         await this.router.navigate(['/business/register']);
         return;
       }
-      this.application.set(application);
-      if (application.approval_status === 'APPROVED') {
-        await this.workspace.initialize();
-        await this.workspace.switchWorkspace(application.tenant_id);
-        await this.router.navigate(['/dashboard']);
-        return;
-      }
+      this.applications.set(applications);
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
@@ -67,7 +63,21 @@ export class BusinessWorkspace implements OnInit {
   }
 
   statusLabel(status: string): string {
-    return status === 'APPROVED' ? 'Approved' : status === 'REJECTED' ? 'Needs attention' : 'Pending review';
+    return status === 'APPROVED' ? 'Approved'
+      : status === 'REJECTED' ? 'Needs attention'
+        : status === 'DRAFT' ? 'Draft'
+          : 'Pending review';
+  }
+
+  async openWorkspace(business: BusinessApplication): Promise<void> {
+    if (business.approval_status !== 'APPROVED') return;
+    try {
+      await this.workspace.initialize();
+      await this.workspace.switchWorkspace(business.tenant_id);
+      await this.router.navigate(['/dashboard']);
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    }
   }
 
   visitMarketplace(): void { void this.router.navigate(['/']); }
