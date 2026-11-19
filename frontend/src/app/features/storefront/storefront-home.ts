@@ -6,6 +6,7 @@ import { StorefrontContextService } from './storefront-context.service';
 import { StorefrontSeoService } from './storefront-seo.service';
 import { ProductCard } from '../../shared/components/product-card/product-card';
 import { PromotionCard } from '../../shared/components/promotion-card/promotion-card';
+import type { ProductCardModel, PromotionCardModel } from '../../shared/models/marketplace-card.models';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -253,11 +254,11 @@ export class StorefrontHome {
     return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
   }
 
-  productRoute(product: MarketplaceProduct): string {
+  productRoute(product: ProductCardModel): string {
     return (product.slug || slugify(product.product_name)) + '-' + (product.public_id || product.id);
   }
 
-  protected openProduct(product: MarketplaceProduct, businessSlug: string): void {
+  protected openProduct(product: ProductCardModel, businessSlug: string): void {
     if (product.offering_type === 'SERVICE') {
       void this.router.navigate(['/store', businessSlug, 'contact'], { queryParams: { subject: 'Service enquiry: ' + product.product_name } });
       return;
@@ -265,7 +266,7 @@ export class StorefrontHome {
     void this.router.navigate(['/store', businessSlug, 'products', this.productRoute(product)]);
   }
 
-  protected openPromotionBusiness(promotion: MarketplacePromotion): void {
+  protected openPromotionBusiness(promotion: PromotionCardModel): void {
     void this.router.navigate(['/store', promotion.business_slug]);
   }
 
