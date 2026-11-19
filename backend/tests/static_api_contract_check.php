@@ -12,8 +12,8 @@ if ($routes === false) {
 
 preg_match_all("~Route::post\\('(/api/v1/[^']+)'\\)~", $routes, $routeMatches);
 $routePaths = $routeMatches[1] ?? [];
-if (count($routePaths) !== 137 || count(array_unique($routePaths)) !== 137) {
-    fwrite(STDERR, 'Expected 137 unique POST API routes; found ' . count($routePaths) . ".\n");
+if (count($routePaths) !== 156 || count(array_unique($routePaths)) !== 156) {
+    fwrite(STDERR, 'Expected 156 unique POST API routes; found ' . count($routePaths) . ".\n");
     exit(1);
 }
 
@@ -176,6 +176,36 @@ if (in_array(false, $postMediaContracts, true)) {
     exit(1);
 }
 
+
+$onboardingContracts = [
+    str_contains($routes, '/api/v1/business/application/list')
+        && str_contains($routes, '/api/v1/business/application/draft/save')
+        && str_contains($routes, '/api/v1/subscriptions/application/request')
+        && str_contains($routes, '/api/v1/subscriptions/application/current')
+        && str_contains($routes, '/api/v1/subscriptions/application/proofs/upload-url')
+        && str_contains($routes, '/api/v1/subscriptions/application/proofs/submit'),
+    str_contains($routes, '/api/v1/subscriptions/application/upgrade/request')
+        && str_contains($routes, '/api/v1/subscriptions/application/renewal/request')
+        && str_contains($routes, '/api/v1/subscriptions/application/list'),
+    str_contains($routes, '/api/v1/tenants/members/owner-list')
+        && str_contains($routes, '/api/v1/tenants/members/search')
+        && str_contains($routes, '/api/v1/tenants/members/add')
+        && str_contains($routes, '/api/v1/tenants/invitations/create')
+        && str_contains($routes, '/api/v1/tenants/invitations/accept'),
+    str_contains(file_get_contents($root . '/src/Services/Implementations/BusinessServices.php'), 'saveBusinessApplicationDraft')
+        && str_contains(file_get_contents($root . '/src/Services/Implementations/BusinessServices.php'), 'getMyBusinessApplications'),
+    str_contains(file_get_contents($root . '/src/Services/Implementations/SubscriptionServices.php'), 'applicationOwnerContext')
+        && str_contains(file_get_contents($root . '/src/Services/Implementations/SubscriptionServices.php'), 'requestApplicationSubscriptionReplacement')
+        && str_contains(file_get_contents($root . '/src/Services/Implementations/SubscriptionServices.php'), 'submitApplicationSubscriptionProof'),
+    str_contains(file_get_contents($root . '/src/Services/Implementations/TenantServices.php'), 'addExistingTenantMember')
+        && str_contains(file_get_contents($root . '/src/Services/Implementations/TenantServices.php'), 'createTenantInvitation')
+        && str_contains(file_get_contents($root . '/src/Services/Implementations/TenantServices.php'), 'acceptTenantInvitation'),
+];
+if (in_array(false, $onboardingContracts, true)) {
+    fwrite(STDERR, "Business onboarding, payment, subscription lifecycle or team invitation API contract is incomplete.\\n");
+    exit(1);
+}
+
 $socialAuthService = file_get_contents($root . '/src/Services/Implementations/AuthServices.php');
 $socialAuthController = file_get_contents($root . '/src/Modules/Api/V1/Controllers/AuthController.php');
 $socialAuthContracts = [
@@ -192,4 +222,4 @@ if (in_array(false, $socialAuthContracts, true)) {
     exit(1);
 }
 
-echo "Static API contract checks passed: 137 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, social authentication, marketplace discovery and subscription proof S3 flow.\\n";
+echo "Static API contract checks passed: 156 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, social authentication, marketplace discovery and subscription proof S3 flow.\\n";
