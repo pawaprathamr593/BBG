@@ -174,6 +174,11 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'SubscriptionServices::getMySubscription');
         }
+        $application = $context['data']['application'];
+        if (($application['approval_status'] ?? '') === 'APPROVED' && ($application['tenant_status'] ?? '') !== 'ACTIVE') {
+            $resArr['msgArr'][] = 'The business tenant must be active to submit subscription payment proof.';
+            return $resArr;
+        }
         $subscriptionId = $this->positiveInt($actionData['subscription_id'] ?? null);
         if ($subscriptionId === null) {
             $resArr['msgArr'][] = 'A valid subscription_id is required.';
@@ -598,8 +603,9 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             return $this->propagateFailure($context, 'SubscriptionServices::requestApplicationSubscriptionReplacement');
         }
         $application = $context['data']['application'];
-        if (($application['approval_status'] ?? '') !== 'APPROVED') {
-            $resArr['msgArr'][] = 'Only an approved business owner can change an active subscription.';
+        if (($application['approval_status'] ?? '') !== 'APPROVED'
+            || ($application['tenant_status'] ?? '') !== 'ACTIVE') {
+            $resArr['msgArr'][] = 'Only an approved, active business owner can change a subscription.';
             return $resArr;
         }
         $tenantId = (int) $application['tenant_id'];
