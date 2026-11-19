@@ -5,7 +5,7 @@ import { API_BASE_URL } from '../config/api-base-url';
 
 export interface DashboardPermission {
   role_code: string;
-  scope_type: 'PLATFORM' | 'TENANT' | 'GLOBAL' | string;
+  scope_type: 'PLATFORM' | 'TENANT' | string;
   permission_code: string | null;
   module_code: string | null;
 }
