@@ -331,17 +331,28 @@ final readonly class AdminDao
                 return $resArr;
             }
             if ($upgradeFromSubscriptionId !== null) {
-                $replaced = $db->createCommand("UPDATE TENANT_SUBSCRIPTIONS
-                    SET subscription_status = 'EXPIRED',
-                        ends_on = CASE WHEN subscription_status = 'ACTIVE' THEN CURRENT_TIMESTAMP ELSE ends_on END,
-                        updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
-                    WHERE id = :previous_subscription_id AND tenant_id = :tenant_id
-                        AND subscription_status IN ('ACTIVE', 'EXPIRED') AND status = 'A'",
-                    [':admin_id' => $adminId,
-                     ':previous_subscription_id' => $upgradeFromSubscriptionId, ':tenant_id' => $tenantId])->execute();
-                if ($replaced !== 1) {
+                $previous = $db->createCommand(
+                    "SELECT subscription_status FROM TENANT_SUBSCRIPTIONS
+                     WHERE id = :previous_subscription_id AND tenant_id = :tenant_id AND status = 'A'
+                     LIMIT 1",
+                    [':previous_subscription_id' => $upgradeFromSubscriptionId, ':tenant_id' => $tenantId],
+                )->queryOne();
+                if (!is_array($previous) || !in_array($previous['subscription_status'] ?? '', ['ACTIVE', 'EXPIRED'], true)) {
                     $resArr['msgArr'][] = 'The previous subscription is no longer active or expired and could not be replaced.';
                     return $resArr;
+                }
+                if (($previous['subscription_status'] ?? '') === 'ACTIVE') {
+                    $replaced = $db->createCommand("UPDATE TENANT_SUBSCRIPTIONS
+                        SET subscription_status = 'EXPIRED', ends_on = CURRENT_TIMESTAMP,
+                            updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
+                        WHERE id = :previous_subscription_id AND tenant_id = :tenant_id
+                            AND subscription_status = 'ACTIVE' AND status = 'A'",
+                        [':admin_id' => $adminId, ':previous_subscription_id' => $upgradeFromSubscriptionId,
+                         ':tenant_id' => $tenantId])->execute();
+                    if ($replaced !== 1) {
+                        $resArr['msgArr'][] = 'The previous subscription changed while the replacement was being approved.';
+                        return $resArr;
+                    }
                 }
             }
             $db->createCommand("UPDATE SUBSCRIPTION_PAYMENT_PROOFS
