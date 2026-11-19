@@ -202,7 +202,7 @@ export function getWorkspaceNavItems(
   permissions: DashboardPermission[],
   activeEntitlements: string | null = null,
 ): WorkspaceNavItem[] {
-  const scope = context === 'BUSINESS' ? 'TENANT' : context === 'PLATFORM' ? 'PLATFORM' : 'PLATFORM';
+  const scope = context === 'BUSINESS' ? 'TENANT' : 'PLATFORM';
   return WORKSPACE_NAV_ITEMS.filter((item) => {
     if (item.scope !== scope || !hasWorkspacePermission(permissions, item.scope, item.permission)) {
       return false;
