@@ -685,7 +685,7 @@ final readonly class AdminServices implements IAdminServices
     private function getCategoryStatistics(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'admin.view');
+        $context = $this->platformContext($actionData, 'categories.manage');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getCategoryStatistics');
         }
