@@ -60,12 +60,12 @@ export class WorkspaceDrawer {
     const focusable = this.focusableElements();
     if (!focusable.length) {
       event.preventDefault();
-      this.element.nativeElement.querySelector('.workspace-drawer') as HTMLElement | null?.focus();
+      (this.element.nativeElement.querySelector('.workspace-drawer') as HTMLElement | null)?.focus();
       return;
     }
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
-    const drawer = this.element.nativeElement.querySelector<HTMLElement>('.workspace-drawer');
+    const drawer = this.element.nativeElement.querySelector('.workspace-drawer') as HTMLElement | null;
     const activeElement = this.document.activeElement;
     if (!drawer?.contains(activeElement as Node)) {
       event.preventDefault();
