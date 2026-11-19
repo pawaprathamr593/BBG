@@ -244,6 +244,17 @@ final readonly class BusinessServices implements IBusinessServices
         $state = $this->optionalText($actionData['state'] ?? '', 100) ?? '';
         $postal = $this->optionalText($actionData['postal_code'] ?? '', 15) ?? '';
         $country = strtoupper($this->optionalText($actionData['country_code'] ?? 'IN', 2) ?? 'IN');
+        $latitudeRaw = $actionData['latitude'] ?? null;
+        $longitudeRaw = $actionData['longitude'] ?? null;
+        $latitude = ($latitudeRaw === null || $latitudeRaw === '') ? null : (is_numeric($latitudeRaw) ? (float) $latitudeRaw : NAN);
+        $longitude = ($longitudeRaw === null || $longitudeRaw === '') ? null : (is_numeric($longitudeRaw) ? (float) $longitudeRaw : NAN);
+        if (($latitude !== null && (!is_finite($latitude) || $latitude < -90 || $latitude > 90))
+            || ($longitude !== null && (!is_finite($longitude) || $longitude < -180 || $longitude > 180))
+            || (($latitude === null) !== ($longitude === null))
+        ) {
+            $resArr['msgArr'][] = 'Latitude and longitude must both be valid coordinates.';
+            return $resArr;
+        }
         if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $resArr['msgArr'][] = 'A valid business_email is required.';
             return $resArr;
@@ -280,7 +291,7 @@ final readonly class BusinessServices implements IBusinessServices
                     $update = $this->dao->updateBusinessApplication(
                         $this->db, $tenantId, $businessId, $userId, $businessName, $businessSlug,
                         $description ?? '', $categoryId, $phone, $whatsapp, $email, $address1, $address2,
-                        $city, $state, $postal, $country, $resubmit,
+                        $city, $state, $postal, $country, $latitude, $longitude, $resubmit,
                     );
                     if ($update['status'] !== 'SUCCESS') {
                         $transaction->rollBack();
@@ -326,7 +337,7 @@ final readonly class BusinessServices implements IBusinessServices
                 }
                 $profile = $this->dao->insertBusinessProfile(
                     $this->db, $newTenantId, $businessName, $businessSlug, $description ?? '', $categoryId,
-                    $phone, $whatsapp, $email, $address1, $address2, $city, $state, $postal, $country, $userId,
+                    $phone, $whatsapp, $email, $address1, $address2, $city, $state, $postal, $country, $latitude, $longitude, $userId,
                 );
                 if ($profile['status'] !== 'SUCCESS') {
                     $transaction->rollBack();
