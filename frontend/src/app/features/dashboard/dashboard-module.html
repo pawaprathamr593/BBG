@@ -9,7 +9,6 @@
           }
           @if (section() === 'promotions' && can('promotion.create')) { <button class="secondary-action" type="button" (click)="createPromotion()" [disabled]="busy()">+ New promotion</button> }
           @if (section() === 'customers' && !activeTenantId() && can('user.update')) {
-            <button class="secondary-action" type="button" (click)="editPersonalProfile()" [disabled]="busy()">Edit personal details</button>
             <button class="secondary-action" type="button" (click)="createAddress()" [disabled]="busy()">+ Add address</button>
           }
           @if (section() === 'categories' && can('admin.create')) { <button class="secondary-action" type="button" (click)="createCategory()" [disabled]="busy()">+ New category</button> }
@@ -51,25 +50,13 @@
           </section>
         }
 
-        @if (section() === 'customers' && !activeTenantId() && summary()) {
-          <section class="personal-profile-card" aria-labelledby="personal-profile-title">
-            <div class="personal-profile-heading">
-              <div><p class="eyebrow">YOUR BBG ACCOUNT</p><h2 id="personal-profile-title">Personal details</h2><p>These details belong to your BBG account and are used across your customer activity.</p></div>
-              <span class="profile-avatar">{{ profileInitials() }}</span>
-            </div>
-            <div class="personal-profile-details">
-              <div><span>Full name</span><strong>{{ summary()?.['full_name'] || 'Not provided' }}</strong></div>
-              <div><span>Email address</span><strong>{{ summary()?.['email'] || 'Not provided' }}</strong></div>
-              <div><span>Mobile number</span><strong>{{ summary()?.['mobile'] || 'Not provided' }}</strong></div>
-            </div>
-            <div class="password-settings">
-              <div><strong>Account password</strong><p>{{ summary()?.['has_password'] ? 'A password is already set for your account.' : 'You signed in without a password. You can set one to also sign in using your email or mobile number.' }}</p></div>
-              @if (!showPasswordForm() && can('user.update')) {
-                <button class="secondary-action" type="button" (click)="openPasswordForm()">{{ summary()?.['has_password'] ? 'Change password' : 'Set password' }}</button>
-              }
-            </div>
-
-          </section>
+        @if (section() === 'customers' && !activeTenantId() && summary(); as personalProfile) {
+          <app-personal-account-module
+            [profile]="personalProfile"
+            [canEdit]="can('user.update')"
+            (editRequested)="editPersonalProfile()"
+            (passwordRequested)="openPasswordForm()"
+          />
         }
 
         @if (section() === 'payment-qr-settings' && can('subscription.update')) {
@@ -86,19 +73,13 @@
         }
 
         @if (section() === 'subscriptions' && plans().length) {
-          <section class="plans-section">
-            <div class="section-title"><div><p class="eyebrow">AVAILABLE PLANS</p><h2>Choose a business plan</h2></div></div>
-            <div class="plans-grid">
-              @for (plan of plans(); track recordId(plan, 'plan_id')) {
-                <article class="plan-card">
-                  <h3>{{ valueOf(plan, ['plan_name', 'name', 'plan_code']) }}</h3>
-                  <strong class="plan-price">{{ valueOf(plan, ['price', 'amount']) }} {{ valueOf(plan, ['currency']) }}</strong>
-                  <p>{{ valueOf(plan, ['description', 'plan_description']) }}</p>
-                  @if (can('subscription.create')) { <button type="button" (click)="requestPlan(plan)" [disabled]="busy()">{{ pendingPlanId() === recordId(plan, 'plan_id') ? 'Requesting…' : 'Request this plan' }}</button> }
-                </article>
-              }
-            </div>
-          </section>
+          <app-subscription-plans-module
+            [plans]="plans()"
+            [canRequest]="can('subscription.create')"
+            [busy]="busy()"
+            [pendingPlanId]="pendingPlanId()"
+            (planRequested)="requestPlan($event)"
+          />
         }
 
         @if (section() === 'platform-analytics' && analyticsTrends().length) {

@@ -1,0 +1,18 @@
+<section class="personal-account-card" aria-labelledby="personal-account-title">
+  <header class="account-heading">
+    <div><p class="eyebrow">YOUR BBG ACCOUNT</p><h2 id="personal-account-title">Personal details</h2><p>These details belong to your BBG account and are used across your customer activity.</p></div>
+    <span class="profile-avatar">{{ initials() }}</span>
+  </header>
+  <div class="account-details">
+    <article><span>Full name</span><strong>{{ display('full_name') }}</strong></article>
+    <article><span>Email address</span><strong>{{ display('email') }}</strong></article>
+    <article><span>Mobile number</span><strong>{{ display('mobile') }}</strong></article>
+  </div>
+  <footer class="account-actions">
+    <div><strong>Account password</strong><p>{{ hasPassword() ? 'A password is already set for your account.' : 'You signed in without a password. You can set one to also sign in using your email or mobile number.' }}</p></div>
+    <div class="account-buttons">
+      @if (canEdit()) { <button type="button" (click)="editRequested.emit()">Edit details</button> }
+      @if (canEdit()) { <button type="button" class="secondary" (click)="passwordRequested.emit()">{{ hasPassword() ? 'Change password' : 'Set password' }}</button> }
+    </div>
+  </footer>
+</section>
