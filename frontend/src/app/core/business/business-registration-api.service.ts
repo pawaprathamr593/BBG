@@ -22,6 +22,7 @@ export interface BusinessApplication {
   country_code: string;
   latitude: number | string | null;
   longitude: number | string | null;
+  location_accuracy_m: number | string | null;
   approval_status: 'PENDING' | 'APPROVED' | 'REJECTED' | string;
   approved_on: string | null;
   rejection_reason: string | null;
@@ -52,6 +53,7 @@ export interface BusinessApplicationPayload {
   country_code: string;
   latitude: number | null;
   longitude: number | null;
+  location_accuracy_m: number | null;
 }
 
 export interface SubscriptionPlan {
