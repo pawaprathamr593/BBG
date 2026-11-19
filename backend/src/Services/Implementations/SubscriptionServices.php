@@ -497,6 +497,7 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             return $this->propagateFailure($details, 'SubscriptionServices::getApplicationSubscription');
         }
         $data = $details['data'];
+        $data['latest_proof_review_status'] = $current['latest_proof_review_status'] ?? null;
         if (!empty($data['payment_qr_file_path'])) {
             $data['payment_qr_url'] = $this->s3Storage->createDownloadUrl((string) $data['payment_qr_file_path']);
         }
