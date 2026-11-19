@@ -97,9 +97,22 @@ final readonly class AdminDao
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->many($db, "SELECT bp.id AS business_id, bp.tenant_id, bp.business_name,
             bp.business_slug, bp.primary_category_id, bp.business_phone, bp.business_email,
-            bp.city, bp.state, bp.approval_status, bp.created_on, t.tenant_status
+            bp.city, bp.state, bp.approval_status, bp.created_on, t.tenant_status,
+            ts.id AS subscription_id, ts.subscription_status, ts.amount AS subscription_amount,
+            ts.currency AS subscription_currency, p.plan_name,
+            proof.review_status AS payment_proof_status
             FROM BUSINESS_PROFILES bp
             INNER JOIN TENANTS t ON t.id = bp.tenant_id AND t.status = 'A'
+            LEFT JOIN TENANT_SUBSCRIPTIONS ts ON ts.id = (
+                SELECT MAX(ts_latest.id) FROM TENANT_SUBSCRIPTIONS ts_latest
+                WHERE ts_latest.tenant_id = bp.tenant_id AND ts_latest.status = 'A'
+            )
+            LEFT JOIN PLANS p ON p.id = ts.plan_id AND p.status = 'A'
+            LEFT JOIN SUBSCRIPTION_PAYMENT_PROOFS proof ON proof.id = (
+                SELECT MAX(proof_latest.id) FROM SUBSCRIPTION_PAYMENT_PROOFS proof_latest
+                WHERE proof_latest.tenant_id = bp.tenant_id
+                    AND proof_latest.subscription_id = ts.id AND proof_latest.status = 'A'
+            )
             WHERE bp.approval_status = 'PENDING' AND bp.status = 'A'
             ORDER BY bp.created_on ASC, bp.id ASC LIMIT :limit OFFSET :offset",
             [':limit' => $limit, ':offset' => $offset], 'getPendingBusinesses');
@@ -115,11 +128,48 @@ final readonly class AdminDao
     public function getBusinessForReview(ConnectionInterface $db, int $businessId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        return $this->one($db, "SELECT bp.*, t.tenant_code, t.tenant_name, t.tenant_type, t.tenant_status
+        return $this->one($db, "SELECT bp.*, t.tenant_code, t.tenant_name, t.tenant_type, t.tenant_status,
+            ts.id AS subscription_id, ts.subscription_status, ts.amount AS subscription_amount,
+            ts.currency AS subscription_currency, p.plan_name,
+            instructions.config_version AS payment_qr_version,
+            instructions.payee_name AS payment_payee_name,
+            instructions.upi_id AS payment_upi_id,
+            instructions.qr_file_path AS payment_qr_file_path,
+            instructions.payment_instructions,
+            proof.id AS proof_id, proof.payment_reference, proof.proof_file_path,
+            proof.review_status AS payment_proof_status, proof.submitted_on AS proof_submitted_on
             FROM BUSINESS_PROFILES bp
             INNER JOIN TENANTS t ON t.id = bp.tenant_id AND t.status = 'A'
+            LEFT JOIN TENANT_SUBSCRIPTIONS ts ON ts.id = (
+                SELECT MAX(ts_latest.id) FROM TENANT_SUBSCRIPTIONS ts_latest
+                WHERE ts_latest.tenant_id = bp.tenant_id AND ts_latest.status = 'A'
+            )
+            LEFT JOIN PLANS p ON p.id = ts.plan_id AND p.status = 'A'
+            LEFT JOIN TENANT_SUBSCRIPTION_PAYMENT_INSTRUCTIONS instructions
+                ON instructions.tenant_id = ts.tenant_id
+                AND instructions.subscription_id = ts.id AND instructions.status = 'A'
+            LEFT JOIN SUBSCRIPTION_PAYMENT_PROOFS proof ON proof.id = (
+                SELECT MAX(proof_latest.id) FROM SUBSCRIPTION_PAYMENT_PROOFS proof_latest
+                WHERE proof_latest.tenant_id = bp.tenant_id
+                    AND proof_latest.subscription_id = ts.id AND proof_latest.status = 'A'
+            )
             WHERE bp.id = :id AND bp.status = 'A' LIMIT 1",
             [':id' => $businessId], 'getBusinessForReview');
+    }
+
+    public function getActiveSubscriptionForTenant(ConnectionInterface $db, int $tenantId): array
+    {
+        return $this->one(
+            $db,
+            "SELECT id, plan_id, subscription_status, starts_on, ends_on
+             FROM TENANT_SUBSCRIPTIONS
+             WHERE tenant_id = :tenant_id AND subscription_status = 'ACTIVE' AND status = 'A'
+                AND (starts_on IS NULL OR starts_on <= CURRENT_TIMESTAMP)
+                AND (ends_on IS NULL OR ends_on >= CURRENT_TIMESTAMP)
+             ORDER BY starts_on DESC, id DESC LIMIT 1",
+            [':tenant_id' => $tenantId],
+            'getActiveSubscriptionForTenant',
+        );
     }
 
     public function setBusinessApproval(ConnectionInterface $db, int $businessId, int $tenantId, int $adminId, string $newStatus, ?string $reason): array
@@ -131,10 +181,12 @@ final readonly class AdminDao
                     approved_by = CASE WHEN :approved_flag = 1 THEN :admin_id ELSE NULL END,
                     approved_on = CASE WHEN :approved_flag = 1 THEN CURRENT_TIMESTAMP ELSE NULL END,
                     rejection_reason = :reason,
+                    publication_status = :publication_status,
                     updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
                 WHERE id = :business_id AND tenant_id = :tenant_id
                     AND approval_status IN ('PENDING', 'REJECTED') AND status = 'A'",
                 [':new_status' => $newStatus, ':approved_flag' => $newStatus === 'APPROVED' ? 1 : 0,
+                 ':publication_status' => $newStatus === 'APPROVED' ? 'PUBLISHED' : 'DRAFT',
                  ':admin_id' => $adminId, ':reason' => $reason,
                  ':business_id' => $businessId, ':tenant_id' => $tenantId])->execute();
             if ($affected !== 1) {
@@ -146,6 +198,12 @@ final readonly class AdminDao
                 updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
                 WHERE id = :tenant_id AND status = 'A'",
                 [':tenant_status' => $tenantStatus, ':admin_id' => $adminId, ':tenant_id' => $tenantId])->execute();
+            $db->createCommand("UPDATE STOREFRONT_SETTINGS
+                SET storefront_status = :storefront_status,
+                    updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
+                WHERE tenant_id = :tenant_id AND status = 'A'",
+                [':storefront_status' => $newStatus === 'APPROVED' ? 'ACTIVE' : 'INACTIVE',
+                 ':admin_id' => $adminId, ':tenant_id' => $tenantId])->execute();
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = ['business_id' => $businessId, 'tenant_id' => $tenantId, 'approval_status' => $newStatus];
         } catch (Throwable $exception) {
