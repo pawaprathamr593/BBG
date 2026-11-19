@@ -539,8 +539,6 @@ final readonly class MarketplaceServices implements IMarketplaceServices
             return $business;
         }, $rows['data']);
 
-        $items = $this->attachPublicProductMedia($items);
-
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = [
             'items' => $items,
@@ -579,6 +577,8 @@ final readonly class MarketplaceServices implements IMarketplaceServices
             $item['created_on'] = $row['created_on'];
             return $item;
         }, $rows['data']);
+
+        $items = $this->attachPublicProductMedia($items);
 
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = [
