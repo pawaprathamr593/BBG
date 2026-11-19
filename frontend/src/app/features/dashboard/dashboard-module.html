@@ -137,93 +137,23 @@
           </section>
         }
         @if (filteredItems().length || totalItems() > 0) {
-          <section class="records-section">
-            <div class="section-title">
-              <div><p class="eyebrow">LIVE RECORDS</p><h2>{{ recordsHeading() }}</h2></div>
-              <span class="record-count">{{ filteredItems().length }} shown of {{ totalItems() }}</span>
-            </div>
-            <div class="records-list">
-              @if (filteredItems().length) {
-                @for (item of filteredItems(); track recordId(item, 'id')) {
-                <article class="record-card">
-                  <div class="record-head">
-                    <div><strong>{{ recordTitle(item) }}</strong><span>{{ recordSubtitle(item) }}</span></div>
-                    @if (statusOf(item)) { <span class="status-chip" [class]="statusClass(statusOf(item))">{{ humanize(statusOf(item)) }}</span> }
-                  </div>
-                  <div class="record-fields">
-                    @for (entry of recordEntries(item); track entry.key) {
-                      <div><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
-                    }
-                  </div>
-                  @if (['subscriptions','subscription-approval'].includes(section()) && hasBcn(item)) {
-                    <div class="bcn-record">
-                      <span>BBG Contribution Number</span>
-                      <div><strong>{{ item['bcn'] }}</strong><button type="button" (click)="copyBcn(item['bcn'])">Copy</button></div>
-                    </div>
-                  }
-                  @if (['platform-users','business-approval','orders','enquiries','payments'].includes(section()) || (section() === 'subscriptions' && activeTenantId() !== null)) {
-                    <button type="button" class="secondary-action" (click)="openRecordDetail(item)" [disabled]="busy()">View details</button>
-                  }
-                  @if (section() === 'subscription-approval') {
-                    <button type="button" class="secondary-action" (click)="openSubscriptionReview(item)" [disabled]="busy()">View business details, receipts & history</button>
-                  }
-                  @if (section() === 'subscriptions' && item['payment_qr_url']) {
-                    <div class="subscription-payment-qr">
-                      <img [src]="asUrl(item['payment_qr_url'])" alt="UPI payment QR for this subscription">
-                      <div><strong>Pay using UPI</strong><span>{{ item['payment_payee_name'] }}</span><span>{{ item['payment_upi_id'] }}</span><small>QR version {{ item['payment_qr_version'] }} · retained for this request</small></div>
-                    </div>
-                    @if (item['payment_instructions']) { <p class="payment-instructions">{{ item['payment_instructions'] }}</p> }
-                  }
-                  @if (section() === 'promotions' && mediaOf(item).length) {
-                    <div class="post-media-strip" aria-label="Post attachments">
-                      @for (media of mediaOf(item); track media['id']) {
-                        <div class="post-media-item">
-                          @if (media['url'] && media['media_type'] === 'IMAGE') { <img [src]="asUrl(media['url'])" [alt]="'Post image ' + media['id']"> }
-                          @else if (media['url'] && media['media_type'] === 'VIDEO') { <video controls [src]="asUrl(media['url'])" aria-label="Post video attachment"></video> }
-                          @else if (media['url'] && media['media_type'] === 'AUDIO') { <audio controls [src]="asUrl(media['url'])" aria-label="Post audio attachment"></audio> }
-                          @else if (media['url']) { <a [href]="asUrl(media['url'])" target="_blank" rel="noopener">Open {{ media['media_type'] }} attachment</a> }
-                          @else { <span>{{ media['media_type'] }} attachment</span> }
-                          @if (statusOf(item).toUpperCase() !== 'PUBLISHED' && can('promotion.update')) { <button type="button" (click)="removePromotionAttachment(item,media)" [disabled]="busy()">Remove</button> }
-                        </div>
-                      }
-                    </div>
-                  }
-
-                  @if (section() === 'subscriptions' && statusOf(item).toUpperCase() === 'PENDING' && item['latest_proof_review_status'] === 'PENDING') {
-                    <p class="payment-instructions">Your receipt was submitted on {{ formatValue(item['latest_proof_submitted_on']) }} and is awaiting Platform Admin review.</p>
-                  }
-                  @if (section() === 'subscriptions' && can('subscription.update') && ['PENDING','REJECTED'].includes(statusOf(item).toUpperCase()) && item['latest_proof_review_status'] !== 'PENDING') {
-                    <label class="upload-proof">Upload payment proof
-                      <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" [disabled]="busy()" (change)="prepareProofUpload($event, item)" />
-                    </label>
-                    @if (proofDrafts()[recordId(item,'subscription_id')] && can('subscription.update')) {
-                      <div class="proof-ready" role="status">
-                        <span>Receipt uploaded: {{ proofDrafts()[recordId(item,'subscription_id')].fileName }}</span>
-                        <button type="button" (click)="submitProof(item)" [disabled]="busy()">Submit for Review</button>
-                      </div>
-                    }
-                  }
-                  @if (visibleActionsFor(item).length) {
-                    <div class="record-actions">
-                      @for (action of visibleActionsFor(item); track action.key) {
-                        <button type="button" [class.danger]="action.danger" (click)="runAction(action.key, item)" [disabled]="busy()">{{ action.label }}</button>
-                      }
-                    </div>
-                  }
-                </article>
-                }
-              } @else {
-                <p class="records-filter-empty">No records match the current filters on this page. Adjust or reset the filters to see more results.</p>
-              }
-            </div>
-            @if (totalItems() > paginationPageSize()) {
-              <nav class="records-pagination" aria-label="Record pages">
-                <button type="button" (click)="goToPage(currentPage() - 1)" [disabled]="loading() || currentPage() <= 1">Previous</button>
-                <span>Page {{ currentPage() }} of {{ pageCount() }} · {{ totalItems() }} records</span>
-                <button type="button" (click)="goToPage(currentPage() + 1)" [disabled]="loading() || currentPage() >= pageCount()">Next</button>
-              </nav>
-            }
-          </section>
+          <app-workspace-records-module
+            [heading]="recordsHeading()"
+            [cards]="recordCardModels()"
+            [totalItems]="totalItems()"
+            [currentPage]="currentPage()"
+            [pageCount]="pageCount()"
+            [pageSize]="paginationPageSize()"
+            [loading]="loading()"
+            (pageChange)="goToPage($event)"
+            (actionRequested)="runAction($event.action, $event.record)"
+            (detailRequested)="openRecordDetail($event)"
+            (subscriptionReviewRequested)="openSubscriptionReview($event)"
+            (copyBcnRequested)="copyBcn($event)"
+            (mediaRemoveRequested)="removePromotionAttachment($event.record, $event.media)"
+            (proofFileSelected)="prepareProofUpload($event.event, $event.record)"
+            (proofSubmitRequested)="submitProof($event)"
+          />
         } @else if (!summaryEntries().length && !(section() === 'subscriptions' && plans().length)) {
           <section class="state-panel empty"><span class="state-icon">⌑</span><strong>Nothing to show yet</strong><p>There are no records available for this section in your current area.</p></section>
         }

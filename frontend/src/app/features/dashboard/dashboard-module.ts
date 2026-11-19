@@ -10,6 +10,7 @@ import { hasActiveEntitlement, hasWorkspacePermission } from '../../core/workspa
 import { WorkspaceDrawer } from '../../shared/workspace-drawer/workspace-drawer';
 import { BusinessProfileModule } from './components/business-profile-module/business-profile-module';
 import { StorefrontModule } from './components/storefront-module/storefront-module';
+import { WorkspaceRecordsModule, WorkspaceRecordCardModel } from './components/workspace-records-module/workspace-records-module';
 
 type EnvelopeKey = 'authParam' | 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam' | 'tenantParam' | 'dashboardParam';
 interface ApiEnvelope<T = unknown> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION'; msgArr?: string[]; data?: T | []; }
@@ -66,7 +67,7 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-dashboard-module',
   standalone: true,
-  imports: [WorkspaceDrawer, BusinessProfileModule, StorefrontModule],
+  imports: [WorkspaceDrawer, BusinessProfileModule, StorefrontModule, WorkspaceRecordsModule],
   templateUrl: './dashboard-module.html',
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
@@ -619,6 +620,47 @@ export class DashboardModule implements OnInit {
   private setUnsupported(message: string): void { this.unsupported.set(message); this.unsupportedTitle.set('Not available in this area'); this.loading.set(false); }
 
   readonly recordsHeading = computed(() => this.section() === 'customers' ? 'Saved addresses' : this.title());
+  readonly recordCardModels = computed(() => this.filteredItems().map((item) => this.toRecordCardModel(item)));
+
+  private toRecordCardModel(item: DataRecord): WorkspaceRecordCardModel {
+    const status = this.statusOf(item);
+    const subscriptionId = this.recordId(item, 'subscription_id');
+    const proof = this.proofDrafts()[subscriptionId];
+    const media = this.mediaOf(item).map((entry) => ({
+      id: String(entry['id'] ?? ''),
+      type: String(entry['media_type'] ?? 'FILE'),
+      url: entry['url'] ? this.asUrl(entry['url']) : null,
+      canRemove: status.toUpperCase() !== 'PUBLISHED' && this.can('promotion.update'),
+    }));
+    const paymentQr = item['payment_qr_url'] ? {
+      url: this.asUrl(item['payment_qr_url']),
+      payeeName: String(item['payment_payee_name'] ?? ''),
+      upiId: String(item['payment_upi_id'] ?? ''),
+      version: String(item['payment_qr_version'] ?? ''),
+      instructions: String(item['payment_instructions'] ?? ''),
+    } : null;
+    return {
+      id: this.recordId(item, 'id'),
+      record: item,
+      title: this.recordTitle(item),
+      subtitle: this.recordSubtitle(item),
+      status,
+      statusClass: this.statusClass(status),
+      fields: this.recordEntries(item).map((entry) => ({
+        key: entry.key, label: this.humanize(entry.key), value: this.formatValue(entry.value),
+      })),
+      bcn: this.hasBcn(item) ? String(item['bcn']) : null,
+      showDetail: ['platform-users','business-approval','orders','enquiries','payments'].includes(this.section())
+        || (this.section() === 'subscriptions' && this.activeTenantId() !== null),
+      showSubscriptionReview: this.section() === 'subscription-approval',
+      paymentQr,
+      media,
+      showProofUpload: this.section() === 'subscriptions' && this.can('subscription.update')
+        && ['PENDING','REJECTED'].includes(status.toUpperCase()) && item['latest_proof_review_status'] !== 'PENDING',
+      proofFileName: proof?.fileName ?? null,
+      actions: this.visibleActionsFor(item),
+    };
+  }
   recordId(item: DataRecord, preferred = 'id'): number {
     const value = item[preferred] ?? item['id'] ?? item['address_id'] ?? item['category_id'] ?? item['business_id'] ?? item['subscription_id'] ?? item['promotion_id'] ?? item['order_id'] ?? item['enquiry_id'] ?? item['payment_id'] ?? item['report_id'] ?? item['user_id'];
     return Number(value ?? 0);
