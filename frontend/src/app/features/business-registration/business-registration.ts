@@ -27,7 +27,7 @@ import type { BusinessApplication } from '../../core/business/business-registrat
     .notice{margin:0 0 18px;padding:12px 14px;border-radius:9px;font-size:.8rem}.error{color:#a3322b;background:#fff2f0;border:1px solid #f0c8c2}.success{color:#17643b;background:#edf9f1;border:1px solid #b8e3c7}
     .applications{display:grid;gap:10px;margin:0 0 26px}.application-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 15px;border:1px solid var(--border);border-radius:10px;background:var(--surface-subtle)}.application-item strong{display:block;font-size:.84rem}.application-item small{color:var(--text-secondary);font-size:.72rem}.status{font-size:.68rem;font-weight:800;letter-spacing:.04em}.application-actions{display:flex;align-items:center;gap:12px}.application-actions button,.plan-option button{padding:8px 12px;color:var(--brand);background:transparent;border:1px solid var(--brand);border-radius:8px;font:inherit;font-size:.72rem;font-weight:800;cursor:pointer}.application-actions button:disabled,.plan-option button:disabled{opacity:.5;cursor:wait}.onboarding-panel{display:grid;gap:16px;margin:0 0 28px;padding:20px;border:1px solid var(--border);border-radius:14px;background:var(--surface-subtle)}.onboarding-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}.onboarding-heading h2,.onboarding-heading h3{margin:0}.onboarding-heading .eyebrow{margin-bottom:6px}.step-note{margin:0;color:var(--text-secondary);font-size:.78rem;line-height:1.55}.plan-list{display:grid;gap:10px}.plan-option{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:13px;border:1px solid var(--border);border-radius:10px;background:var(--surface-card)}.plan-option strong{font-size:.84rem}.plan-option small{display:block;margin-top:4px;color:var(--text-secondary);font-size:.72rem}.payment-panel{display:grid;gap:12px;padding-top:14px;border-top:1px solid var(--border)}.payment-panel p{margin:0;font-size:.8rem}.payment-qr{width:180px;max-width:100%;padding:10px;background:#fff;border-radius:10px}.payment-qr img{display:block;width:100%;height:auto}.payment-upload{display:grid;gap:14px}.payment-upload .submit-button{margin-top:0}
     .location-tools{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:22px 0 14px}.location-tools button{padding:10px 13px;border:1px solid var(--border);border-radius:9px;background:var(--surface-subtle);color:var(--text-primary);font:inherit;font-size:.78rem;font-weight:750;cursor:pointer}.location-tools small{color:var(--text-secondary);font-size:.72rem}
-    @media(max-width:620px){.registration-page{padding:24px 12px 48px}.registration-card{padding:22px 17px;border-radius:14px}.field-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.back-link{margin-bottom:26px}}
+    @media(max-width:620px){.registration-page{padding:24px 12px 48px}.registration-card{padding:22px 17px;border-radius:14px}.field-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.back-link{margin-bottom:26px}.application-item{align-items:flex-start;flex-direction:column}.plan-option{grid-template-columns:1fr}.application-actions{width:100%;justify-content:space-between}}
   `],
 })
 export class BusinessRegistration implements OnInit {
@@ -210,8 +210,15 @@ export class BusinessRegistration implements OnInit {
       this.receiptFile.set(null);
       this.paymentReference.set('');
       this.uploadProgress.set(100);
-      const subscriptions = await this.api.getMySubscriptions(business.tenant_id);
-      this.subscription.set(subscriptions[0] ?? null);
+      this.subscription.update((current) => current
+        ? { ...current, latest_proof_review_status: 'PENDING' }
+        : current);
+      try {
+        const subscriptions = await this.api.getMySubscriptions(business.tenant_id);
+        this.subscription.set(subscriptions[0] ?? null);
+      } catch {
+        this.error.set('Your receipt was submitted successfully. The latest review status could not be refreshed.');
+      }
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
