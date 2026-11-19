@@ -1,0 +1,15 @@
+<section class="plans-section" aria-labelledby="subscription-plans-heading">
+  <div class="section-title"><div><p class="eyebrow">AVAILABLE PLANS</p><h2 id="subscription-plans-heading">Choose a business plan</h2></div></div>
+  <div class="plans-grid">
+    @for (plan of plans(); track planId(plan)) {
+      <article class="plan-card">
+        <h3>{{ value(plan, ['plan_name', 'name', 'plan_code']) }}</h3>
+        <strong class="plan-price">{{ value(plan, ['price', 'amount']) }} {{ value(plan, ['currency']) }}</strong>
+        <p>{{ value(plan, ['description', 'plan_description']) }}</p>
+        @if (canRequest()) {
+          <button type="button" (click)="planRequested.emit(plan)" [disabled]="busy()">{{ pendingPlanId() === planId(plan) ? 'Requesting…' : 'Request this plan' }}</button>
+        }
+      </article>
+    }
+  </div>
+</section>

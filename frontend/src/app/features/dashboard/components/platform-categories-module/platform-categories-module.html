@@ -1,0 +1,46 @@
+<section class="categories-page" aria-labelledby="platform-categories-heading">
+  <header class="categories-heading">
+    <div><p class="eyebrow">PLATFORM ADMINISTRATION</p><h2 id="platform-categories-heading">Marketplace categories</h2><p>Manage the category taxonomy used by business and product listings.</p></div>
+    @if (canCreate()) { <button type="button" class="primary-button" (click)="create()" [disabled]="busy()">＋ Add category</button> }
+  </header>
+  @if (notice()) { <p class="module-notice" role="status">{{ notice() }}</p> }
+  @if (error()) { <p class="module-error" role="alert">{{ error() }}</p> }
+  @if (categories().length) {
+    <div class="category-grid">
+      @for (category of categories(); track category['category_id'] ?? category['id']) {
+        <article class="category-card">
+          <div class="category-top"><span class="category-type">{{ categoryType(category) }}</span><small>{{ code(category) }}</small></div>
+          <h3>{{ name(category) }}</h3><p>{{ description(category) }}</p>
+          <footer>
+            @if (canUpdate()) { <button type="button" (click)="edit(category)" [disabled]="busy()">Edit</button> }
+            @if (canDelete()) { <button type="button" class="danger" (click)="remove(category)" [disabled]="busy()">Delete</button> }
+          </footer>
+        </article>
+      }
+    </div>
+    @if (pageCount()>1) {
+      <nav class="pagination" aria-label="Category pages"><span>Page {{ currentPage() }} of {{ pageCount() }} · {{ totalItems() }} categories</span><div><button type="button" (click)="pageChange.emit(currentPage()-1)" [disabled]="loading()||currentPage()<=1">Previous</button><button type="button" (click)="pageChange.emit(currentPage()+1)" [disabled]="loading()||currentPage()>=pageCount()">Next</button></div></nav>
+    }
+  } @else {
+    <div class="empty-state"><strong>No marketplace categories yet</strong><p>Create a category to organize business and product listings.</p>@if (canCreate()) { <button type="button" class="primary-button" (click)="create()">Add category</button> }</div>
+  }
+</section>
+<app-workspace-drawer [open]="drawerOpen()" [title]="editingId()===null?'Create marketplace category':'Edit marketplace category'" description="Maintain the category taxonomy used by marketplace listings." (closed)="drawerOpen.set(false)">
+  <form class="category-form" (ngSubmit)="save()">
+    <label>Category code<input name="categoryCode" [ngModel]="form().category_code" (ngModelChange)="updateField('category_code',$event)" maxlength="80" required></label>
+    <label>Category name<input name="categoryName" [ngModel]="form().category_name" (ngModelChange)="updateField('category_name',$event)" maxlength="150" required></label>
+    <label>Category type<select name="categoryType" [ngModel]="form().category_type" (ngModelChange)="updateField('category_type',$event)"><option value="BUSINESS">Business</option><option value="PRODUCT">Product</option></select></label>
+    <label>Parent category
+      <select name="parentCategory" [ngModel]="form().parent_category_id" (ngModelChange)="updateField('parent_category_id',$event)">
+        <option value="">No parent category</option>
+        @for (parent of parentCategories(); track categoryId(parent)) {
+          <option [value]="categoryId(parent)">{{ name(parent) }}</option>
+        }
+      </select>
+    </label>
+    <label>Display order<input type="number" name="displayOrder" min="0" step="1" [ngModel]="form().display_order" (ngModelChange)="updateField('display_order',$event)"></label>
+    <label>Description<textarea name="description" rows="4" [ngModel]="form().description" (ngModelChange)="updateField('description',$event)"></textarea></label>
+    @if (error()) { <p class="module-error" role="alert">{{ error() }}</p> }
+    <footer><button type="button" (click)="drawerOpen.set(false)" [disabled]="busy()">Cancel</button><button type="submit" class="primary-button" [disabled]="busy()||!form().category_code.trim()||!form().category_name.trim()">{{ busy()?'Saving…':(editingId()===null?'Create category':'Save category') }}</button></footer>
+  </form>
+</app-workspace-drawer>

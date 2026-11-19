@@ -1,0 +1,15 @@
+<section class="platform-analytics" aria-labelledby="platform-trends-heading">
+  <header class="section-title">
+    <div><p class="eyebrow">LAST 30 DAYS</p><h2 id="platform-trends-heading">Platform trends</h2></div>
+    <span class="record-count">{{ points().length }} data points</span>
+  </header>
+  <div class="trend-list">
+    @for (point of points(); track pointId(point, $index)) {
+      <article class="trend-card">
+        @for (field of fields(point); track field.key) {
+          <div><span>{{ field.label }}</span><strong>{{ field.value }}</strong></div>
+        }
+      </article>
+    }
+  </div>
+</section>

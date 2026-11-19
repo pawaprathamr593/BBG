@@ -1,9 +1,9 @@
-import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { filter, firstValueFrom, lastValueFrom, tap } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { API_BASE_URL } from '../../core/config/api-base-url';
 import { AuthService } from '../../core/auth/auth.service';
-import { environment } from '../../../environments/environment';
+import { S3UploadService } from '../../core/storage/s3-upload.service';
 
 export interface CatalogueApiResponse<T> {
   status: 'SUCCESS' | 'FAILED' | 'EXCEPTION';
@@ -67,6 +67,7 @@ export class CatalogueApiService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
   private readonly apiBaseUrl = inject(API_BASE_URL);
+  private readonly s3Upload = inject(S3UploadService);
 
   private get headers(): HttpHeaders {
     return new HttpHeaders({ Authorization: `Bearer ${this.auth.accessToken() ?? ''}` });
@@ -132,32 +133,9 @@ export class CatalogueApiService {
     });
   }
 
-  private resolveProductMediaUploadUrl(uploadUrl: string): string {
-    if (environment.production) {
-      return uploadUrl;
-    }
-
-    const s3Url = new URL(uploadUrl);
-    if (s3Url.hostname !== 'bbg-839544975641-ap-south-1-an.s3.ap-south-1.amazonaws.com') {
-      throw new Error('The S3 upload URL does not match the configured local development proxy.');
-    }
-
-    return `/s3-upload${s3Url.pathname}${s3Url.search}`;
-  }
-
   async uploadAndLinkProductMedia(tenantId: number, productId: number, file: File, displayOrder: number, primary: boolean, onProgress?: (progress: number) => void): Promise<void> {
     const upload = await this.createProductMediaUploadUrl(tenantId, productId, file);
-    await lastValueFrom(this.http.put(this.resolveProductMediaUploadUrl(upload.upload_url), file, {
-      headers: new HttpHeaders(upload.headers ?? { 'Content-Type': file.type }),
-      observe: 'events', reportProgress: true, responseType: 'text',
-    }).pipe(
-      tap((event) => {
-        if (event.type === HttpEventType.UploadProgress && event.total) {
-          onProgress?.(Math.round((event.loaded / event.total) * 100));
-        }
-      }),
-      filter((event) => event.type === HttpEventType.Response),
-    ));
+    await this.s3Upload.upload(upload.upload_url, file, upload.headers ?? { 'Content-Type': file.type }, onProgress);
     const mediaType = file.type.startsWith('image/') ? 'IMAGE'
       : file.type.startsWith('video/') ? 'VIDEO'
       : file.type.startsWith('audio/') ? 'AUDIO' : 'DOCUMENT';

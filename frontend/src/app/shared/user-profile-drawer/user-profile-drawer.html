@@ -1,26 +1,20 @@
-    <button #trigger class="profile-trigger" type="button" aria-label="Open profile menu"
-      aria-haspopup="dialog" [attr.aria-expanded]="open()" (click)="toggle()">
-      @if (auth.user()?.profile_image; as image) {
-        <img [src]="image" alt="" />
-      } @else {
-        <span>{{ initials() }}</span>
-      }
-    </button>
+<button class="profile-trigger" type="button" aria-label="Open profile menu"
+  aria-haspopup="dialog" [attr.aria-expanded]="open()" (click)="toggle()">
+  @if (auth.user()?.profile_image; as image) {
+    <img [src]="image" alt="" />
+  } @else {
+    <span>{{ initials() }}</span>
+  }
+</button>
 
-    @if (open()) {
-      <div class="profile-backdrop" aria-hidden="true" (click)="close()"></div>
-      <aside #drawer class="profile-drawer" role="dialog" aria-modal="true"
-        aria-labelledby="profile-drawer-title">
-        <header class="drawer-header">
-          <div>
-            <p class="drawer-eyebrow">YOUR BBG ACCOUNT</p>
-            <h2 id="profile-drawer-title">Account</h2>
-          </div>
-          <button class="drawer-close" type="button" data-autofocus aria-label="Close profile menu"
-            (click)="close()">×</button>
-        </header>
-
-        <div class="drawer-body">
+<app-workspace-drawer
+  [open]="open()"
+  title="Account"
+  eyebrow="YOUR BBG ACCOUNT"
+  width="compact"
+  [offsetHeader]="true"
+  (closed)="close()">
+  <div class="profile-drawer-content">
           <section class="profile-summary">
             @if (auth.user()?.profile_image; as image) {
               <img class="profile-avatar" [src]="image" alt="" />
@@ -86,15 +80,12 @@
               </button>
             </div>
           </section>
-        </div>
-
-        <footer class="drawer-footer">
+  </div>
+  <footer workspace-drawer-footer class="drawer-footer">
           @if (logoutError()) { <p class="drawer-error" role="alert">{{ logoutError() }}</p> }
           <button class="logout-button" type="button" [disabled]="loggingOut()" (click)="logout()">
             <span aria-hidden="true">↪</span>
             {{ loggingOut() ? 'Signing out…' : 'Log out' }}
           </button>
-        </footer>
-      </aside>
-    }
-  
+  </footer>
+</app-workspace-drawer>

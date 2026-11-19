@@ -1,12 +1,26 @@
-import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { filter, firstValueFrom, lastValueFrom, tap } from 'rxjs';
+import { filter, firstValueFrom } from 'rxjs';
 import { API_BASE_URL } from '../../core/config/api-base-url';
+import { S3UploadService } from '../../core/storage/s3-upload.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
 import { hasActiveEntitlement, hasWorkspacePermission } from '../../core/workspace/workspace-access';
+import { WorkspaceDrawer } from '../../shared/workspace-drawer/workspace-drawer';
+import { BusinessProfileModule } from './components/business-profile-module/business-profile-module';
+import { StorefrontModule } from './components/storefront-module/storefront-module';
+import { WorkspaceRecordsModule, WorkspaceRecordCardModel } from './components/workspace-records-module/workspace-records-module';
+import { PersonalAccountModule } from './components/personal-account-module/personal-account-module';
+import { SubscriptionPlansModule } from './components/subscription-plans-module/subscription-plans-module';
+import { PromotionComposerModule } from './components/promotion-composer-module/promotion-composer-module';
+import { PlatformAnalyticsModule } from './components/platform-analytics-module/platform-analytics-module';
+import { ModerationHistoryModule, ModerationHistoryItem } from './components/moderation-history-module/moderation-history-module';
+import { WorkspaceSummaryModule, WorkspaceSummaryItem } from './components/workspace-summary-module/workspace-summary-module';
+import { PaymentQrSettingsModule } from './components/payment-qr-settings-module/payment-qr-settings-module';
+import { PlatformCategoriesModule } from './components/platform-categories-module/platform-categories-module';
+import { PersonalAddressesModule } from './components/personal-addresses-module/personal-addresses-module';
 
 type EnvelopeKey = 'authParam' | 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam' | 'tenantParam' | 'dashboardParam';
 interface ApiEnvelope<T = unknown> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION'; msgArr?: string[]; data?: T | []; }
@@ -15,6 +29,7 @@ interface ListResult {
   items?: DataRecord[];
   pagination?: { page?: number; page_size?: number; total?: number };
 }
+type DecisionKind = 'reject-business' | 'approve-subscription' | 'reject-subscription' | 'moderate';
 class StaleWorkspaceRequestError extends Error {}
 
 const ACTION_PERMISSION_CODES: Record<string, string> = {
@@ -25,9 +40,6 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
   'manage-post-media': 'promotion.update',
   'publish-promotion': 'promotion.update',
   'unpublish-promotion': 'promotion.update',
-  'edit-address': 'user.update',
-  'default-address': 'user.update',
-  'delete-address': 'user.update',
   'suspend-user': 'user.update',
   'restore-user': 'user.update',
   'approve-business': 'business.approve',
@@ -36,59 +48,20 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
   'approve-subscription': 'subscription.approve',
   'reject-subscription': 'subscription.approve',
   moderate: 'admin.update',
-  'edit-category': 'admin.update',
-  'delete-category': 'admin.delete',
 };
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-dashboard-module',
   standalone: true,
+  imports: [WorkspaceDrawer, BusinessProfileModule, StorefrontModule, WorkspaceRecordsModule, PersonalAccountModule, SubscriptionPlansModule, PromotionComposerModule, PlatformAnalyticsModule, ModerationHistoryModule, WorkspaceSummaryModule, PaymentQrSettingsModule, PlatformCategoriesModule, PersonalAddressesModule],
   templateUrl: './dashboard-module.html',
-  styles: [`
-    :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
-.proof-ready{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:9px;background:var(--surface-subtle);font-size:.75rem}.proof-ready button{padding:8px 12px;border:0;border-radius:7px;background:var(--brand);color:#fff;font:inherit;font-weight:800;cursor:pointer}.proof-ready button:disabled{opacity:.6;cursor:wait}
-        .post-media-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.post-media-item{display:grid;justify-items:start;gap:4px}.post-media-strip img{width:72px;height:60px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}.post-media-strip video{width:120px;height:72px;border-radius:8px;background:#111}.post-media-strip audio{width:min(240px,100%);height:36px}.post-media-strip a,.post-media-strip span{align-self:center;padding:8px 10px;border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.72rem;text-decoration:none}.post-media-item button{border:0;background:transparent;color:#c44747;font-size:.65rem;cursor:pointer}
-    .composer-backdrop{position:fixed;inset:0;z-index:1200;display:grid;place-items:center;padding:18px;background:rgba(10,18,15,.62)}.promotion-composer{width:min(680px,100%);max-height:90vh;overflow:auto;padding:24px;background:var(--surface-card);color:var(--text-primary);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.25)}.promotion-composer header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.promotion-composer header .eyebrow{margin:0 0 7px}.promotion-composer h2{margin:0;font-size:1.35rem}.promotion-composer header p:last-child{margin:6px 0 0;color:var(--text-secondary);font-size:.78rem}.composer-close{border:0;background:transparent;color:var(--text-secondary);font-size:1.5rem;cursor:pointer}.promotion-composer>label{display:grid;gap:7px;margin:13px 0;font-size:.78rem;font-weight:700}.promotion-composer input[type=text],.promotion-composer input[type=datetime-local],.promotion-composer textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.82rem}.promotion-composer label small{font-weight:400;color:var(--text-secondary)}.post-upload-zone{margin:16px 0}.post-file-picker{display:grid;justify-items:center;gap:5px;padding:22px;border:1px dashed var(--border);border-radius:11px;background:var(--surface-page);cursor:pointer}.post-file-picker>span{font-size:1.5rem;color:var(--brand)}.post-file-picker strong{font-size:.8rem}.post-file-picker small{font-size:.68rem;color:var(--text-secondary)}.post-file-picker input{max-width:100%;margin-top:7px;font-size:.7rem}.post-file-list{display:grid;gap:7px;margin-top:10px}.post-file-list>div{display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:5px 10px;align-items:center;padding:9px;border:1px solid var(--border);border-radius:8px}.post-file-list span{grid-row:span 2;font-size:.62rem;font-weight:800;color:var(--brand)}.post-file-list strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.74rem}.post-file-list small{font-size:.66rem;color:var(--text-secondary)}.post-file-list button{grid-column:3;grid-row:1/3;border:0;background:transparent;color:#bf4545;font:inherit;font-size:.7rem;cursor:pointer}.promotion-composer footer{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}.composer-error{color:#c43d3d;font-size:.78rem}.composer-progress{display:flex;align-items:center;gap:10px;color:var(--text-secondary);font-size:.72rem}.composer-progress progress{flex:1;height:7px;accent-color:var(--brand)}
-    .module-page{width:100%;max-width:none;box-sizing:border-box;margin:0;padding:36px 32px 64px}
-    .page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:25px}
-    .back-link{display:inline-block;margin-bottom:20px;color:var(--text-secondary);font-size:.78rem;font-weight:700;text-decoration:none}
-    .back-link:hover{color:var(--brand)}.eyebrow{margin:0 0 8px;color:var(--brand);font-size:.67rem;font-weight:850;letter-spacing:.14em}
-    h1{margin:0;font-size:clamp(2rem,4vw,2.8rem);letter-spacing:-.05em;line-height:1.12}.intro{max-width:700px;margin:10px 0 0;color:var(--text-secondary);font-size:.9rem;line-height:1.6}
-    .refresh,.secondary-action,.record-actions button,.state-panel button{min-height:40px;padding:0 14px;color:var(--text-primary);background:var(--surface-card);border:1px solid var(--border);border-radius:9px;font:inherit;font-size:.76rem;font-weight:750;cursor:pointer}
-    .heading-buttons{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.secondary-action{min-height:40px;padding:0 13px;color:var(--brand);background:var(--surface-card);border:1px solid color-mix(in srgb,var(--brand) 30%,var(--border));border-radius:9px;font:inherit;font-size:.75rem;font-weight:750;cursor:pointer}.refresh:disabled,.secondary-action:disabled,.record-actions button:disabled{opacity:.55;cursor:wait}
-    .section-nav{display:flex;gap:7px;overflow:auto;padding:4px 0 17px;margin-bottom:22px;border-bottom:1px solid var(--border)}
-    .section-nav a{flex:0 0 auto;padding:9px 12px;color:var(--text-secondary);border-radius:8px;font-size:.75rem;font-weight:750;text-decoration:none}
-    .section-nav a.active{color:var(--brand);background:var(--brand-soft)}
-    .notice{margin:0 0 16px;padding:12px 15px;color:var(--text-secondary);background:var(--surface-subtle);border:1px solid var(--border);border-radius:10px;font-size:.8rem}.notice.error{color:#b34840;border-color:#e7c1bd;background:var(--surface-card)}
-    .state-panel{display:flex;align-items:center;justify-content:center;gap:14px;min-height:170px;padding:28px;background:var(--surface-card);border:1px solid var(--border);border-radius:14px}
-    .state-panel>div{display:grid;gap:4px}.state-panel p{max-width:560px;margin:5px 0 0;color:var(--text-secondary);font-size:.8rem;line-height:1.6}.state-panel.error{display:block;text-align:center;border-color:#d88a83}.state-panel.error button{margin-top:14px}
-    .spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}
-    .state-icon{display:grid;width:42px;height:42px;place-items:center;color:var(--brand);background:var(--brand-soft);border-radius:12px;font-size:1.35rem}
-    .personal-profile-card{margin:0 0 25px;padding:22px;background:var(--surface-card);border:1px solid var(--border);border-radius:14px}.personal-profile-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}.personal-profile-heading h2{margin:0;font-size:1.25rem;letter-spacing:-.03em}.personal-profile-heading>div>p:last-child{margin:7px 0 0;color:var(--text-secondary);font-size:.78rem}.profile-avatar{display:grid;width:48px;height:48px;flex:0 0 48px;place-items:center;border-radius:50%;background:var(--brand-soft);color:var(--brand);font-weight:850}.personal-profile-details{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:22px}.personal-profile-details>div{display:grid;min-width:0;gap:6px}.personal-profile-details span{color:var(--text-secondary);font-size:.68rem;font-weight:700}.personal-profile-details strong{overflow-wrap:anywhere;font-size:.84rem}.password-settings{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:22px;padding-top:18px;border-top:1px solid var(--border)}.password-settings p{margin:5px 0 0;color:var(--text-secondary);font-size:.75rem;line-height:1.5}.password-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}.password-form label{display:grid;gap:6px;font-size:.72rem;font-weight:750}.password-form input{width:100%;box-sizing:border-box;min-height:42px;padding:0 11px;border:1px solid var(--border);border-radius:8px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.78rem}.password-form-actions{display:flex;grid-column:1/-1;justify-content:flex-end;gap:8px}.password-error{grid-column:1/-1;margin:0;color:#bd4941;font-size:.74rem}
-    .summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:26px}
-    .summary-card{display:grid;gap:7px;padding:17px;background:var(--surface-card);border:1px solid var(--border);border-radius:12px}
-    .summary-card span,.record-fields span{color:var(--text-secondary);font-size:.68rem;font-weight:700}.summary-card strong{font-size:1.45rem;letter-spacing:-.04em}
-    .section-title{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:30px 0 15px}.section-title .eyebrow{margin-bottom:5px}.section-title h2{margin:0;font-size:1.25rem;letter-spacing:-.03em}
-    .record-count{padding:7px 10px;color:var(--text-secondary);background:var(--surface-subtle);border:1px solid var(--border);border-radius:8px;font-size:.7rem;font-weight:750}.records-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface-card);color:var(--text-secondary);font-size:.75rem}.records-pagination button{min-height:36px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-weight:750;cursor:pointer}.records-pagination button:disabled{opacity:.45;cursor:not-allowed}.records-filter-empty{margin:0;padding:24px;text-align:center;color:var(--text-secondary);font-size:.8rem}
-    .records-list{display:grid;gap:12px}.record-card{padding:18px 20px;background:var(--surface-card);border:1px solid var(--border);border-radius:13px}
-    .record-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.record-head>div{display:grid;gap:5px}.record-head>div strong{font-size:.93rem}.record-head>div span{color:var(--text-secondary);font-size:.72rem}
-    .status-chip{flex:0 0 auto;padding:6px 9px;color:var(--text-secondary);background:var(--surface-subtle);border-radius:7px;font-size:.65rem;font-weight:800}
-    .status-chip.good{color:#168253;background:#e9f7ef}.status-chip.warn{color:#98691a;background:#fff5df}.status-chip.bad{color:#b34840;background:#fff0ee}
-    .record-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
-    .record-fields>div{display:grid;gap:5px;min-width:0}.record-fields strong{overflow-wrap:anywhere;font-size:.76rem;font-weight:700}
-    .upload-proof{display:inline-flex;align-items:center;gap:10px;margin-top:14px;padding:9px 12px;color:var(--brand);background:var(--brand-soft);border:1px solid color-mix(in srgb,var(--brand) 22%,var(--border));border-radius:8px;font-size:.73rem;font-weight:750}.upload-proof input{max-width:210px;color:var(--text-secondary);font-size:.7rem}.record-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}.record-actions button{min-height:34px;color:var(--brand);border-color:color-mix(in srgb,var(--brand) 25%,var(--border))}.record-actions button.danger{color:#b34840;border-color:#e7c1bd}
-    .plans-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.plan-card{padding:20px;background:var(--surface-card);border:1px solid var(--border);border-radius:13px}.plan-card h3{margin:0 0 10px;font-size:1rem}.plan-price{font-size:1.35rem;letter-spacing:-.04em}.plan-card p{min-height:38px;color:var(--text-secondary);font-size:.76rem;line-height:1.55}.plan-card button{width:100%;min-height:38px;color:white;background:var(--brand);border:0;border-radius:8px;font-size:.75rem;font-weight:800;cursor:pointer}
-    .empty{flex-direction:column;text-align:center}.empty p{max-width:480px}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    @media(max-width:900px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.record-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.plans-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media(max-width:600px){.records-pagination{flex-wrap:wrap}.records-pagination span{width:100%;order:-1;text-align:center}.personal-profile-card{padding:16px}.personal-profile-details{grid-template-columns:1fr;gap:12px}.password-settings{align-items:flex-start;flex-direction:column}.password-form{grid-template-columns:1fr}.password-form-actions,.password-error{grid-column:1}.module-page{padding:28px 16px 54px}.page-heading{align-items:flex-start;flex-direction:column}.refresh{width:100%}.summary-grid{gap:8px}.summary-card{padding:13px}.summary-card strong{font-size:1.2rem}.record-card{padding:15px}.record-fields{grid-template-columns:1fr 1fr;gap:11px}.plans-grid{grid-template-columns:1fr}.section-title{align-items:flex-start}}
-    .bcn-record{display:grid;gap:8px;margin-top:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface-subtle)}.bcn-record>span{color:var(--text-secondary);font-size:.72rem;font-weight:700}.bcn-record>div{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}.bcn-record strong{min-width:0;overflow-wrap:anywhere;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9rem;letter-spacing:.02em}.bcn-record button{flex:0 0 auto;padding:7px 11px;border:1px solid var(--border);border-radius:7px;background:var(--surface-card);color:var(--text-primary);font:inherit;font-size:.72rem;font-weight:700;cursor:pointer}.bcn-record button:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
-  `],
+  styleUrl: './dashboard-module.scss',
 })
 export class DashboardModule implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
+  private readonly s3Upload = inject(S3UploadService);
   private readonly apiBaseUrl = inject(API_BASE_URL);
   private readonly auth = inject(AuthService);
   private readonly workspace = inject(WorkspaceContextService);
@@ -137,12 +110,28 @@ export class DashboardModule implements OnInit {
     });
   });
   readonly summary = signal<DataRecord | null>(null);
-  readonly showPasswordForm = signal(false);
-  readonly currentPassword = signal('');
-  readonly newPassword = signal('');
-  readonly confirmPassword = signal('');
-  readonly passwordError = signal('');
-  readonly profileInitials = computed(() => String(this.summary()?.['full_name'] ?? 'BB').trim().split(/\s+/).slice(0,2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BB');
+  readonly summaryCardModels = computed<WorkspaceSummaryItem[]>(() => this.summaryEntries().map((entry) => ({
+    key: entry.key, label: this.humanize(entry.key), value: this.formatValue(entry.value),
+  })));
+  readonly storefrontDetails = computed(() => {
+    const value = this.summary()?.['storefront'];
+    return value && typeof value === 'object' && !Array.isArray(value) ? value as DataRecord : null;
+  });
+  readonly showReplyDrawer = signal(false);
+  readonly showPaymentQrDrawer = signal(false);
+  readonly replyEnquiryId = signal<number | null>(null);
+  readonly replyMessage = signal('');
+  readonly showDecisionDrawer = signal(false);
+  readonly decisionKind = signal<DecisionKind>('reject-business');
+  readonly decisionItem = signal<DataRecord | null>(null);
+  readonly decisionReason = signal('');
+  readonly decisionStartsOn = signal('');
+  readonly decisionEndsOn = signal('');
+  readonly moderationAction = signal('DISMISS_REPORT');
+  readonly showProofDrawer = signal(false);
+  readonly proofFile = signal<File | null>(null);
+  readonly proofSubscription = signal<DataRecord | null>(null);
+  readonly proofPaymentReference = signal('');
   readonly plans = signal<DataRecord[]>([]);
   readonly pendingPlanId = signal<number | null>(null);
   readonly proofDrafts = signal<Record<number,{objectKey:string;paymentReference:string;fileName:string}>>({});
@@ -150,17 +139,29 @@ export class DashboardModule implements OnInit {
   readonly qrUpiId = signal('');
   readonly qrInstructions = signal('');
   readonly qrFile = signal<File | null>(null);
+  readonly qrPreviewUrl = signal<string | null>(null);
   readonly subscriptionReview = signal<DataRecord | null>(null);
   readonly recordDetail = signal<DataRecord | null>(null);
   readonly recordDetailTitle = signal('');
   readonly moderationHistory = signal<DataRecord[]>([]);
   readonly moderationHistoryLoading = signal(false);
   readonly analyticsTrends = signal<DataRecord[]>([]);
+  readonly moderationHistoryItems = computed<ModerationHistoryItem[]>(() => this.moderationHistory().map((entry) => ({
+    id: this.recordId(entry, 'history_id'),
+    title: this.recordTitle(entry),
+    subtitle: this.recordSubtitle(entry),
+    status: this.statusOf(entry) ? this.humanize(this.statusOf(entry)) : '',
+    statusClass: this.statusClass(this.statusOf(entry)),
+    fields: this.recordEntries(entry).map((field) => ({
+      key: field.key, label: this.humanize(field.key), value: this.formatValue(field.value),
+    })),
+  })));
   readonly showPromotionComposer = signal(false);
   readonly promotionTitle = signal('');
   readonly promotionContent = signal('');
   readonly promotionValidUntil = signal('');
   readonly promotionFiles = signal<File[]>([]);
+  readonly promotionMediaPreviews = signal<Map<File, string>>(new Map());
   readonly promotionMediaBusy = signal(false);
   readonly promotionUploadProgress = signal(0);
   readonly promotionError = signal('');
@@ -201,18 +202,17 @@ export class DashboardModule implements OnInit {
     if (!source) return [];
     const entries: Array<{key:string;value:unknown}> = [];
     for (const [key, value] of Object.entries(source)) {
+      if (this.isInternalField(key)) continue;
       if (value !== null && typeof value !== 'object') entries.push({key,value});
       else if (value && typeof value === 'object' && !Array.isArray(value)) {
         for (const [nestedKey, nestedValue] of Object.entries(value as DataRecord)) {
-          if (nestedValue === null || typeof nestedValue !== 'object') entries.push({key: nestedKey, value: nestedValue});
+          if (!this.isInternalField(nestedKey) && (nestedValue === null || typeof nestedValue !== 'object')) {
+            entries.push({key: nestedKey, value: nestedValue});
+          }
         }
       }
     }
     return entries.slice(0, 16);
-  });
-  readonly storefrontStatus = computed(() => {
-    const storefront = this.summary()?.['storefront'];
-    return storefront && typeof storefront === 'object' ? String((storefront as DataRecord)['publication_status'] ?? '') : '';
   });
   readonly navLinks = computed(() => {
     const links = [
@@ -526,37 +526,85 @@ export class DashboardModule implements OnInit {
   private setUnsupported(message: string): void { this.unsupported.set(message); this.unsupportedTitle.set('Not available in this area'); this.loading.set(false); }
 
   readonly recordsHeading = computed(() => this.section() === 'customers' ? 'Saved addresses' : this.title());
+  readonly recordCardModels = computed(() => this.filteredItems().map((item) => this.toRecordCardModel(item)));
+
+  private toRecordCardModel(item: DataRecord): WorkspaceRecordCardModel {
+    const status = this.statusOf(item);
+    const subscriptionId = this.recordId(item, 'subscription_id');
+    const proof = this.proofDrafts()[subscriptionId];
+    const media = this.mediaOf(item).map((entry) => ({
+      id: String(entry['id'] ?? ''),
+      type: String(entry['media_type'] ?? 'FILE'),
+      url: entry['url'] ? this.asUrl(entry['url']) : null,
+      canRemove: status.toUpperCase() !== 'PUBLISHED' && this.can('promotion.update'),
+    }));
+    const paymentQr = item['payment_qr_url'] ? {
+      url: this.asUrl(item['payment_qr_url']),
+      payeeName: String(item['payment_payee_name'] ?? ''),
+      upiId: String(item['payment_upi_id'] ?? ''),
+      version: String(item['payment_qr_version'] ?? ''),
+      instructions: String(item['payment_instructions'] ?? ''),
+    } : null;
+    return {
+      id: this.recordId(item, 'id'),
+      record: item,
+      title: this.recordTitle(item),
+      subtitle: this.recordSubtitle(item),
+      status: status ? this.humanize(status) : '',
+      statusClass: this.statusClass(status),
+      fields: this.recordEntries(item).map((entry) => ({
+        key: entry.key, label: this.humanize(entry.key), value: this.formatValue(entry.value),
+      })),
+      bcn: this.hasBcn(item) ? String(item['bcn']) : null,
+      showDetail: ['platform-users','business-approval','orders','enquiries','payments'].includes(this.section())
+        || (this.section() === 'subscriptions' && this.activeTenantId() !== null),
+      showSubscriptionReview: this.section() === 'subscription-approval',
+      paymentQr,
+      media,
+      showProofUpload: this.section() === 'subscriptions' && this.can('subscription.update')
+        && ['PENDING','REJECTED'].includes(status.toUpperCase()) && item['latest_proof_review_status'] !== 'PENDING',
+      proofFileName: proof?.fileName ?? null,
+      actions: this.visibleActionsFor(item),
+    };
+  }
   recordId(item: DataRecord, preferred = 'id'): number {
     const value = item[preferred] ?? item['id'] ?? item['address_id'] ?? item['category_id'] ?? item['business_id'] ?? item['subscription_id'] ?? item['promotion_id'] ?? item['order_id'] ?? item['enquiry_id'] ?? item['payment_id'] ?? item['report_id'] ?? item['user_id'];
     return Number(value ?? 0);
   }
   valueOf(item: DataRecord, keys: string[]): string { for (const key of keys) if (item[key] !== null && item[key] !== undefined && item[key] !== '') return this.formatValue(item[key]); return '—'; }
   recordTitle(item: DataRecord): string {
-    return this.valueOf(item,['business_name','tenant_name','display_name','address_label','plan_name','post_title','category_name','order_number','enquiry_number','payment_reference','full_name','name','email','report_number','id']);
+    const title = this.valueOf(item,['business_name','tenant_name','display_name','address_label','plan_name','post_title','category_name','order_number','enquiry_number','payment_reference','full_name','name','email','report_number']);
+    return title === '—' ? 'Record' : title;
   }
   recordSubtitle(item: DataRecord): string {
     return this.valueOf(item,['email','business_category','category_type','customer_name','address_line_1','city','mobile','created_at','created_on','order_status','enquiry_status','subscription_status']);
   }
   statusOf(item: DataRecord): string { return String(item['approval_status'] ?? item['subscription_status'] ?? item['publication_status'] ?? item['order_status'] ?? item['enquiry_status'] ?? item['payment_status'] ?? item['report_status'] ?? item['account_status'] ?? item['customer_status'] ?? item['status'] ?? ''); }
+  private isInternalField(key: string): boolean {
+    return /^(?:id|.*_id|id_.*|uuid|.*_uuid)$/i.test(key)
+      || /^(?:created_by|updated_by|deleted_by|bcn|password_hash|access_token|refresh_token|authorization|raw_payload)$/i.test(key)
+      || /(?:password|token|secret|credential|authorization|hash|raw_payload)/i.test(key);
+  }
+
   recordEntries(item: DataRecord): Array<{key:string;value:unknown}> {
-    const hidden = new Set(['id','tenant_id','user_id','business_id','subscription_id','promotion_id','order_id','enquiry_id','payment_id','report_id','bcn','created_by','updated_by','deleted_by','password_hash','access_token','refresh_token']);
-    return Object.entries(item).filter(([key,value]) => !hidden.has(key) && value !== null && typeof value !== 'object').slice(0,8).map(([key,value])=>({key,value}));
+    return Object.entries(item)
+      .filter(([key,value]) => !this.isInternalField(key) && value !== null && typeof value !== 'object')
+      .slice(0,8)
+      .map(([key,value])=>({key,value}));
   }
 
   detailEntries(item: DataRecord): Array<{key:string;value:unknown}> {
     const entries: Array<{key:string;value:unknown}> = [];
     const visit = (value: unknown, path: string, depth: number): void => {
-      if (value === null || value === undefined || depth > 3 || entries.length >= 60) return;
+      if (value === null || value === undefined || depth > 8) return;
       if (Array.isArray(value)) {
         value.forEach((entry, index) => visit(entry, path ? path + ' ' + (index + 1) : String(index + 1), depth + 1));
         return;
       }
       if (typeof value === 'object') {
         for (const [key, nested] of Object.entries(value as DataRecord)) {
-          if (/password|token|secret|credential|authorization|hash|raw_payload/i.test(key)) continue;
-          if (['created_by','updated_by','deleted_by','tenant_id','user_id','business_id'].includes(key)) continue;
+          if (this.isInternalField(key)) continue;
           visit(nested, path ? path + '.' + key : key, depth + 1);
-          if (entries.length >= 60) break;
         }
         return;
       }
@@ -564,6 +612,33 @@ export class DashboardModule implements OnInit {
     };
     visit(item, '', 0);
     return entries;
+  }
+
+  detailGroups(item: DataRecord): Array<{title:string;entries:Array<{key:string;value:unknown}>}> {
+    const groups = new Map<string, Array<{key:string;value:unknown}>>();
+    const labels: Array<{title:string;pattern:RegExp}> = [
+      {title:'Contact information',pattern:/(email|phone|mobile|whatsapp|contact|website|social)/i},
+      {title:'Address information',pattern:/(address|street|city|state|province|postal|zip|country|latitude|longitude|location)/i},
+      {title:'Status & timeline',pattern:/(status|approval|publication|verified|active|created|updated|submitted|reviewed|expires|expiry|date|time)/i},
+      {title:'Business & profile',pattern:/(business|tenant|company|profile|category|description|logo|cover|name|slug)/i},
+      {title:'Payment & order',pattern:/(payment|amount|currency|price|tax|total|order|invoice|transaction|billing|subscription|plan)/i},
+    ];
+    for (const entry of this.detailEntries(item)) {
+      const separator = entry.key.indexOf('.');
+      const root = separator >= 0 ? entry.key.slice(0, separator) : '';
+      const field = separator >= 0 ? entry.key.slice(separator + 1) : entry.key;
+      const title = root
+        ? this.humanize(root)
+        : labels.find((label) => label.pattern.test(field))?.title ?? 'Additional information';
+      const entries = groups.get(title) ?? [];
+      entries.push({key:field.replace(/\.(\d+)/g, ' · Item $1').replace(/\./g,' · '),value:entry.value});
+      groups.set(title,entries);
+    }
+    return Array.from(groups, ([title,entries]) => ({title,entries}));
+  }
+
+  isLongDetail(value: unknown): boolean {
+    return typeof value === 'string' && (value.length > 120 || value.includes('\\n'));
   }
   can(permissionCode: string): boolean {
     const context = this.workspace.activeContext();
@@ -588,13 +663,11 @@ export class DashboardModule implements OnInit {
     if (this.section()==='promotions') return status==='PUBLISHED'
       ? [{key:'unpublish-promotion',label:'Unpublish'}]
       : [{key:'manage-post-media',label:'Manage media'},{key:'publish-promotion',label:'Publish'}];
-    if (this.section()==='customers' && this.workspace.activeTenantId()===null && (item['address_id'] || item['id'])) return [{key:'edit-address',label:'Edit address'},{key:'default-address',label:'Set as default'},{key:'delete-address',label:'Delete address',danger:true}];
     if (this.section()==='platform-users') return status==='SUSPENDED' ? [{key:'restore-user',label:'Restore account'}] : [{key:'suspend-user',label:'Suspend account',danger:true}];
     if (this.section()==='business-approval' && status==='PENDING') return [{key:'approve-business',label:'Approve'},{key:'reject-business',label:'Reject',danger:true}];
     if (this.section()==='subscription-approval' && status==='PENDING') return [{key:'approve-subscription',label:'Approve'},{key:'reject-subscription',label:'Reject',danger:true}];
     if (this.section()==='subscriptions' && ['ACTIVE','EXPIRED'].includes(status)) return [{key:'renew-subscription',label:'Renew subscription'}];
     if (this.section()==='moderation' && status==='OPEN') return [{key:'moderate',label:'Review report'}];
-    if (this.section()==='categories') return [{key:'edit-category',label:'Edit category'},{key:'delete-category',label:'Delete category',danger:true}];
     return [];
   }
 
@@ -609,10 +682,12 @@ export class DashboardModule implements OnInit {
         return;
       case 'confirm-order': case 'cancel-order':
         path = action==='confirm-order'?'/api/v1/orders/tenant/confirm':'/api/v1/orders/tenant/cancel'; key='orderParam'; actionType='changeTenantOrderStatus'; data={tenant_id:tenantId,order_id:id}; break;
-      case 'reply-enquiry': {
-        const message = window.prompt('Write your reply to this enquiry:'); if (!message?.trim()) return;
-        path='/api/v1/enquiries/tenant/respond'; key='enquiryParam'; actionType='respondToEnquiry'; data={tenant_id:tenantId,enquiry_id:id,message:message.trim()}; break;
-      }
+      case 'reply-enquiry':
+        this.replyEnquiryId.set(id);
+        this.replyMessage.set('');
+        this.error.set('');
+        this.showReplyDrawer.set(true);
+        return;
       case 'close-enquiry':
         if (!window.confirm('Close this enquiry?')) return;
         path='/api/v1/enquiries/tenant/close'; key='enquiryParam'; actionType='closeEnquiry'; data={tenant_id:tenantId,enquiry_id:id}; break;
@@ -620,164 +695,30 @@ export class DashboardModule implements OnInit {
         path=action==='publish-promotion'?'/api/v1/promotions/publish':'/api/v1/promotions/unpublish'; key='promotionParam'; actionType=action==='publish-promotion'?'publishPromotion':'unpublishPromotion'; data={tenant_id:tenantId,promotion_id:id}; break;
       case 'suspend-user': case 'restore-user':
         path=action==='suspend-user'?'/api/v1/admin/users/suspend':'/api/v1/admin/users/restore'; actionType=action==='suspend-user'?'suspendPlatformUser':'restorePlatformUser'; data={user_id:id}; break;
-      case 'approve-business': case 'reject-business': {
-        const reason = action==='reject-business' ? window.prompt('Reason for rejecting this application:') : null;
-        if (action==='reject-business' && !reason?.trim()) return;
-        path=action==='approve-business'?'/api/v1/admin/businesses/approve':'/api/v1/admin/businesses/reject'; actionType=action==='approve-business'?'approveBusiness':'rejectBusiness'; data={business_id:Number(item['business_id'] ?? item['id']),...(reason?{reason:reason.trim()}:{})}; break;
-      }
+      case 'approve-business':
+        path='/api/v1/admin/businesses/approve'; actionType='approveBusiness'; data={business_id:Number(item['business_id'] ?? item['id'])}; break;
+      case 'reject-business':
+        this.openDecisionDrawer('reject-business', item);
+        return;
       case 'renew-subscription':
         path='/api/v1/subscriptions/renewal/request'; key='subscriptionParam'; actionType='requestSubscriptionRenewal';
         data={tenant_id:tenantId,subscription_id:id}; break;
-      case 'approve-subscription': case 'reject-subscription': {
-        const reason = action==='reject-subscription' ? window.prompt('Reason for rejecting this subscription:') : null;
-        if (action==='reject-subscription' && !reason?.trim()) return;
-        let dates: DataRecord = {};
-        if (action==='approve-subscription') {
-          const startsOn = window.prompt('Subscription start date and time (YYYY-MM-DD HH:MM:SS):');
-          const endsOn = window.prompt('Subscription end date and time (YYYY-MM-DD HH:MM:SS):');
-          if (!startsOn?.trim() || !endsOn?.trim()) return;
-          dates = { starts_on: startsOn.trim(), ends_on: endsOn.trim() };
-        }
-        path=action==='approve-subscription'?'/api/v1/admin/subscriptions/approve':'/api/v1/admin/subscriptions/reject'; actionType=action==='approve-subscription'?'approveSubscription':'rejectSubscription'; data={subscription_id:Number(item['subscription_id'] ?? item['id']),...dates,...(reason?{reason:reason.trim()}:{})}; break;
-      }
-      case 'edit-address': {
-        const addressId = Number(item['address_id'] ?? item['id'] ?? 0);
-        const line1 = window.prompt('Address line 1 (required):', String(item['address_line_1'] ?? ''));
-        if (line1 === null) return;
-        if (!line1.trim()) { this.error.set('Address line 1 is required.'); return; }
-        const recipient = window.prompt('Recipient name:', String(item['recipient_name'] ?? ''));
-        if (recipient === null) return;
-        const mobile = window.prompt('Mobile number:', String(item['mobile'] ?? ''));
-        if (mobile === null) return;
-        const line2 = window.prompt('Address line 2:', String(item['address_line_2'] ?? ''));
-        if (line2 === null) return;
-        const city = window.prompt('City:', String(item['city'] ?? ''));
-        if (city === null) return;
-        const state = window.prompt('State:', String(item['state'] ?? ''));
-        if (state === null) return;
-        const postal = window.prompt('Postal code:', String(item['postal_code'] ?? ''));
-        if (postal === null) return;
-        const country = window.prompt('Country code (2 letters):', String(item['country_code'] ?? 'IN'));
-        if (country === null) return;
-        const label = window.prompt('Address label:', String(item['address_label'] ?? 'Home'));
-        if (label === null || !addressId) return;
-        path='/api/v1/customers/addresses/update'; key='customerParam'; actionType='updateMyAddress';
-        data={address_id:addressId,address_line_1:line1.trim(),recipient_name:recipient,mobile,
-          address_line_2:line2,city,state,postal_code:postal,country_code:country.trim().toUpperCase(),
-          address_label:label,is_default:Number(item['is_default'] ?? 0) === 1 ? 1 : 0};
-        break;
-      }
-      case 'default-address': case 'delete-address': {
-        const remove = action==='delete-address';
-        if (remove && !window.confirm('Delete this saved address?')) return;
-        path=remove?'/api/v1/customers/addresses/delete':'/api/v1/customers/addresses/default'; key='customerParam'; actionType=remove?'deleteMyAddress':'setDefaultAddress'; data={address_id:Number(item['address_id'] ?? item['id'])}; break;
-      }
-      case 'edit-category': {
-        const categoryId = Number(item['category_id'] ?? item['id'] ?? 0);
-        const code = window.prompt('Category code:', String(item['category_code'] ?? ''));
-        if (code === null) return;
-        const name = window.prompt('Category name:', String(item['category_name'] ?? ''));
-        if (name === null) return;
-        const type = window.prompt('Category type (BUSINESS or PRODUCT):', String(item['category_type'] ?? 'BUSINESS'));
-        if (type === null) return;
-        const description = window.prompt('Description:', String(item['description'] ?? ''));
-        if (description === null) return;
-        const parent = window.prompt('Parent category ID (optional):', String(item['parent_category_id'] ?? ''));
-        if (parent === null) return;
-        const order = window.prompt('Display order:', String(item['display_order'] ?? 0));
-        if (order === null || !categoryId || !code.trim() || !name.trim()) return;
-        const normalizedType = type.trim().toUpperCase();
-        const parentId = parent.trim() ? Number(parent) : null;
-        const displayOrder = Number(order);
-        if (!['BUSINESS', 'PRODUCT'].includes(normalizedType)) {
-          this.error.set('Category type must be BUSINESS or PRODUCT.');
-          return;
-        }
-        if ((parentId !== null && (!Number.isInteger(parentId) || parentId < 1 || parentId === categoryId))
-          || !Number.isInteger(displayOrder) || displayOrder < 0) {
-          this.error.set('Enter a valid parent category ID and a non-negative display order.');
-          return;
-        }
-        path='/api/v1/admin/categories/update'; actionType='updateCategory';
-        data={category_id:categoryId,category_code:code.trim().toUpperCase(),category_name:name.trim(),
-          category_type:normalizedType,description,parent_category_id:parentId,display_order:displayOrder};
-        break;
-      }
-      case 'delete-category':
-        if (!window.confirm('Soft-delete this category? Categories referenced by active businesses or products cannot be deleted.')) return;
-        path='/api/v1/admin/categories/delete'; actionType='deleteCategory'; data={category_id:id}; break;
-      case 'moderate': {
-        const contentType=String(item['content_type'] ?? '').toUpperCase();
-        const actionTypeChoice=window.prompt('Enter UNPUBLISH_POST, UNPUBLISH_PRODUCT or DISMISS_REPORT:');
-        if (!actionTypeChoice || !['UNPUBLISH_POST','UNPUBLISH_PRODUCT','DISMISS_REPORT'].includes(actionTypeChoice.toUpperCase())) return;
-        const reason=window.prompt('Reason for this moderation decision:'); if(!reason?.trim()) return;
-        path='/api/v1/admin/moderation/action'; actionType='applyModerationAction'; data={report_id:id,action_type:actionTypeChoice.toUpperCase(),reason:reason.trim()};
-        if ((actionTypeChoice.toUpperCase()==='UNPUBLISH_POST' && contentType!=='POST') || (actionTypeChoice.toUpperCase()==='UNPUBLISH_PRODUCT' && contentType!=='PRODUCT')) { this.error.set('That moderation action does not match the reported content type.'); return; }
-        break;
-      }
+      case 'approve-subscription': case 'reject-subscription':
+        this.openDecisionDrawer(action, item);
+        return;
+      case 'moderate':
+        this.openDecisionDrawer('moderate', item);
+        return;
       default: return;
     }
     this.busy.set(true); this.error.set('');
     try {
-      const result = await this.request<DataRecord>(path,key,actionType,data);
-      if (action === 'approve-subscription' && typeof result['bcn'] === 'string' && result['bcn'] !== '') {
-        this.notice.set(`Subscription approved. BBG Contribution Number: ${result['bcn']}`);
-      } else {
-        this.notice.set('The requested action was completed.');
-      }
+      await this.request<DataRecord>(path,key,actionType,data);
+      this.notice.set('The requested action was completed.');
       await this.load();
     }
     catch (error) { this.error.set(this.auth.errorMessage(error)); }
     finally { this.busy.set(false); }
-  }
-
-  async editBusinessProfile(): Promise<void> {
-    const current = this.summary();
-    if (!current) return;
-    const businessId = Number(current['business_id'] ?? current['id'] ?? 0);
-    const tenantId = this.workspace.activeTenantId();
-    const businessName = window.prompt('Business name:', String(current['business_name'] ?? ''));
-    if (!businessName?.trim()) return;
-    const businessEmail = window.prompt('Business email:', String(current['business_email'] ?? ''));
-    const businessPhone = window.prompt('Business phone:', String(current['business_phone'] ?? ''));
-    const description = window.prompt('Business description:', String(current['business_description'] ?? ''));
-    const address1 = window.prompt('Address line 1:', String(current['address_line_1'] ?? ''));
-    const address2 = window.prompt('Address line 2:', String(current['address_line_2'] ?? ''));
-    const city = window.prompt('City:', String(current['city'] ?? ''));
-    const state = window.prompt('State:', String(current['state'] ?? ''));
-    const postal = window.prompt('Postal code:', String(current['postal_code'] ?? ''));
-    if (!tenantId || !businessId) { this.error.set('Business identifiers are unavailable. Refresh the profile before editing.'); return; }
-    await this.performAction('/api/v1/business/profile/update','businessParam','updateMyBusinessProfile',{
-      tenant_id:tenantId,business_id:businessId,business_name:businessName.trim(),business_email:businessEmail ?? '',
-      business_phone:businessPhone ?? '',business_description:description ?? '',address_line_1:address1 ?? '',
-      address_line_2:address2 ?? '',city:city ?? '',state:state ?? '',postal_code:postal ?? '',
-    });
-  }
-
-  async editStorefront(): Promise<void> {
-    const current = this.summary()?.['storefront'];
-    if (!current || typeof current !== 'object') return;
-    const settings = current as DataRecord;
-    const title = window.prompt('Storefront title:', String(settings['storefront_title'] ?? ''));
-    if (title === null) return;
-    const description = window.prompt('Storefront description:', String(settings['storefront_description'] ?? ''));
-    if (description === null) return;
-    const showPrices = window.confirm('Show product prices on your storefront?');
-    const acceptOrders = window.confirm('Accept online orders?');
-    const whatsappEnabled = window.confirm('Enable WhatsApp contact?');
-    const whatsappNumber = whatsappEnabled ? window.prompt('WhatsApp number (international format):', String(settings['whatsapp_number'] ?? '')) : '';
-    const theme = window.prompt('Theme code:', String(settings['theme_code'] ?? ''));
-    await this.performAction('/api/v1/business/storefront/update','businessParam','updateMyStorefront',{
-      tenant_id:this.workspace.activeTenantId(),storefront_title:title,storefront_description:description,
-      show_prices:showPrices,accept_online_orders:acceptOrders,whatsapp_enabled:whatsappEnabled,
-      whatsapp_number:whatsappNumber ?? '',theme_code:theme ?? '',
-    });
-  }
-
-  async toggleStorefront(): Promise<void> {
-    const publish = this.storefrontStatus() !== 'PUBLISHED';
-    if (!window.confirm(publish ? 'Publish this storefront now?' : 'Unpublish this storefront?')) return;
-    await this.performAction(publish?'/api/v1/business/storefront/publish':'/api/v1/business/storefront/unpublish','businessParam',publish?'publishMyStorefront':'unpublishMyStorefront',{tenant_id:this.workspace.activeTenantId()});
   }
 
   addMediaToPromotion(item: DataRecord): void {
@@ -786,6 +727,7 @@ export class DashboardModule implements OnInit {
     this.promotionTitle.set(String(item['post_title'] ?? ''));
     this.promotionContent.set(String(item['post_content'] ?? ''));
     this.promotionValidUntil.set(String(item['valid_until'] ?? '').replace(' ', 'T').slice(0,16));
+    this.clearPromotionPreviews();
     this.promotionFiles.set([]);
     this.promotionError.set('');
     this.showPromotionComposer.set(true);
@@ -814,6 +756,7 @@ export class DashboardModule implements OnInit {
     this.promotionTitle.set('');
     this.promotionContent.set('');
     this.promotionValidUntil.set('');
+    this.clearPromotionPreviews();
     this.promotionFiles.set([]);
     this.promotionError.set('');
     this.showPromotionComposer.set(true);
@@ -824,6 +767,16 @@ export class DashboardModule implements OnInit {
     this.showPromotionComposer.set(false);
     this.draftPromotionId.set(null);
     this.promotionUploadedCount.set(0);
+    this.clearPromotionPreviews();
+  }
+
+  private clearPromotionPreviews(): void {
+    for (const url of this.promotionMediaPreviews().values()) URL.revokeObjectURL(url);
+    this.promotionMediaPreviews.set(new Map());
+  }
+
+  promotionPreview(file: File): string | null {
+    return this.promotionMediaPreviews().get(file) ?? null;
   }
 
   setPromotionField(field: 'title' | 'content' | 'validUntil', event: Event): void {
@@ -852,11 +805,24 @@ export class DashboardModule implements OnInit {
     if (invalid) this.promotionError.set(`"${invalid.name}" is not supported or exceeds the 100 MB per-file limit.`);
     else {
       this.promotionError.set('');
+      for (const file of files) {
+        if (file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/')) {
+          this.promotionMediaPreviews.update((current) => new Map(current).set(file, URL.createObjectURL(file)));
+        }
+      }
       this.promotionFiles.update((current) => [...current, ...files]);
     }
   }
 
   removePromotionMedia(index: number): void {
+    const file = this.promotionFiles()[index];
+    const preview = file ? this.promotionMediaPreviews().get(file) : undefined;
+    if (preview) URL.revokeObjectURL(preview);
+    if (file) this.promotionMediaPreviews.update((current) => {
+      const next = new Map(current);
+      next.delete(file);
+      return next;
+    });
     this.promotionFiles.update((files) => files.filter((_, position) => position !== index));
   }
 
@@ -891,17 +857,7 @@ export class DashboardModule implements OnInit {
           },
         );
         this.promotionUploadProgress.set(0);
-        await lastValueFrom(this.http.put(upload.upload_url,file,{
-          headers:new HttpHeaders(upload.headers ?? {'Content-Type':file.type}),
-          observe:'events',reportProgress:true,responseType:'text',
-        }).pipe(
-          tap((event) => {
-            if (event.type === HttpEventType.UploadProgress && event.total) {
-              this.promotionUploadProgress.set(Math.round((event.loaded / event.total) * 100));
-            }
-          }),
-          filter((event) => event.type === HttpEventType.Response),
-        ));
+        await this.s3Upload.upload(upload.upload_url, file, upload.headers ?? { 'Content-Type': file.type }, (progress) => this.promotionUploadProgress.set(progress));
         const mediaType = file.type.startsWith('image/') ? 'IMAGE' : file.type.startsWith('video/') ? 'VIDEO'
           : file.type.startsWith('audio/') ? 'AUDIO' : 'DOCUMENT';
         await this.request('/api/v1/promotions/media/link','promotionParam','linkPromotionMedia',{
@@ -914,6 +870,7 @@ export class DashboardModule implements OnInit {
       this.notice.set('Promotion draft and attachments saved. Publish it when ready.');
       this.showPromotionComposer.set(false);
       this.draftPromotionId.set(null);
+      this.clearPromotionPreviews();
       await this.load();
     } catch (error) {
       this.promotionError.set(this.auth.errorMessage(error));
@@ -934,89 +891,120 @@ export class DashboardModule implements OnInit {
     return bytes < 1024 * 1024 ? `${Math.max(1,Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  openPasswordForm(): void {
-    this.currentPassword.set(''); this.newPassword.set(''); this.confirmPassword.set('');
-    this.passwordError.set(''); this.showPasswordForm.set(true);
+  openPaymentQrDrawer(): void {
+    if (!this.can('subscription.update')) return;
+    this.error.set('');
+    this.showPaymentQrDrawer.set(true);
   }
 
-  closePasswordForm(): void {
-    this.showPasswordForm.set(false); this.passwordError.set('');
-    this.currentPassword.set(''); this.newPassword.set(''); this.confirmPassword.set('');
+  openDecisionDrawer(kind: DecisionKind, item: DataRecord): void {
+    this.decisionKind.set(kind);
+    this.decisionItem.set(item);
+    this.decisionReason.set('');
+    this.decisionStartsOn.set('');
+    this.decisionEndsOn.set('');
+    this.moderationAction.set('DISMISS_REPORT');
+    this.error.set('');
+    this.showDecisionDrawer.set(true);
   }
 
-  async updatePassword(): Promise<void> {
-    if (this.busy()) return;
-    const newPassword = this.newPassword();
-    if (newPassword.length < 8) { this.passwordError.set('Use at least 8 characters for your new password.'); return; }
-    if (newPassword !== this.confirmPassword()) { this.passwordError.set('The new password and confirmation do not match.'); return; }
-    if (this.summary()?.['has_password'] && !this.currentPassword()) { this.passwordError.set('Enter your current password.'); return; }
-    this.busy.set(true); this.passwordError.set(''); this.error.set('');
+  decisionTitle(): string {
+    const titles: Record<DecisionKind, string> = {
+      'reject-business': 'Reject business application',
+      'approve-subscription': 'Approve subscription',
+      'reject-subscription': 'Reject subscription',
+      moderate: 'Review reported content',
+    };
+    return titles[this.decisionKind()];
+  }
+
+  async saveDecision(): Promise<void> {
+    const kind = this.decisionKind();
+    const item = this.decisionItem();
+    if (!item || this.busy()) return;
+    const reason = this.decisionReason().trim();
+    let path = '';
+    let actionType = '';
+    let key: EnvelopeKey = 'adminParam';
+    let data: DataRecord = {};
+    if (kind === 'reject-business') {
+      if (!reason) { this.error.set('A rejection reason is required.'); return; }
+      path = '/api/v1/admin/businesses/reject';
+      actionType = 'rejectBusiness';
+      data = { business_id: Number(item['business_id'] ?? item['id']), reason };
+    } else if (kind === 'approve-subscription') {
+      if (!this.decisionStartsOn() || !this.decisionEndsOn()) {
+        this.error.set('Enter both subscription start and end dates.');
+        return;
+      }
+      path = '/api/v1/admin/subscriptions/approve';
+      actionType = 'approveSubscription';
+      data = {
+        subscription_id: Number(item['subscription_id'] ?? item['id']),
+        starts_on: this.decisionStartsOn().replace('T', ' ') + ':00',
+        ends_on: this.decisionEndsOn().replace('T', ' ') + ':00',
+      };
+    } else if (kind === 'reject-subscription') {
+      if (!reason) { this.error.set('A rejection reason is required.'); return; }
+      path = '/api/v1/admin/subscriptions/reject';
+      actionType = 'rejectSubscription';
+      data = { subscription_id: Number(item['subscription_id'] ?? item['id']), reason };
+    } else {
+      const contentType = String(item['content_type'] ?? '').toUpperCase();
+      const moderationAction = this.moderationAction();
+      if (!reason) { this.error.set('A reason for this moderation decision is required.'); return; }
+      if (!['UNPUBLISH_POST', 'UNPUBLISH_PRODUCT', 'DISMISS_REPORT'].includes(moderationAction)) {
+        this.error.set('Choose a valid moderation action.');
+        return;
+      }
+      if ((moderationAction === 'UNPUBLISH_POST' && contentType !== 'POST')
+        || (moderationAction === 'UNPUBLISH_PRODUCT' && contentType !== 'PRODUCT')) {
+        this.error.set('That moderation action does not match the reported content type.');
+        return;
+      }
+      path = '/api/v1/admin/moderation/action';
+      actionType = 'applyModerationAction';
+      data = { report_id: this.recordId(item), action_type: moderationAction, reason };
+    }
+    this.busy.set(true);
+    this.error.set('');
     try {
-      await this.request('/api/v1/auth/password/update','authParam','setPassword',{
-        ...(this.summary()?.['has_password'] ? {current_password:this.currentPassword()} : {}),
-        new_password:newPassword,
-      });
-      this.summary.update((profile) => profile ? {...profile,has_password:true} : profile);
-      this.notice.set('Your password has been saved successfully.');
-      this.closePasswordForm();
+      const result = await this.request<DataRecord>(path, key, actionType, data);
+      this.notice.set(kind === 'approve-subscription' && typeof result['bcn'] === 'string' && result['bcn']
+        ? `Subscription approved. BBG Contribution Number: ${result['bcn']}`
+        : 'The requested decision was completed.');
+      this.showDecisionDrawer.set(false);
+      await this.load();
     } catch (error) {
-      this.passwordError.set(this.auth.errorMessage(error));
-    } finally { this.busy.set(false); }
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
+    }
   }
 
-  async editPersonalProfile(): Promise<void> {
-    const current = this.summary();
-    if (!current || this.busy()) return;
-    const fullName = window.prompt('Full name:', String(current['full_name'] ?? ''));
-    if (fullName === null) return;
-    const email = window.prompt('Email address:', String(current['email'] ?? ''));
-    if (email === null) return;
-    const mobile = window.prompt('Mobile number:', String(current['mobile'] ?? ''));
-    if (mobile === null) return;
-    if (!fullName.trim()) {
-      this.error.set('Full name is required.');
+  async saveEnquiryReply(): Promise<void> {
+    const tenantId = this.workspace.activeTenantId();
+    const enquiryId = this.replyEnquiryId();
+    const message = this.replyMessage().trim();
+    if (!tenantId || !enquiryId || !message) {
+      this.error.set('Enter a reply before submitting.');
       return;
     }
-    await this.performAction('/api/v1/auth/profile/update', 'authParam', 'updateProfile', {
-      full_name: fullName.trim(),
-      email: email.trim(),
-      mobile: mobile.trim(),
+    const saved = await this.performAction('/api/v1/enquiries/tenant/respond', 'enquiryParam', 'respondToEnquiry', {
+      tenant_id: tenantId, enquiry_id: enquiryId, message,
     });
+    if (saved) {
+      this.showReplyDrawer.set(false);
+      this.replyEnquiryId.set(null);
+      this.replyMessage.set('');
+    }
   }
 
-  async createAddress(): Promise<void> {
-    const line1 = window.prompt('Address line 1 (required):');
-    if (!line1?.trim()) return;
-    const recipient = window.prompt('Recipient name:');
-    const mobile = window.prompt('Mobile number:');
-    const city = window.prompt('City:');
-    const state = window.prompt('State:');
-    const postal = window.prompt('Postal code:');
-    const country = window.prompt('Country code (2 letters):','IN');
-    const label = window.prompt('Address label (Home, Office, etc.):','Home');
-    await this.performAction('/api/v1/customers/addresses/create','customerParam','createMyAddress',{
-      address_line_1:line1.trim(),recipient_name:recipient ?? '',mobile:mobile ?? '',
-      city:city ?? '',state:state ?? '',postal_code:postal ?? '',country_code:(country ?? 'IN').toUpperCase(),address_label:label ?? '',
-    });
-  }
-
-  async createCategory(): Promise<void> {
-    const code = window.prompt('Category code (unique):');
-    const name = window.prompt('Category name:');
-    const type = window.prompt('Category type: BUSINESS or PRODUCT','BUSINESS');
-    if (!code?.trim() || !name?.trim() || !['BUSINESS','PRODUCT'].includes((type ?? '').toUpperCase())) return;
-    const description = window.prompt('Description:');
-    await this.performAction('/api/v1/admin/categories/create','adminParam','createCategory',{
-      category_code:code.trim().toUpperCase(),category_name:name.trim(),category_type:type!.toUpperCase(),
-      description:description ?? '',display_order:0,
-    });
-  }
-
-  private async performAction(path:string,key:EnvelopeKey,actionType:string,data:DataRecord):Promise<void> {
-    if (this.busy()) return;
+  private async performAction(path:string,key:EnvelopeKey,actionType:string,data:DataRecord):Promise<boolean> {
+    if (this.busy()) return false;
     this.busy.set(true); this.error.set('');
-    try { await this.request(path,key,actionType,data); this.notice.set('Changes saved successfully.'); await this.load(); }
-    catch(error) { this.error.set(this.auth.errorMessage(error)); }
+    try { await this.request(path,key,actionType,data); this.notice.set('Changes saved successfully.'); await this.load(); return true; }
+    catch(error) { this.error.set(this.auth.errorMessage(error)); return false; }
     finally { this.busy.set(false); }
   }
 
@@ -1158,12 +1146,27 @@ export class DashboardModule implements OnInit {
     const file = input.files?.[0] ?? null;
     if (file && (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size < 1 || file.size > 10 * 1024 * 1024)) {
       this.error.set('Choose a JPG, PNG or WEBP image up to 10 MB.');
-      this.qrFile.set(null);
+      this.clearPaymentQrPreview();
     } else {
       this.error.set('');
+      this.clearPaymentQrPreview();
       this.qrFile.set(file);
+      this.qrPreviewUrl.set(file ? URL.createObjectURL(file) : null);
     }
     input.value = '';
+  }
+
+  private clearPaymentQrPreview(): void {
+    const preview = this.qrPreviewUrl();
+    if (preview) URL.revokeObjectURL(preview);
+    this.qrPreviewUrl.set(null);
+    this.qrFile.set(null);
+  }
+
+  closePaymentQrDrawer(): void {
+    if (this.busy()) return;
+    this.showPaymentQrDrawer.set(false);
+    this.clearPaymentQrPreview();
   }
 
   async savePaymentQrConfig(): Promise<void> {
@@ -1176,16 +1179,15 @@ export class DashboardModule implements OnInit {
           original_file_name:file.name,mime_type:file.type,file_size_bytes:file.size,
         },
       );
-      await firstValueFrom(this.http.put(upload.upload_url,file,{
-        headers:new HttpHeaders(upload.headers ?? {'Content-Type':file.type}),responseType:'text',
-      }));
+      await this.s3Upload.upload(upload.upload_url, file, upload.headers ?? { 'Content-Type': file.type });
       await this.request('/api/v1/admin/subscriptions/payment-qr/save','adminParam','savePaymentQrConfig',{
         payee_name:this.qrPayeeName().trim(),upi_id:this.qrUpiId().trim(),
         payment_instructions:this.qrInstructions().trim(),qr_file_path:upload.object_key,
       });
       this.notice.set('A new payment QR configuration is active for new subscription requests.');
-      this.qrFile.set(null);
+      this.clearPaymentQrPreview();
       await this.load();
+      this.showPaymentQrDrawer.set(false);
     } catch(error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
@@ -1193,7 +1195,7 @@ export class DashboardModule implements OnInit {
     }
   }
 
-  async uploadProof(event: Event, subscription: DataRecord): Promise<void> {
+  prepareProofUpload(event: Event, subscription: DataRecord): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
@@ -1203,31 +1205,58 @@ export class DashboardModule implements OnInit {
       input.value = '';
       return;
     }
-    const subscriptionId = this.recordId(subscription,'subscription_id');
+    const subscriptionId = this.recordId(subscription, 'subscription_id');
+    if (!subscriptionId || !this.workspace.activeTenantId()) {
+      this.error.set('Subscription or workspace details are unavailable.');
+      input.value = '';
+      return;
+    }
+    this.proofFile.set(file);
+    this.proofSubscription.set(subscription);
+    this.proofPaymentReference.set('');
+    this.error.set('');
+    this.showProofDrawer.set(true);
+    input.value = '';
+  }
+
+  closeProofDrawer(): void {
+    if (this.busy()) return;
+    this.showProofDrawer.set(false);
+    this.proofFile.set(null);
+    this.proofSubscription.set(null);
+    this.proofPaymentReference.set('');
+  }
+
+  async uploadProof(): Promise<void> {
+    const file = this.proofFile();
+    const subscription = this.proofSubscription();
+    const subscriptionId = subscription ? this.recordId(subscription, 'subscription_id') : 0;
     const tenantId = this.workspace.activeTenantId();
-    if (!subscriptionId || !tenantId) { this.error.set('Subscription or workspace details are unavailable.'); input.value=''; return; }
-    const paymentReference = window.prompt('Payment reference (optional):') ?? '';
-    this.busy.set(true); this.error.set('');
+    if (!file || !subscriptionId || !tenantId || this.busy()) return;
+    this.busy.set(true);
+    this.error.set('');
     try {
       const upload = await this.request<{upload_url:string;object_key:string;method:string;headers:Record<string,string>}>(
         '/api/v1/subscriptions/proofs/upload-url','subscriptionParam','generateSubscriptionProofUploadUrl',{
           tenant_id:tenantId,subscription_id:subscriptionId,original_file_name:file.name,mime_type:file.type,file_size_bytes:file.size,
         },
       );
-      await firstValueFrom(this.http.put(upload.upload_url,file,{
-        headers:new HttpHeaders(upload.headers ?? {'Content-Type':file.type}),responseType:'text',
-      }));
+      await this.s3Upload.upload(upload.upload_url, file, upload.headers ?? { 'Content-Type': file.type });
       this.proofDrafts.update((drafts) => ({...drafts,[subscriptionId]:{
-        objectKey:upload.object_key,paymentReference:paymentReference.trim(),fileName:file.name,
+        objectKey:upload.object_key,paymentReference:this.proofPaymentReference().trim(),fileName:file.name,
       }}));
       this.notice.set('Receipt uploaded. Select “Submit for Review” when you are ready to send it to the BBG team.');
+      this.showProofDrawer.set(false);
+      this.proofFile.set(null);
+      this.proofSubscription.set(null);
+      this.proofPaymentReference.set('');
     } catch(error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
       this.busy.set(false);
-      input.value = '';
     }
   }
+
 
   async submitProof(subscription: DataRecord): Promise<void> {
     const subscriptionId = this.recordId(subscription,'subscription_id');

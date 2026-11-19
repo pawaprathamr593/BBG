@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { FilterDrawer } from '../../../shared/filter-drawer/filter-drawer';
 import { BusinessCard } from '../../../shared/components/business-card/business-card';
 import type { BusinessCardModel } from '../../../shared/models/marketplace-card.models';
@@ -16,7 +16,7 @@ interface BusinessFilterValues {
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-business-directory',
-  imports: [FormsModule, RouterLink, FilterDrawer, BusinessCard],
+  imports: [FormsModule, FilterDrawer, BusinessCard],
   templateUrl: './business-directory.html',
   styles: [`
     :host{display:block}.page{min-height:65vh;padding:0 0 64px;background:var(--surface-page)}

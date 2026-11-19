@@ -1,0 +1,81 @@
+<section class="records-section">
+  <div class="section-title">
+    <div><p class="eyebrow">LIVE RECORDS</p><h2>{{ heading() }}</h2></div>
+    <span class="record-count">{{ cards().length }} shown of {{ totalItems() }}</span>
+  </div>
+  <div class="records-list">
+    @if (cards().length) {
+      @for (card of cards(); track card.id) {
+        <article class="record-card">
+          <div class="record-head">
+            <div><strong>{{ card.title }}</strong><span>{{ card.subtitle }}</span></div>
+            @if (card.status) { <span class="status-chip" [class]="card.statusClass">{{ card.status }}</span> }
+          </div>
+          @if (card.fields.length) {
+            <div class="record-fields">
+              @for (field of card.fields; track field.key) {
+                <div><span>{{ field.label }}</span><strong>{{ field.value }}</strong></div>
+              }
+            </div>
+          }
+          @if (card.bcn; as bcn) {
+            <div class="bcn-record">
+              <span>BBG Contribution Number</span>
+              <div><strong>{{ bcn }}</strong><button type="button" (click)="copyBcnRequested.emit(bcn)">Copy</button></div>
+            </div>
+          }
+          @if (card.showDetail) { <button type="button" class="secondary-action" (click)="detailRequested.emit(card.record)" [disabled]="loading()">View details</button> }
+          @if (card.showSubscriptionReview) { <button type="button" class="secondary-action" (click)="subscriptionReviewRequested.emit(card.record)" [disabled]="loading()">View business details, receipts &amp; history</button> }
+          @if (card.paymentQr; as qr) {
+            <div class="subscription-payment-qr">
+              <img [src]="qr.url" alt="UPI payment QR for this subscription">
+              <div><strong>Pay using UPI</strong><span>{{ qr.payeeName }}</span><span>{{ qr.upiId }}</span><small>QR version {{ qr.version }} · retained for this request</small></div>
+            </div>
+            @if (qr.instructions) { <p class="payment-instructions">{{ qr.instructions }}</p> }
+          }
+          @if (card.media.length) {
+            <div class="post-media-strip" aria-label="Post attachments">
+              @for (media of card.media; track media.id) {
+                <div class="post-media-item">
+                  @if (media.url && media.type === 'IMAGE') { <img [src]="media.url" alt="Post image attachment"> }
+                  @else if (media.url && media.type === 'VIDEO') { <video controls [src]="media.url" aria-label="Post video attachment"></video> }
+                  @else if (media.url && media.type === 'AUDIO') { <audio controls [src]="media.url" aria-label="Post audio attachment"></audio> }
+                  @else if (media.url) { <a [href]="media.url" target="_blank" rel="noopener">Open {{ media.type }} attachment</a> }
+                  @else { <span>{{ media.type }} attachment</span> }
+                  @if (media.canRemove) { <button type="button" (click)="mediaRemoveRequested.emit({record: card.record, media: {id: media.id, media_type: media.type, url: media.url}})" [disabled]="loading()">Remove</button> }
+                </div>
+              }
+            </div>
+          }
+          @if (card.showProofUpload) {
+            <label class="upload-proof">Upload payment proof
+              <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" [disabled]="loading()" (change)="proofFileSelected.emit({event: $event, record: card.record})">
+            </label>
+            @if (card.proofFileName) {
+              <div class="proof-ready" role="status">
+                <span>Receipt uploaded: {{ card.proofFileName }}</span>
+                <button type="button" (click)="proofSubmitRequested.emit(card.record)" [disabled]="loading()">Submit for Review</button>
+              </div>
+            }
+          }
+          @if (card.actions.length) {
+            <div class="record-actions">
+              @for (action of card.actions; track action.key) {
+                <button type="button" [class.danger]="action.danger" (click)="actionRequested.emit({action: action.key, record: card.record})" [disabled]="loading()">{{ action.label }}</button>
+              }
+            </div>
+          }
+        </article>
+      }
+    } @else {
+      <p class="records-filter-empty">No records match the current filters on this page. Adjust or reset the filters to see more results.</p>
+    }
+  </div>
+  @if (totalItems() > pageSize()) {
+    <nav class="records-pagination" aria-label="Record pages">
+      <button type="button" (click)="pageChange.emit(currentPage() - 1)" [disabled]="loading() || currentPage() <= 1">Previous</button>
+      <span>Page {{ currentPage() }} of {{ pageCount() }} · {{ totalItems() }} records</span>
+      <button type="button" (click)="pageChange.emit(currentPage() + 1)" [disabled]="loading() || currentPage() >= pageCount()">Next</button>
+    </nav>
+  }
+</section>
