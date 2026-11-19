@@ -93,27 +93,13 @@
               </p>
               <div class="catalogue-grid">
                 @for (product of products(); track product.id; let index = $index) {
-                  <a class="product-card" [routerLink]="['/store', data.business.business_slug, 'products', productRoute(product)]">
-                    <div class="product-art" [class.art-alt]="index % 2 === 1">
-                      <span class="art-index">{{ ((pagination().page - 1) * pagination().page_size + index + 1).toString().padStart(2, '0') }}</span>
-                      <span class="art-monogram">{{ product.product_name.slice(0, 1).toUpperCase() }}</span>
-                      <span class="art-orbit"></span>
-                      @if (product.category_name) { <span class="art-category">{{ product.category_name }}</span> }
-                    </div>
-                    <div class="product-info">
-                      <div class="product-title-row"><h3>{{ product.product_name }}</h3><span aria-hidden="true">↗</span></div>
-                      @if (product.brand_name) { <span class="product-brand">{{ product.brand_name }}</span> }
-                      @if (sort === 'nearby' && product.distance_km !== undefined) { <span class="product-meta">{{ product.distance_km }} km away</span> }
-                      @if (sort === 'popular' && product.popularity) { <span class="product-meta">{{ product.popularity.engagements }} views and likes</span> }
-                      <p>{{ product.description || 'View product information and contact the business for details.' }}</p>
-                      <div class="product-bottom">
-                        @if (data.storefront.show_prices && product.selling_price !== undefined) {
-                          <strong>{{ data.storefront.currency || '' }} {{ product.selling_price }}</strong>
-                        } @else { <span>Enquire for pricing</span> }
-                        <small>VIEW DETAILS</small>
-                      </div>
-                    </div>
-                  </a>
+                  <app-product-card
+                    [product]="product"
+                    [showPrice]="data.storefront.show_prices"
+                    [currency]="data.storefront.currency || ''"
+                    [actionLabel]="'View details'"
+                    (selected)="openProduct($event, data.business.business_slug)"
+                    (businessSelected)="openBusiness($event)" />
                 }
               </div>
               @if (totalPages > 1) {
