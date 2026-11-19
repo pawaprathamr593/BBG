@@ -1,14 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MarketplaceApiService, MarketplaceBusinessDetail, MarketplaceProduct, MarketplacePromotion } from '../../core/marketplace/marketplace-api.service';
 import { StorefrontContextService } from './storefront-context.service';
 import { StorefrontSeoService } from './storefront-seo.service';
+import { ProductCard } from '../../shared/components/product-card/product-card';
+import { PromotionCard } from '../../shared/components/promotion-card/promotion-card';
+import type { ProductCardModel, PromotionCardModel } from '../../shared/models/marketplace-card.models';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-storefront-home',
-  imports: [RouterLink],
+  imports: [RouterLink, ProductCard, PromotionCard],
   templateUrl: './storefront-home.html',
   styles: [`
     :host{display:block;color:var(--text-primary);background:var(--surface-page)}
@@ -45,7 +48,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
     .quick-actions>a{display:flex;min-width:190px;flex:1;align-items:center;gap:11px;padding:13px 15px;border:1px solid var(--border);border-radius:8px;background:var(--surface-card);color:var(--text-primary);text-decoration:none}
     .quick-icon{display:grid;width:35px;height:35px;flex:0 0 35px;place-items:center;border-radius:50%;background:var(--brand-soft);color:var(--brand-strong)}
     .quick-actions strong,.quick-actions small{display:block}.quick-actions strong{font-size:.74rem;font-weight:650}.quick-actions small{margin-top:3px;color:var(--text-secondary);font-size:.65rem}
-    .promotion-ticker{display:flex;width:min(100% - 64px,1160px);align-items:center;gap:15px;margin:17px auto 0;padding:13px 16px;border:1px solid color-mix(in srgb,var(--brand) 22%,var(--border));border-radius:7px;background:var(--brand-soft)}
+    .promotion-featured{width:min(100% - 64px,1160px);margin:17px auto 0}.promotion-ticker{display:flex;width:min(100% - 64px,1160px);align-items:center;gap:15px;margin:17px auto 0;padding:13px 16px;border:1px solid color-mix(in srgb,var(--brand) 22%,var(--border));border-radius:7px;background:var(--brand-soft)}
     .promo-label{flex:0 0 auto;color:var(--brand-strong);font-size:.61rem;font-weight:850;letter-spacing:.12em}
     .promo-copy{display:flex;min-width:0;flex:1;flex-wrap:wrap;align-items:baseline;gap:5px 12px}.promo-copy strong{font-size:.78rem}.promo-copy span{color:var(--text-secondary);font-size:.72rem}
     .promotion-ticker time{flex:0 0 auto;color:var(--text-muted);font-size:.64rem}
@@ -111,6 +114,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
 export class StorefrontHome {
   readonly context = inject(StorefrontContextService);
   private readonly api = inject(MarketplaceApiService);
+  private readonly router = inject(Router);
   private readonly seo = inject(StorefrontSeoService);
   readonly products = signal<MarketplaceProduct[]>([]);
   readonly promotions = signal<MarketplacePromotion[]>([]);
@@ -250,8 +254,24 @@ export class StorefrontHome {
     return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
   }
 
-  productRoute(product: MarketplaceProduct): string {
+  productRoute(product: ProductCardModel): string {
     return (product.slug || slugify(product.product_name)) + '-' + (product.public_id || product.id);
+  }
+
+  protected openProduct(product: ProductCardModel, businessSlug: string): void {
+    if (product.offering_type === 'SERVICE') {
+      void this.router.navigate(['/store', businessSlug, 'contact'], { queryParams: { subject: 'Service enquiry: ' + product.product_name } });
+      return;
+    }
+    void this.router.navigate(['/store', businessSlug, 'products', this.productRoute(product)]);
+  }
+
+  protected openPromotionBusiness(promotion: PromotionCardModel): void {
+    void this.router.navigate(['/store', promotion.business_slug]);
+  }
+
+  protected openBusiness(businessSlug: string): void {
+    void this.router.navigate(['/store', businessSlug]);
   }
 }
 

@@ -94,39 +94,13 @@
         } @else if (products().length) {
           <div class="grid">
             @for (product of products(); track product.id) {
-              <article class="card">
-                <div class="card-top">
-                  <span class="product-mark" aria-hidden="true">BBG</span>
-                  @if (product.category_name) { <span class="tag">{{ product.category_name }}</span> }
-                </div>
-                @if (product.primary_image_url) {
-                  <img [src]="product.primary_image_url" [alt]="product.product_name" loading="lazy" style="width:100%;height:190px;object-fit:cover;border-radius:10px;margin-bottom:14px">
-                } @else if (product.media?.[0]?.media_type === 'VIDEO' && product.media?.[0]?.url) {
-                  <video [src]="product.media?.[0]?.url" muted autoplay loop playsinline preload="metadata" style="width:100%;height:190px;object-fit:cover;border-radius:10px;margin-bottom:14px"></video>
-                }
-                <h3>{{ product.product_name }}</h3>
-                @if (product.brand_name) { <p class="brand">{{ product.brand_name }}</p> }
-                @if (product.description) { <p class="description">{{ product.description }}</p> }
-                @if (product.selling_price !== undefined) {
-                  <p class="price">{{ formatPrice(product.selling_price) }} <span>/ {{ product.unit.symbol }}</span></p>
-                } @else {
-                  <p class="price-unavailable">Contact seller for pricing</p>
-                }
-                <div class="seller">
-                  <span class="seller-name">{{ product.business.business_name }}</span>
-                  <span>{{ product.business.city || 'Location not listed' }}{{ product.business.state ? ', ' + product.business.state : '' }}</span>
-                </div>
-                @if (sort === 'nearby' && product.distance_km !== undefined) {
-                  <span class="distance">{{ product.distance_km }} km away</span>
-                }
-                @if (sort === 'popular' && product.popularity) {
-                  <span class="popularity">{{ product.popularity.engagements }} views and likes</span>
-                }
-                <div class="card-actions">
-                  <a class="primary-action" [routerLink]="['/store', product.business.business_slug, 'products', (product.slug || slugifyProduct(product.product_name)) + '-' + (product.public_id || product.id)]">View product <span aria-hidden="true">→</span></a>
-                  <a class="secondary-action" [routerLink]="['/store', product.business.business_slug]">Explore business</a>
-                </div>
-              </article>
+              <app-product-card
+                [product]="product"
+                [showPrice]="true"
+                currency="₹ "
+                actionLabel="View product"
+                (selected)="openProduct($event)"
+                (businessSelected)="openBusiness($event)" />
             }
           </div>
           <div class="pagination">

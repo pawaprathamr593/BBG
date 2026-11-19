@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MarketplaceApiService, MarketplaceCategory, MarketplaceProduct } from '../../../core/marketplace/marketplace-api.service';
 import { FilterDrawer } from '../../../shared/filter-drawer/filter-drawer';
+import { ProductCard } from '../../../shared/components/product-card/product-card';
+import type { ProductCardModel } from '../../../shared/models/marketplace-card.models';
 
 type ProductSort = 'newest' | 'popular' | 'nearby' | 'price_low' | 'price_high' | 'name';
 type ProductFilterValues = {
@@ -21,7 +23,7 @@ type ProductFilterKey = keyof ProductFilterValues;
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-product-directory',
-  imports: [FormsModule, RouterLink, FilterDrawer],
+  imports: [FormsModule, RouterLink, FilterDrawer, ProductCard],
   templateUrl: './product-directory.html',
   styles: [`
     :host{display:block}.page{min-height:65vh;padding:0 0 120px;background:var(--surface-page)}
@@ -53,6 +55,16 @@ type ProductFilterKey = keyof ProductFilterValues;
 export class ProductDirectory implements OnInit {
   private readonly api = inject(MarketplaceApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
+  protected openProduct(product: ProductCardModel): void {
+    const productId = (product.slug || this.slugifyProduct(product.product_name)) + '-' + (product.public_id || product.id);
+    void this.router.navigate(['/store', product.business.business_slug, 'products', productId]);
+  }
+
+  protected openBusiness(businessSlug: string): void {
+    void this.router.navigate(['/store', businessSlug]);
+  }
 
   protected slugifyProduct(value: string): string {
     return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';

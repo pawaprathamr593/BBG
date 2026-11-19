@@ -54,24 +54,11 @@
         }
 
         @if (promotions().length) {
-          <section class="promotion-ticker" aria-label="Current store promotions">
-            <span class="promo-label">STORE OFFER</span>
-            <div class="promo-copy">
-              <strong>{{ promotions()[0].post_title }}</strong>
-              <span>{{ promotions()[0].post_content }}</span>
-              @if (promotions()[0].media?.length) {
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-                  @for (media of promotions()[0].media; track media.id) {
-                    @if (media.url && media.media_type === 'IMAGE') {
-                      <img [src]="media.url" [alt]="media.original_file_name || promotions()[0].post_title" loading="lazy" style="width:84px;height:64px;object-fit:cover;border-radius:7px">
-                    } @else if (media.url && media.media_type === 'VIDEO') {
-                      <video [src]="media.url" controls preload="metadata" style="width:130px;height:74px;background:#111;border-radius:7px"></video>
-                    }
-                  }
-                </div>
-              }
-            </div>
-            @if (promotions()[0].valid_until) { <time [attr.datetime]="promotions()[0].valid_until">Until {{ formatDate(promotions()[0].valid_until!) }}</time> }
+          <section class="promotion-featured" aria-label="Current store promotion">
+            <app-promotion-card
+              [promotion]="promotions()[0]"
+              label="STORE OFFER"
+              (selected)="openPromotionBusiness($event)" />
           </section>
         }
 
@@ -112,34 +99,13 @@
             @if (filteredProducts().length) {
               <div class="product-grid">
                 @for (product of filteredProducts(); track product.id; let index = $index) {
-                  <a class="product-card" [routerLink]="product.offering_type === 'SERVICE' ? ['/store', data.business.business_slug, 'contact'] : ['/store', data.business.business_slug, 'products', productRoute(product)]" [queryParams]="product.offering_type === 'SERVICE' ? { subject: 'Service enquiry: ' + product.product_name } : null">
-                  <div class="product-image" [class.image-alt]="index % 2 === 1">
-                    <span class="category-tag">{{ product.offering_type === 'SERVICE' ? 'SERVICE' : (product.category_name || 'PRODUCT') }}</span>
-                    @if (product.primary_image_url) {
-                      <img [src]="product.primary_image_url" [alt]="product.product_name" loading="lazy" style="width:100%;height:100%;object-fit:cover">
-                    } @else if (product.media?.[0]?.media_type === 'VIDEO' && product.media?.[0]?.url) {
-                      <video [src]="product.media?.[0]?.url" muted autoplay loop playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover"></video>
-                    } @else {
-                      <span class="product-initial">{{ product.product_name.slice(0, 1).toUpperCase() }}</span>
-                    }
-                  </div>
-                  <div class="product-details">
-                    @if (product.brand_name && product.offering_type !== 'SERVICE') { <span class="product-brand">{{ product.brand_name }}</span> }
-                    <h3>{{ product.product_name }}</h3>
-                    <p>{{ product.description || (product.offering_type === 'SERVICE' ? 'Contact the business for service details and availability.' : 'View product details and contact the business for more information.') }}</p>
-                    <div class="product-purchase">
-                      @if (product.offering_type === 'SERVICE') {
-                        <strong class="enquire-price">Request details</strong>
-                        <span>Contact store <b aria-hidden="true">→</b></span>
-                      } @else {
-                        @if (data.storefront.show_prices && product.selling_price !== undefined) {
-                          <strong>{{ data.storefront.currency || '' }} {{ product.selling_price }}</strong>
-                        } @else { <strong class="enquire-price">Enquire for price</strong> }
-                        <span>View details <b aria-hidden="true">→</b></span>
-                      }
-                    </div>
-                  </div>
-                </a>
+                  <app-product-card
+                    [product]="product"
+                    [showPrice]="data.storefront.show_prices"
+                    [currency]="data.storefront.currency || ''"
+                    [actionLabel]="product.offering_type === 'SERVICE' ? 'Contact store' : 'View details'"
+                    (selected)="openProduct($event, data.business.business_slug)"
+                    (businessSelected)="openBusiness($event)" />
                 }
               </div>
             } @else {

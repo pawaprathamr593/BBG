@@ -1,0 +1,73 @@
+import { DatePipe } from '@angular/common';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import type { ProductCardModel } from '../../models/marketplace-card.models';
+
+@Component({
+  selector: 'app-product-card',
+  standalone: true,
+  imports: [DatePipe],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <article class="product-card">
+      <div class="media">
+        @if (product().primary_image_url || primaryImage()) {
+          <img [src]="product().primary_image_url || primaryImage()" [alt]="product().product_name" loading="lazy">
+        } @else if (primaryVideo()) {
+          <video [src]="primaryVideo()" muted autoplay loop playsinline preload="metadata" [attr.aria-label]="product().product_name + ' video preview'"></video>
+        } @else {
+          <span class="placeholder" aria-hidden="true">{{ product().product_name.slice(0, 1).toUpperCase() }}</span>
+        }
+        @if (product().category_name) { <span class="category">{{ product().category_name }}</span> }
+        @if ((product().media?.length ?? 0) > 1) { <span class="media-count">+{{ (product().media?.length ?? 0) - 1 }} media</span> }
+      </div>
+      <div class="body">
+        @if (product().brand_name) { <p class="brand">{{ product().brand_name }}</p> }
+        <h3>{{ product().product_name }}</h3>
+        @if (product().description) { <p class="description">{{ product().description }}</p> }
+        @if (product().distance_km !== undefined || product().popularity) {
+          <div class="meta">
+            @if (product().distance_km !== undefined) { <span>{{ product().distance_km }} km away</span> }
+            @if (product().popularity) { <span>{{ product().popularity?.engagements }} views and likes</span> }
+          </div>
+        }
+        <div class="price-row">
+          @if (showPrice() && product().selling_price !== undefined) {
+            <strong>{{ currency() }}{{ product().selling_price }} <small>/ {{ product().unit.symbol }}</small></strong>
+          } @else {
+            <strong class="enquire">Enquire for price</strong>
+          }
+        </div>
+        @if (product().business?.business_name) { <p class="seller">From {{ product().business.business_name }}</p> }
+        @if (showCreated()) { <time class="created" [attr.datetime]="product().created_on">Added {{ product().created_on | date:'mediumDate' }}</time> }
+        <div class="actions">
+          <button type="button" class="action" (click)="selected.emit(product())">
+            {{ actionLabel() }} <span aria-hidden="true">→</span>
+          </button>
+          @if (product().business?.business_slug) {
+            <button type="button" class="seller-action" (click)="businessSelected.emit(product().business.business_slug)">View seller</button>
+          }
+        </div>
+      </div>
+    </article>
+  `,
+  styles: [`
+    :host{display:block;min-width:0}.product-card{height:100%;overflow:hidden;border:1px solid var(--border);border-radius:12px;background:var(--surface-card);color:var(--text-primary);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}.product-card:hover{transform:translateY(-3px);border-color:var(--brand);box-shadow:0 12px 28px #1d392510}.media{position:relative;display:grid;aspect-ratio:4/3;overflow:hidden;place-items:center;background:var(--surface-subtle)}.media img,.media video{width:100%;height:100%;object-fit:cover}.placeholder{color:var(--brand-strong);font-size:4.5rem;font-weight:500;opacity:.55}.category{position:absolute;top:11px;left:11px;max-width:65%;overflow:hidden;padding:6px 8px;border:1px solid #ffffff80;border-radius:5px;background:#ffffffd9;color:#254c36;font-size:.6rem;font-weight:750;text-overflow:ellipsis;white-space:nowrap}.media-count{position:absolute;right:10px;bottom:10px;padding:5px 8px;border-radius:5px;background:#102c1dcc;color:#fff;font-size:.62rem;font-weight:750}.body{padding:14px}.brand{margin:0 0 5px;color:var(--text-muted);font-size:.66rem;font-weight:700}.body h3{display:-webkit-box;overflow:hidden;margin:0;color:var(--text-primary);font-size:.92rem;font-weight:700;line-height:1.35;-webkit-box-orient:vertical;-webkit-line-clamp:2}.description{display:-webkit-box;min-height:3em;overflow:hidden;margin:9px 0;color:var(--text-secondary);font-size:.72rem;line-height:1.5;-webkit-box-orient:vertical;-webkit-line-clamp:2}.meta{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;color:var(--text-muted);font-size:.63rem}.price-row{padding-top:9px;border-top:1px solid var(--border)}.price-row strong{color:var(--brand-strong);font-size:.88rem}.price-row small{color:var(--text-secondary);font-size:.65rem;font-weight:500}.price-row .enquire{font-size:.72rem}.created{display:block;margin:7px 0 0;color:var(--text-muted);font-size:.63rem}.seller{overflow:hidden;margin:8px 0 0;color:var(--text-secondary);font-size:.68rem;text-overflow:ellipsis;white-space:nowrap}.actions{display:grid;grid-template-columns:1fr auto;gap:7px;margin-top:12px}.action,.seller-action{display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface-subtle);color:var(--text-primary);font:inherit;font-size:.68rem;font-weight:750;cursor:pointer}.action:hover,.seller-action:hover{border-color:var(--brand)}.action:focus-visible,.seller-action:focus-visible{outline:2px solid var(--brand-strong);outline-offset:2px}@media(prefers-reduced-motion:reduce){.product-card{transition:none}.product-card:hover{transform:none}}.seller-action{justify-content:center;color:var(--brand-strong)}
+  `],
+})
+export class ProductCard {
+  readonly product = input.required<ProductCardModel>();
+  readonly showPrice = input(true);
+  readonly currency = input('₹ ');
+  readonly actionLabel = input('View details');
+  readonly showCreated = input(false);
+  readonly selected = output<ProductCardModel>();
+  readonly businessSelected = output<string>();
+
+  protected primaryImage(): string | null {
+    return this.product().media?.find((item) => item.media_type === 'IMAGE' && item.url)?.url ?? null;
+  }
+
+  protected primaryVideo(): string | null {
+    return this.product().media?.find((item) => item.media_type === 'VIDEO' && item.url)?.url ?? null;
+  }
+}
