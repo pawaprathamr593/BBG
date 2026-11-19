@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MarketplaceApiService, MarketplaceCategory, MarketplaceProduct } from '../../../core/marketplace/marketplace-api.service';
 import { FilterDrawer } from '../../../shared/filter-drawer/filter-drawer';
 import { ProductCard } from '../../../shared/components/product-card/product-card';
+import type { ProductCardModel } from '../../../shared/models/marketplace-card.models';
 
 type ProductSort = 'newest' | 'popular' | 'nearby' | 'price_low' | 'price_high' | 'name';
 type ProductFilterValues = {
@@ -56,7 +57,7 @@ export class ProductDirectory implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
-  protected openProduct(product: MarketplaceProduct): void {
+  protected openProduct(product: ProductCardModel): void {
     const productId = (product.slug || this.slugifyProduct(product.product_name)) + '-' + (product.public_id || product.id);
     void this.router.navigate(['/store', product.business.business_slug, 'products', productId]);
   }
