@@ -118,7 +118,7 @@ final readonly class AuthDao
                  WHERE ura.user_id = :user_id AND ura.status = 'A'
                     AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
                     AND (
-                        (:tenant_filter = 0 AND ura.tenant_id IS NULL AND r.scope_type IN ('PLATFORM', 'GLOBAL'))
+                        (:tenant_filter = 0 AND ura.tenant_id IS NULL AND r.scope_type = 'PLATFORM')
                         OR
                         (:tenant_filter_match > 0 AND ura.tenant_id = :tenant_id
                             AND r.scope_type = 'TENANT'
@@ -228,7 +228,7 @@ final readonly class AuthDao
     }
 
     /**
-     * Assign the global Consumer role to a registered BBG account.
+     * Assign the platform-scoped Consumer role to a registered BBG account.
      * The operation is idempotent and never creates a tenant-scoped assignment.
      */
     public function assignConsumerRole(ConnectionInterface $connection, int $userId): array
@@ -237,11 +237,11 @@ final readonly class AuthDao
         try {
             $role = $connection->createCommand(
                 "SELECT id FROM ROLES
-                 WHERE role_code = 'CONSUMER' AND scope_type = 'GLOBAL' AND status = 'A'
+                 WHERE role_code = 'CONSUMER' AND scope_type = 'PLATFORM' AND status = 'A'
                  ORDER BY id ASC LIMIT 1",
             )->queryOne();
             if (!is_array($role)) {
-                $resArr['msgArr'][] = 'The global CONSUMER role is not configured. Apply the Consumer role seed before registration.';
+                $resArr['msgArr'][] = 'The PLATFORM CONSUMER role is not configured. Apply the Consumer role seed before registration.';
                 return $resArr;
             }
 
@@ -269,7 +269,7 @@ final readonly class AuthDao
             }
 
             $resArr['status'] = 'SUCCESS';
-            $resArr['data'] = ['user_id' => $userId, 'role_code' => 'CONSUMER', 'scope_type' => 'GLOBAL'];
+            $resArr['data'] = ['user_id' => $userId, 'role_code' => 'CONSUMER', 'scope_type' => 'PLATFORM'];
         } catch (Throwable $exception) {
             $this->logException('assignConsumerRole', $exception);
             $resArr = $this->exceptionResponse('Unable to assign the Consumer role.');
