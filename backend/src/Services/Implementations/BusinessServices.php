@@ -528,8 +528,9 @@ final readonly class BusinessServices implements IBusinessServices
         if ($business['status'] !== 'SUCCESS' || $business['data'] === []) {
             return $this->propagateFailure($business, 'BusinessServices::getOwnedStorefront');
         }
-        if (($business['data']['approval_status'] ?? '') !== 'APPROVED') {
-            $resArr['msgArr'][] = 'Only an approved business owner can configure its storefront.';
+        if (($business['data']['approval_status'] ?? '') !== 'APPROVED'
+            || ($business['data']['tenant_status'] ?? '') !== 'ACTIVE') {
+            $resArr['msgArr'][] = 'Only an approved, active business owner can configure its storefront.';
             return $resArr;
         }
         $entitlement = $this->requireTenantEntitlement($tenantId, 'STOREFRONT_ACCESS', 'BusinessServices::getOwnedStorefront');
@@ -601,8 +602,9 @@ final readonly class BusinessServices implements IBusinessServices
         if ($business['status'] !== 'SUCCESS' || $business['data'] === []) {
             return $this->propagateFailure($business, 'BusinessServices::manageMyStorefront');
         }
-        if (($business['data']['approval_status'] ?? '') !== 'APPROVED') {
-            $resArr['msgArr'][] = 'Only an approved business can manage or publish its storefront.';
+        if (($business['data']['approval_status'] ?? '') !== 'APPROVED'
+            || ($ownerScoped && ($business['data']['tenant_status'] ?? '') !== 'ACTIVE')) {
+            $resArr['msgArr'][] = 'Only an approved, active business can manage or publish its storefront.';
             return $resArr;
         }
         if ($operation === 'unpublish') {
