@@ -6,6 +6,7 @@ namespace App\Services\Implementations;
 
 use App\Dao\MarketplaceDao;
 use App\Services\Interfaces\IMarketplaceServices;
+use App\Utils\AwsS3Storage;
 use Hashids\Hashids;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -16,6 +17,7 @@ final readonly class MarketplaceServices implements IMarketplaceServices
     public function __construct(
         private ConnectionInterface $db,
         private MarketplaceDao $dao,
+        private AwsS3Storage $s3Storage,
         private LoggerInterface $logger,
     ) {}
 
@@ -280,6 +282,8 @@ final readonly class MarketplaceServices implements IMarketplaceServices
             return $item;
         }, $rows['data']);
 
+        $items = $this->attachPublicProductMedia($items);
+
         $sortBasis = match ($sort) {
             'popular' => 'persisted_product_views_plus_likes',
             'nearby' => 'business_profile_coordinates_haversine_distance_km',
@@ -394,6 +398,30 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         if ($rows['status'] !== 'SUCCESS') {
             return $this->propagateFailure($rows, 'MarketplaceServices::getPromotions');
         }
+        $postIds = array_map(static fn (array $row): int => (int) $row['id'], $rows['data']);
+        $mediaRows = $this->dao->getPublicPromotionMediaForPosts($this->db, $postIds);
+        if ($mediaRows['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($mediaRows, 'MarketplaceServices::getPromotions');
+        }
+        $mediaByPost = [];
+        foreach ($mediaRows['data'] as $mediaRow) {
+            try {
+                $mediaRow['url'] = $this->s3Storage->createDownloadUrl((string) $mediaRow['file_path']);
+            } catch (Throwable $exception) {
+                $this->logger->warning('Unable to create a public promotion media URL.', [
+                    'post_id' => (int) $mediaRow['post_id'],
+                    'media_id' => (int) $mediaRow['id'],
+                    'exception' => $exception,
+                ]);
+                $mediaRow['url'] = null;
+            }
+            $mediaByPost[(int) $mediaRow['post_id']][] = $mediaRow;
+        }
+        foreach ($rows['data'] as &$promotionRow) {
+            $promotionRow['media'] = $mediaByPost[(int) $promotionRow['id']] ?? [];
+        }
+        unset($promotionRow);
+
         $count = $this->dao->countPublicPromotions($this->db, $tenantId);
         if ($count['status'] !== 'SUCCESS') {
             return $this->propagateFailure($count, 'MarketplaceServices::getPromotions');
@@ -430,6 +458,19 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         if ($media['status'] !== 'SUCCESS') {
             return $this->propagateFailure($media, 'MarketplaceServices::getPromotion');
         }
+        foreach ($media['data'] as &$mediaRow) {
+            try {
+                $mediaRow['url'] = $this->s3Storage->createDownloadUrl((string) $mediaRow['file_path']);
+            } catch (Throwable $exception) {
+                $this->logger->warning('Unable to create a public promotion media URL.', [
+                    'post_id' => $promotionId,
+                    'media_id' => (int) $mediaRow['id'],
+                    'exception' => $exception,
+                ]);
+                $mediaRow['url'] = null;
+            }
+        }
+        unset($mediaRow);
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = ['promotion' => $result['data'], 'media' => $media['data']];
         return $resArr;
@@ -494,6 +535,8 @@ final readonly class MarketplaceServices implements IMarketplaceServices
             $business['created_on'] = $row['created_on'];
             return $business;
         }, $rows['data']);
+
+        $items = $this->attachPublicProductMedia($items);
 
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = [
@@ -642,6 +685,57 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = $business;
         return $business;
+    }
+
+    /**
+     * Attach ordered, signed media URLs to public product view models.
+     * One batched DAO read avoids one query per product card.
+     */
+    private function attachPublicProductMedia(array $items): array
+    {
+        if ($items === []) {
+            return $items;
+        }
+
+        $productIds = array_map(static fn (array $item): int => (int) $item['id'], $items);
+        $mediaResult = $this->dao->getPublicProductMediaForProducts($this->db, $productIds);
+        if ($mediaResult['status'] !== 'SUCCESS') {
+            throw new RuntimeException('Unable to load public product media.');
+        }
+
+        $mediaByProduct = [];
+        foreach ($mediaResult['data'] as $mediaRow) {
+            try {
+                $mediaRow['url'] = $this->s3Storage->createDownloadUrl((string) $mediaRow['file_path']);
+                $mediaRow['thumbnail_url'] = !empty($mediaRow['thumbnail_path'])
+                    ? $this->s3Storage->createDownloadUrl((string) $mediaRow['thumbnail_path'])
+                    : null;
+            } catch (Throwable $exception) {
+                $this->logger->warning('Unable to create a public product media URL.', [
+                    'product_id' => (int) $mediaRow['product_id'],
+                    'media_id' => (int) $mediaRow['id'],
+                    'exception' => $exception,
+                ]);
+                $mediaRow['url'] = null;
+                $mediaRow['thumbnail_url'] = null;
+            }
+            $mediaByProduct[(int) $mediaRow['product_id']][] = $mediaRow;
+        }
+
+        foreach ($items as &$item) {
+            $item['media'] = $mediaByProduct[(int) $item['id']] ?? [];
+            $primaryImage = null;
+            foreach ($item['media'] as $media) {
+                if (($media['media_type'] ?? '') === 'IMAGE' && !empty($media['url'])) {
+                    $primaryImage = $media['url'];
+                    break;
+                }
+            }
+            $item['primary_image_url'] = $primaryImage;
+        }
+        unset($item);
+
+        return $items;
     }
 
     private function publicProduct(array $row, bool $showPrices): array
