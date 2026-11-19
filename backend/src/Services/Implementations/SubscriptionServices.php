@@ -87,6 +87,12 @@ final readonly class SubscriptionServices implements ISubscriptionServices
                 case 'requestApplicationSubscription':
                     $resArr = $this->requestApplicationSubscription($actionData);
                     break;
+                case 'requestApplicationSubscriptionUpgrade':
+                    $resArr = $this->requestApplicationSubscriptionReplacement($actionData, 'upgrade');
+                    break;
+                case 'requestApplicationSubscriptionRenewal':
+                    $resArr = $this->requestApplicationSubscriptionReplacement($actionData, 'renewal');
+                    break;
                 case 'generateApplicationProofUploadUrl':
                     $resArr = $this->generateApplicationProofUploadUrl($actionData);
                     break;
@@ -547,6 +553,111 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         }
     }
 
+
+    private function requestApplicationSubscriptionReplacement(array $actionData, string $operation): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->applicationOwnerContext($actionData);
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'SubscriptionServices::requestApplicationSubscriptionReplacement');
+        }
+        $application = $context['data']['application'];
+        if (($application['approval_status'] ?? '') !== 'APPROVED') {
+            $resArr['msgArr'][] = 'Only an approved business owner can change an active subscription.';
+            return $resArr;
+        }
+        $tenantId = (int) $application['tenant_id'];
+        $userId = (int) $context['data']['user_id'];
+        $subscriptionId = $this->positiveInt($actionData['subscription_id'] ?? null);
+        if ($subscriptionId === null) {
+            $resArr['msgArr'][] = 'A valid subscription_id is required.';
+            return $resArr;
+        }
+        $current = $this->dao->getTenantSubscription($this->db, $tenantId, $subscriptionId);
+        if ($current['status'] !== 'SUCCESS' || $current['data'] === []) {
+            return $this->propagateFailure($current, 'SubscriptionServices::requestApplicationSubscriptionReplacement');
+        }
+        $currentStatus = (string) ($current['data']['subscription_status'] ?? '');
+        if ($operation === 'upgrade' && $currentStatus !== 'ACTIVE') {
+            $resArr['msgArr'][] = 'Only an active subscription can be upgraded.';
+            return $resArr;
+        }
+        if ($operation === 'renewal' && !in_array($currentStatus, ['ACTIVE', 'EXPIRED'], true)) {
+            $resArr['msgArr'][] = 'Only an active or expired subscription can be renewed.';
+            return $resArr;
+        }
+        $planId = $operation === 'renewal'
+            ? (int) $current['data']['plan_id']
+            : ($this->positiveInt($actionData['plan_id'] ?? null) ?? 0);
+        if ($planId < 1) {
+            $resArr['msgArr'][] = 'A valid plan_id is required for an upgrade.';
+            return $resArr;
+        }
+        if ($operation === 'upgrade' && $planId === (int) $current['data']['plan_id']) {
+            $resArr['msgArr'][] = 'Choose a different plan to upgrade your subscription.';
+            return $resArr;
+        }
+        $plan = $this->dao->getPlan($this->db, $planId);
+        if ($plan['status'] !== 'SUCCESS' || $plan['data'] === []) {
+            return $this->propagateFailure($plan, 'SubscriptionServices::requestApplicationSubscriptionReplacement');
+        }
+        $pending = $this->dao->hasPendingSubscription($this->db, $tenantId);
+        if ($pending['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($pending, 'SubscriptionServices::requestApplicationSubscriptionReplacement');
+        }
+        if ($pending['data'] !== []) {
+            $resArr['msgArr'][] = 'A subscription change request is already awaiting review.';
+            return $resArr;
+        }
+        $qrConfig = $this->dao->getActivePaymentQrConfig($this->db);
+        if ($qrConfig['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($qrConfig, 'SubscriptionServices::requestApplicationSubscriptionReplacement');
+        }
+        if ($qrConfig['data'] === []) {
+            $resArr['msgArr'][] = 'Subscription payments are not configured yet. Please contact BBG support.';
+            return $resArr;
+        }
+        $transaction = $this->db->beginTransaction();
+        try {
+            $created = $this->dao->insertSubscription(
+                $this->db, $tenantId, $planId, $userId,
+                (string) $plan['data']['price'], (string) $plan['data']['currency'], $subscriptionId,
+            );
+            if ($created['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($created, 'SubscriptionServices::requestApplicationSubscriptionReplacement');
+            }
+            $newSubscriptionId = (int) $created['data']['id'];
+            $snapshot = $this->dao->insertSubscriptionPaymentInstructions(
+                $this->db, $tenantId, $newSubscriptionId, $userId, $qrConfig['data'],
+            );
+            if ($snapshot['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($snapshot, 'SubscriptionServices::requestApplicationSubscriptionReplacement');
+            }
+            $transaction->commit();
+            $details = $this->dao->getTenantSubscription($this->db, $tenantId, $newSubscriptionId);
+            if ($details['status'] !== 'SUCCESS' || $details['data'] === []) {
+                return $this->propagateFailure($details, 'SubscriptionServices::requestApplicationSubscriptionReplacement');
+            }
+            $data = $details['data'];
+            if (!empty($data['payment_qr_file_path'])) {
+                $data['payment_qr_url'] = $this->s3Storage->createDownloadUrl((string) $data['payment_qr_file_path']);
+            }
+            unset($data['payment_qr_file_path']);
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = [
+                'tenant_id' => $tenantId,
+                'replaces_subscription_id' => $subscriptionId,
+                'subscription' => $data,
+            ];
+            return $resArr;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) $transaction->rollBack();
+            throw $exception;
+        }
+    }
+
     private function generateApplicationProofUploadUrl(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
@@ -697,15 +808,15 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         }
         $businessId = $this->positiveInt($actionData['business_id'] ?? null);
         $tenantId = $this->positiveInt($actionData['tenant_id'] ?? null);
-        if ($businessId === null || $tenantId === null) {
-            $resArr['msgArr'][] = 'Valid business_id and tenant_id are required.';
+        if ($tenantId === null) {
+            $resArr['msgArr'][] = 'A valid tenant_id is required.';
             return $resArr;
         }
         $application = $this->businessDao->getOwnedBusinessApplication(
             $this->db, (int) $principal['data']['user_id'], $tenantId,
         );
         if ($application['status'] !== 'SUCCESS' || $application['data'] === []
-            || (int) $application['data']['business_id'] !== $businessId) {
+            || ($businessId !== null && (int) $application['data']['business_id'] !== $businessId)) {
             $resArr['msgArr'][] = 'The authenticated user does not own this business application.';
             return $resArr;
         }
