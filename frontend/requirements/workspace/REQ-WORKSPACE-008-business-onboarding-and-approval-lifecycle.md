@@ -4,7 +4,7 @@ title: Business onboarding, payment and approval lifecycle
 area: workspace
 type: enhancement
 owner: unset
-status: draft
+status: in_progress
 ---
 
 # Business onboarding, payment and approval lifecycle
@@ -210,7 +210,7 @@ Mobile-first onboarding form with optional browser location capture and keyboard
 - UNKNOWN: BUSINESS_APPLICATIONS currently has a unique key on tenant_id. Confirm whether one application per tenant is intended and how draft rows map to multiple businesses per applicant.
 - UNKNOWN: Confirm whether business approval requires a valid proof and whether rejection requires a new proof on resubmission.
 - UNKNOWN: Confirm pending-owner workspace visibility predicates and test the current tenant list/permission resolver.
-- UNKNOWN: Confirm admin permission codes and whether business and subscription approvals should be merged into one admin action or coordinated by a single transactional service.
+- Confirmed current implementation constraint: existing admin business and subscription approval endpoints are separate. A single atomic combined approval action and its plan-duration/date policy still require implementation/design.
 - UNKNOWN: Verify actual deployed latitude/longitude column type and precision; supplied database design says DOUBLE(10,2).
 - UNKNOWN: Confirm receipt file size/MIME restrictions and S3 object retention/access policy.
 - Proposed default: after successful payment-proof approval, automatically publish the storefront; the owner can unpublish it later.
