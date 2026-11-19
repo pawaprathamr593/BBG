@@ -67,6 +67,13 @@ export const workspacePermissionGuard: CanActivateChildFn = async (route) => {
     return allowed ? true : router.createUrlTree(['/dashboard']);
   }
 
+  if (context === 'BUSINESS' && section === 'members') {
+    const isOwner = workspace.permissions().some((permission) =>
+      permission.scope_type === 'TENANT' && permission.role_code === 'TENANT_OWNER',
+    );
+    return isOwner ? true : router.createUrlTree(['/dashboard']);
+  }
+
   const requiredPermission = context === 'BUSINESS'
     ? BUSINESS_PERMISSIONS[section]
     : context === 'PLATFORM'
