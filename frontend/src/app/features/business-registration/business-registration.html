@@ -104,8 +104,8 @@
               @if (locationMessage()) { <small role="status">{{ locationMessage() }}</small> }
               @if (locationAccuracy() !== null) { <small>Reported accuracy: approximately {{ locationAccuracy() }} metres.</small> }
             </div>
-            <label class="field"><span>Latitude</span><input type="number" step="any" formControlName="latitude" placeholder="Captured by Get My Location" /></label>
-            <label class="field"><span>Longitude</span><input type="number" step="any" formControlName="longitude" placeholder="Captured by Get My Location" /></label>
+            <label class="field"><span>Latitude</span><input type="number" step="any" formControlName="latitude" placeholder="Captured by Get My Location" (input)="clearLocationAccuracy()" /></label>
+            <label class="field"><span>Longitude</span><input type="number" step="any" formControlName="longitude" placeholder="Captured by Get My Location" (input)="clearLocationAccuracy()" /></label>
             <p class="field full"><small>Location provides coordinates only; it does not return a postal address. The address fields below remain editable. You can correct them manually or capture coordinates again.</small></p>
             <label class="field full"><span>Address line 1 *</span><input formControlName="address_line_1" maxlength="190" placeholder="Building, street and area" /></label>
             <label class="field full"><span>Address line 2</span><input formControlName="address_line_2" maxlength="190" placeholder="Landmark, suite or floor (optional)" /></label>
