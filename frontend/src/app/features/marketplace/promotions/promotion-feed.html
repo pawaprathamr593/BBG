@@ -7,28 +7,7 @@
         @else if (promotions().length) {
           <div class="grid">
             @for (promotion of promotions(); track promotion.id) {
-              <article class="card">
-                <div class="ribbon">BBG PROMOTION</div>
-                <p class="business">{{ promotion.business_name }}</p>
-                <h3>{{ promotion.post_title }}</h3>
-                <p class="description">{{ promotion.post_content }}</p>
-                @if (promotion.media?.length) {
-                  <div class="promotion-media" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:0 0 18px">
-                    @for (media of promotion.media; track media.id) {
-                      @if (media.url && media.media_type === 'IMAGE') {
-                        <img [src]="media.url" [alt]="media.original_file_name || promotion.post_title" loading="lazy" style="width:100%;max-height:280px;object-fit:cover;border-radius:9px">
-                      } @else if (media.url && media.media_type === 'VIDEO') {
-                        <video [src]="media.url" controls preload="metadata" style="width:100%;max-height:280px;background:#111;border-radius:9px"></video>
-                      } @else if (media.url && media.media_type === 'AUDIO') {
-                        <audio [src]="media.url" controls style="width:100%"></audio>
-                      } @else if (media.url && media.media_type === 'DOCUMENT') {
-                        <a [href]="media.url" target="_blank" rel="noopener noreferrer">{{ media.original_file_name || 'Open promotion attachment' }}</a>
-                      }
-                    }
-                  </div>
-                }
-                <div class="dates"><time [attr.datetime]="promotion.published_on">Published {{ formatDate(promotion.published_on) }}</time>@if (promotion.valid_until) { <time [attr.datetime]="promotion.valid_until">Valid until {{ formatDate(promotion.valid_until) }}</time> }</div>
-              </article>
+              <app-promotion-card [promotion]="promotion" (selected)="openBusiness($event)" />
             }
           </div>
         } @else { <div class="empty"><div class="gift">✦</div><h3>No active promotions right now</h3><p>When businesses publish public promotions, they will show up here.</p></div> }
