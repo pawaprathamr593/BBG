@@ -145,7 +145,8 @@ final readonly class BusinessDao
                     ':description' => $businessDescription, ':category_id' => $categoryId,
                     ':phone' => $businessPhone, ':whatsapp' => $whatsappNumber, ':email' => $businessEmail,
                     ':address1' => $addressLine1, ':address2' => $addressLine2, ':city' => $city,
-                    ':state' => $state, ':postal' => $postalCode, ':country' => $countryCode, ':user_id' => $userId,
+                    ':state' => $state, ':postal' => $postalCode, ':country' => $countryCode,
+                    ':latitude' => $latitude, ':longitude' => $longitude, ':user_id' => $userId,
                 ],
             )->execute();
             $resArr['status'] = 'SUCCESS';
