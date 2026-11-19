@@ -101,6 +101,12 @@ final readonly class AdminDao
             FROM BUSINESS_PROFILES bp
             INNER JOIN TENANTS t ON t.id = bp.tenant_id AND t.status = 'A'
             WHERE bp.approval_status = 'PENDING' AND bp.status = 'A'
+                AND NOT EXISTS (
+                    SELECT 1 FROM TENANT_SUBSCRIPTIONS onboarding_subscription
+                    WHERE onboarding_subscription.tenant_id = bp.tenant_id
+                        AND onboarding_subscription.subscription_status IN ('PENDING', 'REJECTED')
+                        AND onboarding_subscription.status = 'A'
+                )
             ORDER BY bp.created_on ASC, bp.id ASC LIMIT :limit OFFSET :offset",
             [':limit' => $limit, ':offset' => $offset], 'getPendingBusinesses');
     }
@@ -108,8 +114,14 @@ final readonly class AdminDao
     public function countPendingBusinesses(ConnectionInterface $db): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        return $this->one($db, "SELECT COUNT(*) AS total FROM BUSINESS_PROFILES
-            WHERE approval_status = 'PENDING' AND status = 'A'", [], 'countPendingBusinesses');
+        return $this->one($db, "SELECT COUNT(*) AS total FROM BUSINESS_PROFILES bp
+            WHERE bp.approval_status = 'PENDING' AND bp.status = 'A'
+                AND NOT EXISTS (
+                    SELECT 1 FROM TENANT_SUBSCRIPTIONS onboarding_subscription
+                    WHERE onboarding_subscription.tenant_id = bp.tenant_id
+                        AND onboarding_subscription.subscription_status IN ('PENDING', 'REJECTED')
+                        AND onboarding_subscription.status = 'A'
+                )", [], 'countPendingBusinesses');
     }
 
     public function getBusinessForReview(ConnectionInterface $db, int $businessId): array
@@ -158,11 +170,13 @@ final readonly class AdminDao
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->many($db, "SELECT ts.id AS subscription_id, ts.tenant_id, t.tenant_name,
+            bp.id AS business_id, COALESCE(bp.business_name, t.tenant_name) AS business_name,
             ts.plan_id, p.plan_name, ts.subscription_status, ts.amount, ts.currency, ts.created_on,
             proof.id AS proof_id, proof.payment_reference, proof.proof_file_path,
             proof.submitted_on, proof.review_status
             FROM TENANT_SUBSCRIPTIONS ts
             INNER JOIN TENANTS t ON t.id = ts.tenant_id AND t.status = 'A'
+            LEFT JOIN BUSINESS_PROFILES bp ON bp.tenant_id = ts.tenant_id AND bp.status = 'A'
             INNER JOIN PLANS p ON p.id = ts.plan_id AND p.status = 'A'
             LEFT JOIN SUBSCRIPTION_PAYMENT_PROOFS proof ON proof.id = (
                 SELECT MAX(proof_latest.id) FROM SUBSCRIPTION_PAYMENT_PROOFS proof_latest
