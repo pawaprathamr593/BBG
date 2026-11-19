@@ -446,7 +446,7 @@ export class DashboardModule implements OnInit {
           {
             const [plans, subscriptions] = await Promise.all([
               this.request<{items?:DataRecord[]}>('/api/v1/subscriptions/plans/list','subscriptionParam','listActivePlans'),
-              this.request<ListResult>('/api/v1/subscriptions/mine/list','subscriptionParam','listMySubscriptions',pageData),
+              this.request<ListResult>('/api/v1/subscriptions/application/list','subscriptionParam','listApplicationSubscriptions',pageData),
             ]);
             this.plans.set(plans.items ?? []); this.setListResult(subscriptions);
           }
