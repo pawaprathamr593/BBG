@@ -91,6 +91,9 @@ final readonly class BusinessServices implements IBusinessServices
                 case 'submitBusinessApplication':
                     $resArr = $this->manageBusinessApplication($actionData, 'submit');
                     break;
+                case 'saveBusinessApplicationDraft':
+                    $resArr = $this->saveBusinessApplicationDraft($actionData);
+                    break;
                 case 'updateBusinessApplication':
                     $resArr = $this->manageBusinessApplication($actionData, 'update');
                     break;
@@ -194,6 +197,136 @@ final readonly class BusinessServices implements IBusinessServices
             ];
         }
         return $resArr;
+    }
+
+
+    private function saveBusinessApplicationDraft(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->principal($actionData);
+        if ($principal['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'BusinessServices::saveBusinessApplicationDraft');
+        }
+        $userId = (int) $principal['data']['user_id'];
+        $businessName = $this->requiredText($actionData['business_name'] ?? '', 180);
+        $businessSlugInput = $this->requiredText($actionData['business_slug'] ?? '', 200);
+        $tenantTypeInput = $this->requiredText($actionData['tenant_type'] ?? 'BUSINESS', 40);
+        if ($businessName === null || $businessSlugInput === null || $tenantTypeInput === null) {
+            $resArr['msgArr'][] = 'Business name, storefront slug and tenant type are required to save a draft.';
+            return $resArr;
+        }
+        $businessSlug = strtolower($businessSlugInput);
+        $tenantType = strtoupper($tenantTypeInput);
+        if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $businessSlug)) {
+            $resArr['msgArr'][] = 'A URL-safe business_slug is required.';
+            return $resArr;
+        }
+        $businessId = $this->positiveInt($actionData['business_id'] ?? 0) ?? 0;
+        $tenantId = $this->positiveInt($actionData['tenant_id'] ?? 0) ?? 0;
+        if (($businessId === 0) !== ($tenantId === 0)) {
+            $resArr['msgArr'][] = 'business_id and tenant_id must be supplied together when updating a draft.';
+            return $resArr;
+        }
+        $categoryId = $this->positiveInt($actionData['primary_category_id'] ?? 0);
+        $description = $this->optionalText($actionData['business_description'] ?? '', 5000);
+        $phone = $this->optionalText($actionData['business_phone'] ?? '', 25) ?? '';
+        $whatsapp = $this->optionalText($actionData['whatsapp_number'] ?? '', 25) ?? '';
+        $email = $this->optionalText($actionData['business_email'] ?? '', 190) ?? '';
+        $address1 = $this->optionalText($actionData['address_line_1'] ?? '', 190) ?? '';
+        $address2 = $this->optionalText($actionData['address_line_2'] ?? '', 190) ?? '';
+        $city = $this->optionalText($actionData['city'] ?? '', 100) ?? '';
+        $state = $this->optionalText($actionData['state'] ?? '', 100) ?? '';
+        $postal = $this->optionalText($actionData['postal_code'] ?? '', 15) ?? '';
+        $country = strtoupper($this->optionalText($actionData['country_code'] ?? 'IN', 2) ?? 'IN');
+        $latitude = isset($actionData['latitude']) && is_numeric($actionData['latitude']) ? (float) $actionData['latitude'] : null;
+        $longitude = isset($actionData['longitude']) && is_numeric($actionData['longitude']) ? (float) $actionData['longitude'] : null;
+        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $resArr['msgArr'][] = 'A valid business_email is required.';
+            return $resArr;
+        }
+        if (($latitude !== null && ($latitude < -90 || $latitude > 90))
+            || ($longitude !== null && ($longitude < -180 || $longitude > 180))) {
+            $resArr['msgArr'][] = 'Latitude or longitude is outside the valid coordinate range.';
+            return $resArr;
+        }
+        if (strlen($country) !== 2) {
+            $resArr['msgArr'][] = 'country_code must contain two characters.';
+            return $resArr;
+        }
+        $slugResult = $this->dao->isBusinessSlugAvailable($this->db, $businessSlug, $businessId);
+        if ($slugResult['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($slugResult, 'BusinessServices::saveBusinessApplicationDraft');
+        }
+        if ($slugResult['data'] !== []) {
+            $resArr['msgArr'][] = 'business_slug is already in use.';
+            return $resArr;
+        }
+
+        if ($businessId > 0) {
+            $owned = $this->dao->getOwnedBusinessApplication($this->db, $userId, $tenantId);
+            if ($owned['status'] !== 'SUCCESS' || $owned['data'] === []
+                || (int) $owned['data']['business_id'] !== $businessId
+                || ($owned['data']['approval_status'] ?? '') !== 'DRAFT') {
+                $resArr['msgArr'][] = 'Only the owner can update an editable business draft.';
+                return $resArr;
+            }
+            return $this->dao->updateBusinessApplicationDraft(
+                $this->db, $tenantId, $businessId, $userId, $businessName, $businessSlug,
+                $description ?? '', $categoryId, $phone, $whatsapp, $email, $address1, $address2,
+                $city, $state, $postal, $country, $latitude, $longitude,
+            );
+        }
+
+        $transaction = $this->db->beginTransaction();
+        try {
+            $tenantCode = 'TEN-' . strtoupper(bin2hex(random_bytes(8)));
+            $tenant = $this->dao->insertTenant($this->db, $tenantCode, $businessName, $tenantType, $userId);
+            if ($tenant['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($tenant, 'BusinessServices::saveBusinessApplicationDraft');
+            }
+            $newTenantId = (int) $tenant['data']['id'];
+            $membership = $this->dao->insertMembership($this->db, $newTenantId, $userId);
+            if ($membership['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($membership, 'BusinessServices::saveBusinessApplicationDraft');
+            }
+            $role = $this->dao->ensureTenantOwnerRole($this->db);
+            if ($role['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($role, 'BusinessServices::saveBusinessApplicationDraft');
+            }
+            $assignment = $this->dao->insertOwnerAssignment($this->db, $newTenantId, $userId, (int) $role['data']['id']);
+            if ($assignment['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($assignment, 'BusinessServices::saveBusinessApplicationDraft');
+            }
+            $profile = $this->dao->insertBusinessProfile(
+                $this->db, $newTenantId, $businessName, $businessSlug, $description ?? '', $categoryId,
+                $phone, $whatsapp, $email, $address1, $address2, $city, $state, $postal, $country,
+                $latitude, $longitude, $userId, 'DRAFT',
+            );
+            if ($profile['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($profile, 'BusinessServices::saveBusinessApplicationDraft');
+            }
+            $storefront = $this->dao->insertStorefrontSettings($this->db, $newTenantId, $userId);
+            if ($storefront['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($storefront, 'BusinessServices::saveBusinessApplicationDraft');
+            }
+            $transaction->commit();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = [
+                'business_id' => (int) $profile['data']['id'],
+                'tenant_id' => $newTenantId,
+                'approval_status' => 'DRAFT',
+            ];
+            return $resArr;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) $transaction->rollBack();
+            throw $exception;
+        }
     }
 
     private function manageBusinessApplication(array $actionData, string $operation): array
