@@ -426,8 +426,13 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             $resArr['msgArr'][] = 'A valid tenant_id is required.';
             return $resArr;
         }
+        // Tenant-owner RBAC seed uses one subscription capability for view/create/update.
+        $tenantPermissionCode = match ($permissionCode) {
+            'subscription.view', 'subscription.create', 'subscription.update' => 'SUBSCRIPTIONS_MANAGE',
+            default => $permissionCode,
+        };
         $permission = $this->tenantDao->hasTenantPermission(
-            $this->db, (int) $principal['data']['user_id'], $tenantId, $permissionCode,
+            $this->db, (int) $principal['data']['user_id'], $tenantId, $tenantPermissionCode,
         );
         if ($permission['status'] !== 'SUCCESS') {
             return $this->propagateFailure($permission, 'SubscriptionServices::tenantContext');
