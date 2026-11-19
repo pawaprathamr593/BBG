@@ -31,6 +31,7 @@ export interface ProductCardModel {
   id: number;
   public_id?: string;
   slug?: string;
+  offering_type?: 'PRODUCT' | 'SERVICE';
   product_name: string;
   description: string | null;
   category_name: string | null;
