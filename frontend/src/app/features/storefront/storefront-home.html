@@ -104,7 +104,13 @@
                   <a class="product-card" [routerLink]="product.offering_type === 'SERVICE' ? ['/store', data.business.business_slug, 'contact'] : ['/store', data.business.business_slug, 'products', productRoute(product)]" [queryParams]="product.offering_type === 'SERVICE' ? { subject: 'Service enquiry: ' + product.product_name } : null">
                   <div class="product-image" [class.image-alt]="index % 2 === 1">
                     <span class="category-tag">{{ product.offering_type === 'SERVICE' ? 'SERVICE' : (product.category_name || 'PRODUCT') }}</span>
-                    <span class="product-initial">{{ product.product_name.slice(0, 1).toUpperCase() }}</span>
+                    @if (product.primary_image_url) {
+                      <img [src]="product.primary_image_url" [alt]="product.product_name" loading="lazy" style="width:100%;height:100%;object-fit:cover">
+                    } @else if (product.media?.length && product.media[0].media_type === 'VIDEO' && product.media[0].url) {
+                      <video [src]="product.media[0].url" controls preload="metadata" style="width:100%;height:100%;object-fit:cover"></video>
+                    } @else {
+                      <span class="product-initial">{{ product.product_name.slice(0, 1).toUpperCase() }}</span>
+                    }
                   </div>
                   <div class="product-details">
                     @if (product.brand_name && product.offering_type !== 'SERVICE') { <span class="product-brand">{{ product.brand_name }}</span> }
