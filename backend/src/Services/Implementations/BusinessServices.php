@@ -56,6 +56,9 @@ final readonly class BusinessServices implements IBusinessServices
                 case 'getMyStorefront':
                     $resArr = $this->getMyStorefront($actionData);
                     break;
+                case 'getOwnedStorefront':
+                    $resArr = $this->getOwnedStorefront($actionData);
+                    break;
                 default:
                     $resArr['msgArr'][] = 'Unsupported business read action.';
                     break;
@@ -111,6 +114,15 @@ final readonly class BusinessServices implements IBusinessServices
                     break;
                 case 'unpublishMyStorefront':
                     $resArr = $this->manageMyStorefront($actionData, 'unpublish');
+                    break;
+                case 'updateOwnedStorefront':
+                    $resArr = $this->manageMyStorefront($actionData, 'update', true);
+                    break;
+                case 'publishOwnedStorefront':
+                    $resArr = $this->manageMyStorefront($actionData, 'publish', true);
+                    break;
+                case 'unpublishOwnedStorefront':
+                    $resArr = $this->manageMyStorefront($actionData, 'unpublish', true);
                     break;
                 default:
                     $resArr['msgArr'][] = 'Unsupported business management action.';
@@ -498,6 +510,39 @@ final readonly class BusinessServices implements IBusinessServices
         }
     }
 
+
+    private function getOwnedStorefront(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->principal($actionData);
+        if ($principal['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'BusinessServices::getOwnedStorefront');
+        }
+        $tenantId = $this->positiveInt($actionData['tenant_id'] ?? null);
+        if ($tenantId === null) {
+            $resArr['msgArr'][] = 'A valid tenant_id is required.';
+            return $resArr;
+        }
+        $userId = (int) $principal['data']['user_id'];
+        $business = $this->dao->getOwnedBusinessApplication($this->db, $userId, $tenantId);
+        if ($business['status'] !== 'SUCCESS' || $business['data'] === []) {
+            return $this->propagateFailure($business, 'BusinessServices::getOwnedStorefront');
+        }
+        if (($business['data']['approval_status'] ?? '') !== 'APPROVED') {
+            $resArr['msgArr'][] = 'Only an approved business owner can configure its storefront.';
+            return $resArr;
+        }
+        $entitlement = $this->requireTenantEntitlement($tenantId, 'storefront.enabled', 'BusinessServices::getOwnedStorefront');
+        if ($entitlement['status'] !== 'SUCCESS') return $entitlement;
+        $settings = $this->dao->getStorefrontSettings($this->db, $tenantId);
+        if ($settings['status'] !== 'SUCCESS' || $settings['data'] === []) {
+            return $this->propagateFailure($settings, 'BusinessServices::getOwnedStorefront');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['business' => $business['data'], 'storefront' => $settings['data']];
+        return $resArr;
+    }
+
     private function getMyStorefront(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
@@ -531,7 +576,7 @@ final readonly class BusinessServices implements IBusinessServices
         return $resArr;
     }
 
-    private function manageMyStorefront(array $actionData, string $operation): array
+    private function manageMyStorefront(array $actionData, string $operation, bool $ownerScoped = false): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $principal = $this->principal($actionData);
@@ -544,11 +589,15 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = 'A valid tenant_id is required.';
             return $resArr;
         }
-        $access = $this->requireTenantPermission($userId, $tenantId, 'business.update', 'BusinessServices::manageMyStorefront');
-        if ($access['status'] !== 'SUCCESS') return $access;
+        if (!$ownerScoped) {
+            $access = $this->requireTenantPermission($userId, $tenantId, 'business.update', 'BusinessServices::manageMyStorefront');
+            if ($access['status'] !== 'SUCCESS') return $access;
+        }
         $entitlement = $this->requireTenantEntitlement($tenantId, 'storefront.enabled', 'BusinessServices::manageMyStorefront');
         if ($entitlement['status'] !== 'SUCCESS') return $entitlement;
-        $business = $this->dao->getMyBusinessApplication($this->db, $userId, $tenantId);
+        $business = $ownerScoped
+            ? $this->dao->getOwnedBusinessApplication($this->db, $userId, $tenantId)
+            : $this->dao->getMyBusinessApplication($this->db, $userId, $tenantId);
         if ($business['status'] !== 'SUCCESS' || $business['data'] === []) {
             return $this->propagateFailure($business, 'BusinessServices::manageMyStorefront');
         }
