@@ -314,7 +314,7 @@ final readonly class AdminDao
         return $resArr;
     }
 
-    public function approveSubscription(ConnectionInterface $db, int $subscriptionId, int $tenantId, int $adminId, string $startsOn, string $endsOn): array
+    public function approveSubscription(ConnectionInterface $db, int $subscriptionId, int $tenantId, int $adminId, string $startsOn, string $endsOn, ?int $upgradeFromSubscriptionId = null): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         try {
@@ -329,6 +329,21 @@ final readonly class AdminDao
             if ($affected !== 1) {
                 $resArr['msgArr'][] = 'Subscription state changed or is not pending.';
                 return $resArr;
+            }
+            if ($upgradeFromSubscriptionId !== null) {
+                $replaced = $db->createCommand("UPDATE TENANT_SUBSCRIPTIONS
+                    SET subscription_status = 'EXPIRED',
+                        ends_on = CASE WHEN subscription_status = 'ACTIVE'
+                            AND (ends_on IS NULL OR ends_on > :starts_on) THEN :starts_on ELSE ends_on END,
+                        updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
+                    WHERE id = :previous_subscription_id AND tenant_id = :tenant_id
+                        AND subscription_status IN ('ACTIVE', 'EXPIRED') AND status = 'A'",
+                    [':starts_on' => $startsOn, ':admin_id' => $adminId,
+                     ':previous_subscription_id' => $upgradeFromSubscriptionId, ':tenant_id' => $tenantId])->execute();
+                if ($replaced !== 1) {
+                    $resArr['msgArr'][] = 'The previous subscription is no longer active or expired and could not be replaced.';
+                    return $resArr;
+                }
             }
             $db->createCommand("UPDATE SUBSCRIPTION_PAYMENT_PROOFS
                 SET review_status = 'APPROVED', reviewed_by = :admin_id,
@@ -365,7 +380,7 @@ final readonly class AdminDao
                 WHERE id = :tenant_id AND status = 'A'",
                 [':admin_id' => $adminId, ':tenant_id' => $tenantId])->execute();
             $resArr['status'] = 'SUCCESS';
-            $resArr['data'] = ['subscription_id' => $subscriptionId, 'subscription_status' => 'ACTIVE'];
+            $resArr['data'] = ['subscription_id' => $subscriptionId, 'subscription_status' => 'ACTIVE', 'replaced_subscription_id' => $upgradeFromSubscriptionId];
         } catch (Throwable $exception) {
             return $this->error('approveSubscription', $exception);
         }
