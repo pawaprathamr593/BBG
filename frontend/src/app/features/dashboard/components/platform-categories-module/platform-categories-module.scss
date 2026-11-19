@@ -28,3 +28,9 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .category-form footer .primary-button{border-color:var(--brand);background:var(--brand);color:#fff}
 @media(max-width:800px){.category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.categories-page{padding:16px}.categories-heading{flex-direction:column}.category-grid{grid-template-columns:1fr}.category-form footer{flex-direction:column-reverse}.category-form footer button{width:100%}}
+
+.pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);color:var(--text-secondary);font-size:.74rem}
+.pagination>div{display:flex;gap:8px}
+.pagination button{min-height:36px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-card);color:var(--text-primary);font:inherit;font-weight:700;cursor:pointer}
+.pagination button:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:480px){.pagination{align-items:flex-start;flex-direction:column}.pagination>div{width:100%}.pagination button{flex:1}}

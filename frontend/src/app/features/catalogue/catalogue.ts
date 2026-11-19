@@ -282,7 +282,7 @@ export class Catalogue implements OnInit {
     else {
       this.mediaError.set('');
       for (const file of files) {
-        if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+        if (file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/')) {
           this.mediaPreviewUrls.set(file, URL.createObjectURL(file));
         }
       }

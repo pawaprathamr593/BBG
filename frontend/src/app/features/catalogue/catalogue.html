@@ -97,7 +97,12 @@
                 @if (selectedMediaFiles().length) {
                   <div class="media-list">
                     @for (file of selectedMediaFiles(); track $index) {
-                      <div class="media-item">@if (previewMediaUrl(file); as preview) { @if (file.type.startsWith('image/')) { <img class="media-thumb" [src]="preview" [alt]="file.name"> } @else { <video class="media-preview" controls [src]="preview"></video> } } @else { <span class="media-kind">{{ mediaKind(file.type) }}</span> }<div><strong>{{ file.name }}</strong><small>{{ formatFileSize(file.size) }} · Ready to upload</small></div><button type="button" class="icon-button" [attr.aria-label]="'Remove ' + file.name" (click)="removeSelectedMedia($index)">×</button></div>
+                      <div class="media-item">@if (previewMediaUrl(file); as preview) {
+                        @if (file.type.startsWith('image/')) { <img class="media-thumb" [src]="preview" [alt]="file.name"> }
+                        @else if (file.type.startsWith('video/')) { <video class="media-preview" controls [src]="preview"></video> }
+                        @else if (file.type.startsWith('audio/')) { <audio class="media-audio" controls [src]="preview"></audio> }
+                        @else { <span class="media-kind">{{ mediaKind(file.type) }}</span> }
+                      } @else { <span class="media-kind">{{ mediaKind(file.type) }}</span> }<div><strong>{{ file.name }}</strong><small>{{ formatFileSize(file.size) }} · Ready to upload</small></div><button type="button" class="icon-button" [attr.aria-label]="'Remove ' + file.name" (click)="removeSelectedMedia($index)">×</button></div>
                     }
                   </div>
                 }

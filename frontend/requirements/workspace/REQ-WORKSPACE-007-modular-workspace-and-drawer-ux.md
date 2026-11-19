@@ -180,3 +180,5 @@ Every data-driven module/section must handle applicable states:
 - Moved Personal Account profile editing and password set/change flows into the Personal Account feature component; it now owns its form state and uses the shared right-side drawer. Successful updates emit a refresh request to reload the authenticated profile.
 
 - Extracted Platform Marketplace Categories into its own feature component with permission-gated create/edit/delete drawers/actions and preserved server pagination.
+
+- Product and promotion media selection now creates local previews for audio files as well as images and videos; document files retain a safe type/name indicator. The product drawer renders native audio controls instead of treating audio as video.

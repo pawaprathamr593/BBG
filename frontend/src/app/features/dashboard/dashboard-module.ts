@@ -794,7 +794,7 @@ export class DashboardModule implements OnInit {
     else {
       this.promotionError.set('');
       for (const file of files) {
-        if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+        if (file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/')) {
           this.promotionMediaPreviews.update((current) => new Map(current).set(file, URL.createObjectURL(file)));
         }
       }
