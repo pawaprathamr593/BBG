@@ -97,11 +97,18 @@
         eyebrow="RECORD DETAILS"
         (closed)="recordDetail.set(null)">
         @if (recordDetail(); as detail) {
-          <div class="review-detail-grid">
-            @for (entry of detailEntries(detail); track entry.key) {
-              <div><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
+          <div class="record-detail-content">
+            @for (group of detailGroups(detail); track group.title) {
+              <section class="record-detail-section">
+                <h3>{{ group.title }}</h3>
+                <div class="review-detail-grid">
+                  @for (entry of group.entries; track entry.key) {
+                    <div [class.detail-value-wide]="isLongDetail(entry.value)"><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
+                  }
+                </div>
+              </section>
             } @empty {
-              <p>No additional details are available for this record.</p>
+              <p class="record-detail-empty">No additional details are available for this record.</p>
             }
           </div>
         }
