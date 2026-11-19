@@ -129,8 +129,8 @@ jobs:
             INSERT INTO USERS (account_status, status) VALUES
               ('ACTIVE', 'A'), ('ACTIVE', 'A'), ('INACTIVE', 'A');
           "
-          mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/seeds/20261113_004_global_consumer_role.sql
-          mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/seeds/20261113_004_global_consumer_role.sql
+          mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/seeds/20261113_004_platform_consumer_role.sql
+          mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/seeds/20261113_004_platform_consumer_role.sql
           assignments=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM USER_ROLE_ASSIGNMENTS ura INNER JOIN ROLES r ON r.id=ura.role_id WHERE r.role_code='CONSUMER' AND r.scope_type='GLOBAL' AND ura.tenant_id IS NULL AND ura.status='A'")
           role_count=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM ROLES WHERE role_code='CONSUMER' AND scope_type='GLOBAL' AND status='A'")
           test "$assignments" -eq 2
