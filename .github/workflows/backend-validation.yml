@@ -84,13 +84,6 @@ jobs:
             );
           "
           mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261117_002_subscription_payment_review_workflow.sql
-          mysql --protocol=tcp -h 127.0.0.1 -uroot bbg -e "
-            CREATE TABLE BUSINESS_PROFILES (
-              id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-              latitude DECIMAL(10,2) NULL,
-              longitude DECIMAL(10,2) NULL
-            );
-          "
           mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261119_001_business_profile_geolocation_precision.sql
       - name: Verify migration tables and generated cart keys
         env:
