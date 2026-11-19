@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
-import { BusinessApplication, BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
+import { BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
+import type { BusinessApplication } from '../../core/business/business-registration-api.service';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -110,7 +111,7 @@ export class BusinessRegistration implements OnInit {
   getMyLocation(): void {
     this.locationMessage.set('');
     this.locationAccuracy.set(null);
-    if (!navigator.geolocation) {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
       this.locationMessage.set('Location is not supported by this browser. You can enter the address manually.');
       return;
     }
