@@ -23,10 +23,21 @@ Platform context: `PLATFORM_USERS_MANAGE`, `BUSINESS_APPROVE`, `SUBSCRIPTIONS_AP
 
 Custom tenant roles can use this same model later: the dashboard resolves permission codes and scope rather than depending on a fixed role-name allowlist.
 
+## Feature component boundaries
+
+- `BusinessProfileModule` owns its profile edit form and mutation workflow; the dashboard supplies the existing tenant-scoped profile DTO and refreshes after a successful save.
+- `StorefrontModule` owns storefront settings edits and publish/unpublish actions; the dashboard supplies the current storefront DTO and refreshes after successful mutations.
+- `PersonalAccountModule` owns personal profile editing and password set/change flows; it uses the authenticated profile DTO and requests a refresh after successful updates.
+- `PlatformCategoriesModule` owns category create/edit/delete workflows, confirmation and pagination presentation; the dashboard supplies the server-paged category DTOs and refreshes after mutations.
+- `Catalogue` remains its own lazy feature page with separate Products and Categories sections and a shared right-side drawer for product/category creation.
+- `WorkspaceRecordsModule` is the shared presentational record-list component for record-oriented modules. It receives typed card models and emits user actions; it does not call APIs.
+- `WorkspaceDrawer` is the common right-side drawer shell used by workspace add/edit forms, including mobile safe-area handling, Escape/backdrop close, focus management and body-scroll restoration.
+- `WorkspaceModuleApiService` centralizes context-checked API requests for extracted feature components. Existing endpoints, action names and envelope keys are retained.
+
 ## Current scope and limitations
 
-- The dashboard shell, context selector, role display, module visibility and existing summary widgets are implemented.
-- Module cards currently represent permission-backed access. Dedicated catalogue, orders, customer, analytics and administration screens remain separate feature work and are not falsely presented as implemented by this dashboard.
-- Consumer summary metrics are loaded for the global `CONSUMER` role. The current database seed does not define consumer-specific module permissions, so no consumer module cards are fabricated.
-- Tenant summary metrics currently use the existing backend requirement for `TENANT_MEMBERS_VIEW`; roles without that permission still see their authorized modules, but not those summary metrics.
-- No database tables or columns are added or changed by this feature.
+- The dashboard shell continues to own context selection, navigation, permission resolution and route-level loading.
+- Business Profile, Storefront, Personal Account and Platform Categories now own their feature-specific editing workflows. Catalogue is already a separate feature page.
+- Other record-heavy workflows (members, business customers, orders, enquiries, payments, platform users and business/subscription reviews), promotion upload orchestration, subscription proof workflows and payment-QR administration still use the dashboard module for orchestration and remain candidates for further extraction.
+- The shared record list remains presentational; backend authorization and tenant ownership checks remain authoritative.
+- This refactor adds no database tables or columns and does not introduce API endpoints or permission codes.
