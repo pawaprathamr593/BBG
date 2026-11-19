@@ -72,6 +72,7 @@ return [
     Route::post('/api/v1/tenants/members/list')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/members/list'),
 
     Route::post('/api/v1/business/application/submit')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/application/submit'),
+    Route::post('/api/v1/business/application/draft/save')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/application/draft/save'),
     Route::post('/api/v1/business/application/get')->action([BusinessController::class, 'actionGetBusiness'])->name('api/v1/business/application/get'),
     Route::post('/api/v1/business/application/list')->action([BusinessController::class, 'actionGetBusiness'])->name('api/v1/business/application/list'),
     Route::post('/api/v1/business/application/update')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/application/update'),
