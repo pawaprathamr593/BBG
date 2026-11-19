@@ -143,11 +143,13 @@ export class Dashboard implements OnInit {
       const previousContext = this.workspace.activeContext();
       const previousTenantId = this.workspace.activeTenantId();
       await this.workspace.initialize();
-      const ownerTenant = this.workspace.tenants().find((tenant) =>
-        (tenant.role_codes ?? '').split(',').map((role) => role.trim()).includes('TENANT_OWNER'),
-      );
-      if (ownerTenant) {
-        const application = await this.businessApi.getMyApplication(ownerTenant.id);
+      const activeTenant = this.workspace.activeTenant();
+      const activeTenantIsOwned = (activeTenant?.role_codes ?? '')
+        .split(',')
+        .map((role) => role.trim())
+        .includes('TENANT_OWNER');
+      if (activeTenant && activeTenantIsOwned) {
+        const application = await this.businessApi.getMyApplication(activeTenant.id);
         if (application && application.approval_status !== 'APPROVED') {
           await this.router.navigate(['/workspace']);
           return;
