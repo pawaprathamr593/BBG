@@ -89,6 +89,11 @@ export class BusinessWorkspace implements OnInit {
     });
   }
 
+  manageTeam(business: BusinessApplication): void {
+    if (business.approval_status !== 'APPROVED') return;
+    void this.router.navigate(['/business/team'], { queryParams: { tenant_id: business.tenant_id } });
+  }
+
   async openWorkspace(business: BusinessApplication): Promise<void> {
     if (business.approval_status !== 'APPROVED') return;
     try {
