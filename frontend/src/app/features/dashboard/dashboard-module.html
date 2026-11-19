@@ -68,17 +68,7 @@
                 <button class="secondary-action" type="button" (click)="openPasswordForm()">{{ summary()?.['has_password'] ? 'Change password' : 'Set password' }}</button>
               }
             </div>
-            @if (showPasswordForm()) {
-              <form class="password-form" (submit)="$event.preventDefault(); updatePassword()">
-                @if (summary()?.['has_password']) {
-                  <label>Current password<input type="password" autocomplete="current-password" [value]="currentPassword()" (input)="currentPassword.set(inputValue($event))" required></label>
-                }
-                <label>New password<input type="password" autocomplete="new-password" minlength="8" [value]="newPassword()" (input)="newPassword.set(inputValue($event))" required></label>
-                <label>Confirm new password<input type="password" autocomplete="new-password" minlength="8" [value]="confirmPassword()" (input)="confirmPassword.set(inputValue($event))" required></label>
-                @if (passwordError()) { <p class="password-error" role="alert">{{ passwordError() }}</p> }
-                <div class="password-form-actions"><button class="refresh" type="button" (click)="closePasswordForm()" [disabled]="busy()">Cancel</button><button class="secondary-action" type="submit" [disabled]="busy()">{{ busy() ? 'Saving…' : (summary()?.['has_password'] ? 'Update password' : 'Set password') }}</button></div>
-              </form>
-            }
+
           </section>
         }
 
@@ -86,12 +76,12 @@
           <section class="qr-settings-card">
             <div class="section-title"><div><p class="eyebrow">PLATFORM PAYMENT SETTINGS</p><h2>UPI payment QR</h2><p>Changing the QR affects new subscription requests only. Existing requests retain their captured payment instructions.</p></div></div>
             @if (summary()?.['qr_url']) { <img class="payment-qr-preview" [src]="asUrl(summary()?.['qr_url'])" alt="Current BBG UPI payment QR"> }
-            <label>Payee name<input type="text" maxlength="150" [value]="qrPayeeName()" (input)="qrPayeeName.set(inputValue($event))" placeholder="BBG account name"></label>
-            <label>UPI ID<input type="text" maxlength="150" [value]="qrUpiId()" (input)="qrUpiId.set(inputValue($event))" placeholder="payments@upi"></label>
-            <label>Payment instructions<textarea rows="3" maxlength="1000" [value]="qrInstructions()" (input)="qrInstructions.set(inputValue($event))" placeholder="Optional instructions for business owners"></textarea></label>
-            <label>New QR image<input type="file" accept="image/jpeg,image/png,image/webp" (change)="setPaymentQrFile($event)" [disabled]="busy()"><small>JPG, PNG or WEBP, up to 10 MB. Uploading a new QR creates a new version.</small></label>
-            @if (qrFile()) { <p class="qr-file-name">Selected: {{ qrFile()?.name }}</p> }
-            <button type="button" class="secondary-action" (click)="savePaymentQrConfig()" [disabled]="busy() || !qrPayeeName().trim() || !qrUpiId().trim() || !qrFile()">{{ busy() ? 'Saving…' : 'Save payment QR configuration' }}</button>
+            <div class="summary-grid">
+              <article class="summary-card"><span>Payee name</span><strong>{{ summary()?.['payee_name'] || 'Not configured' }}</strong></article>
+              <article class="summary-card"><span>UPI ID</span><strong>{{ summary()?.['upi_id'] || 'Not configured' }}</strong></article>
+              <article class="summary-card"><span>Payment instructions</span><strong>{{ summary()?.['payment_instructions'] || 'No instructions' }}</strong></article>
+            </div>
+            <button type="button" class="secondary-action" (click)="openPaymentQrDrawer()">Edit payment QR settings</button>
           </section>
         }
 
@@ -289,6 +279,29 @@
           </section>
         </div>
       }
+
+      <app-workspace-drawer [open]="showPasswordForm()" [title]="summary()?.['has_password'] ? 'Change account password' : 'Set account password'" description="Use a secure password of at least eight characters." (closed)="closePasswordForm()">
+        <form class="workspace-edit-form" (submit)="$event.preventDefault(); updatePassword()">
+          @if (summary()?.['has_password']) { <label class="workspace-message-label">Current password<input type="password" autocomplete="current-password" [value]="currentPassword()" (input)="currentPassword.set(inputValue($event))" required></label> }
+          <label class="workspace-message-label">New password<input type="password" autocomplete="new-password" minlength="8" [value]="newPassword()" (input)="newPassword.set(inputValue($event))" required></label>
+          <label class="workspace-message-label">Confirm new password<input type="password" autocomplete="new-password" minlength="8" [value]="confirmPassword()" (input)="confirmPassword.set(inputValue($event))" required></label>
+          @if (passwordError()) { <p class="password-error" role="alert">{{ passwordError() }}</p> }
+          <footer><button type="button" class="refresh" (click)="closePasswordForm()" [disabled]="busy()">Cancel</button><button type="submit" class="secondary-action" [disabled]="busy()">{{ busy() ? 'Saving…' : (summary()?.['has_password'] ? 'Update password' : 'Set password') }}</button></footer>
+        </form>
+      </app-workspace-drawer>
+
+      <app-workspace-drawer [open]="showPaymentQrDrawer()" title="Edit payment QR configuration" description="This configuration applies to new subscription requests only." (closed)="showPaymentQrDrawer.set(false)">
+        <form class="workspace-edit-form" (submit)="$event.preventDefault(); savePaymentQrConfig()">
+          @if (summary()?.['qr_url']) { <img class="payment-qr-preview" [src]="asUrl(summary()?.['qr_url'])" alt="Current BBG UPI payment QR"> }
+          <label class="workspace-message-label">Payee name<input type="text" maxlength="150" [value]="qrPayeeName()" (input)="qrPayeeName.set(inputValue($event))" placeholder="BBG account name" required></label>
+          <label class="workspace-message-label">UPI ID<input type="text" maxlength="150" [value]="qrUpiId()" (input)="qrUpiId.set(inputValue($event))" placeholder="payments@upi" required></label>
+          <label class="workspace-message-label">Payment instructions<textarea rows="3" maxlength="1000" [value]="qrInstructions()" (input)="qrInstructions.set(inputValue($event))" placeholder="Optional instructions for business owners"></textarea></label>
+          <label class="workspace-message-label">New QR image<input type="file" accept="image/jpeg,image/png,image/webp" (change)="setPaymentQrFile($event)" [disabled]="busy()"><small>JPG, PNG or WEBP, up to 10 MB. Uploading a new QR creates a new version.</small></label>
+          @if (qrFile()) { <p class="qr-file-name">Selected: {{ qrFile()?.name }}</p> }
+          @if (error()) { <p class="workspace-edit-error" role="alert">{{ error() }}</p> }
+          <footer><button type="button" class="refresh" (click)="showPaymentQrDrawer.set(false)" [disabled]="busy()">Cancel</button><button type="submit" class="secondary-action" [disabled]="busy() || !qrPayeeName().trim() || !qrUpiId().trim() || !qrFile()">{{ busy() ? 'Saving…' : 'Save payment QR configuration' }}</button></footer>
+        </form>
+      </app-workspace-drawer>
 
       <app-workspace-drawer [open]="showCategoryDrawer()" [title]="editingCategoryId() === null ? 'Create marketplace category' : 'Edit marketplace category'" description="Maintain the category taxonomy used by marketplace listings." (closed)="showCategoryDrawer.set(false)">
         <form class="workspace-edit-form" (submit)="$event.preventDefault(); saveCategory()">

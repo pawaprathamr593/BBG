@@ -125,6 +125,9 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
 
     .workspace-message-label{display:grid;gap:8px;color:var(--text-primary);font-size:.76rem;font-weight:750}
     .workspace-message-label textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.8rem}
+
+    .qr-settings-card .summary-grid{margin:18px 0}
+    .qr-settings-card .summary-card strong{overflow-wrap:anywhere;font-size:.82rem;letter-spacing:0}
   `],
 })
 export class DashboardModule implements OnInit {
@@ -199,6 +202,7 @@ export class DashboardModule implements OnInit {
     parent_category_id: '', display_order: '0',
   });
   readonly showReplyDrawer = signal(false);
+  readonly showPaymentQrDrawer = signal(false);
   readonly replyEnquiryId = signal<number | null>(null);
   readonly replyMessage = signal('');
   readonly businessProfileForm = signal<BusinessProfileForm>({
@@ -1003,6 +1007,12 @@ export class DashboardModule implements OnInit {
     this.passwordError.set(''); this.showPasswordForm.set(true);
   }
 
+  openPaymentQrDrawer(): void {
+    if (!this.can('subscription.update')) return;
+    this.error.set('');
+    this.showPaymentQrDrawer.set(true);
+  }
+
   closePasswordForm(): void {
     this.showPasswordForm.set(false); this.passwordError.set('');
     this.currentPassword.set(''); this.newPassword.set(''); this.confirmPassword.set('');
@@ -1358,6 +1368,7 @@ export class DashboardModule implements OnInit {
       this.notice.set('A new payment QR configuration is active for new subscription requests.');
       this.qrFile.set(null);
       await this.load();
+      this.showPaymentQrDrawer.set(false);
     } catch(error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
