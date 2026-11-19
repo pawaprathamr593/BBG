@@ -90,57 +90,72 @@
           <section class="state-panel empty"><span class="state-icon">⌑</span><strong>Nothing to show yet</strong><p>There are no records available for this section in your current area.</p></section>
         }
       }
-      @if (recordDetail(); as detail) {
-        <div class="composer-backdrop" (click)="recordDetail.set(null)">
-          <section class="promotion-composer subscription-review-dialog" role="dialog" aria-modal="true" aria-labelledby="record-detail-title" (click)="$event.stopPropagation()">
-            <header>
-              <div><p class="eyebrow">{{ contextLabel() }}</p><h2 id="record-detail-title">{{ recordDetailTitle() }}</h2></div>
-              <button type="button" class="composer-close" (click)="recordDetail.set(null)" aria-label="Close details">×</button>
-            </header>
+      <app-workspace-drawer
+        [open]="recordDetail() !== null"
+        [title]="recordDetailTitle()"
+        description="Review the available information for this record."
+        eyebrow="RECORD DETAILS"
+        (closed)="recordDetail.set(null)">
+        @if (recordDetail(); as detail) {
+          <div class="review-detail-grid">
+            @for (entry of detailEntries(detail); track entry.key) {
+              <div><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
+            } @empty {
+              <p>No additional details are available for this record.</p>
+            }
+          </div>
+        }
+      </app-workspace-drawer>
+
+      <app-workspace-drawer
+        [open]="subscriptionReview() !== null"
+        title="Subscription review"
+        description="Business registration, selected plan, payment instructions, submitted receipts and review history."
+        eyebrow="PLATFORM ADMINISTRATION"
+        (closed)="subscriptionReview.set(null)">
+        @if (subscriptionReviewDetail(); as detail) {
+          <section class="subscription-review-section">
+            <h3>Business details</h3>
             <div class="review-detail-grid">
-              @for (entry of detailEntries(detail); track entry.key) {
-                <div><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
+              @for (key of ['tenant_code','tenant_type','tenant_status','business_name','business_slug','business_description','business_email','business_phone','whatsapp_number','logo_path','cover_image_path','address_line_1','address_line_2','city','state','postal_code','country_code','latitude','longitude','business_approval_status','business_publication_status','business_rejection_reason']; track key) {
+                <div><span>{{ humanize(key) }}</span><strong>{{ detail[key] || '—' }}</strong></div>
               }
             </div>
-          </section>
-        </div>
-      }
-      @if (subscriptionReview()) {
-        <div class="composer-backdrop" (click)="subscriptionReview.set(null)">
-          <section class="promotion-composer subscription-review-dialog" role="dialog" aria-modal="true" aria-labelledby="subscription-review-title" (click)="$event.stopPropagation()">
-            <header><div><p class="eyebrow">PLATFORM ADMIN / SUBSCRIPTION REVIEW</p><h2 id="subscription-review-title">Subscription #{{ subscriptionReviewDetail()?.['id'] }}</h2><p>Business registration, selected plan, captured payment instructions and submission history.</p></div><button type="button" class="composer-close" (click)="subscriptionReview.set(null)">×</button></header>
-            @if (subscriptionReviewDetail(); as detail) {
-              <h3>Business details</h3>
-              <div class="review-detail-grid">
-                @for (key of ['tenant_code','tenant_type','tenant_status','business_name','business_slug','business_description','primary_category_id','business_email','business_phone','whatsapp_number','logo_path','cover_image_path','address_line_1','address_line_2','city','state','postal_code','country_code','latitude','longitude','business_approval_status','business_publication_status','business_rejection_reason']; track key) {
-                  <div><span>{{ humanize(key) }}</span><strong>{{ detail[key] || '—' }}</strong></div>
-                }
-              </div>
-              <h3>Plan & payment instructions</h3>
-              <div class="review-detail-grid">
-                @for (key of ['plan_name','plan_code','billing_cycle','amount','currency','subscription_status','payment_payee_name','payment_upi_id','payment_qr_version','payment_instructions']; track key) {
-                  <div><span>{{ humanize(key) }}</span><strong>{{ detail[key] || '—' }}</strong></div>
-                }
-              </div>
-              @if (hasBcn(detail)) {
-                <div class="bcn-record">
-                  <span>BBG Contribution Number</span>
-                  <div><strong>{{ detail['bcn'] }}</strong><button type="button" (click)="copyBcn(detail['bcn'])">Copy</button></div>
-                </div>
+            <h3>Plan & payment instructions</h3>
+            <div class="review-detail-grid">
+              @for (key of ['plan_name','plan_code','billing_cycle','amount','currency','subscription_status','payment_payee_name','payment_upi_id','payment_qr_version','payment_instructions']; track key) {
+                <div><span>{{ humanize(key) }}</span><strong>{{ detail[key] || '—' }}</strong></div>
               }
-              @if (detail['payment_qr_file_url']) { <img class="payment-qr-preview" [src]="asUrl(detail['payment_qr_file_url'])" alt="Captured payment QR"> }
+            </div>
+            @if (hasBcn(detail)) {
+              <div class="bcn-record">
+                <span>BBG Contribution Number</span>
+                <div><strong>{{ detail['bcn'] }}</strong><button type="button" (click)="copyBcn(detail['bcn'])">Copy</button></div>
+              </div>
             }
-            <h3>Payment receipts</h3>
-            @for (proof of subscriptionReviewProofs(); track $index) {
-              <div class="review-history-row"><div><strong>{{ proof['review_status'] }}</strong><span>{{ proof['payment_reference'] || 'No payment reference' }} · {{ formatValue(proof['submitted_on']) }}</span></div>@if (proof['proof_file_url']) { <a [href]="asUrl(proof['proof_file_url'])" target="_blank" rel="noopener">Open receipt</a> }</div>
-            } @empty { <p>No receipt submissions were found.</p> }
-            <h3>Decision history</h3>
-            @for (entry of subscriptionReviewHistory(); track $index) {
-              <div class="review-history-row"><div><strong>{{ entry['decision'] }}</strong><span>{{ entry['review_reason'] || 'No rejection reason recorded' }}</span><small>{{ entry['reviewer_name'] || 'System' }} · {{ formatValue(entry['reviewed_on']) }}</small></div></div>
-            } @empty { <p>No review decisions have been recorded yet.</p> }
+            @if (detail['payment_qr_file_url']) {
+              <img class="payment-qr-preview" [src]="asUrl(detail['payment_qr_file_url'])" alt="Captured payment QR">
+            }
           </section>
-        </div>
-      }
+        }
+        <section class="subscription-review-section">
+          <h3>Payment receipts</h3>
+          @for (proof of subscriptionReviewProofs(); track $index) {
+            <div class="review-history-row">
+              <div><strong>{{ proof['review_status'] }}</strong><span>{{ proof['payment_reference'] || 'No payment reference' }} · {{ formatValue(proof['submitted_on']) }}</span></div>
+              @if (proof['proof_file_url']) { <a [href]="asUrl(proof['proof_file_url'])" target="_blank" rel="noopener">Open receipt</a> }
+            </div>
+          } @empty { <p>No receipt submissions were found.</p> }
+        </section>
+        <section class="subscription-review-section">
+          <h3>Decision history</h3>
+          @for (entry of subscriptionReviewHistory(); track $index) {
+            <div class="review-history-row">
+              <div><strong>{{ entry['decision'] }}</strong><span>{{ entry['review_reason'] || 'No rejection reason recorded' }}</span><small>{{ entry['reviewer_name'] || 'System' }} · {{ formatValue(entry['reviewed_on']) }}</small></div>
+            </div>
+          } @empty { <p>No review decisions have been recorded yet.</p> }
+        </section>
+      </app-workspace-drawer>
 
       <app-workspace-drawer [open]="showDecisionDrawer()" [title]="decisionTitle()" description="Review the record and confirm the requested decision." (closed)="showDecisionDrawer.set(false)">
         <form class="workspace-edit-form" (submit)="$event.preventDefault(); saveDecision()">
