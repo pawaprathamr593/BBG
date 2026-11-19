@@ -57,20 +57,7 @@
         } @else if (businesses().length) {
           <div class="grid">
             @for (business of businesses(); track business.id) {
-              <article class="card">
-                <div class="card-top">
-                  <div class="avatar">{{ business.business_name.slice(0, 1).toUpperCase() }}</div>
-                  @if (business.category_name) { <span class="tag">{{ business.category_name }}</span> }
-                </div>
-                <h3>{{ business.business_name }}</h3>
-                <p class="location">{{ location(business) }}</p>
-                @if (business.business_description) { <p class="description">{{ business.business_description }}</p> }
-                <div class="features">
-                  @if (business.accept_online_orders) { <span>Online orders</span> }
-                  @if (business.whatsapp_enabled) { <span>WhatsApp</span> }
-                </div>
-                <a class="card-action" [routerLink]="['/store', business.business_slug]">Explore business <span aria-hidden="true">→</span></a>
-              </article>
+              <app-business-card [business]="business" (selected)="openBusiness($event)" />
             }
           </div>
           <div class="pagination">
