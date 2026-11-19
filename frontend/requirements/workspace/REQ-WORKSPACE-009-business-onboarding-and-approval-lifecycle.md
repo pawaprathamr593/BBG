@@ -42,7 +42,7 @@ A signed-in person must be able to register more than one business, save and res
 - Physical deletion of applications, subscriptions, memberships or invitations.
 
 ## 4. Entry and context
-- Routes: /business/register, /workspace, /dashboard/subscription-approval, /dashboard/subscriptions, /business/team, /business/storefront, /invite/accept.
+- Routes: /business/register, /workspace, /dashboard/subscription-approval, /dashboard/subscriptions, /business/team, /business/storefront, /business/subscriptions, /invite/accept.
 - Business registration and application-scoped payment actions require an authenticated user who owns the selected business application.
 - Admin review uses the existing platform-admin authorization path.
 - Team management requires the active tenant owner. Invitation acceptance requires an authenticated account whose email matches the invitation.
@@ -67,7 +67,7 @@ A signed-in person must be able to register more than one business, save and res
 | Payment | Show QR, payee, UPI ID and instructions; upload receipt | Existing payment QR snapshot and S3 upload pattern |
 | Application status | List all owned businesses and resume draft/rejected proof | Existing /workspace status page |
 | Admin onboarding review | Business name, plan, payment status, approve/reject and details | Existing subscription review queue and drawer |
-| Subscription management | Upgrade/renew and upload proof | Existing subscriptions dashboard module |
+| Subscription management | Upgrade/renew and upload proof | Owner-only subscription management page for plan changes, renewals and proof upload |
 | Team & Access | Search/add existing user or generate invitation link | Owner-only Team & Access page, core tenant API service and tenant context |
 | Invitation acceptance | Sign in/register then accept invite | Existing auth experience and lazy route pattern |
 
@@ -157,5 +157,6 @@ Use existing BBG SCSS tokens and light/dark themes. The registration, payment, t
 - Added subscription replacement lineage for upgrades/renewals; prior subscription closes only after replacement approval.
 - Added owner-scoped team search/add and seven-day single-use invitation tokens on /business/team. Existing dashboard permission guard/navigation remain unchanged. Only existing TENANT_ORDER_MANAGER role is assignable.
 - Added owner-scoped storefront configuration/publication using existing DAO operations and entitlement checks, exposed from the approved business card.
+- Added owner-only subscription management page for upgrade, renewal, payment-proof resume and receipt upload, exposed from the approved business card.
 - Added a workspace invitation acceptance route and multi-business status/resume UI.
 - Verification at commit 7a0f9f46fcfd38e89318532b8c7348d22bd57800: Angular frontend build, backend PHP syntax lint, static API route/actionType contract checks, and MySQL 8.4 migration/schema checks all passed in GitHub Actions. Prettier, git diff --check, visual browser checks and applying migrations to a real development/staging database remain to be completed.
