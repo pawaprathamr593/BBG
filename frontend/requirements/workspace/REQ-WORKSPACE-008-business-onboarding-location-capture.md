@@ -18,6 +18,7 @@ Business registration needs a convenient way to capture the device's current coo
 - Use OpenStreetMap Nominatim reverse lookup to prefill available address fields.
 - Keep all address fields editable after lookup.
 - Allow manual address entry when geolocation is denied, unavailable or fails.
+- Allow an authenticated user to submit multiple business registrations; an existing business must not block a new one.
 - Store latitude and longitude independently from the editable address.
 - A later address edit must not mutate the captured coordinates.
 - A subsequent explicit Get My Location action may replace the coordinates and detected address.
@@ -32,6 +33,8 @@ Business registration needs a convenient way to capture the device's current coo
 6. Applicant reviews and may edit every address field.
 7. If location or reverse lookup fails, the applicant can continue with manual entry.
 8. Registration sends address and coordinates as independent values.
+9. A user with one or more existing business tenants can start and submit another business registration.
+10. A successful registration shows the business application status screen without requiring an immediate workspace-context switch.
 
 ## 4. Data and validation
 - `latitude` is optional and must be within -90 to 90.
@@ -63,9 +66,9 @@ Business registration needs a convenient way to capture the device's current coo
 6. Geolocation denial/failure does not block registration.
 7. Editing address does not change captured coordinates.
 8. Clicking Get My Location again refreshes coordinates and detected address.
-9. Backend validates coordinate ranges and persists nullable values.
-10. Coordinates are returned by the existing business application read operation.
-11. Existing authentication, RBAC, workspace guards and tenant authorization remain unchanged.
+11. Backend validates coordinate ranges and persists nullable values.
+12. Coordinates are returned by the existing business application read operation.
+13. Existing authentication, RBAC, workspace guards and tenant authorization remain unchanged.
 
 ## Open questions
 - UNKNOWN: Production traffic volume and whether BBG should proxy/cache Nominatim requests before public launch.
@@ -73,4 +76,5 @@ Business registration needs a convenient way to capture the device's current coo
 
 ## Implementation log
 - Implemented browser-triggered geolocation, editable Nominatim address prefill, independent coordinate payload fields, backend coordinate validation/persistence, and a coordinate-precision migration.
+- Removed the single-application-per-user restriction and allowed registration to be opened when the user already owns other businesses. Successful submission now navigates to the business application status page rather than forcing an immediate pending-tenant context switch.
 - Build, PHP syntax checks, migration execution and authenticated browser tests remain pending.

@@ -3,7 +3,6 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
-import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,7 +31,6 @@ export class BusinessRegistration implements OnInit {
   private readonly api = inject(BusinessRegistrationApiService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly workspace = inject(WorkspaceContextService);
 
   readonly busy = signal(false);
   readonly error = signal('');
@@ -60,11 +58,7 @@ export class BusinessRegistration implements OnInit {
         return;
       }
       if (!this.auth.user()) await this.auth.loadProfile();
-      const application = await this.api.getMyApplication();
-      if (application) {
-        await this.workspace.switchWorkspace(application.tenant_id);
-        await this.router.navigate(['/dashboard/subscriptions']);
-      }
+      // Keep registration available even when the user already owns other businesses.
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     }
@@ -157,8 +151,7 @@ export class BusinessRegistration implements OnInit {
         latitude: this.coordinates().latitude,
         longitude: this.coordinates().longitude,
       });
-      await this.workspace.switchWorkspace(application.tenant_id);
-      await this.router.navigate(['/dashboard/subscriptions']);
+      await this.router.navigate(['/workspace']);
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {

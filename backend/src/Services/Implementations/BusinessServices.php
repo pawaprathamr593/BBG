@@ -287,14 +287,7 @@ final readonly class BusinessServices implements IBusinessServices
                 }
             }
 
-            $existingApplication = $this->dao->getMyBusinessApplication($this->db, $userId, 0);
-            if ($existingApplication['status'] !== 'SUCCESS') {
-                return $this->propagateFailure($existingApplication, 'BusinessServices::manageBusinessApplication');
-            }
-            if ($existingApplication['data'] !== []) {
-                $resArr['msgArr'][] = 'An application already exists for this user. Update or resubmit the existing application.';
-                return $resArr;
-            }
+            // A user may own multiple businesses. Each submission creates a separate tenant.
 
             $transaction = $this->db->beginTransaction();
             try {
