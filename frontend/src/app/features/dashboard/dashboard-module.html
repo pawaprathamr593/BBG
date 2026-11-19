@@ -4,9 +4,6 @@
           <p class="intro">{{ description() }}</p>
         </div>
         <div class="heading-buttons">
-          @if (section() === 'storefront' && can('business.update')) {
-            <button class="secondary-action" type="button" (click)="toggleStorefront()" [disabled]="busy()">{{ storefrontStatus() === 'PUBLISHED' ? 'Unpublish' : 'Publish' }} storefront</button>
-          }
           @if (section() === 'promotions' && can('promotion.create')) { <button class="secondary-action" type="button" (click)="createPromotion()" [disabled]="busy()">+ New promotion</button> }
           @if (section() === 'customers' && !activeTenantId() && can('user.update')) {
             <button class="secondary-action" type="button" (click)="createAddress()" [disabled]="busy()">+ Add address</button>
@@ -36,10 +33,10 @@
         <section class="state-panel"><span class="state-icon">ⓘ</span><strong>{{ unsupportedTitle() }}</strong><p>{{ unsupported() }}</p></section>
       } @else {
         @if (section() === 'profile' && summary(); as business) {
-          <app-business-profile-module [business]="business" [canEdit]="can('business.update')" (editRequested)="editBusinessProfile()" />
+          <app-business-profile-module [business]="business" [canEdit]="can('business.update')" (refreshRequested)="load()" />
         }
         @if (section() === 'storefront' && storefrontDetails(); as storefront) {
-          <app-storefront-module [storefront]="storefront" [canEdit]="can('business.update')" (editRequested)="editStorefront()" />
+          <app-storefront-module [storefront]="storefront" [canEdit]="can('business.update')" (refreshRequested)="load()" />
         }
 
         @if (summaryCardModels().length && !(section() === 'customers' && !activeTenantId()) && section() !== 'profile' && section() !== 'storefront' && section() !== 'payment-qr-settings') {
@@ -261,42 +258,9 @@
         </form>
       </app-workspace-drawer>
 
-      <app-workspace-drawer [open]="showBusinessProfileDrawer()" title="Edit business profile" description="Update the business information displayed across BBG." (closed)="showBusinessProfileDrawer.set(false)">
-        <form class="workspace-edit-form" (submit)="$event.preventDefault(); saveBusinessProfile()">
-          <div class="workspace-edit-grid">
-            <label>Business name<input [value]="businessProfileForm().business_name" (input)="updateBusinessProfileField('business_name',$event)" maxlength="180" required></label>
-            <label>Business email<input type="email" [value]="businessProfileForm().business_email" (input)="updateBusinessProfileField('business_email',$event)"></label>
-            <label>Business phone<input type="tel" [value]="businessProfileForm().business_phone" (input)="updateBusinessProfileField('business_phone',$event)"></label>
-            <label>Address line 1<input [value]="businessProfileForm().address_line_1" (input)="updateBusinessProfileField('address_line_1',$event)"></label>
-            <label>Address line 2<input [value]="businessProfileForm().address_line_2" (input)="updateBusinessProfileField('address_line_2',$event)"></label>
-            <label>City<input [value]="businessProfileForm().city" (input)="updateBusinessProfileField('city',$event)"></label>
-            <label>State<input [value]="businessProfileForm().state" (input)="updateBusinessProfileField('state',$event)"></label>
-            <label>Postal code<input [value]="businessProfileForm().postal_code" (input)="updateBusinessProfileField('postal_code',$event)"></label>
-            <label class="full">Business description<textarea rows="4" [value]="businessProfileForm().business_description" (input)="updateBusinessProfileField('business_description',$event)"></textarea></label>
-          </div>
-          @if (error()) { <p class="workspace-edit-error" role="alert">{{ error() }}</p> }
-          <footer><button type="button" class="refresh" (click)="showBusinessProfileDrawer.set(false)" [disabled]="busy()">Cancel</button><button type="submit" class="secondary-action" [disabled]="busy() || !businessProfileForm().business_name.trim()">{{ busy() ? 'Saving…' : 'Save profile' }}</button></footer>
-        </form>
-      </app-workspace-drawer>
+      
 
-      <app-workspace-drawer [open]="showStorefrontDrawer()" title="Edit storefront" description="Manage your storefront identity and customer-facing settings." (closed)="showStorefrontDrawer.set(false)">
-        <form class="workspace-edit-form" (submit)="$event.preventDefault(); saveStorefront()">
-          <div class="workspace-edit-grid">
-            <label>Storefront title<input [value]="storefrontForm().storefront_title" (input)="updateStorefrontField('storefront_title',$event)" maxlength="180" required></label>
-            <label>Theme code<input [value]="storefrontForm().theme_code" (input)="updateStorefrontField('theme_code',$event)" maxlength="80"></label>
-            <label class="full">Storefront description<textarea rows="4" [value]="storefrontForm().storefront_description" (input)="updateStorefrontField('storefront_description',$event)"></textarea></label>
-            <label>WhatsApp number<input type="tel" [value]="storefrontForm().whatsapp_number" (input)="updateStorefrontField('whatsapp_number',$event)" [disabled]="!storefrontForm().whatsapp_enabled"></label>
-          </div>
-          <fieldset class="workspace-toggle-list">
-            <legend>Storefront preferences</legend>
-            <label><input type="checkbox" [checked]="storefrontForm().show_prices" (change)="updateStorefrontField('show_prices',$event)"> Show product prices</label>
-            <label><input type="checkbox" [checked]="storefrontForm().accept_online_orders" (change)="updateStorefrontField('accept_online_orders',$event)"> Accept online orders</label>
-            <label><input type="checkbox" [checked]="storefrontForm().whatsapp_enabled" (change)="updateStorefrontField('whatsapp_enabled',$event)"> Enable WhatsApp contact</label>
-          </fieldset>
-          @if (error()) { <p class="workspace-edit-error" role="alert">{{ error() }}</p> }
-          <footer><button type="button" class="refresh" (click)="showStorefrontDrawer.set(false)" [disabled]="busy()">Cancel</button><button type="submit" class="secondary-action" [disabled]="busy() || !storefrontForm().storefront_title.trim()">{{ busy() ? 'Saving…' : 'Save storefront' }}</button></footer>
-        </form>
-      </app-workspace-drawer>
+      
       <app-workspace-drawer [open]="showPromotionComposer()" title="Create promotion" description="Prepare your post and attach multiple media files." (closed)="closePromotionComposer()">
         <app-promotion-composer-module
           [title]="promotionTitle()"

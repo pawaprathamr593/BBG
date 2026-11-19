@@ -26,14 +26,6 @@ interface ListResult {
   items?: DataRecord[];
   pagination?: { page?: number; page_size?: number; total?: number };
 }
-interface BusinessProfileForm {
-  business_name: string; business_email: string; business_phone: string; business_description: string;
-  address_line_1: string; address_line_2: string; city: string; state: string; postal_code: string;
-}
-interface StorefrontForm {
-  storefront_title: string; storefront_description: string; show_prices: boolean;
-  accept_online_orders: boolean; whatsapp_enabled: boolean; whatsapp_number: string; theme_code: string;
-}
 interface PersonalProfileForm { full_name: string; email: string; mobile: string; }
 interface AddressForm {
   recipient_name: string; mobile: string; address_line_1: string; address_line_2: string;
@@ -136,10 +128,6 @@ export class DashboardModule implements OnInit {
     const value = this.summary()?.['storefront'];
     return value && typeof value === 'object' && !Array.isArray(value) ? value as DataRecord : null;
   });
-  readonly showBusinessProfileDrawer = signal(false);
-  readonly showStorefrontDrawer = signal(false);
-  readonly showPersonalProfileDrawer = signal(false);
-  readonly showAddressDrawer = signal(false);
   readonly addressEditingId = signal<number | null>(null);
   readonly personalProfileForm = signal<PersonalProfileForm>({ full_name: '', email: '', mobile: '' });
   readonly addressForm = signal<AddressForm>({
@@ -167,14 +155,6 @@ export class DashboardModule implements OnInit {
   readonly proofFile = signal<File | null>(null);
   readonly proofSubscription = signal<DataRecord | null>(null);
   readonly proofPaymentReference = signal('');
-  readonly businessProfileForm = signal<BusinessProfileForm>({
-    business_name: '', business_email: '', business_phone: '', business_description: '',
-    address_line_1: '', address_line_2: '', city: '', state: '', postal_code: '',
-  });
-  readonly storefrontForm = signal<StorefrontForm>({
-    storefront_title: '', storefront_description: '', show_prices: false,
-    accept_online_orders: false, whatsapp_enabled: false, whatsapp_number: '', theme_code: '',
-  });
   readonly showPasswordForm = signal(false);
   readonly currentPassword = signal('');
   readonly newPassword = signal('');
@@ -259,10 +239,6 @@ export class DashboardModule implements OnInit {
       }
     }
     return entries.slice(0, 16);
-  });
-  readonly storefrontStatus = computed(() => {
-    const storefront = this.summary()?.['storefront'];
-    return storefront && typeof storefront === 'object' ? String((storefront as DataRecord)['publication_status'] ?? '') : '';
   });
   readonly navLinks = computed(() => {
     const links = [
@@ -755,97 +731,6 @@ export class DashboardModule implements OnInit {
     }
     catch (error) { this.error.set(this.auth.errorMessage(error)); }
     finally { this.busy.set(false); }
-  }
-
-  editBusinessProfile(): void {
-    const current = this.summary();
-    if (!current || !this.can('business.update')) return;
-    this.businessProfileForm.set({
-      business_name: String(current['business_name'] ?? ''),
-      business_email: String(current['business_email'] ?? ''),
-      business_phone: String(current['business_phone'] ?? ''),
-      business_description: String(current['business_description'] ?? ''),
-      address_line_1: String(current['address_line_1'] ?? ''),
-      address_line_2: String(current['address_line_2'] ?? ''),
-      city: String(current['city'] ?? ''),
-      state: String(current['state'] ?? ''),
-      postal_code: String(current['postal_code'] ?? ''),
-    });
-    this.error.set('');
-    this.showBusinessProfileDrawer.set(true);
-  }
-
-  updateBusinessProfileField(field: keyof BusinessProfileForm, event: Event): void {
-    const value = (event.target as HTMLInputElement | HTMLTextAreaElement).value;
-    this.businessProfileForm.update((form) => ({ ...form, [field]: value }));
-  }
-
-  async saveBusinessProfile(): Promise<void> {
-    const current = this.summary();
-    const tenantId = this.workspace.activeTenantId();
-    const businessId = Number(current?.['business_id'] ?? current?.['id'] ?? 0);
-    const form = this.businessProfileForm();
-    if (!tenantId || !businessId) {
-      this.error.set('Business identifiers are unavailable. Refresh the profile before editing.');
-      return;
-    }
-    if (!form.business_name.trim()) {
-      this.error.set('Business name is required.');
-      return;
-    }
-    const saved = await this.performAction('/api/v1/business/profile/update', 'businessParam', 'updateMyBusinessProfile', {
-      tenant_id: tenantId, business_id: businessId, business_name: form.business_name.trim(),
-      business_email: form.business_email.trim(), business_phone: form.business_phone.trim(),
-      business_description: form.business_description.trim(), address_line_1: form.address_line_1.trim(),
-      address_line_2: form.address_line_2.trim(), city: form.city.trim(), state: form.state.trim(),
-      postal_code: form.postal_code.trim(),
-    });
-    if (saved) this.showBusinessProfileDrawer.set(false);
-  }
-
-  editStorefront(): void {
-    const settings = this.storefrontDetails();
-    if (!settings || !this.can('business.update')) return;
-    this.storefrontForm.set({
-      storefront_title: String(settings['storefront_title'] ?? ''),
-      storefront_description: String(settings['storefront_description'] ?? ''),
-      show_prices: settings['show_prices'] === true || Number(settings['show_prices']) === 1,
-      accept_online_orders: settings['accept_online_orders'] === true || Number(settings['accept_online_orders']) === 1,
-      whatsapp_enabled: settings['whatsapp_enabled'] === true || Number(settings['whatsapp_enabled']) === 1,
-      whatsapp_number: String(settings['whatsapp_number'] ?? ''),
-      theme_code: String(settings['theme_code'] ?? ''),
-    });
-    this.error.set('');
-    this.showStorefrontDrawer.set(true);
-  }
-
-  updateStorefrontField(field: keyof StorefrontForm, event: Event): void {
-    const target = event.target as HTMLInputElement | HTMLTextAreaElement;
-    const value = target instanceof HTMLInputElement && target.type === 'checkbox' ? target.checked : target.value;
-    this.storefrontForm.update((form) => ({ ...form, [field]: value }) as StorefrontForm);
-  }
-
-  async saveStorefront(): Promise<void> {
-    const tenantId = this.workspace.activeTenantId();
-    const form = this.storefrontForm();
-    if (!tenantId || !form.storefront_title.trim()) {
-      this.error.set('A storefront title and active business workspace are required.');
-      return;
-    }
-    const saved = await this.performAction('/api/v1/business/storefront/update', 'businessParam', 'updateMyStorefront', {
-      tenant_id: tenantId, storefront_title: form.storefront_title.trim(),
-      storefront_description: form.storefront_description.trim(), show_prices: form.show_prices,
-      accept_online_orders: form.accept_online_orders, whatsapp_enabled: form.whatsapp_enabled,
-      whatsapp_number: form.whatsapp_enabled ? form.whatsapp_number.trim() : '',
-      theme_code: form.theme_code.trim(),
-    });
-    if (saved) this.showStorefrontDrawer.set(false);
-  }
-
-  async toggleStorefront(): Promise<void> {
-    const publish = this.storefrontStatus() !== 'PUBLISHED';
-    if (!window.confirm(publish ? 'Publish this storefront now?' : 'Unpublish this storefront?')) return;
-    await this.performAction(publish?'/api/v1/business/storefront/publish':'/api/v1/business/storefront/unpublish','businessParam',publish?'publishMyStorefront':'unpublishMyStorefront',{tenant_id:this.workspace.activeTenantId()});
   }
 
   addMediaToPromotion(item: DataRecord): void {
