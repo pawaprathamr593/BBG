@@ -143,14 +143,14 @@ export class BusinessRegistration implements OnInit {
             address?: Record<string, string>;
           };
           const address = result.address ?? {};
-          const road = [address.house_number, address.road].filter(Boolean).join(' ');
-          const locality = address.suburb || address.neighbourhood || address.quarter || '';
-          const city = address.city || address.town || address.village || address.municipality || address.county || '';
+          const road = [address['house_number'], address['road']].filter(Boolean).join(' ');
+          const locality = address['suburb'] || address['neighbourhood'] || address['quarter'] || '';
+          const city = address['city'] || address['town'] || address['village'] || address['municipality'] || address['county'] || '';
           if (road) this.form.controls.address_line_1.setValue(road);
           if (locality) this.form.controls.address_line_2.setValue(locality);
           if (city) this.form.controls.city.setValue(city);
-          if (address.state) this.form.controls.state.setValue(address.state);
-          if (address.postcode) this.form.controls.postal_code.setValue(address.postcode);
+          if (address['state']) this.form.controls.state.setValue(address['state']);
+          if (address['postcode']) this.form.controls.postal_code.setValue(address['postcode']);
           this.locationNotice.set(result.display_name
             ? 'Address detected. Please review and edit it to match your business premises.'
             : 'Coordinates captured. No readable address was returned; please enter it manually.');
