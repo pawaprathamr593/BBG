@@ -22,8 +22,12 @@ import { ApplicationSubscription, BusinessApplication, BusinessApplicationPayloa
     .form-note{display:grid;gap:5px;margin-top:24px;padding:15px 17px;background:var(--surface-subtle);border:1px solid var(--border);border-radius:10px}.form-note strong{font-size:.8rem}.form-note span{color:var(--text-secondary);font-size:.76rem;line-height:1.55}
     .location-button{justify-self:start;padding:9px 12px;color:var(--brand);background:var(--surface-subtle);border:1px solid var(--border);border-radius:8px;font:inherit;font-size:.76rem;font-weight:750;cursor:pointer}.location-button:disabled{opacity:.6;cursor:wait}.location-note{grid-column:1/-1;margin:-8px 0 0;color:var(--text-secondary);font-size:.72rem;line-height:1.5}.map-attribution{grid-column:1/-1;color:var(--text-secondary);font-size:.68rem}.map-attribution a{color:inherit}
     .submit-button{display:flex;justify-content:center;align-items:center;gap:15px;width:100%;margin-top:20px;padding:14px 18px;color:#fff;background:var(--brand);border:0;border-radius:10px;font:inherit;font-size:.86rem;font-weight:800;cursor:pointer}.submit-button:disabled{opacity:.6;cursor:wait}
+    .notice.success{color:#176b43;background:#e8f5ed;border:1px solid #c8e6d2}.wizard-actions{display:grid;grid-template-columns:1fr 1.5fr;gap:12px}.secondary-button{padding:13px 16px;color:var(--text-primary);background:var(--surface-subtle);border:1px solid var(--border);border-radius:10px;font:inherit;font-size:.82rem;font-weight:750;cursor:pointer}.secondary-button:disabled{opacity:.6;cursor:wait}
+    .plan-list{display:grid;gap:14px}.plan-card{display:grid;grid-template-columns:1fr auto;gap:12px;padding:20px;background:var(--surface-subtle);border:1px solid var(--border);border-radius:12px}.plan-code{margin:0 0 6px;color:var(--brand);font-size:.65rem;font-weight:850;letter-spacing:.1em}.plan-card h2{margin:0 0 6px;font-size:1.05rem}.plan-card p:not(.plan-code){margin:0;color:var(--text-secondary);font-size:.78rem;line-height:1.5}.plan-price{display:grid;align-content:start;justify-items:end;gap:5px}.plan-price strong{font-size:1.15rem}.plan-price span{color:var(--text-secondary);font-size:.7rem}.plan-card .submit-button{grid-column:1/-1;margin-top:5px}.back-step{margin-top:18px}
+    .payment-card{display:grid;gap:15px}.payment-summary{display:grid;grid-template-columns:1fr auto;gap:8px;padding:16px;background:var(--surface-subtle);border:1px solid var(--border);border-radius:11px}.payment-summary span{color:var(--text-secondary);font-size:.75rem}.payment-summary strong{text-align:right;font-size:.82rem}.qr-panel{display:grid;justify-items:center;gap:10px;padding:20px;background:#fff;border:1px solid var(--border);border-radius:12px}.qr-panel img{width:min(250px,100%);height:auto;object-fit:contain}.qr-panel span{color:#4b5563;font-size:.75rem}.payment-line,.payment-instructions{margin:0;padding:10px 12px;background:var(--surface-subtle);border-radius:8px;font-size:.78rem;line-height:1.55}.proof-field{margin-top:4px}.completion-card{display:grid;justify-items:center;text-align:center;padding:26px 10px}.completion-icon{display:grid;width:58px;height:58px;place-items:center;color:#176b43;background:#e8f5ed;border-radius:50%;font-size:1.8rem;font-weight:850}.completion-card h2{margin:18px 0 6px;font-size:1.2rem}.completion-card p{max-width:500px;color:var(--text-secondary);font-size:.84rem;line-height:1.6}.completion-card .submit-button{max-width:340px}
+
     .notice{margin:0 0 18px;padding:12px 14px;border-radius:9px;font-size:.8rem}.error{color:#a3322b;background:#fff2f0;border:1px solid #f0c8c2}
-    @media(max-width:620px){.registration-page{padding:24px 12px 48px}.registration-card{padding:22px 17px;border-radius:14px}.field-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.back-link{margin-bottom:26px}}
+    @media(max-width:620px){.registration-page{padding:24px 12px 48px}.registration-card{padding:22px 17px;border-radius:14px}.field-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.back-link{margin-bottom:26px}.wizard-actions{grid-template-columns:1fr}.plan-card{grid-template-columns:1fr}.plan-price{justify-items:start}.plan-card .submit-button{grid-column:auto}}
   `],
 })
 export class BusinessRegistration implements OnInit {
@@ -86,6 +90,11 @@ export class BusinessRegistration implements OnInit {
           city: existing.city, state: existing.state, postal_code: existing.postal_code,
         });
         this.coordinates.set({ latitude: existing.latitude, longitude: existing.longitude });
+        const pendingPayment = await this.api.getCurrentApplicationSubscription(businessId, tenantId);
+        if (pendingPayment) {
+          this.subscription.set(pendingPayment);
+          this.step.set('payment');
+        }
       }
       // Keep registration available even when the user already owns other businesses.
     } catch (error) {
