@@ -37,7 +37,7 @@ interface InvitationResponse {
         } @else {
           <h1>Invitation accepted</h1>
           <p>Your account has been added to the business workspace with the Tenant Order Manager role.</p>
-          <a routerLink="/dashboard/members">Open team workspace</a>
+          <a routerLink="/dashboard">Open team workspace</a>
         }
       </section>
     </main>
@@ -99,7 +99,7 @@ export class TeamInvitationAcceptance implements OnInit {
       if (!tenantId) throw new Error('The invitation was accepted but the workspace could not be identified.');
       await this.workspace.initialize();
       await this.workspace.switchWorkspace(tenantId);
-      await this.router.navigate(['/dashboard/members']);
+      await this.router.navigate(['/dashboard']);
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
