@@ -241,7 +241,7 @@ export class DashboardModule implements OnInit {
     if (!context) return [];
     const permissions = this.workspace.permissions();
     const activeTenant = context === 'BUSINESS';
-    const scope = activeTenant ? 'TENANT' : context === 'PLATFORM' ? 'PLATFORM' : 'GLOBAL';
+    const scope = activeTenant ? 'TENANT' : 'PLATFORM';
     const entitlements = this.workspace.activeTenant()?.active_entitlements ?? null;
     const tenantRequirements: Record<string, string> = {
       profile: 'business.view',
@@ -288,7 +288,7 @@ export class DashboardModule implements OnInit {
       const entitlement = scope === 'TENANT' ? tenantEntitlements[link.key] : undefined;
       return entitlement === undefined || hasActiveEntitlement(entitlements, entitlement);
     }).map((link) => {
-      if (scope !== 'GLOBAL') return link;
+      if (context !== 'PERSONAL') return link;
       const personalLabels: Record<string, string> = {
         customers: 'My Profile & Addresses',
         enquiries: 'My Enquiries',
@@ -645,7 +645,7 @@ export class DashboardModule implements OnInit {
   can(permissionCode: string): boolean {
     const context = this.workspace.activeContext();
     if (!context) return false;
-    const scope = context === 'BUSINESS' ? 'TENANT' : context === 'PLATFORM' ? 'PLATFORM' : 'GLOBAL';
+    const scope = context === 'BUSINESS' ? 'TENANT' : 'PLATFORM';
     return hasWorkspacePermission(this.workspace.permissions(), scope, permissionCode);
   }
 
