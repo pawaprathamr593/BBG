@@ -52,7 +52,7 @@
         @if (section() === 'subscriptions' && plans().length) {
           <app-subscription-plans-module
             [plans]="plans()"
-            [canRequest]="can('subscription.create')"
+            [canRequest]="canRequestSubscriptionChange()"
             [busy]="busy()"
             [pendingPlanId]="pendingPlanId()"
             (planRequested)="requestPlan($event)"
