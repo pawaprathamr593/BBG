@@ -356,9 +356,12 @@ final readonly class MarketplaceServices implements IMarketplaceServices
             }, $variantResult['data']);
         }
 
+        $productView = $this->publicProduct($product, $showPrices);
+        $productView = $this->attachPublicProductMedia([$productView])[0];
+
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = [
-            'product' => $this->publicProduct($product, $showPrices),
+            'product' => $productView,
             'variants' => $variants,
         ];
         return $resArr;
