@@ -284,7 +284,7 @@ final readonly class BusinessDao
                 ':state' => $state, ':postal' => $postalCode, ':country' => $countryCode,
                 ':latitude' => $latitude, ':longitude' => $longitude,
                 ':location_accuracy_m' => $locationAccuracyM,
-                ':resubmit => $resubmit ? 1 : 0, ':user_id' => $userId,
+                ':resubmit' => $resubmit ? 1 : 0, ':user_id' => $userId,
                 ':business_id' => $businessId, ':tenant_id' => $tenantId,
             ])->execute();
             if ($affected !== 1) {
