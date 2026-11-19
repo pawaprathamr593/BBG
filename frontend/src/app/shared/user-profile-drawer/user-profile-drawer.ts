@@ -1,24 +1,15 @@
 import { DOCUMENT } from '@angular/common';
-import {
-  AfterViewChecked,
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  HostListener,
-  OnDestroy,
-  ViewChild,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { ThemeMode, ThemeService } from '../../core/theme/theme.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
+import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
 
 @Component({
   selector: 'app-user-profile-drawer',
   standalone: true,
+  imports: [WorkspaceDrawer],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './user-profile-drawer.html',
   styles: [`
@@ -61,7 +52,7 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
     @media(prefers-reduced-motion:reduce){.profile-trigger,.profile-drawer{transition:none;animation:none}}
   `],
 })
-export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
+export class UserProfileDrawerComponent {
   readonly auth = inject(AuthService);
   readonly theme = inject(ThemeService);
   readonly workspace = inject(WorkspaceContextService);
@@ -81,11 +72,6 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
     && this.workspace.permissions().some((permission) => permission.scope_type === 'PLATFORM'));
   readonly hasPlatformAccess = computed(() => this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM'));
 
-  @ViewChild('trigger') private trigger?: ElementRef<HTMLButtonElement>;
-  @ViewChild('drawer') private drawer?: ElementRef<HTMLElement>;
-
-  private previousBodyOverflow = '';
-  private focusPending = false;
 
   toggle(): void {
     if (this.open()) this.close();
@@ -93,52 +79,12 @@ export class UserProfileDrawerComponent implements AfterViewChecked, OnDestroy {
   }
 
   show(): void {
-    this.previousBodyOverflow = this.document.body.style.overflow;
-    this.document.body.style.overflow = 'hidden';
     this.open.set(true);
-    this.focusPending = true;
     void this.workspace.initialize().catch(() => undefined);
   }
 
   close(): void {
     this.open.set(false);
-    this.document.body.style.overflow = this.previousBodyOverflow;
-    this.trigger?.nativeElement.focus();
-  }
-
-  ngAfterViewChecked(): void {
-    if (this.open() && this.focusPending && this.drawer) {
-      this.drawer.nativeElement.querySelector<HTMLElement>('[data-autofocus]')?.focus();
-      this.focusPending = false;
-    }
-  }
-
-  ngOnDestroy(): void {
-    if (this.open()) this.document.body.style.overflow = this.previousBodyOverflow;
-  }
-
-  @HostListener('document:keydown', ['$event'])
-  onDocumentKeydown(event: KeyboardEvent): void {
-    if (!this.open()) return;
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      this.close();
-      return;
-    }
-    if (event.key !== 'Tab' || !this.drawer) return;
-    const focusable = Array.from(this.drawer.nativeElement.querySelectorAll<HTMLElement>(
-      'button:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])',
-    ));
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && this.document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && this.document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
   }
 
   async goToMyAccount(): Promise<void> {
