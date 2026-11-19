@@ -38,6 +38,18 @@ export interface MarketplaceBusiness {
   created_on?: string;
 }
 
+export interface MarketplaceMedia {
+  id: number;
+  media_type: 'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT';
+  mime_type?: string;
+  original_file_name?: string;
+  file_size_bytes?: number;
+  url: string | null;
+  thumbnail_url?: string | null;
+  display_order: number;
+  is_primary?: number;
+}
+
 export interface MarketplaceProduct {
   id: number;
   /** Optional discriminator for a future unified product/service offering feed. Existing product API responses default to PRODUCT. */
@@ -53,6 +65,8 @@ export interface MarketplaceProduct {
   brand_name: string | null;
   barcode: string | null;
   selling_price?: number | string;
+  media?: MarketplaceMedia[];
+  primary_image_url?: string | null;
   unit: {
     id: number;
     name: string;
@@ -91,7 +105,7 @@ export interface MarketplaceBusinessDetail {
   storefront: MarketplaceStorefront;
 }
 export interface MarketplaceProductDetail {
-  product: MarketplaceProduct;
+  product: MarketplaceProduct & { media: MarketplaceMedia[] };
   variants: Array<{ id: number; variant_code: string; variant_name: string; barcode: string | null; selling_price?: number | string; unit_id: number | null; unit_name: string | null; unit_symbol: string | null; quantity_precision?: number; is_fraction_allowed?: boolean }>;
 }
 export interface MarketplacePromotion {
@@ -104,6 +118,7 @@ export interface MarketplacePromotion {
   business_name: string;
   business_slug: string;
   logo_path: string | null;
+  media?: MarketplaceMedia[];
 }
 
 export interface MarketplaceHomeStats {
