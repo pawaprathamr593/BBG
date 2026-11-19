@@ -640,7 +640,7 @@ final readonly class AdminServices implements IAdminServices
         if ($currentStatus !== 'PENDING') {
             if ($approve && $currentStatus === 'ACTIVE' && is_string($subscriptionData['bcn'] ?? null)
                 && $subscriptionData['bcn'] !== '') {
-                return [
+                $activeResult = [
                     'status' => 'SUCCESS',
                     'msgArr' => [],
                     'data' => [
@@ -649,6 +649,36 @@ final readonly class AdminServices implements IAdminServices
                         'bcn' => $subscriptionData['bcn'],
                     ],
                 ];
+                if ($businessApproval === null) {
+                    return $activeResult;
+                }
+                $tenantId = (int) $subscriptionData['tenant_id'];
+                $adminId = (int) $context['data']['user_id'];
+                if ((int) ($businessApproval['tenant_id'] ?? 0) !== $tenantId
+                    || (string) ($businessApproval['approval_status'] ?? '') !== 'PENDING'
+                ) {
+                    $resArr['msgArr'][] = 'The business application must belong to this subscription and remain pending for combined approval.';
+                    return $resArr;
+                }
+                $transaction = $this->db->beginTransaction();
+                try {
+                    $businessResult = $this->dao->setBusinessApproval(
+                        $this->db, (int) $businessApproval['id'], $tenantId, $adminId, 'APPROVED', null,
+                    );
+                    if ($businessResult['status'] !== 'SUCCESS') {
+                        $transaction->rollBack();
+                        return $this->propagateFailure($businessResult, 'AdminServices::manageSubscriptionDecision');
+                    }
+                    $transaction->commit();
+                    $activeResult['data']['business_id'] = (int) $businessApproval['id'];
+                    $activeResult['data']['business_approval_status'] = 'APPROVED';
+                    return $activeResult;
+                } catch (Throwable $exception) {
+                    if ($transaction->isActive()) {
+                        $transaction->rollBack();
+                    }
+                    throw $exception;
+                }
             }
             $resArr['msgArr'][] = 'Only pending subscriptions can be approved or rejected.';
             return $resArr;
@@ -713,16 +743,37 @@ final readonly class AdminServices implements IAdminServices
                     if ($latest['status'] === 'SUCCESS'
                         && ($latestData['subscription_status'] ?? '') === 'ACTIVE'
                         && is_string($latestData['bcn'] ?? null) && $latestData['bcn'] !== '') {
+                        if ($businessApproval === null) {
+                            $transaction->rollBack();
+                            return [
+                                'status' => 'SUCCESS',
+                                'msgArr' => [],
+                                'data' => [
+                                    'subscription_id' => $subscriptionId,
+                                    'subscription_status' => 'ACTIVE',
+                                    'bcn' => $latestData['bcn'],
+                                ],
+                            ];
+                        }
+                        $businessResult = $this->dao->setBusinessApproval(
+                            $this->db, (int) $businessApproval['id'], $tenantId, $adminId, 'APPROVED', null,
+                        );
+                        if ($businessResult['status'] === 'SUCCESS') {
+                            $transaction->commit();
+                            return [
+                                'status' => 'SUCCESS',
+                                'msgArr' => [],
+                                'data' => [
+                                    'subscription_id' => $subscriptionId,
+                                    'subscription_status' => 'ACTIVE',
+                                    'bcn' => $latestData['bcn'],
+                                    'business_id' => (int) $businessApproval['id'],
+                                    'business_approval_status' => 'APPROVED',
+                                ],
+                            ];
+                        }
                         $transaction->rollBack();
-                        return [
-                            'status' => 'SUCCESS',
-                            'msgArr' => [],
-                            'data' => [
-                                'subscription_id' => $subscriptionId,
-                                'subscription_status' => 'ACTIVE',
-                                'bcn' => $latestData['bcn'],
-                            ],
-                        ];
+                        return $this->propagateFailure($businessResult, 'AdminServices::manageSubscriptionDecision');
                     }
                 }
                 $transaction->rollBack();
