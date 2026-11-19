@@ -76,7 +76,8 @@ Adds versioned Platform Admin UPI QR configuration, immutable per-subscription p
 
 
 ## 20261119 — Business onboarding lifecycle additions
-
+- `20261119_001_business_profile_coordinate_precision.sql` widens nullable business latitude/longitude columns to `DOUBLE(10,7)` for browser-captured coordinates. It preserves existing values and must be applied after verifying the live BUSINESS_PROFILES schema.
+- `20261119_002_subscription_upgrade_lineage.sql` adds nullable
 - `20261119_002_subscription_upgrade_lineage.sql` adds nullable `TENANT_SUBSCRIPTIONS.upgrade_from_subscription_id` and its tenant-scoped index. A replacement subscription remains pending while the current subscription remains active; the previous subscription is closed only inside the admin approval transaction.
 - `20261119_003_tenant_member_invitations.sql` creates `TENANT_INVITATIONS` for one-time, seven-day tenant invitations. Only a SHA-256 token hash is stored; the raw token is returned once to the owner for sharing.
 - The application onboarding flow uses additive application-owner operations to save drafts, list owned applications, create payment requests and submit payment proof. These operations verify the authenticated user's active `TENANT_OWNER` membership for the specific tenant/application. They do not change RBAC roles, permission rows, tenant permission evaluation, authentication, guards or interceptors.
