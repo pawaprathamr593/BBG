@@ -3,6 +3,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
+import type { BusinessSubscription, SubscriptionPlan } from '../../core/business/business-registration-api.service';
+import { S3UploadService } from '../../core/storage/s3-upload.service';
 import type { BusinessApplication } from '../../core/business/business-registration-api.service';
 
 @Component({
@@ -31,6 +33,7 @@ import type { BusinessApplication } from '../../core/business/business-registrat
 export class BusinessRegistration implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly api = inject(BusinessRegistrationApiService);
+  private readonly s3Upload = inject(S3UploadService);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   readonly busy = signal(false);
@@ -40,6 +43,14 @@ export class BusinessRegistration implements OnInit {
   readonly locating = signal(false);
   readonly locationMessage = signal('');
   readonly locationAccuracy = signal<number | null>(null);
+  readonly selectedBusiness = signal<BusinessApplication | null>(null);
+  readonly plans = signal<SubscriptionPlan[]>([]);
+  readonly subscription = signal<BusinessSubscription | null>(null);
+  readonly paymentBusy = signal(false);
+  readonly paymentReference = signal('');
+  readonly receiptFile = signal<File | null>(null);
+  readonly uploadProgress = signal(0);
+  readonly uploadedProofKey = signal<string | null>(null);
   readonly form = this.fb.nonNullable.group({
     business_name: ['', [Validators.required, Validators.maxLength(180)]],
     business_slug: ['', [Validators.required, Validators.maxLength(200), Validators.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)]],
@@ -98,6 +109,8 @@ export class BusinessRegistration implements OnInit {
       this.submission.set(application);
       try {
         this.applications.set(await this.api.getMyApplications());
+        const savedBusiness = this.applications().find((item) => item.business_id === application.business_id);
+        if (savedBusiness) await this.selectBusiness(savedBusiness);
       } catch {
         this.locationMessage.set('Your application was saved. The business list could not refresh; reload this page to see its latest status.');
       }
@@ -105,6 +118,99 @@ export class BusinessRegistration implements OnInit {
       this.error.set(this.auth.errorMessage(error));
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  async selectBusiness(application: BusinessApplication): Promise<void> {
+    if (this.paymentBusy()) return;
+    this.selectedBusiness.set(application);
+    this.subscription.set(null);
+    this.plans.set([]);
+    this.paymentReference.set('');
+    this.receiptFile.set(null);
+    this.uploadedProofKey.set(null);
+    this.error.set('');
+    this.paymentBusy.set(true);
+    try {
+      const subscriptions = await this.api.getMySubscriptions(application.tenant_id);
+      if (subscriptions.length > 0) {
+        this.subscription.set(subscriptions[0]);
+      } else {
+        this.plans.set(await this.api.listActivePlans());
+      }
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.paymentBusy.set(false);
+    }
+  }
+
+  async choosePlan(plan: SubscriptionPlan): Promise<void> {
+    const business = this.selectedBusiness();
+    if (!business || this.paymentBusy()) return;
+    this.paymentBusy.set(true);
+    this.error.set('');
+    try {
+      await this.api.requestSubscription(business.tenant_id, plan.id);
+      const subscriptions = await this.api.getMySubscriptions(business.tenant_id);
+      this.subscription.set(subscriptions[0] ?? null);
+      this.plans.set([]);
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+      // A retry is safe: the backend rejects duplicate pending requests.
+    } finally {
+      this.paymentBusy.set(false);
+    }
+  }
+
+  setReceiptFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    this.receiptFile.set(file);
+    this.uploadedProofKey.set(null);
+    this.uploadProgress.set(0);
+  }
+
+  canSubmitProof(): boolean {
+    const subscription = this.subscription();
+    if (!subscription) return false;
+    const status = subscription.subscription_status.toUpperCase();
+    return ['PENDING', 'REJECTED'].includes(status)
+      && subscription.latest_proof_review_status?.toUpperCase() !== 'PENDING';
+  }
+
+  async uploadAndSubmitProof(): Promise<void> {
+    const business = this.selectedBusiness();
+    const subscription = this.subscription();
+    const file = this.receiptFile();
+    if (!business || !subscription || !file || !this.canSubmitProof() || this.paymentBusy()) return;
+
+    this.paymentBusy.set(true);
+    this.error.set('');
+    try {
+      let proofKey = this.uploadedProofKey();
+      if (!proofKey) {
+        const upload = await this.api.generateProofUploadUrl(business.tenant_id, subscription.id, file);
+        await this.s3Upload.upload(upload.upload_url, file, upload.headers, (progress) => this.uploadProgress.set(progress));
+        proofKey = upload.object_key;
+        this.uploadedProofKey.set(proofKey);
+      }
+      await this.api.submitSubscriptionProof(
+        business.tenant_id,
+        subscription.id,
+        proofKey,
+        this.paymentReference().trim(),
+      );
+      this.uploadedProofKey.set(null);
+      this.receiptFile.set(null);
+      this.paymentReference.set('');
+      this.uploadProgress.set(100);
+      const subscriptions = await this.api.getMySubscriptions(business.tenant_id);
+      this.subscription.set(subscriptions[0] ?? null);
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.paymentBusy.set(false);
     }
   }
 
