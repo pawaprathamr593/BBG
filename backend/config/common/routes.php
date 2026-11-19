@@ -149,6 +149,7 @@ return [
     Route::post('/api/v1/admin/businesses/pending/list')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/businesses/pending/list'),
     Route::post('/api/v1/admin/businesses/detail')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/businesses/detail'),
     Route::post('/api/v1/admin/businesses/approve')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/businesses/approve'),
+    Route::post('/api/v1/admin/businesses/approve-with-subscription')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/businesses/approve-with-subscription'),
     Route::post('/api/v1/admin/businesses/reject')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/businesses/reject'),
     Route::post('/api/v1/admin/businesses/reopen')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/businesses/reopen'),
     Route::post('/api/v1/admin/subscriptions/pending/list')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/subscriptions/pending/list'),
