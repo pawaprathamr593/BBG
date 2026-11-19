@@ -86,7 +86,7 @@
             (proofFileSelected)="prepareProofUpload($event.event, $event.record)"
             (proofSubmitRequested)="submitProof($event)"
           />
-        } @else if (!summaryEntries().length && !(section() === 'subscriptions' && plans().length)) {
+        } @else if (!(section() === 'customers' && !activeTenantId()) && section() !== 'categories' && !summaryEntries().length && !(section() === 'subscriptions' && plans().length)) {
           <section class="state-panel empty"><span class="state-icon">⌑</span><strong>Nothing to show yet</strong><p>There are no records available for this section in your current area.</p></section>
         }
       }

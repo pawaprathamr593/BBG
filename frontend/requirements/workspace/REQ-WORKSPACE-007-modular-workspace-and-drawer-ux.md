@@ -184,3 +184,5 @@ Every data-driven module/section must handle applicable states:
 - Product and promotion media selection now creates local previews for audio files as well as images and videos; document files retain a safe type/name indicator. The product drawer renders native audio controls instead of treating audio as video.
 
 - Remaining implementation scope: extract the other record-oriented Business and Platform workflows and their action/drawer orchestration into focused feature components without changing their current API contracts. The current branch intentionally remains `in-progress` until those extractions and the required verification are complete.
+
+- Extracted the Personal Addresses book into its own feature component. It now owns create/edit/default/delete actions, uses the existing customer-address endpoints and refreshes the authenticated user's address list only after successful mutations.

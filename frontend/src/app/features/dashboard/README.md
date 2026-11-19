@@ -28,6 +28,7 @@ Custom tenant roles can use this same model later: the dashboard resolves permis
 - `BusinessProfileModule` owns its profile edit form and mutation workflow; the dashboard supplies the existing tenant-scoped profile DTO and refreshes after a successful save.
 - `StorefrontModule` owns storefront settings edits and publish/unpublish actions; the dashboard supplies the current storefront DTO and refreshes after successful mutations.
 - `PersonalAccountModule` owns personal profile editing and password set/change flows; it uses the authenticated profile DTO and requests a refresh after successful updates.
+- `PersonalAddressesModule` owns the consumer address book, create/edit/default/delete actions and its responsive right-side drawer.
 - `PlatformCategoriesModule` owns category create/edit/delete workflows, confirmation and pagination presentation; the dashboard supplies the server-paged category DTOs and refreshes after mutations.
 - `Catalogue` remains its own lazy feature page with separate Products and Categories sections and a shared right-side drawer for product/category creation.
 - `WorkspaceRecordsModule` is the shared presentational record-list component for record-oriented modules. It receives typed card models and emits user actions; it does not call APIs.
