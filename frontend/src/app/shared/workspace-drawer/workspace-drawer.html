@@ -1,10 +1,10 @@
 @if (open()) {
   <div class="workspace-drawer-backdrop" aria-hidden="true" (click)="requestClose()"></div>
-  <aside class="workspace-drawer" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="workspace-drawer-title">
+  <aside class="workspace-drawer" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="workspace-drawer-title" [attr.aria-describedby]="description() ? 'workspace-drawer-description' : null">
     <header class="workspace-drawer-header">
       <div>
         <h2 id="workspace-drawer-title">{{ title() }}</h2>
-        @if (description()) { <p>{{ description() }}</p> }
+        @if (description()) { <p id="workspace-drawer-description">{{ description() }}</p> }
       </div>
       <button type="button" class="workspace-drawer-close" aria-label="Close drawer" (click)="requestClose()">×</button>
     </header>

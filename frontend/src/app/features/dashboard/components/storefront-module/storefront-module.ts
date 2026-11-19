@@ -66,7 +66,7 @@ export class StorefrontModule {
   async save():Promise<void>{
     const tenantId=this.workspace.activeTenantId(),form=this.form();
     if(!tenantId||!form.storefront_title.trim()){this.error.set('A storefront title and active business workspace are required.');return;}
-    if(form.whatsapp_enabled&&!/^\\+?[0-9]{8,15}$/.test(form.whatsapp_number.trim())){this.error.set('Enter a valid WhatsApp number with 8 to 15 digits and an optional leading plus sign.');return;}
+    if(form.whatsapp_enabled&&!/^\+?[0-9]{8,15}$/.test(form.whatsapp_number.trim())){this.error.set('Enter a valid WhatsApp number with 8 to 15 digits and an optional leading plus sign.');return;}
     if(this.saving())return;this.saving.set(true);this.error.set('');
     try{
       await this.api.request('/api/v1/business/storefront/update','updateMyStorefront',{

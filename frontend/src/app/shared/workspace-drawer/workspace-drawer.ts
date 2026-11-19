@@ -65,10 +65,17 @@ export class WorkspaceDrawer {
     }
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
-    if (event.shiftKey && this.document.activeElement === first) {
+    const drawer = this.element.nativeElement.querySelector<HTMLElement>('.workspace-drawer');
+    const activeElement = this.document.activeElement;
+    if (!drawer?.contains(activeElement as Node)) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+      return;
+    }
+    if (event.shiftKey && activeElement === first) {
       event.preventDefault();
       last.focus();
-    } else if (!event.shiftKey && this.document.activeElement === last) {
+    } else if (!event.shiftKey && activeElement === last) {
       event.preventDefault();
       first.focus();
     }

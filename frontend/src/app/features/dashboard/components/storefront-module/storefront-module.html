@@ -58,7 +58,7 @@
     </label>
     @if (form().whatsapp_enabled) {
       <label>WhatsApp number
-        <input type="tel" name="whatsappNumber" [ngModel]="form().whatsapp_number" (ngModelChange)="updateText('whatsapp_number', $event)" maxlength="25" pattern="\\+?[0-9]{8,15}" required>
+        <input type="tel" name="whatsappNumber" [ngModel]="form().whatsapp_number" (ngModelChange)="updateText('whatsapp_number', $event)" maxlength="25" pattern="\+?[0-9]{8,15}" required>
         <small>Enter 8–15 digits, optionally prefixed with +.</small>
       </label>
     }
