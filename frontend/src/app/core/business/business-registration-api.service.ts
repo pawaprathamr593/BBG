@@ -105,7 +105,6 @@ export class BusinessRegistrationApiService {
       '/api/v1/subscriptions/plans/list',
       'listActivePlans',
       {},
-      false,
     );
     return Array.isArray(data.items) ? data.items : [];
   }
@@ -115,7 +114,6 @@ export class BusinessRegistrationApiService {
       '/api/v1/subscriptions/mine/list',
       'listMySubscriptions',
       { tenant_id: tenantId, page: 1, page_size: 20 },
-      false,
     );
     return Array.isArray(data.items) ? data.items : [];
   }
@@ -125,7 +123,6 @@ export class BusinessRegistrationApiService {
       '/api/v1/subscriptions/request',
       'requestSubscription',
       { tenant_id: tenantId, plan_id: planId },
-      true,
     );
   }
 
@@ -144,7 +141,6 @@ export class BusinessRegistrationApiService {
         mime_type: file.type,
         file_size_bytes: file.size,
       },
-      true,
     );
   }
 
@@ -163,7 +159,6 @@ export class BusinessRegistrationApiService {
         proof_file_path: proofFilePath,
         payment_reference: paymentReference,
       },
-      true,
     );
   }
 
@@ -171,7 +166,6 @@ export class BusinessRegistrationApiService {
     path: string,
     actionType: string,
     actionData: Record<string, unknown>,
-    manage: boolean,
   ): Promise<T> {
     const envelope = await firstValueFrom(this.http.post<BusinessApiResponse<T>>(
       `${this.apiBaseUrl}${path}`,
