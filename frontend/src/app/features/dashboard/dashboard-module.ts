@@ -127,6 +127,9 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
     .workspace-toggle-list input{width:17px;height:17px;accent-color:var(--brand)}
     .workspace-edit-form footer{display:flex;justify-content:flex-end;gap:9px;margin-top:6px}
     .workspace-edit-error{margin:0;color:#bd4941;font-size:.76rem}
+    .qr-selected-preview{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-subtle)}
+    .qr-selected-preview img{width:112px;height:112px;object-fit:contain;border-radius:8px;background:#fff}
+    .qr-selected-preview span{overflow-wrap:anywhere;color:var(--text-secondary);font-size:.74rem}
     @media(max-width:600px){.workspace-edit-grid{grid-template-columns:1fr}.workspace-edit-grid .full{grid-column:auto}}
 
     .drawer-checkbox{display:flex;align-items:center;gap:9px;color:var(--text-secondary);font-size:.78rem}
@@ -920,6 +923,7 @@ export class DashboardModule implements OnInit {
     this.promotionTitle.set(String(item['post_title'] ?? ''));
     this.promotionContent.set(String(item['post_content'] ?? ''));
     this.promotionValidUntil.set(String(item['valid_until'] ?? '').replace(' ', 'T').slice(0,16));
+    this.clearPromotionPreviews();
     this.promotionFiles.set([]);
     this.promotionError.set('');
     this.showPromotionComposer.set(true);
@@ -948,6 +952,7 @@ export class DashboardModule implements OnInit {
     this.promotionTitle.set('');
     this.promotionContent.set('');
     this.promotionValidUntil.set('');
+    this.clearPromotionPreviews();
     this.promotionFiles.set([]);
     this.promotionError.set('');
     this.showPromotionComposer.set(true);

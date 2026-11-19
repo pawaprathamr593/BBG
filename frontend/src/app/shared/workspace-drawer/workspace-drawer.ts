@@ -24,6 +24,7 @@ export class WorkspaceDrawer {
   constructor() {
     this.destroyRef.onDestroy(() => {
       if (this.wasOpen) this.document.body.style.overflow = this.previousOverflow;
+      if (this.previousFocus?.isConnected) this.previousFocus.focus();
     });
     effect(() => {
       const isOpen = this.open();

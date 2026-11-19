@@ -42,7 +42,7 @@
           <app-storefront-module [storefront]="storefront" [canEdit]="can('business.update')" (editRequested)="editStorefront()" />
         }
 
-        @if (summaryCardModels().length && !(section() === 'customers' && !activeTenantId()) && section() !== 'profile' && section() !== 'storefront') {
+        @if (summaryCardModels().length && !(section() === 'customers' && !activeTenantId()) && section() !== 'profile' && section() !== 'storefront' && section() !== 'payment-qr-settings') {
           <app-workspace-summary-module [entries]="summaryCardModels()" />
         }
 

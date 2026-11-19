@@ -108,7 +108,7 @@
                         @if (media.url && media.media_type === 'IMAGE') { <img class="media-thumb" [src]="media.url" [alt]="media.original_file_name"> }
                         @else if (media.url && media.media_type === 'VIDEO') { <video class="media-preview" controls [src]="media.url"></video> }
                         @else if (media.url && media.media_type === 'AUDIO') { <audio class="media-audio" controls [src]="media.url"></audio> }
-                        @else if (media.url && media.media_type === 'DOCUMENT') { <a class="media-kind" [href]="media.url" target="_blank" rel="noopener">PDF</a> }
+                        @else if (media.url && media.media_type === 'DOCUMENT') { <a class="media-kind" [href]="media.url" target="_blank" rel="noopener">{{ media.media_type }}</a> }
                         @else { <span class="media-kind">{{ media.media_type }}</span> }
                         <div><strong>{{ media.original_file_name }}</strong><small>{{ formatFileSize(media.file_size_bytes) }} · {{ media.is_primary ? 'Primary image' : media.media_type }}</small></div>
                         @if (canUpdate()) { <button type="button" class="icon-button" [disabled]="mediaBusy()" [attr.aria-label]="'Delete ' + media.original_file_name" (click)="removeExistingMedia(media)">×</button> }
