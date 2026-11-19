@@ -17,14 +17,7 @@ import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
     .profile-trigger{display:grid;width:42px;height:42px;place-items:center;overflow:hidden;padding:0;border:2px solid var(--border);border-radius:50%;background:var(--surface-subtle);color:var(--text-primary);font:inherit;font-size:.82rem;font-weight:800;cursor:pointer;transition:border-color .16s ease,transform .16s ease}
     .profile-trigger:hover{transform:translateY(-1px);border-color:var(--brand)}
     .profile-trigger img{width:100%;height:100%;object-fit:cover}
-    .profile-trigger:focus-visible,.drawer-close:focus-visible,.context-action:focus-visible,.theme-options button:focus-visible,.logout-button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 42%,transparent);outline-offset:3px}
-    .profile-backdrop{position:fixed;z-index:1000;inset:0;background:rgba(15,23,42,.42)}
-    .profile-drawer{position:fixed;z-index:1001;inset-block:var(--bbg-header-height,76px) 0;inset-inline-end:0;display:flex;width:clamp(18rem,17.2vw,24rem);max-width:100vw;height:auto;flex-direction:column;overflow:hidden;border-inline-start:1px solid var(--border);background:var(--surface-card);color:var(--text-primary);box-shadow:-18px 0 50px rgba(0,0,0,.18);animation:profile-drawer-in .2s ease-out}
-    .drawer-header{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:16px;padding:22px 24px 18px;border-bottom:1px solid var(--border)}
-    .drawer-eyebrow{margin:0 0 4px;color:var(--text-secondary);font-size:.62rem;font-weight:850;letter-spacing:.15em}
-    .drawer-header h2{margin:0;font-size:1.35rem;letter-spacing:-.04em}
-    .drawer-close{display:grid;width:40px;height:40px;place-items:center;border:1px solid var(--border);border-radius:10px;background:var(--surface-subtle);color:var(--text-primary);font-size:1.5rem;line-height:1;cursor:pointer}
-    .drawer-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:22px 24px}
+    .profile-trigger:focus-visible,.context-action:focus-visible,.theme-options button:focus-visible,.logout-button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 42%,transparent);outline-offset:3px}
     .profile-summary{display:flex;align-items:center;gap:14px;padding:2px 0 22px;border-bottom:1px solid var(--border)}
     .profile-avatar{display:grid;width:52px;height:52px;flex:0 0 52px;place-items:center;overflow:hidden;border-radius:50%;background:var(--brand-soft);color:var(--brand);object-fit:cover;font-size:1rem;font-weight:850}
     .profile-copy{display:grid;min-width:0;gap:5px}.profile-copy strong{overflow:hidden;font-size:.96rem;text-overflow:ellipsis;white-space:nowrap}.profile-copy span{overflow:hidden;color:var(--text-secondary);font-size:.75rem;text-overflow:ellipsis;white-space:nowrap}
@@ -46,10 +39,8 @@ import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
     .drawer-footer{display:grid;flex:0 0 auto;gap:10px;padding:15px 24px calc(15px + env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--surface-card)}
     .logout-button{display:flex;min-height:48px;align-items:center;justify-content:center;gap:9px;border:1px solid #d98a83;border-radius:10px;background:transparent;color:#c34f47;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer}
     .logout-button:disabled{opacity:.6;cursor:wait}
-    @keyframes profile-drawer-in{from{opacity:.75;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
-    @media(min-width:768px) and (max-width:1023.98px){.profile-drawer{width:min(80vw,27.5rem)}}
-    @media(max-width:767.98px){.profile-trigger{width:39px;height:39px}.profile-drawer{inset-block:var(--bbg-header-height,66px) 0;inset-inline:0;width:100%;max-width:100%;height:auto;border:0;box-shadow:none;animation:profile-drawer-in .16s ease-out}.drawer-header{padding:calc(14px + env(safe-area-inset-top)) 18px 14px}.drawer-body{padding:18px}.drawer-footer{padding:12px 18px calc(12px + env(safe-area-inset-bottom))}}
-    @media(prefers-reduced-motion:reduce){.profile-trigger,.profile-drawer{transition:none;animation:none}}
+    @media(max-width:767.98px){.profile-trigger{width:39px;height:39px}.drawer-footer{padding:12px 18px calc(12px + env(safe-area-inset-bottom))}}
+    @media(prefers-reduced-motion:reduce){.profile-trigger{transition:none}}
   `],
 })
 export class UserProfileDrawerComponent {
