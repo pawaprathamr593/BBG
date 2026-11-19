@@ -18,7 +18,7 @@ All routes use the businessParam envelope and the existing authenticated API req
 - Core Services resolves the authenticated principal.
 - BusinessDao verifies active TENANT_OWNER membership for the supplied tenant and returns the business profile owned by that user.
 - The business profile must have approval_status=APPROVED.
-- The existing storefront.enabled plan entitlement is still required.
+- The existing STOREFRONT_ACCESS plan entitlement is still required.
 - Existing field validation, transaction boundaries and DAO update methods are reused.
 - Existing non-owner storefront operations and their permission checks are unchanged.
 
