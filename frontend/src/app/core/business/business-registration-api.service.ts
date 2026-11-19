@@ -102,6 +102,7 @@ export interface ApplicationSubscription {
   plan_id: number;
   plan_name: string;
   billing_cycle: string;
+  created_on?: string;
   subscription_status: string;
   rejection_reason?: string | null;
   latest_proof_review_status?: string | null;
