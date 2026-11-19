@@ -288,6 +288,7 @@ export class DashboardModule implements OnInit {
         : scope === 'PLATFORM'
           ? platformRequirements[link.key]
           : personalRequirements[link.key];
+      if (scope === 'TENANT' && link.key === 'members') return this.canManageOwnedSubscription();
       if (!requiredPermission || !hasWorkspacePermission(permissions, scope, requiredPermission)) return false;
       const entitlement = scope === 'TENANT' ? tenantEntitlements[link.key] : undefined;
       return entitlement === undefined || hasActiveEntitlement(entitlements, entitlement);
