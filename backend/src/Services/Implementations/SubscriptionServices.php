@@ -513,6 +513,12 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             $resArr['msgArr'][] = 'A subscription plan can only be selected for a saved business draft.';
             return $resArr;
         }
+        foreach (['business_email', 'business_phone', 'address_line_1', 'city', 'state', 'postal_code'] as $requiredField) {
+            if (trim((string) ($application[$requiredField] ?? '')) === '') {
+                $resArr['msgArr'][] = 'Complete the business email, phone and full address before choosing a subscription plan.';
+                return $resArr;
+            }
+        }
         $tenantId = (int) $application['tenant_id'];
         $userId = (int) $context['data']['user_id'];
         $planId = $this->positiveInt($actionData['plan_id'] ?? null);
