@@ -99,6 +99,11 @@
                   <span class="product-mark" aria-hidden="true">BBG</span>
                   @if (product.category_name) { <span class="tag">{{ product.category_name }}</span> }
                 </div>
+                @if (product.primary_image_url) {
+                  <img [src]="product.primary_image_url" [alt]="product.product_name" loading="lazy" style="width:100%;height:190px;object-fit:cover;border-radius:10px;margin-bottom:14px">
+                } @else if (product.media?.length && product.media[0].media_type === 'VIDEO' && product.media[0].url) {
+                  <video [src]="product.media[0].url" controls preload="metadata" style="width:100%;height:190px;object-fit:cover;border-radius:10px;margin-bottom:14px"></video>
+                }
                 <h3>{{ product.product_name }}</h3>
                 @if (product.brand_name) { <p class="brand">{{ product.brand_name }}</p> }
                 @if (product.description) { <p class="description">{{ product.description }}</p> }
