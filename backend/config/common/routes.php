@@ -136,6 +136,7 @@ return [
     Route::post('/api/v1/engagement/views/record')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/views/record'),
 
     Route::post('/api/v1/subscriptions/plans/list')->action([SubscriptionController::class, 'actionGetSubscription'])->name('api/v1/subscriptions/plans/list'),
+    Route::post('/api/v1/subscriptions/application/current')->action([SubscriptionController::class, 'actionGetSubscription'])->name('api/v1/subscriptions/application/current'),
     Route::post('/api/v1/subscriptions/mine/list')->action([SubscriptionController::class, 'actionGetSubscription'])->name('api/v1/subscriptions/mine/list'),
     Route::post('/api/v1/subscriptions/mine/detail')->action([SubscriptionController::class, 'actionGetSubscription'])->name('api/v1/subscriptions/mine/detail'),
     Route::post('/api/v1/subscriptions/request')->action([SubscriptionController::class, 'actionManageSubscription'])->name('api/v1/subscriptions/request'),
