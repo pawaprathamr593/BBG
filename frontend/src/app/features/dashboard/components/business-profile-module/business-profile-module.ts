@@ -65,7 +65,6 @@ export class BusinessProfileModule {
         { key: 'business_name', label: 'Business name' },
         { key: 'business_slug', label: 'Public business URL' },
         { key: 'tenant_name', label: 'Workspace name' },
-        { key: 'primary_category_id', label: 'Primary category ID' },
         { key: 'tenant_status', label: 'Workspace status' },
         { key: 'approval_status', label: 'Approval status' },
         { key: 'publication_status', label: 'Business publication status' },
