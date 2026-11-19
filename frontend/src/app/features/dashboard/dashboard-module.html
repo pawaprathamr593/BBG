@@ -23,6 +23,30 @@
       } @else if (unsupported()) {
         <section class="state-panel"><span class="state-icon">ⓘ</span><strong>{{ unsupportedTitle() }}</strong><p>{{ unsupported() }}</p></section>
       } @else {
+
+        @if (section() === 'members') {
+          <section class="team-management-panel">
+            <div class="team-panel-heading"><div><h2>Manage your team</h2><p>Search existing BBG users or create an invitation link for a new user.</p></div><span>Tenant Order Manager</span></div>
+            <div class="team-search-row">
+              <label><span>Team member email</span><input type="email" [value]="teamSearch()" (input)="teamSearch.set(inputValue($event))" placeholder="colleague@company.com" /></label>
+              <button type="button" class="secondary-action" (click)="searchTeamUsers()" [disabled]="teamSearchBusy() || busy()">{{ teamSearchBusy() ? 'Searching…' : 'Search existing user' }}</button>
+            </div>
+            @if (teamSearchResults().length) {
+              <div class="team-search-results">
+                @for (user of teamSearchResults(); track user['user_id']) {
+                  <div class="team-search-result"><div><strong>{{ user['full_name'] }}</strong><span>{{ user['email'] }}</span></div><button type="button" class="secondary-action" (click)="addTeamMember(user)" [disabled]="busy()">Add as Order Manager</button></div>
+                }
+              </div>
+            } @else if (teamSearch().includes('@') && !teamSearchBusy() && !invitationLink()) {
+              <button type="button" class="secondary-action" (click)="createTeamInvitation()" [disabled]="busy()">Create invitation link for this email</button>
+            }
+            @if (invitationLink()) {
+              <div class="invitation-result"><div><strong>Invitation link ready</strong><span>Expires: {{ invitationExpiresOn() }}</span><input readonly [value]="invitationLink()" aria-label="Invitation link" /></div><button type="button" class="secondary-action" (click)="copyInvitationLink()">Copy invitation link</button></div>
+            }
+            <p class="team-role-note">Only the existing <strong>TENANT_ORDER_MANAGER</strong> tenant role can be assigned through this workflow. Platform roles and tenant-owner access are not assignable here.</p>
+          </section>
+        }
+
         @if (section() === 'profile' && summary(); as business) {
           <app-business-profile-module [business]="business" [canEdit]="can('business.update')" (refreshRequested)="load()" />
         }
