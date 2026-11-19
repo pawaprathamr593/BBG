@@ -84,6 +84,20 @@ final readonly class TenantDao
     public function hasTenantPermission(ConnectionInterface $db, int $userId, int $tenantId, string $permissionCode): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        // Core Services use capability-style names; the RBAC seed stores one
+        // manage permission per tenant module. Resolve that mapping centrally.
+        $permissionCode = match (true) {
+            str_starts_with($permissionCode, 'business.') => 'BUSINESS_PROFILE_MANAGE',
+            str_starts_with($permissionCode, 'catalogue.') => 'CATALOGUE_MANAGE',
+            str_starts_with($permissionCode, 'customer.') => 'CUSTOMERS_MANAGE',
+            str_starts_with($permissionCode, 'enquiry.') => 'ENQUIRIES_MANAGE',
+            str_starts_with($permissionCode, 'order.') => 'ORDERS_MANAGE',
+            str_starts_with($permissionCode, 'payment.') => 'PAYMENTS_VIEW',
+            str_starts_with($permissionCode, 'promotion.') => 'PROMOTIONS_MANAGE',
+            str_starts_with($permissionCode, 'subscription.') => 'SUBSCRIPTIONS_MANAGE',
+            $permissionCode === 'tenant.view' => 'TENANT_MEMBERS_VIEW',
+            default => $permissionCode,
+        };
         return $this->one(
             $db,
             "SELECT p.id
