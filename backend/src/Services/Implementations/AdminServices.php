@@ -267,6 +267,14 @@ final readonly class AdminServices implements IAdminServices
         }
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = $result['data'];
+        if (!empty($resArr['data']['payment_qr_file_path'])) {
+            $resArr['data']['payment_qr_url'] = $this->s3Storage->createDownloadUrl((string) $resArr['data']['payment_qr_file_path']);
+            unset($resArr['data']['payment_qr_file_path']);
+        }
+        if (!empty($resArr['data']['proof_file_path'])) {
+            $resArr['data']['receipt_url'] = $this->s3Storage->createDownloadUrl((string) $resArr['data']['proof_file_path']);
+            unset($resArr['data']['proof_file_path']);
+        }
         return $resArr;
     }
 
@@ -299,6 +307,16 @@ final readonly class AdminServices implements IAdminServices
         if ($newStatus === 'REJECTED' && $reason === null) {
             $resArr['msgArr'][] = 'A rejection reason is required.';
             return $resArr;
+        }
+        if ($newStatus === 'APPROVED') {
+            $activeSubscription = $this->dao->getActiveSubscriptionForTenant($this->db, (int) $business['data']['tenant_id']);
+            if ($activeSubscription['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($activeSubscription, 'AdminServices::manageBusinessDecision');
+            }
+            if ($activeSubscription['data'] === []) {
+                $resArr['msgArr'][] = 'Approve a payment-backed subscription before approving this business application.';
+                return $resArr;
+            }
         }
         $transaction = $this->db->beginTransaction();
         try {
