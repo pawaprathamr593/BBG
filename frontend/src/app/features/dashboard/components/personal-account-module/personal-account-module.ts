@@ -24,6 +24,7 @@ export class PersonalAccountModule {
   private readonly auth=inject(AuthService);
   private readonly api=inject(WorkspaceModuleApiService);
 
+  inputValue(event: Event): string { return (event.target as HTMLInputElement).value; }
   initials():string {
     return String(this.profile()['full_name']??'BB').trim().split(/\s+/).slice(0,2)
       .map(part=>part.charAt(0).toUpperCase()).join('')||'BB';

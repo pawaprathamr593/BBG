@@ -27,9 +27,9 @@
 </app-workspace-drawer>
 <app-workspace-drawer [open]="passwordDrawerOpen()" [title]="hasPassword()?'Change account password':'Set account password'" description="Use a secure password of at least eight characters." (closed)="closePassword()">
   <form class="account-form" (ngSubmit)="updatePassword()">
-    @if (hasPassword()) { <label>Current password<input type="password" autocomplete="current-password" [value]="currentPassword()" (input)="currentPassword.set(($any($event.target)).value)" required></label> }
-    <label>New password<input type="password" autocomplete="new-password" minlength="8" [value]="newPassword()" (input)="newPassword.set(($any($event.target)).value)" required></label>
-    <label>Confirm new password<input type="password" autocomplete="new-password" minlength="8" [value]="confirmPassword()" (input)="confirmPassword.set(($any($event.target)).value)" required></label>
+    @if (hasPassword()) { <label>Current password<input type="password" autocomplete="current-password" [value]="currentPassword()" (input)="currentPassword.set(inputValue($event))" required></label> }
+    <label>New password<input type="password" autocomplete="new-password" minlength="8" [value]="newPassword()" (input)="newPassword.set(inputValue($event))" required></label>
+    <label>Confirm new password<input type="password" autocomplete="new-password" minlength="8" [value]="confirmPassword()" (input)="confirmPassword.set(inputValue($event))" required></label>
     @if (passwordError()) { <p class="account-error" role="alert">{{ passwordError() }}</p> }
     <footer><button type="button" (click)="closePassword()" [disabled]="busy()">Cancel</button><button type="submit" class="primary" [disabled]="busy()">{{ busy()?'Saving…':(hasPassword()?'Update password':'Set password') }}</button></footer>
   </form>

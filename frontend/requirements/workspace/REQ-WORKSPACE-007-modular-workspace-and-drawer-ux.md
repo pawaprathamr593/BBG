@@ -176,3 +176,5 @@ Every data-driven module/section must handle applicable states:
 - Corrected promotion composer media previews so image, video, audio and document files render with type-appropriate previews or indicators.
 - Catalogue Products and Categories remain separate vertically stacked management sections; product media drawer retains existing/new media, upload progress and failure feedback.
 - Verification still pending: Angular development build, Prettier, automated tests and authenticated responsive browser checks. No build or browser success is claimed.
+
+- Moved Personal Account profile editing and password set/change flows into the Personal Account feature component; it now owns its form state and uses the shared right-side drawer. Successful updates emit a refresh request to reload the authenticated profile.

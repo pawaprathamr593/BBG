@@ -123,7 +123,6 @@ export class DashboardModule implements OnInit {
   readonly summaryCardModels = computed<WorkspaceSummaryItem[]>(() => this.summaryEntries().map((entry) => ({
     key: entry.key, label: this.humanize(entry.key), value: this.formatValue(entry.value),
   })));
-  readonly showPersonalProfileDrawer = signal(false);
   readonly showAddressDrawer = signal(false);
   readonly storefrontDetails = computed(() => {
     const value = this.summary()?.['storefront'];
