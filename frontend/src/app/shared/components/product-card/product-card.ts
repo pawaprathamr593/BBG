@@ -38,7 +38,7 @@ import type { ProductCardModel } from '../../models/marketplace-card.models';
             {{ actionLabel() }} <span aria-hidden="true">→</span>
           </button>
           @if (product().business?.business_slug) {
-            <button type="button" class="seller-action" (click)="businessSelected.emit(product())">View seller</button>
+            <button type="button" class="seller-action" (click)="businessSelected.emit(product().business.business_slug)">View seller</button>
           }
         </div>
       </div>
@@ -55,7 +55,7 @@ export class ProductCard {
   readonly actionLabel = input('View details');
   readonly showCreated = input(false);
   readonly selected = output<ProductCardModel>();
-  readonly businessSelected = output<ProductCardModel>();
+  readonly businessSelected = output<string>();
 
   protected primaryImage(): string | null {
     return this.product().media?.find((item) => item.media_type === 'IMAGE' && item.url)?.url ?? null;
