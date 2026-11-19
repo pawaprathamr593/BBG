@@ -11,8 +11,26 @@
   <footer class="account-actions">
     <div><strong>Account password</strong><p>{{ hasPassword() ? 'A password is already set for your account.' : 'You signed in without a password. You can set one to also sign in using your email or mobile number.' }}</p></div>
     <div class="account-buttons">
-      @if (canEdit()) { <button type="button" (click)="editRequested.emit()">Edit details</button> }
-      @if (canEdit()) { <button type="button" class="secondary" (click)="passwordRequested.emit()">{{ hasPassword() ? 'Change password' : 'Set password' }}</button> }
+      @if (canEdit()) { <button type="button" (click)="edit()">Edit details</button><button type="button" class="secondary" (click)="openPassword()">{{ hasPassword()?'Change password':'Set password' }}</button> }
     </div>
   </footer>
+  @if (error()) { <p class="account-error" role="alert">{{ error() }}</p> }
 </section>
+<app-workspace-drawer [open]="profileDrawerOpen()" title="Edit personal details" description="Update your BBG account contact information." (closed)="profileDrawerOpen.set(false)">
+  <form class="account-form" (ngSubmit)="saveProfile()">
+    <label>Full name<input name="fullName" [ngModel]="form().full_name" (ngModelChange)="updateField('full_name',$event)" maxlength="180" required></label>
+    <label>Email address<input type="email" name="email" [ngModel]="form().email" (ngModelChange)="updateField('email',$event)"></label>
+    <label>Mobile number<input type="tel" name="mobile" [ngModel]="form().mobile" (ngModelChange)="updateField('mobile',$event)"></label>
+    @if (error()) { <p class="account-error" role="alert">{{ error() }}</p> }
+    <footer><button type="button" (click)="profileDrawerOpen.set(false)" [disabled]="busy()">Cancel</button><button type="submit" class="primary" [disabled]="busy()||!form().full_name.trim()">{{ busy()?'Saving…':'Save details' }}</button></footer>
+  </form>
+</app-workspace-drawer>
+<app-workspace-drawer [open]="passwordDrawerOpen()" [title]="hasPassword()?'Change account password':'Set account password'" description="Use a secure password of at least eight characters." (closed)="closePassword()">
+  <form class="account-form" (ngSubmit)="updatePassword()">
+    @if (hasPassword()) { <label>Current password<input type="password" autocomplete="current-password" [value]="currentPassword()" (input)="currentPassword.set(($any($event.target)).value)" required></label> }
+    <label>New password<input type="password" autocomplete="new-password" minlength="8" [value]="newPassword()" (input)="newPassword.set(($any($event.target)).value)" required></label>
+    <label>Confirm new password<input type="password" autocomplete="new-password" minlength="8" [value]="confirmPassword()" (input)="confirmPassword.set(($any($event.target)).value)" required></label>
+    @if (passwordError()) { <p class="account-error" role="alert">{{ passwordError() }}</p> }
+    <footer><button type="button" (click)="closePassword()" [disabled]="busy()">Cancel</button><button type="submit" class="primary" [disabled]="busy()">{{ busy()?'Saving…':(hasPassword()?'Update password':'Set password') }}</button></footer>
+  </form>
+</app-workspace-drawer>

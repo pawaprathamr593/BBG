@@ -26,7 +26,6 @@ interface ListResult {
   items?: DataRecord[];
   pagination?: { page?: number; page_size?: number; total?: number };
 }
-interface PersonalProfileForm { full_name: string; email: string; mobile: string; }
 interface AddressForm {
   recipient_name: string; mobile: string; address_line_1: string; address_line_2: string;
   city: string; state: string; postal_code: string; country_code: string; address_label: string;
@@ -131,7 +130,6 @@ export class DashboardModule implements OnInit {
     return value && typeof value === 'object' && !Array.isArray(value) ? value as DataRecord : null;
   });
   readonly addressEditingId = signal<number | null>(null);
-  readonly personalProfileForm = signal<PersonalProfileForm>({ full_name: '', email: '', mobile: '' });
   readonly addressForm = signal<AddressForm>({
     recipient_name: '', mobile: '', address_line_1: '', address_line_2: '', city: '', state: '',
     postal_code: '', country_code: 'IN', address_label: 'Home', is_default: false,
@@ -157,11 +155,6 @@ export class DashboardModule implements OnInit {
   readonly proofFile = signal<File | null>(null);
   readonly proofSubscription = signal<DataRecord | null>(null);
   readonly proofPaymentReference = signal('');
-  readonly showPasswordForm = signal(false);
-  readonly currentPassword = signal('');
-  readonly newPassword = signal('');
-  readonly confirmPassword = signal('');
-  readonly passwordError = signal('');
   readonly profileInitials = computed(() => String(this.summary()?.['full_name'] ?? 'BB').trim().split(/\s+/).slice(0,2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BB');
   readonly plans = signal<DataRecord[]>([]);
   readonly pendingPlanId = signal<number | null>(null);
@@ -915,66 +908,10 @@ export class DashboardModule implements OnInit {
     return bytes < 1024 * 1024 ? `${Math.max(1,Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  openPasswordForm(): void {
-    this.currentPassword.set(''); this.newPassword.set(''); this.confirmPassword.set('');
-    this.passwordError.set(''); this.showPasswordForm.set(true);
-  }
-
   openPaymentQrDrawer(): void {
     if (!this.can('subscription.update')) return;
     this.error.set('');
     this.showPaymentQrDrawer.set(true);
-  }
-
-  closePasswordForm(): void {
-    this.showPasswordForm.set(false); this.passwordError.set('');
-    this.currentPassword.set(''); this.newPassword.set(''); this.confirmPassword.set('');
-  }
-
-  async updatePassword(): Promise<void> {
-    if (this.busy()) return;
-    const newPassword = this.newPassword();
-    if (newPassword.length < 8) { this.passwordError.set('Use at least 8 characters for your new password.'); return; }
-    if (newPassword !== this.confirmPassword()) { this.passwordError.set('The new password and confirmation do not match.'); return; }
-    if (this.summary()?.['has_password'] && !this.currentPassword()) { this.passwordError.set('Enter your current password.'); return; }
-    this.busy.set(true); this.passwordError.set(''); this.error.set('');
-    try {
-      await this.request('/api/v1/auth/password/update','authParam','setPassword',{
-        ...(this.summary()?.['has_password'] ? {current_password:this.currentPassword()} : {}),
-        new_password:newPassword,
-      });
-      this.summary.update((profile) => profile ? {...profile,has_password:true} : profile);
-      this.notice.set('Your password has been saved successfully.');
-      this.closePasswordForm();
-    } catch (error) {
-      this.passwordError.set(this.auth.errorMessage(error));
-    } finally { this.busy.set(false); }
-  }
-
-  editPersonalProfile(): void {
-    const current = this.summary();
-    if (!current || this.busy() || !this.can('user.update')) return;
-    this.personalProfileForm.set({
-      full_name: String(current['full_name'] ?? ''),
-      email: String(current['email'] ?? ''),
-      mobile: String(current['mobile'] ?? ''),
-    });
-    this.error.set('');
-    this.showPersonalProfileDrawer.set(true);
-  }
-
-  updatePersonalProfileField(field: keyof PersonalProfileForm, event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.personalProfileForm.update((form) => ({ ...form, [field]: value }));
-  }
-
-  async savePersonalProfile(): Promise<void> {
-    const form = this.personalProfileForm();
-    if (!form.full_name.trim()) { this.error.set('Full name is required.'); return; }
-    const saved = await this.performAction('/api/v1/auth/profile/update', 'authParam', 'updateProfile', {
-      full_name: form.full_name.trim(), email: form.email.trim(), mobile: form.mobile.trim(),
-    });
-    if (saved) this.showPersonalProfileDrawer.set(false);
   }
 
   createAddress(): void {
