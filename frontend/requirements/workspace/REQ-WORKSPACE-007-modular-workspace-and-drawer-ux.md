@@ -159,9 +159,6 @@ Every data-driven module/section must handle applicable states:
 
 ## Open questions
 
-- UNKNOWN: Confirm the complete current module-to-route inventory from the latest route configuration before splitting components; the existing module requirements are the intended scope baseline.
-- UNKNOWN: Confirm which existing add/edit flows currently use browser prompts, inline forms or centered modals and map each to the shared drawer during implementation.
-- UNKNOWN: Confirm current DTO fields for Business Profile and Storefront from the existing API services before finalizing the exact detail-card fields.
 - UNKNOWN: Confirm available automated test coverage and commands for workspace context, drawer behaviour and module components.
 - UNKNOWN: Manual visual verification requires running the frontend with suitable authenticated Personal, Business and Platform test accounts.
 
@@ -190,3 +187,9 @@ Every data-driven module/section must handle applicable states:
 - Extracted the Personal Addresses book into its own feature component. It owns create/edit/default/delete actions, uses the existing customer-address endpoints and refreshes the authenticated user's address list only after successful mutations.
 
 - Added component-destruction guards to the extracted feature modules so late async responses do not update destroyed views or trigger stale parent refreshes after navigation/context changes.
+
+- Expanded Business Profile into identity/registration, contact, address and business-description card groups using fields returned by the existing business-profile query. Added the supported WhatsApp number to the existing profile update form and retained the current API contract.
+- Expanded Storefront into identity, publication-status and customer-experience card groups using the existing storefront settings DTO. Added client-side validation matching the backend WhatsApp number rule and kept all supported edits in the shared right-side drawer.
+- Improved product media previews in the catalogue drawer: image/video/document previews use larger bounded cards, audio uses native controls, and existing/new media and upload states remain distinct. Products and Categories remain vertically separated.
+- Improved the shared workspace drawer's accessibility by associating its description with the dialog and keeping keyboard focus inside the drawer even if focus is moved outside it.
+- Verification still pending for these latest changes: Prettier, Angular development build, relevant tests and authenticated responsive browser checks. The branch remains `in-progress`; no completion is claimed.
