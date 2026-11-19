@@ -540,6 +540,43 @@ final readonly class MarketplaceDao
         );
     }
 
+    /**
+     * Active media for a page of public products. Product IDs are globally unique,
+     * and every returned row is still constrained to an active media record.
+     */
+    public function getPublicProductMediaForProducts(ConnectionInterface $db, array $productIds): array
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $productIds),
+            static fn (int $id): bool => $id > 0,
+        )));
+        if ($ids === []) {
+            return ['status' => 'SUCCESS', 'msgArr' => [], 'data' => []];
+        }
+
+        $placeholders = [];
+        $params = [];
+        foreach ($ids as $index => $id) {
+            $key = ':product_id_' . $index;
+            $placeholders[] = $key;
+            $params[$key] = $id;
+        }
+
+        return $this->many(
+            $db,
+            "SELECT id, tenant_id, product_id, media_type, mime_type, file_path,
+                    original_file_name, file_size_bytes, thumbnail_path,
+                    display_order, is_primary, media_status
+             FROM PRODUCT_MEDIA
+             WHERE product_id IN (" . implode(', ', $placeholders) . ")
+                AND media_type IN ('IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT')
+                AND media_status = 'ACTIVE' AND status = 'A'
+             ORDER BY product_id ASC, is_primary DESC, display_order ASC, id ASC",
+            $params,
+            'getPublicProductMediaForProducts',
+        );
+    }
+
     public function countMarketplaceProducts(ConnectionInterface $db, array $filters): array
     {
         return $this->one(
@@ -760,6 +797,39 @@ final readonly class MarketplaceDao
              LIMIT 1",
             [':id' => $promotionId],
             'getPublicPromotionById',
+        );
+    }
+
+    /**
+     * Active media for a page of public promotional posts.
+     */
+    public function getPublicPromotionMediaForPosts(ConnectionInterface $db, array $postIds): array
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $postIds),
+            static fn (int $id): bool => $id > 0,
+        )));
+        if ($ids === []) {
+            return ['status' => 'SUCCESS', 'msgArr' => [], 'data' => []];
+        }
+
+        $placeholders = [];
+        $params = [];
+        foreach ($ids as $index => $id) {
+            $key = ':post_id_' . $index;
+            $placeholders[] = $key;
+            $params[$key] = $id;
+        }
+
+        return $this->many(
+            $db,
+            "SELECT id, tenant_id, post_id, file_path, media_type, display_order
+             FROM POST_MEDIA
+             WHERE post_id IN (" . implode(', ', $placeholders) . ")
+                AND status = 'A'
+             ORDER BY post_id ASC, display_order ASC, id ASC",
+            $params,
+            'getPublicPromotionMediaForPosts',
         );
     }
 
