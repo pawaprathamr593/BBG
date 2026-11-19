@@ -66,7 +66,7 @@
         }
 
         @if (section() === 'categories') {
-          <app-platform-categories-module [categories]="items()" [canCreate]="can('admin.create')" [canUpdate]="can('admin.update')" [canDelete]="can('admin.delete')" (refreshRequested)="load()" />
+          <app-platform-categories-module [categories]="items()" [canCreate]="can('admin.create')" [canUpdate]="can('admin.update')" [canDelete]="can('admin.delete')" [totalItems]="totalItems()" [currentPage]="currentPage()" [pageCount]="pageCount()" [loading]="loading()" (pageChange)="goToPage($event)" (refreshRequested)="load()" />
         }
         @if (section() === 'platform-analytics' && analyticsTrends().length) {
           <app-platform-analytics-module [points]="analyticsTrends()" />

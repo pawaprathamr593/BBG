@@ -20,6 +20,8 @@ export class PlatformCategoriesModule {
   readonly categories=input<CategoryRecord[]>([]);
   readonly canCreate=input(false);readonly canUpdate=input(false);readonly canDelete=input(false);
   readonly refreshRequested=output<void>();
+  readonly totalItems=input(0);readonly currentPage=input(1);readonly pageCount=input(1);readonly loading=input(false);
+  readonly pageChange=output<number>();
   readonly drawerOpen=signal(false);readonly editingId=signal<number|null>(null);
   readonly form=signal<CategoryForm>(emptyForm());readonly busy=signal(false);
   readonly error=signal('');readonly notice=signal('');

@@ -178,3 +178,5 @@ Every data-driven module/section must handle applicable states:
 - Verification still pending: Angular development build, Prettier, automated tests and authenticated responsive browser checks. No build or browser success is claimed.
 
 - Moved Personal Account profile editing and password set/change flows into the Personal Account feature component; it now owns its form state and uses the shared right-side drawer. Successful updates emit a refresh request to reload the authenticated profile.
+
+- Extracted Platform Marketplace Categories into its own feature component with permission-gated create/edit/delete drawers/actions and preserved server pagination.

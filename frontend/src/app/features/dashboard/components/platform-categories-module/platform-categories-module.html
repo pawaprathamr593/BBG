@@ -18,6 +18,9 @@
         </article>
       }
     </div>
+    @if (pageCount()>1) {
+      <nav class="pagination" aria-label="Category pages"><span>Page {{ currentPage() }} of {{ pageCount() }} · {{ totalItems() }} categories</span><div><button type="button" (click)="pageChange.emit(currentPage()-1)" [disabled]="loading()||currentPage()<=1">Previous</button><button type="button" (click)="pageChange.emit(currentPage()+1)" [disabled]="loading()||currentPage()>=pageCount()">Next</button></div></nav>
+    }
   } @else {
     <div class="empty-state"><strong>No marketplace categories yet</strong><p>Create a category to organize business and product listings.</p>@if (canCreate()) { <button type="button" class="primary-button" (click)="create()">Add category</button> }</div>
   }
