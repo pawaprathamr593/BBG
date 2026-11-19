@@ -12,6 +12,7 @@ export class PromotionComposerModule {
   readonly content = input('');
   readonly validUntil = input('');
   readonly files = input<File[]>([]);
+  readonly previews = input<Map<File, string>>(new Map());
   readonly busy = input(false);
   readonly progress = input(0);
   readonly error = input('');

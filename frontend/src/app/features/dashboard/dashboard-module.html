@@ -201,14 +201,14 @@
         </form>
       </app-workspace-drawer>
 
-      <app-workspace-drawer [open]="showPaymentQrDrawer()" title="Edit payment QR configuration" description="This configuration applies to new subscription requests only." (closed)="showPaymentQrDrawer.set(false)">
+      <app-workspace-drawer [open]="showPaymentQrDrawer()" title="Edit payment QR configuration" description="This configuration applies to new subscription requests only." (closed)="closePaymentQrDrawer()">
         <form class="workspace-edit-form" (submit)="$event.preventDefault(); savePaymentQrConfig()">
           @if (summary()?.['qr_url']) { <img class="payment-qr-preview" [src]="asUrl(summary()?.['qr_url'])" alt="Current BBG UPI payment QR"> }
           <label class="workspace-message-label">Payee name<input type="text" maxlength="150" [value]="qrPayeeName()" (input)="qrPayeeName.set(inputValue($event))" placeholder="BBG account name" required></label>
           <label class="workspace-message-label">UPI ID<input type="text" maxlength="150" [value]="qrUpiId()" (input)="qrUpiId.set(inputValue($event))" placeholder="payments@upi" required></label>
           <label class="workspace-message-label">Payment instructions<textarea rows="3" maxlength="1000" [value]="qrInstructions()" (input)="qrInstructions.set(inputValue($event))" placeholder="Optional instructions for business owners"></textarea></label>
           <label class="workspace-message-label">New QR image<input type="file" accept="image/jpeg,image/png,image/webp" (change)="setPaymentQrFile($event)" [disabled]="busy()"><small>JPG, PNG or WEBP, up to 10 MB. Uploading a new QR creates a new version.</small></label>
-          @if (qrFile()) { <p class="qr-file-name">Selected: {{ qrFile()?.name }}</p> }
+          @if (qrPreviewUrl(); as preview) { <div class="qr-selected-preview"><img [src]="preview" alt="Selected payment QR preview"><span>Selected: {{ qrFile()?.name }}</span></div> }
           @if (error()) { <p class="workspace-edit-error" role="alert">{{ error() }}</p> }
           <footer><button type="button" class="refresh" (click)="showPaymentQrDrawer.set(false)" [disabled]="busy()">Cancel</button><button type="submit" class="secondary-action" [disabled]="busy() || !qrPayeeName().trim() || !qrUpiId().trim() || !qrFile()">{{ busy() ? 'Saving…' : 'Save payment QR configuration' }}</button></footer>
         </form>
@@ -310,6 +310,7 @@
           [content]="promotionContent()"
           [validUntil]="promotionValidUntil()"
           [files]="promotionFiles()"
+          [previews]="promotionMediaPreviews()"
           [busy]="promotionMediaBusy()"
           [progress]="promotionUploadProgress()"
           [error]="promotionError()"

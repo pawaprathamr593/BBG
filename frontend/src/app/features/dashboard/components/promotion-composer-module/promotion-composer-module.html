@@ -18,7 +18,13 @@
     @if (files().length) {
       <div class="post-file-list">
         @for (file of files(); track $index) {
-          <div><span>{{ mediaLabel(file.type) }}</span><strong>{{ file.name }}</strong><small>{{ fileSize(file.size) }}</small><button type="button" (click)="fileRemoved.emit($index)" [disabled]="busy()">Remove</button></div>
+          <div>
+            @if (previews().get(file); as preview) {
+              @if (file.type.startsWith('image/')) { <img class="post-file-preview" [src]="preview" [alt]="file.name"> }
+              @else { <video class="post-file-preview" controls [src]="preview"></video> }
+            } @else { <span>{{ mediaLabel(file.type) }}</span> }
+            <strong>{{ file.name }}</strong><small>{{ fileSize(file.size) }}</small><button type="button" (click)="fileRemoved.emit($index)" [disabled]="busy()">Remove</button>
+          </div>
         }
       </div>
     }
