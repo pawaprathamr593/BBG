@@ -49,6 +49,7 @@ final class BusinessController
         ];
         $manageActions = [
             '/api/v1/business/application/submit' => 'submitBusinessApplication',
+            '/api/v1/business/application/draft/save' => 'saveBusinessApplicationDraft',
             '/api/v1/business/application/update' => 'updateBusinessApplication',
             '/api/v1/business/application/resubmit' => 'resubmitBusinessApplication',
             '/api/v1/business/profile/update' => 'updateMyBusinessProfile',
