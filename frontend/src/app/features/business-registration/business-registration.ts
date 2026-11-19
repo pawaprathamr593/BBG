@@ -151,9 +151,9 @@ export class BusinessRegistration implements OnInit {
     this.paymentBusy.set(true);
     this.error.set('');
     try {
-      await this.api.requestSubscription(business.tenant_id, plan.id);
-      const subscriptions = await this.api.getMySubscriptions(business.tenant_id);
-      this.subscription.set(subscriptions[0] ?? null);
+      const created = await this.api.requestSubscription(business.tenant_id, plan.id);
+      const detail = await this.api.getMySubscriptionDetail(business.tenant_id, created.id);
+      this.subscription.set(detail);
       this.plans.set([]);
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
