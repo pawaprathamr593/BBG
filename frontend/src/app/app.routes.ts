@@ -6,6 +6,7 @@ import { workspacePermissionGuard } from './core/workspace/workspace-permission.
 export const routes: Routes = [
   { path: 'business/register', loadComponent: () => import('./features/business-registration/business-registration').then((m) => m.BusinessRegistration), title: 'Register your business | BBG' },
   { path: 'business/team', loadComponent: () => import('./features/business-team/business-team-management').then((m) => m.BusinessTeamManagement), title: 'Team & Access | BBG' },
+  { path: 'business/subscriptions', loadComponent: () => import('./features/business-subscriptions/business-subscription-management').then((m) => m.BusinessSubscriptionManagement), title: 'Subscriptions | BBG' },
   { path: 'business/storefront', loadComponent: () => import('./features/business-storefront/business-storefront-management').then((m) => m.BusinessStorefrontManagement), title: 'Storefront configuration | BBG' },
   { path: 'invite/accept', loadComponent: () => import('./features/team-invitation/team-invitation-acceptance').then((m) => m.TeamInvitationAcceptance), title: 'Accept team invitation | BBG' },
   { path: 'workspace', loadComponent: () => import('./features/business-workspace/business-workspace').then((m) => m.BusinessWorkspace), title: 'Business registration status | BBG' },
