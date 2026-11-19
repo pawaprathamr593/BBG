@@ -172,7 +172,7 @@ const WORKSPACE_NAV_ITEMS: WorkspaceNavItem[] = [
     label: 'My Orders',
     route: '/dashboard/orders',
     permission: 'order.own.view',
-    scope: 'GLOBAL',
+    scope: 'PLATFORM',
     entitlement: null,
     icon: 'receipt-text',
     description: 'Track orders placed with BBG businesses.',
@@ -181,7 +181,7 @@ const WORKSPACE_NAV_ITEMS: WorkspaceNavItem[] = [
     label: 'My Enquiries',
     route: '/dashboard/enquiries',
     permission: 'enquiry.own.view',
-    scope: 'GLOBAL',
+    scope: 'PLATFORM',
     entitlement: null,
     icon: 'messages-square',
     description: 'Continue conversations with businesses.',
@@ -190,7 +190,7 @@ const WORKSPACE_NAV_ITEMS: WorkspaceNavItem[] = [
     label: 'My Profile & Addresses',
     route: '/dashboard/customers',
     permission: 'user.view',
-    scope: 'GLOBAL',
+    scope: 'PLATFORM',
     entitlement: null,
     icon: 'contact-round',
     description: 'Manage your personal details and saved addresses.',
@@ -202,7 +202,7 @@ export function getWorkspaceNavItems(
   permissions: DashboardPermission[],
   activeEntitlements: string | null = null,
 ): WorkspaceNavItem[] {
-  const scope = context === 'BUSINESS' ? 'TENANT' : context === 'PLATFORM' ? 'PLATFORM' : 'GLOBAL';
+  const scope = context === 'BUSINESS' ? 'TENANT' : context === 'PLATFORM' ? 'PLATFORM' : 'PLATFORM';
   return WORKSPACE_NAV_ITEMS.filter((item) => {
     if (item.scope !== scope || !hasWorkspacePermission(permissions, item.scope, item.permission)) {
       return false;
