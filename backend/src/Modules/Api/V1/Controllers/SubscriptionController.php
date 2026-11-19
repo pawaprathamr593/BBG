@@ -46,6 +46,9 @@ final class SubscriptionController
         ];
         $manageActions = [
             '/api/v1/subscriptions/request' => 'requestSubscription',
+            '/api/v1/subscriptions/application/request' => 'requestApplicationSubscription',
+            '/api/v1/subscriptions/application/proofs/upload-url' => 'generateApplicationProofUploadUrl',
+            '/api/v1/subscriptions/application/proofs/submit' => 'submitApplicationSubscriptionProof',
             '/api/v1/subscriptions/renewal/request' => 'requestSubscriptionRenewal',
             '/api/v1/subscriptions/proofs/upload-url' => 'generateSubscriptionProofUploadUrl',
             '/api/v1/subscriptions/proofs/submit' => 'submitSubscriptionProof',
