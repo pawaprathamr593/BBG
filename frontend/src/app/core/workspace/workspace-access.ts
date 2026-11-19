@@ -1,6 +1,6 @@
 import type { DashboardPermission } from '../dashboard/dashboard-api.service';
 
-export type WorkspacePermissionScope = 'TENANT' | 'PLATFORM' | 'GLOBAL';
+export type WorkspacePermissionScope = 'TENANT' | 'PLATFORM';
 
 export function hasWorkspacePermission(
   permissions: DashboardPermission[],
@@ -8,9 +8,7 @@ export function hasWorkspacePermission(
   permissionCode: string,
 ): boolean {
   return permissions.some((permission) => {
-    const matchesScope = permission.scope_type === scope
-      || (scope === 'GLOBAL' && permission.scope_type === 'PLATFORM' && permission.role_code === 'CONSUMER');
-    return matchesScope && permission.permission_code === permissionCode;
+    return permission.scope_type === scope && permission.permission_code === permissionCode;
   });
 }
 
