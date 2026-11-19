@@ -41,6 +41,7 @@ final class SubscriptionController
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $getActions = [
             '/api/v1/subscriptions/plans/list' => 'listActivePlans',
+            '/api/v1/subscriptions/application/current' => 'getApplicationSubscription',
             '/api/v1/subscriptions/mine/list' => 'listMySubscriptions',
             '/api/v1/subscriptions/mine/detail' => 'getMySubscription',
         ];
