@@ -55,6 +55,37 @@ export interface BusinessApplicationPayload {
 }
 
 
+
+export interface StorefrontSettings {
+  id: number;
+  tenant_id: number;
+  storefront_title: string | null;
+  storefront_description: string | null;
+  theme_code: string | null;
+  show_prices: number | boolean;
+  accept_online_orders: number | boolean;
+  whatsapp_enabled: number | boolean;
+  whatsapp_number: string | null;
+  storefront_status: 'ACTIVE' | 'INACTIVE';
+  publication_status: 'PUBLISHED' | 'DRAFT';
+  approval_status: 'APPROVED' | string;
+}
+
+export interface OwnedStorefront {
+  business: BusinessApplication;
+  storefront: StorefrontSettings;
+}
+
+export interface StorefrontUpdatePayload {
+  storefront_title: string;
+  storefront_description: string;
+  theme_code: string;
+  show_prices: boolean;
+  accept_online_orders: boolean;
+  whatsapp_enabled: boolean;
+  whatsapp_number: string;
+}
+
 export interface SubscriptionPlan {
   id: number;
   plan_code: string;
@@ -131,6 +162,54 @@ export class BusinessRegistrationApiService {
     }
   }
 
+
+
+  async getOwnedStorefront(tenantId: number): Promise<OwnedStorefront> {
+    const response = await firstValueFrom(this.http.post<BusinessApiResponse<OwnedStorefront>>(
+      `${this.apiBaseUrl}/api/v1/business/storefront/owner/get`,
+      { businessParam: { actionData: { tenant_id: tenantId } } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to load storefront settings.');
+    }
+    return response.data as OwnedStorefront;
+  }
+
+  async updateOwnedStorefront(tenantId: number, payload: StorefrontUpdatePayload): Promise<void> {
+    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ tenant_id: number }>>(
+      `${this.apiBaseUrl}/api/v1/business/storefront/owner/update`,
+      { businessParam: { actionData: { tenant_id: tenantId, ...payload } } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS') {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to save storefront settings.');
+    }
+  }
+
+  async publishOwnedStorefront(tenantId: number): Promise<{ publication_status: string; storefront_status: string }> {
+    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ tenant_id: number; publication_status: string; storefront_status: string }>>(
+      `${this.apiBaseUrl}/api/v1/business/storefront/owner/publish`,
+      { businessParam: { actionData: { tenant_id: tenantId } } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to publish the storefront.');
+    }
+    return response.data as { tenant_id: number; publication_status: string; storefront_status: string };
+  }
+
+  async unpublishOwnedStorefront(tenantId: number): Promise<{ publication_status: string; storefront_status: string }> {
+    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ tenant_id: number; publication_status: string; storefront_status: string }>>(
+      `${this.apiBaseUrl}/api/v1/business/storefront/owner/unpublish`,
+      { businessParam: { actionData: { tenant_id: tenantId } } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to unpublish the storefront.');
+    }
+    return response.data as { tenant_id: number; publication_status: string; storefront_status: string };
+  }
 
   async saveDraft(payload: BusinessApplicationPayload, businessId?: number, tenantId?: number): Promise<{ business_id: number; tenant_id: number; approval_status: string }> {
     const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ business_id: number; tenant_id: number; approval_status: string }>>(
