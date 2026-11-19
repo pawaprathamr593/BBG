@@ -7,6 +7,7 @@ on:
       - fix/bbg-seven-layer-audit
       - development
       - feature/public-marketplace-pages
+      - feature/business-onboarding-lifecycle
       - HG_CODE_IMPROVEMENTS
   pull_request:
     branches:
@@ -83,6 +84,14 @@ jobs:
             );
           "
           mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261117_002_subscription_payment_review_workflow.sql
+          mysql --protocol=tcp -h 127.0.0.1 -uroot bbg -e "
+            CREATE TABLE BUSINESS_PROFILES (
+              id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+              latitude DECIMAL(10,2) NULL,
+              longitude DECIMAL(10,2) NULL
+            );
+          "
+          mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261119_001_business_profile_geolocation_precision.sql
       - name: Verify migration tables and generated cart keys
         env:
           MYSQL_PWD: root
@@ -91,6 +100,8 @@ jobs:
           test "$count" -eq 27
           generated=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='bbg' AND extra LIKE '%STORED GENERATED%' AND table_name IN ('CARTS','CART_ITEMS')")
           test "$generated" -eq 4
+          coordinates=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='bbg' AND table_name='BUSINESS_PROFILES' AND ((column_name IN ('latitude','longitude') AND numeric_precision=10 AND numeric_scale=7) OR (column_name='location_accuracy_m' AND numeric_precision=10 AND numeric_scale=2))")
+          test "$coordinates" -eq 3
       - name: Verify global Consumer role seed and idempotent account assignment
         env:
           MYSQL_PWD: root
