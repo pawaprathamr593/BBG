@@ -12,6 +12,9 @@ export class WorkspaceDrawer {
   readonly open = input(false);
   readonly title = input.required<string>();
   readonly description = input('');
+  readonly eyebrow = input('');
+  readonly width = input<'standard' | 'compact'>('standard');
+  readonly offsetHeader = input(false);
   readonly closed = output<void>();
 
   private readonly document = inject(DOCUMENT);
