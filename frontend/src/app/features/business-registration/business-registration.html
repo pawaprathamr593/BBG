@@ -61,9 +61,14 @@
           @if (payment.payment_payee_name) { <p class="payment-line"><strong>Payee:</strong> {{ payment.payment_payee_name }}</p> }
           @if (payment.payment_upi_id) { <p class="payment-line"><strong>UPI ID:</strong> {{ payment.payment_upi_id }}</p> }
           @if (payment.payment_instructions) { <p class="payment-instructions">{{ payment.payment_instructions }}</p> }
-          <label class="field"><span>Payment reference / UTR (optional)</span><input [value]="paymentReference()" (input)="paymentReference.set($any($event.target).value)" maxlength="120" placeholder="Enter UTR or transaction reference" /></label>
-          <label class="field proof-field"><span>Upload payment receipt *</span><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" (change)="onProofSelected($event)" /><small>{{ proofFile()?.name || 'Accepted: JPG, PNG, WEBP or PDF' }}</small></label>
-          <button class="submit-button" type="button" (click)="submitPaymentProof()" [disabled]="busy() || !proofFile()">{{ busy() ? 'Uploading and submitting…' : 'Submit payment receipt' }} <span aria-hidden="true">→</span></button>
+          @if (payment.subscription_status === 'PENDING' && payment.latest_proof_review_status === 'PENDING') {
+            <div class="notice success" role="status">Your payment receipt has been received and is awaiting BBG admin review. You do not need to upload it again.</div>
+            <button class="submit-button" type="button" (click)="openWorkspace()">View application status <span aria-hidden="true">→</span></button>
+          } @else {
+            <label class="field"><span>Payment reference / UTR (optional)</span><input [value]="paymentReference()" (input)="paymentReference.set($any($event.target).value)" maxlength="120" placeholder="Enter UTR or transaction reference" /></label>
+            <label class="field proof-field"><span>Upload payment receipt *</span><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" (change)="onProofSelected($event)" /><small>{{ proofFile()?.name || 'Accepted: JPG, PNG, WEBP or PDF' }}</small></label>
+            <button class="submit-button" type="button" (click)="submitPaymentProof()" [disabled]="busy() || !proofFile()">{{ busy() ? 'Uploading and submitting…' : 'Submit payment receipt' }} <span aria-hidden="true">→</span></button>
+          }
         </section>
       }
     } @else {
