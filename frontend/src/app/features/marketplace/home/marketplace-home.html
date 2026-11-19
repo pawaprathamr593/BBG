@@ -103,29 +103,7 @@
         } @else if (businesses().length) {
           <div class="business-grid">
             @for (business of businesses(); track business.id) {
-              <article class="business-card">
-                <div class="business-card-top">
-                  <span class="business-avatar" aria-hidden="true">{{ business.business_name.slice(0, 1).toUpperCase() }}</span>
-                  @if (!searchActive() && business.rank) { <span class="business-rank">#{{ business.rank }}</span> }
-                  @if (business.category_name) { <span class="business-category">{{ business.category_name }}</span> }
-                </div>
-                <h3>{{ business.business_name }}</h3>
-                <p class="business-location">{{ locationLabel(business) }}</p>
-                @if (business.business_description) {
-                  <p class="business-description">{{ business.business_description }}</p>
-                }
-                @if (!searchActive() && business.popularity) {
-                  <div class="business-metrics" aria-label="Business engagement">
-                    <span>{{ business.popularity.views }} views</span>
-                    <span>{{ business.popularity.enquiries }} enquiries</span>
-                  </div>
-                }
-                <div class="business-card-footer">
-                  @if (business.accept_online_orders) { <span>Online orders</span> }
-                  @if (business.whatsapp_enabled) { <span>WhatsApp</span> }
-                </div>
-                <a class="card-action" [routerLink]="['/store', business.business_slug]">Explore business <span aria-hidden="true">→</span></a>
-              </article>
+              <app-business-card [business]="business" [showMetrics]="!searchActive()" (selected)="openBusiness($event)" />
             }
           </div>
         } @else {
@@ -149,21 +127,7 @@
         } @else if (recentBusinesses().length) {
           <div class="business-grid">
             @for (business of recentBusinesses(); track business.id) {
-              <article class="business-card">
-                <div class="business-card-top">
-                  <span class="business-avatar" aria-hidden="true">{{ business.business_name.slice(0, 1).toUpperCase() }}</span>
-                  @if (business.category_name) { <span class="business-category">{{ business.category_name }}</span> }
-                </div>
-                <h3>{{ business.business_name }}</h3>
-                <p class="business-location">{{ locationLabel(business) }}</p>
-                @if (business.business_description) {
-                  <p class="business-description">{{ business.business_description }}</p>
-                }
-                @if (business.created_on) {
-                  <time class="item-date" [attr.datetime]="business.created_on">Added {{ formatDate(business.created_on) }}</time>
-                }
-                <a class="card-action" [routerLink]="['/store', business.business_slug]">Explore business <span aria-hidden="true">→</span></a>
-              </article>
+              <app-business-card [business]="business" [showCreated]="true" (selected)="openBusiness($event)" />
             }
           </div>
           <p class="data-note">Only approved, published storefronts are shown. Ordering currently uses profile creation time because the business schema does not yet store a separate publication timestamp.</p>
@@ -185,21 +149,7 @@
         } @else if (recentProducts().length) {
           <div class="product-grid">
             @for (product of recentProducts(); track product.id) {
-              <article class="product-card">
-                <div class="product-card-mark" aria-hidden="true">BBG</div>
-                @if (product.category_name) { <span class="business-category">{{ product.category_name }}</span> }
-                <h3>{{ product.product_name }}</h3>
-                @if (product.brand_name) { <p class="product-brand">{{ product.brand_name }}</p> }
-                @if (product.description) { <p class="product-description">{{ product.description }}</p> }
-                @if (product.selling_price !== undefined) {
-                  <p class="product-price">{{ formatPrice(product.selling_price) }} <span>/ {{ product.unit.symbol }}</span></p>
-                } @else {
-                  <p class="product-price product-price-hidden">Contact business for price</p>
-                }
-                <p class="product-business">From {{ product.business.business_name }}</p>
-                <time class="item-date" [attr.datetime]="product.created_on">Added {{ formatDate(product.created_on) }}</time>
-                <a class="card-action" [routerLink]="['/store', product.business.business_slug, 'products', (product.slug || slugifyProduct(product.product_name)) + '-' + (product.public_id || product.id)]">View product <span aria-hidden="true">→</span></a>
-              </article>
+              <app-product-card [product]="product" [showCreated]="true" [showPrice]="true" currency="₹ " actionLabel="View product" (selected)="openProduct($event)" (businessSelected)="openBusiness($event.business as any)" />
             }
           </div>
           <p class="data-note">Only active products from approved, published storefronts are shown. Ordering currently uses product creation time because the product schema does not yet store a separate publication timestamp.</p>
@@ -219,12 +169,7 @@
         } @else if (promotions().length) {
           <div class="promotion-grid">
             @for (promotion of promotions(); track promotion.id) {
-              <article class="promotion-card">
-                <span class="promotion-business">{{ promotion.business_name }}</span>
-                <h3>{{ promotion.post_title }}</h3>
-                <p>{{ promotion.post_content }}</p>
-                <time [attr.datetime]="promotion.published_on">{{ formatDate(promotion.published_on) }}</time>
-              </article>
+              <app-promotion-card [promotion]="promotion" (selected)="openPromotion($event)" />
             }
           </div>
         } @else {
