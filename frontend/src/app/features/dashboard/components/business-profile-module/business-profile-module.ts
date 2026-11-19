@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../../../core/workspace/workspace-context.service';
@@ -52,6 +52,9 @@ export class BusinessProfileModule {
   readonly form = signal<ProfileForm>(emptyForm());
 
   private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
+  private alive = true;
+  constructor() { this.destroyRef.onDestroy(() => { this.alive = false; }); }
   private readonly workspace = inject(WorkspaceContextService);
   private readonly api = inject(WorkspaceModuleApiService);
 
@@ -156,12 +159,13 @@ export class BusinessProfileModule {
         state: form.state.trim(),
         postal_code: form.postal_code.trim(),
       });
+      if (!this.alive) return;
       this.drawerOpen.set(false);
       this.refreshRequested.emit();
     } catch (error) {
-      this.error.set(this.auth.errorMessage(error));
+      if (this.alive) this.error.set(this.auth.errorMessage(error));
     } finally {
-      this.saving.set(false);
+      if (this.alive) this.saving.set(false);
     }
   }
 

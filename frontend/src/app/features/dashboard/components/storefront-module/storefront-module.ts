@@ -91,6 +91,7 @@ export class StorefrontModule {
     try{
       await this.api.request(publish?'/api/v1/business/storefront/publish':'/api/v1/business/storefront/unpublish',
         publish?'publishMyStorefront':'unpublishMyStorefront',{tenant_id:tenantId});
+      if (!this.alive) return;
       this.refreshRequested.emit();
     }catch(error){if(this.alive)this.error.set(this.auth.errorMessage(error));}
     finally{if(this.alive)this.saving.set(false);}
