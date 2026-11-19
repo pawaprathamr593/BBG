@@ -577,7 +577,26 @@ final readonly class AdminServices implements IAdminServices
                     $resArr['msgArr'][] = 'Valid starts_on and ends_on are required; ends_on must be later than starts_on.';
                     return $resArr;
                 }
-                $result = $this->dao->approveSubscription($this->db, $subscriptionId, $tenantId, $adminId, $startsOn, $endsOn);
+                $upgradeFromSubscriptionId = $this->positiveInt($subscriptionData['upgrade_from_subscription_id'] ?? null);
+                if ($upgradeFromSubscriptionId !== null) {
+                    if ($upgradeFromSubscriptionId === $subscriptionId) {
+                        $transaction->rollBack();
+                        $resArr['msgArr'][] = 'A subscription cannot replace itself.';
+                        return $resArr;
+                    }
+                    $previous = $this->dao->getSubscriptionForReview($this->db, $upgradeFromSubscriptionId);
+                    if ($previous['status'] !== 'SUCCESS' || $previous['data'] === []
+                        || (int) $previous['data']['tenant_id'] !== $tenantId
+                        || !in_array($previous['data']['subscription_status'] ?? '', ['ACTIVE', 'EXPIRED'], true)) {
+                        $transaction->rollBack();
+                        $resArr['msgArr'][] = 'The subscription being replaced is no longer eligible.';
+                        return $resArr;
+                    }
+                }
+                $result = $this->dao->approveSubscription(
+                    $this->db, $subscriptionId, $tenantId, $adminId, $startsOn, $endsOn,
+                    $upgradeFromSubscriptionId,
+                );
             } else {
                 $reason = $this->requiredText($actionData['reason'] ?? '', 500);
                 if ($reason === null) {
