@@ -275,10 +275,10 @@ export class BusinessRegistrationApiService {
     return (response.data as { subscription: ApplicationSubscription }).subscription;
   }
 
-  async getCurrentApplicationSubscription(businessId: number, tenantId: number): Promise<ApplicationSubscription | null> {
+  async getCurrentApplicationSubscription(businessId: number | null, tenantId: number): Promise<ApplicationSubscription | null> {
     const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription | null }>>(
       `${this.apiBaseUrl}/api/v1/subscriptions/application/current`,
-      { subscriptionParam: { actionData: { business_id: businessId, tenant_id: tenantId } } },
+      { subscriptionParam: { actionData: { ...(businessId ? { business_id: businessId } : {}), tenant_id: tenantId } } },
       { headers: this.headers },
     ));
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
@@ -300,7 +300,7 @@ export class BusinessRegistrationApiService {
   }
 
   async uploadApplicationPaymentProof(
-    businessId: number,
+    businessId: number | null,
     tenantId: number,
     subscriptionId: number,
     file: File,
@@ -309,7 +309,7 @@ export class BusinessRegistrationApiService {
     const uploadResponse = await firstValueFrom(this.http.post<BusinessApiResponse<UploadUrlResponse>>(
       `${this.apiBaseUrl}/api/v1/subscriptions/application/proofs/upload-url`,
       { subscriptionParam: { actionData: {
-        business_id: businessId, tenant_id: tenantId, subscription_id: subscriptionId,
+        ...(businessId ? { business_id: businessId } : {}), tenant_id: tenantId, subscription_id: subscriptionId,
         original_file_name: file.name, mime_type: file.type, file_size_bytes: file.size,
       } } },
       { headers: this.headers },
@@ -325,7 +325,7 @@ export class BusinessRegistrationApiService {
     const submitResponse = await firstValueFrom(this.http.post<BusinessApiResponse<{ proof_id: number }>>(
       `${this.apiBaseUrl}/api/v1/subscriptions/application/proofs/submit`,
       { subscriptionParam: { actionData: {
-        business_id: businessId, tenant_id: tenantId, subscription_id: subscriptionId,
+        ...(businessId ? { business_id: businessId } : {}), tenant_id: tenantId, subscription_id: subscriptionId,
         proof_file_path: upload.object_key, payment_reference: paymentReference || null,
       } } },
       { headers: this.headers },
