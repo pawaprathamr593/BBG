@@ -12,7 +12,7 @@ export class WorkspaceModuleApiService {
   private readonly apiBaseUrl = inject(API_BASE_URL);
   private readonly workspace = inject(WorkspaceContextService);
 
-  async request<T>(path: string, actionType: string, actionData: Record<string, unknown>, envelopeKey: 'businessParam' | 'authParam' | 'adminParam' = 'businessParam'): Promise<T> {
+  async request<T>(path: string, actionType: string, actionData: Record<string, unknown>, envelopeKey: 'businessParam' | 'authParam' | 'adminParam' | 'customerParam' = 'businessParam'): Promise<T> {
     const tenantId = this.workspace.activeTenantId();
     const context = this.workspace.activeContext();
     const response = await firstValueFrom(this.http.post<ApiEnvelope<T>>(
