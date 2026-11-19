@@ -126,6 +126,7 @@ final readonly class BusinessDao
         ?float $latitude,
         ?float $longitude,
         int $userId,
+        string $approvalStatus = 'PENDING',
     ): array {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         try {
@@ -138,7 +139,7 @@ final readonly class BusinessDao
                  VALUES
                     (:tenant_id, :business_name, :business_slug, :description, :category_id,
                      :phone, :whatsapp, :email, :address1, :address2,
-                     :city, :state, :postal, :country, :latitude, :longitude, 'PENDING', 'DRAFT',
+                     :city, :state, :postal, :country, :latitude, :longitude, :approval_status, 'DRAFT',
                      'A', :user_id, :user_id)",
                 [
                     ':tenant_id' => $tenantId, ':business_name' => $businessName, ':business_slug' => $businessSlug,
@@ -146,7 +147,7 @@ final readonly class BusinessDao
                     ':phone' => $businessPhone, ':whatsapp' => $whatsappNumber, ':email' => $businessEmail,
                     ':address1' => $addressLine1, ':address2' => $addressLine2, ':city' => $city,
                     ':state' => $state, ':postal' => $postalCode, ':country' => $countryCode,
-                    ':latitude' => $latitude, ':longitude' => $longitude, ':user_id' => $userId,
+                    ':latitude' => $latitude, ':longitude' => $longitude, ':approval_status' => $approvalStatus, ':user_id' => $userId,
                 ],
             )->execute();
             $resArr['status'] = 'SUCCESS';
@@ -231,6 +232,125 @@ final readonly class BusinessDao
             [':user_id' => $userId],
             'getMyBusinessApplications',
         );
+    }
+
+
+    public function getOwnedBusinessApplication(ConnectionInterface $db, int $userId, int $tenantId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one(
+            $db,
+            "SELECT bp.id AS business_id, bp.tenant_id, bp.business_name, bp.business_slug,
+                    bp.business_description, bp.primary_category_id, bp.business_phone,
+                    bp.whatsapp_number, bp.business_email, bp.address_line_1, bp.address_line_2,
+                    bp.city, bp.state, bp.postal_code, bp.country_code, bp.latitude, bp.longitude,
+                    bp.approval_status, bp.approved_on, bp.rejection_reason, bp.publication_status,
+                    t.tenant_name, t.tenant_status
+             FROM BUSINESS_PROFILES bp
+             INNER JOIN TENANTS t ON t.id = bp.tenant_id AND t.status = 'A'
+             INNER JOIN TENANT_MEMBERSHIPS tm ON tm.tenant_id = bp.tenant_id
+                AND tm.user_id = :user_id AND tm.membership_status = 'ACTIVE' AND tm.status = 'A'
+             INNER JOIN USER_ROLE_ASSIGNMENTS ura ON ura.tenant_id = bp.tenant_id
+                AND ura.user_id = :user_id AND ura.status = 'A'
+                AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
+             INNER JOIN ROLES r ON r.id = ura.role_id
+                AND r.role_code = 'TENANT_OWNER' AND r.scope_type = 'TENANT' AND r.status = 'A'
+             WHERE bp.tenant_id = :tenant_id AND bp.status = 'A' LIMIT 1",
+            [':user_id' => $userId, ':tenant_id' => $tenantId],
+            'getOwnedBusinessApplication',
+        );
+    }
+
+    public function updateBusinessApplicationDraft(
+        ConnectionInterface $db,
+        int $tenantId,
+        int $businessId,
+        int $userId,
+        string $businessName,
+        string $businessSlug,
+        string $businessDescription,
+        ?int $categoryId,
+        string $businessPhone,
+        string $whatsappNumber,
+        string $businessEmail,
+        string $addressLine1,
+        string $addressLine2,
+        string $city,
+        string $state,
+        string $postalCode,
+        string $countryCode,
+        ?float $latitude,
+        ?float $longitude,
+    ): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $affected = $db->createCommand(
+                "UPDATE BUSINESS_PROFILES
+                 SET business_name = :business_name, business_slug = :business_slug,
+                     business_description = :description, primary_category_id = :category_id,
+                     business_phone = :phone, whatsapp_number = :whatsapp,
+                     business_email = :email, address_line_1 = :address1,
+                     address_line_2 = :address2, city = :city, state = :state,
+                     postal_code = :postal, country_code = :country,
+                     latitude = :latitude, longitude = :longitude,
+                     updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                 WHERE id = :business_id AND tenant_id = :tenant_id
+                    AND approval_status = 'DRAFT' AND status = 'A'",
+                [
+                    ':business_name' => $businessName, ':business_slug' => $businessSlug,
+                    ':description' => $businessDescription, ':category_id' => $categoryId,
+                    ':phone' => $businessPhone, ':whatsapp' => $whatsappNumber, ':email' => $businessEmail,
+                    ':address1' => $addressLine1, ':address2' => $addressLine2, ':city' => $city,
+                    ':state' => $state, ':postal' => $postalCode, ':country' => $countryCode,
+                    ':latitude' => $latitude, ':longitude' => $longitude, ':user_id' => $userId,
+                    ':business_id' => $businessId, ':tenant_id' => $tenantId,
+                ],
+            )->execute();
+            if ($affected !== 1) {
+                $exists = $db->createCommand(
+                    "SELECT id FROM BUSINESS_PROFILES WHERE id = :business_id AND tenant_id = :tenant_id
+                        AND approval_status = 'DRAFT' AND status = 'A' LIMIT 1",
+                    [':business_id' => $businessId, ':tenant_id' => $tenantId],
+                )->queryOne();
+                if (!is_array($exists)) {
+                    $resArr['msgArr'][] = 'Draft business application was not found or is no longer editable.';
+                    return $resArr;
+                }
+            }
+            $db->createCommand(
+                "UPDATE TENANTS SET tenant_name = :tenant_name, updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                 WHERE id = :tenant_id AND status = 'A'",
+                [':tenant_name' => $businessName, ':user_id' => $userId, ':tenant_id' => $tenantId],
+            )->execute();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['business_id' => $businessId, 'tenant_id' => $tenantId];
+        } catch (Throwable $exception) {
+            return $this->error('updateBusinessApplicationDraft', $exception);
+        }
+        return $resArr;
+    }
+
+    public function setBusinessApplicationPendingAfterPayment(ConnectionInterface $db, int $tenantId, int $businessId, int $userId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $affected = $db->createCommand(
+                "UPDATE BUSINESS_PROFILES
+                 SET approval_status = 'PENDING', updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                 WHERE id = :business_id AND tenant_id = :tenant_id
+                    AND approval_status = 'DRAFT' AND status = 'A'",
+                [':user_id' => $userId, ':business_id' => $businessId, ':tenant_id' => $tenantId],
+            )->execute();
+            if ($affected !== 1) {
+                $resArr['msgArr'][] = 'Business draft could not be submitted for review.';
+                return $resArr;
+            }
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['business_id' => $businessId, 'tenant_id' => $tenantId, 'approval_status' => 'PENDING'];
+        } catch (Throwable $exception) {
+            return $this->error('setBusinessApplicationPendingAfterPayment', $exception);
+        }
+        return $resArr;
     }
 
     public function updateBusinessApplication(
