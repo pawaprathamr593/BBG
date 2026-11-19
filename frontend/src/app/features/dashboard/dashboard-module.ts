@@ -674,12 +674,8 @@ export class DashboardModule implements OnInit {
     }
     this.busy.set(true); this.error.set('');
     try {
-      const result = await this.request<DataRecord>(path,key,actionType,data);
-      if (action === 'approve-subscription' && typeof result['bcn'] === 'string' && result['bcn'] !== '') {
-        this.notice.set(`Subscription approved. BBG Contribution Number: ${result['bcn']}`);
-      } else {
-        this.notice.set('The requested action was completed.');
-      }
+      await this.request<DataRecord>(path,key,actionType,data);
+      this.notice.set('The requested action was completed.');
       await this.load();
     }
     catch (error) { this.error.set(this.auth.errorMessage(error)); }
