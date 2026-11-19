@@ -5,6 +5,9 @@ import { WorkspaceContextService } from '../../../../core/workspace/workspace-co
 import { WorkspaceModuleApiService } from '../../../../core/workspace/workspace-module-api.service';
 import { WorkspaceDrawer } from '../../../../shared/workspace-drawer/workspace-drawer';
 
+interface ProfileField { key: string; label: string; wide?: boolean; }
+interface ProfileFieldGroup { title: string; fields: ProfileField[]; }
+
 interface ProfileForm {
   business_name: string;
   business_email: string;
@@ -52,7 +55,7 @@ export class BusinessProfileModule {
   private readonly workspace = inject(WorkspaceContextService);
   private readonly api = inject(WorkspaceModuleApiService);
 
-  readonly groups = [
+  readonly groups: ProfileFieldGroup[] = [
     {
       title: 'Business identity & registration',
       fields: [

@@ -5,6 +5,9 @@ import { WorkspaceContextService } from '../../../../core/workspace/workspace-co
 import { WorkspaceModuleApiService } from '../../../../core/workspace/workspace-module-api.service';
 import { WorkspaceDrawer } from '../../../../shared/workspace-drawer/workspace-drawer';
 
+interface StorefrontField { key: string; label: string; wide?: boolean; boolean?: boolean; }
+interface StorefrontFieldGroup { title: string; fields: StorefrontField[]; }
+
 interface StorefrontForm { storefront_title:string; storefront_description:string; show_prices:boolean; accept_online_orders:boolean; whatsapp_enabled:boolean; whatsapp_number:string; theme_code:string; }
 const emptyForm=():StorefrontForm=>({storefront_title:'',storefront_description:'',show_prices:false,accept_online_orders:false,whatsapp_enabled:false,whatsapp_number:'',theme_code:''});
 
@@ -23,7 +26,7 @@ export class StorefrontModule {
   constructor(){this.destroyRef.onDestroy(()=>{this.alive=false;});}
   private readonly workspace=inject(WorkspaceContextService);
   private readonly api=inject(WorkspaceModuleApiService);
-  readonly groups = [
+  readonly groups: StorefrontFieldGroup[] = [
     {
       title: 'Storefront identity',
       fields: [
