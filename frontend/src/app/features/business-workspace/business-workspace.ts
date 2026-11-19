@@ -33,6 +33,7 @@ export class BusinessWorkspace implements OnInit {
   readonly loading = signal(true);
   readonly error = signal('');
   readonly applications = signal<BusinessApplication[]>([]);
+  readonly rejectedPaymentBusinessIds = signal<number[]>([]);
 
   ngOnInit(): void { void this.load(); }
 
@@ -67,6 +68,13 @@ export class BusinessWorkspace implements OnInit {
       : status === 'REJECTED' ? 'Needs attention'
         : status === 'DRAFT' ? 'Draft'
           : 'Pending review';
+  }
+
+  resumePayment(business: BusinessApplication): void {
+    if (!this.rejectedPaymentBusinessIds().includes(business.business_id)) return;
+    void this.router.navigate(['/business/register'], {
+      queryParams: { business_id: business.business_id, tenant_id: business.tenant_id },
+    });
   }
 
   async openWorkspace(business: BusinessApplication): Promise<void> {
