@@ -44,6 +44,9 @@ final readonly class BusinessServices implements IBusinessServices
                 case 'getMyBusinessApplication':
                     $resArr = $this->getBusinessApplication($actionData);
                     break;
+                case 'getMyBusinessApplications':
+                    $resArr = $this->getBusinessApplications($actionData);
+                    break;
                 case 'getMyBusinessProfile':
                     $resArr = $this->getBusinessProfile($actionData);
                     break;
@@ -116,6 +119,22 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = 'Business management failed unexpectedly.';
             $resArr['data'] = [];
         }
+        return $resArr;
+    }
+
+    private function getBusinessApplications(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->principal($actionData);
+        if ($principal['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'BusinessServices::getBusinessApplications');
+        }
+        $result = $this->dao->getMyBusinessApplications($this->db, (int) $principal['data']['user_id']);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'BusinessServices::getBusinessApplications');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = $result['data'];
         return $resArr;
     }
 
@@ -279,14 +298,7 @@ final readonly class BusinessServices implements IBusinessServices
                 }
             }
 
-            $existingApplication = $this->dao->getMyBusinessApplication($this->db, $userId, 0);
-            if ($existingApplication['status'] !== 'SUCCESS') {
-                return $this->propagateFailure($existingApplication, 'BusinessServices::manageBusinessApplication');
-            }
-            if ($existingApplication['data'] !== []) {
-                $resArr['msgArr'][] = 'An application already exists for this user. Update or resubmit the existing application.';
-                return $resArr;
-            }
+            // Each submission creates an independent tenant; existing owned businesses do not block onboarding.
 
             $transaction = $this->db->beginTransaction();
             try {
