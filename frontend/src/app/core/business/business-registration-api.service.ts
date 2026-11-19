@@ -54,6 +54,42 @@ export interface BusinessApplicationPayload {
   longitude: number | null;
 }
 
+export interface SubscriptionPlan {
+  id: number;
+  plan_code: string;
+  plan_name: string;
+  description: string | null;
+  billing_cycle: string;
+  price: string | number;
+  currency: string;
+}
+
+export interface BusinessSubscription {
+  id: number;
+  plan_id: number;
+  plan_name: string;
+  billing_cycle: string;
+  subscription_status: string;
+  amount: string | number;
+  currency: string;
+  payment_qr_url?: string;
+  payment_qr_version?: number;
+  payment_payee_name?: string;
+  payment_upi_id?: string;
+  payment_instructions?: string;
+  latest_proof_review_status?: string | null;
+  latest_proof_submitted_on?: string | null;
+  rejection_reason?: string | null;
+}
+
+export interface SubscriptionProofUpload {
+  upload_url: string;
+  object_key: string;
+  method: 'PUT';
+  headers: Record<string, string>;
+  expires_in: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class BusinessRegistrationApiService {
   private readonly http = inject(HttpClient);
@@ -62,6 +98,90 @@ export class BusinessRegistrationApiService {
 
   private get headers(): HttpHeaders {
     return new HttpHeaders({ Authorization: `Bearer ${this.auth.accessToken() ?? ''}` });
+  }
+
+  async listActivePlans(): Promise<SubscriptionPlan[]> {
+    const data = await this.subscriptionRequest<{ items: SubscriptionPlan[] }>(
+      '/api/v1/subscriptions/plans/list',
+      'listActivePlans',
+      {},
+      false,
+    );
+    return Array.isArray(data.items) ? data.items : [];
+  }
+
+  async getMySubscriptions(tenantId: number): Promise<BusinessSubscription[]> {
+    const data = await this.subscriptionRequest<{ items: BusinessSubscription[] }>(
+      '/api/v1/subscriptions/mine/list',
+      'listMySubscriptions',
+      { tenant_id: tenantId, page: 1, page_size: 20 },
+      false,
+    );
+    return Array.isArray(data.items) ? data.items : [];
+  }
+
+  async requestSubscription(tenantId: number, planId: number): Promise<{ id: number }> {
+    return this.subscriptionRequest<{ id: number }>(
+      '/api/v1/subscriptions/request',
+      'requestSubscription',
+      { tenant_id: tenantId, plan_id: planId },
+      true,
+    );
+  }
+
+  async generateProofUploadUrl(
+    tenantId: number,
+    subscriptionId: number,
+    file: File,
+  ): Promise<SubscriptionProofUpload> {
+    return this.subscriptionRequest<SubscriptionProofUpload>(
+      '/api/v1/subscriptions/proofs/upload-url',
+      'generateSubscriptionProofUploadUrl',
+      {
+        tenant_id: tenantId,
+        subscription_id: subscriptionId,
+        original_file_name: file.name,
+        mime_type: file.type,
+        file_size_bytes: file.size,
+      },
+      true,
+    );
+  }
+
+  async submitSubscriptionProof(
+    tenantId: number,
+    subscriptionId: number,
+    proofFilePath: string,
+    paymentReference: string,
+  ): Promise<{ id: number }> {
+    return this.subscriptionRequest<{ id: number }>(
+      '/api/v1/subscriptions/proofs/submit',
+      'submitSubscriptionProof',
+      {
+        tenant_id: tenantId,
+        subscription_id: subscriptionId,
+        proof_file_path: proofFilePath,
+        payment_reference: paymentReference,
+      },
+      true,
+    );
+  }
+
+  private async subscriptionRequest<T>(
+    path: string,
+    actionType: string,
+    actionData: Record<string, unknown>,
+    manage: boolean,
+  ): Promise<T> {
+    const envelope = await firstValueFrom(this.http.post<BusinessApiResponse<T>>(
+      `${this.apiBaseUrl}${path}`,
+      { subscriptionParam: { actionType, actionData } },
+      { headers: this.headers },
+    ));
+    if (envelope.status !== 'SUCCESS' || !envelope.data || Array.isArray(envelope.data)) {
+      throw new Error(envelope.msgArr?.join(' ') || 'The subscription request could not be completed.');
+    }
+    return envelope.data as T;
   }
 
   async getMyApplications(): Promise<BusinessApplication[]> {
