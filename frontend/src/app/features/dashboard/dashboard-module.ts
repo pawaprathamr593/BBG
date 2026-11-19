@@ -32,6 +32,10 @@ interface AddressForm {
   city: string; state: string; postal_code: string; country_code: string; address_label: string;
   is_default: boolean;
 }
+interface CategoryForm {
+  category_code: string; category_name: string; category_type: 'BUSINESS' | 'PRODUCT';
+  description: string; parent_category_id: string; display_order: string;
+}
 class StaleWorkspaceRequestError extends Error {}
 
 const ACTION_PERMISSION_CODES: Record<string, string> = {
@@ -118,6 +122,9 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
 
     .drawer-checkbox{display:flex;align-items:center;gap:9px;color:var(--text-secondary);font-size:.78rem}
     .drawer-checkbox input{width:17px;height:17px;accent-color:var(--brand)}
+
+    .workspace-message-label{display:grid;gap:8px;color:var(--text-primary);font-size:.76rem;font-weight:750}
+    .workspace-message-label textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--surface-page);color:var(--text-primary);font:inherit;font-size:.8rem}
   `],
 })
 export class DashboardModule implements OnInit {
@@ -185,6 +192,15 @@ export class DashboardModule implements OnInit {
     recipient_name: '', mobile: '', address_line_1: '', address_line_2: '', city: '', state: '',
     postal_code: '', country_code: 'IN', address_label: 'Home', is_default: false,
   });
+  readonly showCategoryDrawer = signal(false);
+  readonly editingCategoryId = signal<number | null>(null);
+  readonly categoryForm = signal<CategoryForm>({
+    category_code: '', category_name: '', category_type: 'BUSINESS', description: '',
+    parent_category_id: '', display_order: '0',
+  });
+  readonly showReplyDrawer = signal(false);
+  readonly replyEnquiryId = signal<number | null>(null);
+  readonly replyMessage = signal('');
   readonly businessProfileForm = signal<BusinessProfileForm>({
     business_name: '', business_email: '', business_phone: '', business_description: '',
     address_line_1: '', address_line_2: '', city: '', state: '', postal_code: '',
@@ -665,10 +681,12 @@ export class DashboardModule implements OnInit {
         return;
       case 'confirm-order': case 'cancel-order':
         path = action==='confirm-order'?'/api/v1/orders/tenant/confirm':'/api/v1/orders/tenant/cancel'; key='orderParam'; actionType='changeTenantOrderStatus'; data={tenant_id:tenantId,order_id:id}; break;
-      case 'reply-enquiry': {
-        const message = window.prompt('Write your reply to this enquiry:'); if (!message?.trim()) return;
-        path='/api/v1/enquiries/tenant/respond'; key='enquiryParam'; actionType='respondToEnquiry'; data={tenant_id:tenantId,enquiry_id:id,message:message.trim()}; break;
-      }
+      case 'reply-enquiry':
+        this.replyEnquiryId.set(id);
+        this.replyMessage.set('');
+        this.error.set('');
+        this.showReplyDrawer.set(true);
+        return;
       case 'close-enquiry':
         if (!window.confirm('Close this enquiry?')) return;
         path='/api/v1/enquiries/tenant/close'; key='enquiryParam'; actionType='closeEnquiry'; data={tenant_id:tenantId,enquiry_id:id}; break;
@@ -704,37 +722,9 @@ export class DashboardModule implements OnInit {
         if (remove && !window.confirm('Delete this saved address?')) return;
         path=remove?'/api/v1/customers/addresses/delete':'/api/v1/customers/addresses/default'; key='customerParam'; actionType=remove?'deleteMyAddress':'setDefaultAddress'; data={address_id:Number(item['address_id'] ?? item['id'])}; break;
       }
-      case 'edit-category': {
-        const categoryId = Number(item['category_id'] ?? item['id'] ?? 0);
-        const code = window.prompt('Category code:', String(item['category_code'] ?? ''));
-        if (code === null) return;
-        const name = window.prompt('Category name:', String(item['category_name'] ?? ''));
-        if (name === null) return;
-        const type = window.prompt('Category type (BUSINESS or PRODUCT):', String(item['category_type'] ?? 'BUSINESS'));
-        if (type === null) return;
-        const description = window.prompt('Description:', String(item['description'] ?? ''));
-        if (description === null) return;
-        const parent = window.prompt('Parent category ID (optional):', String(item['parent_category_id'] ?? ''));
-        if (parent === null) return;
-        const order = window.prompt('Display order:', String(item['display_order'] ?? 0));
-        if (order === null || !categoryId || !code.trim() || !name.trim()) return;
-        const normalizedType = type.trim().toUpperCase();
-        const parentId = parent.trim() ? Number(parent) : null;
-        const displayOrder = Number(order);
-        if (!['BUSINESS', 'PRODUCT'].includes(normalizedType)) {
-          this.error.set('Category type must be BUSINESS or PRODUCT.');
-          return;
-        }
-        if ((parentId !== null && (!Number.isInteger(parentId) || parentId < 1 || parentId === categoryId))
-          || !Number.isInteger(displayOrder) || displayOrder < 0) {
-          this.error.set('Enter a valid parent category ID and a non-negative display order.');
-          return;
-        }
-        path='/api/v1/admin/categories/update'; actionType='updateCategory';
-        data={category_id:categoryId,category_code:code.trim().toUpperCase(),category_name:name.trim(),
-          category_type:normalizedType,description,parent_category_id:parentId,display_order:displayOrder};
-        break;
-      }
+      case 'edit-category':
+        this.editCategory(item);
+        return;
       case 'delete-category':
         if (!window.confirm('Soft-delete this category? Categories referenced by active businesses or products cannot be deleted.')) return;
         path='/api/v1/admin/categories/delete'; actionType='deleteCategory'; data={category_id:id}; break;
@@ -1113,16 +1103,85 @@ export class DashboardModule implements OnInit {
     if (saved) this.showAddressDrawer.set(false);
   }
 
-  async createCategory(): Promise<void> {
-    const code = window.prompt('Category code (unique):');
-    const name = window.prompt('Category name:');
-    const type = window.prompt('Category type: BUSINESS or PRODUCT','BUSINESS');
-    if (!code?.trim() || !name?.trim() || !['BUSINESS','PRODUCT'].includes((type ?? '').toUpperCase())) return;
-    const description = window.prompt('Description:');
-    await this.performAction('/api/v1/admin/categories/create','adminParam','createCategory',{
-      category_code:code.trim().toUpperCase(),category_name:name.trim(),category_type:type!.toUpperCase(),
-      description:description ?? '',display_order:0,
+  createCategory(): void {
+    if (!this.can('admin.create')) return;
+    this.editingCategoryId.set(null);
+    this.categoryForm.set({
+      category_code: '', category_name: '', category_type: 'BUSINESS', description: '',
+      parent_category_id: '', display_order: '0',
     });
+    this.error.set('');
+    this.showCategoryDrawer.set(true);
+  }
+
+  editCategory(item: DataRecord): void {
+    if (!this.can('admin.update')) return;
+    const categoryId = Number(item['category_id'] ?? item['id'] ?? 0);
+    if (!categoryId) return;
+    this.editingCategoryId.set(categoryId);
+    this.categoryForm.set({
+      category_code: String(item['category_code'] ?? ''),
+      category_name: String(item['category_name'] ?? ''),
+      category_type: String(item['category_type'] ?? 'BUSINESS').toUpperCase() === 'PRODUCT' ? 'PRODUCT' : 'BUSINESS',
+      description: String(item['description'] ?? ''),
+      parent_category_id: item['parent_category_id'] == null ? '' : String(item['parent_category_id']),
+      display_order: String(item['display_order'] ?? 0),
+    });
+    this.error.set('');
+    this.showCategoryDrawer.set(true);
+  }
+
+  updateCategoryField(field: keyof CategoryForm, event: Event): void {
+    const value = (event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value;
+    this.categoryForm.update((form) => ({ ...form, [field]: value }));
+  }
+
+  async saveCategory(): Promise<void> {
+    const form = this.categoryForm();
+    const categoryId = this.editingCategoryId();
+    const parentId = form.parent_category_id.trim() ? Number(form.parent_category_id) : null;
+    const displayOrder = Number(form.display_order);
+    if (!form.category_code.trim() || !form.category_name.trim()) {
+      this.error.set('Category code and name are required.');
+      return;
+    }
+    if ((parentId !== null && (!Number.isInteger(parentId) || parentId < 1 || parentId === categoryId))
+      || !Number.isInteger(displayOrder) || displayOrder < 0) {
+      this.error.set('Enter a valid parent category ID and a non-negative display order.');
+      return;
+    }
+    const payload = {
+      category_code: form.category_code.trim().toUpperCase(),
+      category_name: form.category_name.trim(),
+      category_type: form.category_type,
+      description: form.description.trim(),
+      parent_category_id: parentId,
+      display_order: displayOrder,
+    };
+    const saved = categoryId === null
+      ? await this.performAction('/api/v1/admin/categories/create', 'adminParam', 'createCategory', payload)
+      : await this.performAction('/api/v1/admin/categories/update', 'adminParam', 'updateCategory', {
+        category_id: categoryId, ...payload,
+      });
+    if (saved) this.showCategoryDrawer.set(false);
+  }
+
+  async saveEnquiryReply(): Promise<void> {
+    const tenantId = this.workspace.activeTenantId();
+    const enquiryId = this.replyEnquiryId();
+    const message = this.replyMessage().trim();
+    if (!tenantId || !enquiryId || !message) {
+      this.error.set('Enter a reply before submitting.');
+      return;
+    }
+    const saved = await this.performAction('/api/v1/enquiries/tenant/respond', 'enquiryParam', 'respondToEnquiry', {
+      tenant_id: tenantId, enquiry_id: enquiryId, message,
+    });
+    if (saved) {
+      this.showReplyDrawer.set(false);
+      this.replyEnquiryId.set(null);
+      this.replyMessage.set('');
+    }
   }
 
   private async performAction(path:string,key:EnvelopeKey,actionType:string,data:DataRecord):Promise<boolean> {
