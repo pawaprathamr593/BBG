@@ -96,7 +96,7 @@ jobs:
           test "$generated" -eq 4
           upgrade_column=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='bbg' AND table_name='TENANT_SUBSCRIPTIONS' AND column_name='upgrade_from_subscription_id'")
           test "$upgrade_column" -eq 1
-      - name: Verify global Consumer role seed and idempotent account assignment
+      - name: Verify PLATFORM Consumer role seed and idempotent account assignment
         env:
           MYSQL_PWD: root
         run: |
