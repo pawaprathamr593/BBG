@@ -13,6 +13,7 @@ import { StorefrontModule } from './components/storefront-module/storefront-modu
 import { WorkspaceRecordsModule, WorkspaceRecordCardModel } from './components/workspace-records-module/workspace-records-module';
 import { PersonalAccountModule } from './components/personal-account-module/personal-account-module';
 import { SubscriptionPlansModule } from './components/subscription-plans-module/subscription-plans-module';
+import { PromotionComposerModule } from './components/promotion-composer-module/promotion-composer-module';
 
 type EnvelopeKey = 'authParam' | 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam' | 'tenantParam' | 'dashboardParam';
 interface ApiEnvelope<T = unknown> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION'; msgArr?: string[]; data?: T | []; }
@@ -69,7 +70,7 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-dashboard-module',
   standalone: true,
-  imports: [WorkspaceDrawer, BusinessProfileModule, StorefrontModule, WorkspaceRecordsModule, PersonalAccountModule, SubscriptionPlansModule],
+  imports: [WorkspaceDrawer, BusinessProfileModule, StorefrontModule, WorkspaceRecordsModule, PersonalAccountModule, SubscriptionPlansModule, PromotionComposerModule],
   templateUrl: './dashboard-module.html',
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}

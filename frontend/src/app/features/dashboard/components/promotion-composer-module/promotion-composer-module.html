@@ -1,0 +1,32 @@
+<div class="promotion-composer-form">
+  <label>Post title
+    <input type="text" maxlength="180" [value]="title()" (input)="titleInput.emit($event)" placeholder="e.g. Festive season offer">
+  </label>
+  <label>Post content
+    <textarea rows="5" maxlength="10000" [value]="content()" (input)="contentInput.emit($event)" placeholder="Tell customers about your offer…" required></textarea>
+  </label>
+  <label>Valid until
+    <input type="datetime-local" [value]="validUntil()" (input)="validUntilInput.emit($event)">
+    <small>Optional. Leave blank for no expiry date.</small>
+  </label>
+  <div class="post-upload-zone">
+    <div class="post-file-picker" (dragover)="filesDropped.emit($event)" (drop)="filesDropped.emit($event)">
+      <span>＋</span><strong>Add media files</strong>
+      <small>Images, videos, audio and PDF · multiple selection · max 100 MB per file</small>
+      <input type="file" aria-label="Add promotion media files" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,application/pdf,text/plain,text/csv,application/rtf" (change)="filesSelected.emit($event)" [disabled]="busy()">
+    </div>
+    @if (files().length) {
+      <div class="post-file-list">
+        @for (file of files(); track $index) {
+          <div><span>{{ mediaLabel(file.type) }}</span><strong>{{ file.name }}</strong><small>{{ fileSize(file.size) }}</small><button type="button" (click)="fileRemoved.emit($index)" [disabled]="busy()">Remove</button></div>
+        }
+      </div>
+    }
+  </div>
+  @if (error()) { <p class="composer-error" role="alert">{{ error() }}</p> }
+  @if (busy()) { <div class="composer-progress" role="status"><progress [value]="progress()" max="100"></progress><span>Uploading attachments… {{ progress() }}%</span></div> }
+  <footer>
+    <button type="button" class="cancel-button" (click)="cancel.emit()" [disabled]="busy()">Cancel</button>
+    @if (canSubmit()) { <button type="button" class="submit-button" (click)="submit.emit()" [disabled]="busy() || !content().trim()">{{ busy() ? 'Uploading…' : (files().length ? 'Save post & upload media' : 'Create draft') }}</button> }
+  </footer>
+</div>
