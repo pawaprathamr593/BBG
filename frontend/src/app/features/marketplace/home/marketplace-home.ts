@@ -7,6 +7,7 @@ import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, Market
 import { BusinessCard } from '../../../shared/components/business-card/business-card';
 import { ProductCard } from '../../../shared/components/product-card/product-card';
 import { PromotionCard } from '../../../shared/components/promotion-card/promotion-card';
+import type { BusinessCardModel, ProductCardModel, PromotionCardModel } from '../../../shared/models/marketplace-card.models';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -197,11 +198,11 @@ export class MarketplaceHome implements OnInit {
     return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
   }
 
-  protected openBusiness(business: MarketplaceBusiness): void {
+  protected openBusiness(business: BusinessCardModel): void {
     void this.router.navigate(['/store', business.business_slug]);
   }
 
-  protected openProduct(product: MarketplaceProduct): void {
+  protected openProduct(product: ProductCardModel): void {
     const slug = (product.slug || this.slugifyProduct(product.product_name)) + '-' + (product.public_id || product.id);
     void this.router.navigate(['/store', product.business.business_slug, 'products', slug]);
   }
@@ -210,7 +211,7 @@ export class MarketplaceHome implements OnInit {
     void this.router.navigate(['/store', businessSlug]);
   }
 
-  protected openPromotion(promotion: MarketplacePromotion): void {
+  protected openPromotion(promotion: PromotionCardModel): void {
     void this.router.navigate(['/store', promotion.business_slug]);
   }
 
