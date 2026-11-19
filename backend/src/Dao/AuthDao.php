@@ -110,7 +110,7 @@ final readonly class AuthDao
         $resArr = $this->initialResponse();
         try {
             $rows = $connection->createCommand(
-                "SELECT DISTINCT r.role_code, r.scope_type, LOWER(p.permission_code) AS permission_code, p.module_code
+                "SELECT DISTINCT r.role_code, r.scope_type, p.permission_code, p.module_code
                  FROM USER_ROLE_ASSIGNMENTS ura
                  INNER JOIN ROLES r ON r.id = ura.role_id AND r.status = 'A'
                  LEFT JOIN ROLE_PERMISSIONS rp ON rp.role_id = r.id AND rp.status = 'A'
@@ -129,7 +129,7 @@ final readonly class AuthDao
                             )
                         )
                     )
-                 ORDER BY r.role_code ASC, p.module_code ASC, permission_code ASC",
+                 ORDER BY r.role_code ASC, p.module_code ASC, p.permission_code ASC",
                 [':user_id' => $userId, ':tenant_filter' => $tenantId,
                  ':tenant_filter_match' => $tenantId, ':tenant_id' => $tenantId],
             )->queryAll();
