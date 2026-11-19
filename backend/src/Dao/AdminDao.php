@@ -333,12 +333,11 @@ final readonly class AdminDao
             if ($upgradeFromSubscriptionId !== null) {
                 $replaced = $db->createCommand("UPDATE TENANT_SUBSCRIPTIONS
                     SET subscription_status = 'EXPIRED',
-                        ends_on = CASE WHEN subscription_status = 'ACTIVE'
-                            AND (ends_on IS NULL OR ends_on > :starts_on) THEN :starts_on ELSE ends_on END,
+                        ends_on = CASE WHEN subscription_status = 'ACTIVE' THEN CURRENT_TIMESTAMP ELSE ends_on END,
                         updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
                     WHERE id = :previous_subscription_id AND tenant_id = :tenant_id
                         AND subscription_status IN ('ACTIVE', 'EXPIRED') AND status = 'A'",
-                    [':starts_on' => $startsOn, ':admin_id' => $adminId,
+                    [':admin_id' => $adminId,
                      ':previous_subscription_id' => $upgradeFromSubscriptionId, ':tenant_id' => $tenantId])->execute();
                 if ($replaced !== 1) {
                     $resArr['msgArr'][] = 'The previous subscription is no longer active or expired and could not be replaced.';
