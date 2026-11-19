@@ -47,7 +47,7 @@ import { PromotionCard } from '../../shared/components/promotion-card/promotion-
     .quick-actions>a{display:flex;min-width:190px;flex:1;align-items:center;gap:11px;padding:13px 15px;border:1px solid var(--border);border-radius:8px;background:var(--surface-card);color:var(--text-primary);text-decoration:none}
     .quick-icon{display:grid;width:35px;height:35px;flex:0 0 35px;place-items:center;border-radius:50%;background:var(--brand-soft);color:var(--brand-strong)}
     .quick-actions strong,.quick-actions small{display:block}.quick-actions strong{font-size:.74rem;font-weight:650}.quick-actions small{margin-top:3px;color:var(--text-secondary);font-size:.65rem}
-    .promotion-ticker{display:flex;width:min(100% - 64px,1160px);align-items:center;gap:15px;margin:17px auto 0;padding:13px 16px;border:1px solid color-mix(in srgb,var(--brand) 22%,var(--border));border-radius:7px;background:var(--brand-soft)}
+    .promotion-featured{width:min(100% - 64px,1160px);margin:17px auto 0}.promotion-ticker{display:flex;width:min(100% - 64px,1160px);align-items:center;gap:15px;margin:17px auto 0;padding:13px 16px;border:1px solid color-mix(in srgb,var(--brand) 22%,var(--border));border-radius:7px;background:var(--brand-soft)}
     .promo-label{flex:0 0 auto;color:var(--brand-strong);font-size:.61rem;font-weight:850;letter-spacing:.12em}
     .promo-copy{display:flex;min-width:0;flex:1;flex-wrap:wrap;align-items:baseline;gap:5px 12px}.promo-copy strong{font-size:.78rem}.promo-copy span{color:var(--text-secondary);font-size:.72rem}
     .promotion-ticker time{flex:0 0 auto;color:var(--text-muted);font-size:.64rem}
