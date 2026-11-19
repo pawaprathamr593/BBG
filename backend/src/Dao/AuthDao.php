@@ -129,7 +129,7 @@ final readonly class AuthDao
                             )
                         )
                     )
-                 ORDER BY r.role_code ASC, p.module_code ASC, p.permission_code ASC",
+                 ORDER BY r.role_code ASC, p.module_code ASC, permission_code ASC",
                 [':user_id' => $userId, ':tenant_filter' => $tenantId,
                  ':tenant_filter_match' => $tenantId, ':tenant_id' => $tenantId],
             )->queryAll();
