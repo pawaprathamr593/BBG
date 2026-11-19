@@ -81,3 +81,13 @@
 .review-history-row a{flex:0 0 auto;color:var(--brand);font-size:.72rem;font-weight:750}
 .subscription-review-section .payment-qr-preview{width:min(220px,100%);height:auto;object-fit:contain;border:1px solid var(--border);border-radius:10px;background:#fff}
 @media(max-width:600px){.review-detail-grid{grid-template-columns:1fr}.review-history-row{flex-direction:column}}
+
+
+.record-detail-content{display:grid;gap:24px}
+.record-detail-section{display:grid;gap:12px}
+.record-detail-section h3{margin:0;padding-bottom:10px;border-bottom:1px solid var(--border);font-size:.9rem;font-weight:850;letter-spacing:-.015em}
+.record-detail-section .review-detail-grid>div{min-height:62px;background:var(--surface-card)}
+.record-detail-section .review-detail-grid>div.detail-value-wide{grid-column:1/-1}
+.record-detail-section .review-detail-grid>div>strong{white-space:pre-wrap}
+.record-detail-empty{margin:0;color:var(--text-secondary);font-size:.8rem}
+@media(max-width:600px){.record-detail-section .review-detail-grid>div.detail-value-wide{grid-column:auto}}
