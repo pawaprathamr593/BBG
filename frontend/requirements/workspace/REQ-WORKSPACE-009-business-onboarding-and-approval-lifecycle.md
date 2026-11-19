@@ -42,7 +42,7 @@ A signed-in person must be able to register more than one business, save and res
 - Physical deletion of applications, subscriptions, memberships or invitations.
 
 ## 4. Entry and context
-- Routes: /business/register, /workspace, /dashboard/subscription-approval, /dashboard/subscriptions, /dashboard/members, /invite/accept.
+- Routes: /business/register, /workspace, /dashboard/subscription-approval, /dashboard/subscriptions, /business/team, /invite/accept.
 - Business registration and application-scoped payment actions require an authenticated user who owns the selected business application.
 - Admin review uses the existing platform-admin authorization path.
 - Team management requires the active tenant owner. Invitation acceptance requires an authenticated account whose email matches the invitation.
@@ -68,7 +68,7 @@ A signed-in person must be able to register more than one business, save and res
 | Application status | List all owned businesses and resume draft/rejected proof | Existing /workspace status page |
 | Admin onboarding review | Business name, plan, payment status, approve/reject and details | Existing subscription review queue and drawer |
 | Subscription management | Upgrade/renew and upload proof | Existing subscriptions dashboard module |
-| Team & Access | Search/add existing user or generate invitation link | Existing members module and tenant context |
+| Team & Access | Search/add existing user or generate invitation link | Owner-only Team & Access page, core tenant API service and tenant context |
 | Invitation acceptance | Sign in/register then accept invite | Existing auth experience and lazy route pattern |
 
 ## 7. API
@@ -149,6 +149,6 @@ Use existing BBG SCSS tokens and light/dark themes. The registration, payment, t
 - Added application-scoped subscription request, payment-instruction restoration, proof upload and proof submission. Draft becomes PENDING only after a verified receipt.
 - Added payment-backed admin queue filtering and business/plan fields; existing subscription approval atomically approves the business and activates the tenant/subscription.
 - Added subscription replacement lineage for upgrades/renewals; prior subscription closes only after replacement approval.
-- Added owner-scoped team search/add and seven-day single-use invitation tokens. Only existing TENANT_ORDER_MANAGER role is assignable.
+- Added owner-scoped team search/add and seven-day single-use invitation tokens on /business/team. Existing dashboard permission guard/navigation remain unchanged. Only existing TENANT_ORDER_MANAGER role is assignable.
 - Added a workspace invitation acceptance route and multi-business status/resume UI.
 - Verification: PHP syntax, API contract and Angular development build have passed on a previous commit; the latest MySQL workflow run is pending after correcting the existing CI Consumer scope expectation. Prettier, git diff --check, visual browser checks and real database execution remain to be completed.
