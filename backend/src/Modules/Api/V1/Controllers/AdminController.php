@@ -60,6 +60,7 @@ final class AdminController
             '/api/v1/admin/users/suspend' => 'suspendPlatformUser',
             '/api/v1/admin/users/restore' => 'restorePlatformUser',
             '/api/v1/admin/businesses/approve' => 'approveBusiness',
+            '/api/v1/admin/businesses/approve-with-subscription' => 'approveBusinessWithSubscription',
             '/api/v1/admin/businesses/reject' => 'rejectBusiness',
             '/api/v1/admin/businesses/reopen' => 'reopenBusinessReview',
             '/api/v1/admin/subscriptions/approve' => 'approveSubscription',
