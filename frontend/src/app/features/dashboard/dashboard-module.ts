@@ -249,6 +249,7 @@ export class DashboardModule implements OnInit {
   readonly qrUpiId = signal('');
   readonly qrInstructions = signal('');
   readonly qrFile = signal<File | null>(null);
+  readonly qrPreviewUrl = signal<string | null>(null);
   readonly subscriptionReview = signal<DataRecord | null>(null);
   readonly recordDetail = signal<DataRecord | null>(null);
   readonly recordDetailTitle = signal('');
@@ -270,6 +271,7 @@ export class DashboardModule implements OnInit {
   readonly promotionContent = signal('');
   readonly promotionValidUntil = signal('');
   readonly promotionFiles = signal<File[]>([]);
+  readonly promotionMediaPreviews = signal<Map<File, string>>(new Map());
   readonly promotionMediaBusy = signal(false);
   readonly promotionUploadProgress = signal(0);
   readonly promotionError = signal('');
@@ -951,6 +953,16 @@ export class DashboardModule implements OnInit {
     this.showPromotionComposer.set(false);
     this.draftPromotionId.set(null);
     this.promotionUploadedCount.set(0);
+    this.clearPromotionPreviews();
+  }
+
+  private clearPromotionPreviews(): void {
+    for (const url of this.promotionMediaPreviews().values()) URL.revokeObjectURL(url);
+    this.promotionMediaPreviews.set(new Map());
+  }
+
+  promotionPreview(file: File): string | null {
+    return this.promotionMediaPreviews().get(file) ?? null;
   }
 
   setPromotionField(field: 'title' | 'content' | 'validUntil', event: Event): void {
@@ -979,11 +991,24 @@ export class DashboardModule implements OnInit {
     if (invalid) this.promotionError.set(`"${invalid.name}" is not supported or exceeds the 100 MB per-file limit.`);
     else {
       this.promotionError.set('');
+      for (const file of files) {
+        if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+          this.promotionMediaPreviews.update((current) => new Map(current).set(file, URL.createObjectURL(file)));
+        }
+      }
       this.promotionFiles.update((current) => [...current, ...files]);
     }
   }
 
   removePromotionMedia(index: number): void {
+    const file = this.promotionFiles()[index];
+    const preview = file ? this.promotionMediaPreviews().get(file) : undefined;
+    if (preview) URL.revokeObjectURL(preview);
+    if (file) this.promotionMediaPreviews.update((current) => {
+      const next = new Map(current);
+      next.delete(file);
+      return next;
+    });
     this.promotionFiles.update((files) => files.filter((_, position) => position !== index));
   }
 
@@ -1041,6 +1066,7 @@ export class DashboardModule implements OnInit {
       this.notice.set('Promotion draft and attachments saved. Publish it when ready.');
       this.showPromotionComposer.set(false);
       this.draftPromotionId.set(null);
+      this.clearPromotionPreviews();
       await this.load();
     } catch (error) {
       this.promotionError.set(this.auth.errorMessage(error));
@@ -1484,12 +1510,27 @@ export class DashboardModule implements OnInit {
     const file = input.files?.[0] ?? null;
     if (file && (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size < 1 || file.size > 10 * 1024 * 1024)) {
       this.error.set('Choose a JPG, PNG or WEBP image up to 10 MB.');
-      this.qrFile.set(null);
+      this.clearPaymentQrPreview();
     } else {
       this.error.set('');
+      this.clearPaymentQrPreview();
       this.qrFile.set(file);
+      this.qrPreviewUrl.set(file ? URL.createObjectURL(file) : null);
     }
     input.value = '';
+  }
+
+  private clearPaymentQrPreview(): void {
+    const preview = this.qrPreviewUrl();
+    if (preview) URL.revokeObjectURL(preview);
+    this.qrPreviewUrl.set(null);
+    this.qrFile.set(null);
+  }
+
+  closePaymentQrDrawer(): void {
+    if (this.busy()) return;
+    this.showPaymentQrDrawer.set(false);
+    this.clearPaymentQrPreview();
   }
 
   async savePaymentQrConfig(): Promise<void> {
@@ -1510,7 +1551,7 @@ export class DashboardModule implements OnInit {
         payment_instructions:this.qrInstructions().trim(),qr_file_path:upload.object_key,
       });
       this.notice.set('A new payment QR configuration is active for new subscription requests.');
-      this.qrFile.set(null);
+      this.clearPaymentQrPreview();
       await this.load();
       this.showPaymentQrDrawer.set(false);
     } catch(error) {
