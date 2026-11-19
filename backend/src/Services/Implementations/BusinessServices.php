@@ -225,8 +225,16 @@ final readonly class BusinessServices implements IBusinessServices
         $state = $this->optionalText($actionData['state'] ?? '', 100) ?? '';
         $postal = $this->optionalText($actionData['postal_code'] ?? '', 15) ?? '';
         $country = strtoupper($this->optionalText($actionData['country_code'] ?? 'IN', 2) ?? 'IN');
+        $latitude = isset($actionData['latitude']) && is_numeric($actionData['latitude']) ? (float) $actionData['latitude'] : null;
+        $longitude = isset($actionData['longitude']) && is_numeric($actionData['longitude']) ? (float) $actionData['longitude'] : null;
         if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $resArr['msgArr'][] = 'A valid business_email is required.';
+            return $resArr;
+        }
+        if (($latitude !== null && ($latitude < -90 || $latitude > 90))
+            || ($longitude !== null && ($longitude < -180 || $longitude > 180))
+        ) {
+            $resArr['msgArr'][] = 'Latitude or longitude is outside the valid coordinate range.';
             return $resArr;
         }
         if ($country === '' || strlen($country) !== 2) {
@@ -261,7 +269,7 @@ final readonly class BusinessServices implements IBusinessServices
                     $update = $this->dao->updateBusinessApplication(
                         $this->db, $tenantId, $businessId, $userId, $businessName, $businessSlug,
                         $description ?? '', $categoryId, $phone, $whatsapp, $email, $address1, $address2,
-                        $city, $state, $postal, $country, $resubmit,
+                        $city, $state, $postal, $country, $latitude, $longitude, $resubmit,
                     );
                     if ($update['status'] !== 'SUCCESS') {
                         $transaction->rollBack();
@@ -314,7 +322,7 @@ final readonly class BusinessServices implements IBusinessServices
                 }
                 $profile = $this->dao->insertBusinessProfile(
                     $this->db, $newTenantId, $businessName, $businessSlug, $description ?? '', $categoryId,
-                    $phone, $whatsapp, $email, $address1, $address2, $city, $state, $postal, $country, $userId,
+                    $phone, $whatsapp, $email, $address1, $address2, $city, $state, $postal, $country, $latitude, $longitude, $userId,
                 );
                 if ($profile['status'] !== 'SUCCESS') {
                     $transaction->rollBack();

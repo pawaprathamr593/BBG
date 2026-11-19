@@ -20,6 +20,8 @@ export interface BusinessApplication {
   state: string;
   postal_code: string;
   country_code: string;
+  latitude: number | null;
+  longitude: number | null;
   approval_status: 'PENDING' | 'APPROVED' | 'REJECTED' | string;
   approved_on: string | null;
   rejection_reason: string | null;
@@ -48,6 +50,8 @@ export interface BusinessApplicationPayload {
   state: string;
   postal_code: string;
   country_code: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 @Injectable({ providedIn: 'root' })

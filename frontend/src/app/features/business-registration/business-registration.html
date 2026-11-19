@@ -16,6 +16,9 @@
             <label class="field"><span>Postal code *</span><input formControlName="postal_code" maxlength="15" placeholder="PIN code" /></label>
             <label class="field full"><span>Business description</span><textarea formControlName="business_description" rows="4" maxlength="5000" placeholder="Describe your products, services and what makes your business unique."></textarea></label>
             <label class="field full"><span>Address line 1 *</span><input formControlName="address_line_1" maxlength="190" placeholder="Building, street and area" /></label>
+            <button class="location-button" type="button" (click)="getMyLocation()" [disabled]="geolocating()">{{ geolocating() ? 'Detecting location…' : '⌖ Get My Location' }}</button>
+            @if (locationNotice()) { <p class="location-note" role="status">{{ locationNotice() }}</p> }
+            <p class="map-attribution">Address lookup © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>. Detected address is editable; please confirm it matches your business premises.</p>
             <label class="field full"><span>Address line 2</span><input formControlName="address_line_2" maxlength="190" placeholder="Landmark, suite or floor (optional)" /></label>
             <label class="field"><span>City *</span><input formControlName="city" maxlength="100" placeholder="City" /></label>
             <label class="field"><span>State *</span><input formControlName="state" maxlength="100" placeholder="State" /></label>
