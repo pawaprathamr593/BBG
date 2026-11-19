@@ -256,13 +256,7 @@ export class StorefrontHome {
   productRoute(product: MarketplaceProduct): string {
     return (product.slug || slugify(product.product_name)) + '-' + (product.public_id || product.id);
   }
-}
 
-function pathForBusiness(slug: string): string { return '/store/' + encodeURIComponent(slug); }
-
-function slugify(value: string): string {
-  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
-}
   protected openProduct(product: MarketplaceProduct, businessSlug: string): void {
     if (product.offering_type === 'SERVICE') {
       void this.router.navigate(['/store', businessSlug, 'contact'], { queryParams: { subject: 'Service enquiry: ' + product.product_name } });
@@ -278,4 +272,10 @@ function slugify(value: string): string {
   protected openBusiness(businessSlug: string): void {
     void this.router.navigate(['/store', businessSlug]);
   }
+}
 
+function pathForBusiness(slug: string): string { return '/store/' + encodeURIComponent(slug); }
+
+function slugify(value: string): string {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
+}
