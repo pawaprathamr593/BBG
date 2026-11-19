@@ -104,7 +104,7 @@ final readonly class TenantDao
              FROM TENANT_MEMBERSHIPS tm
              INNER JOIN TENANTS t ON t.id = tm.tenant_id AND t.status = 'A'
                 AND (t.tenant_status = 'ACTIVE'
-                    OR (t.tenant_status = 'PENDING' AND :tenant_permission_gate = 'SUBSCRIPTIONS_MANAGE'))
+                    OR (t.tenant_status = 'PENDING' AND :tenant_permission_gate IN ('SUBSCRIPTIONS_MANAGE', 'BUSINESS_PROFILE_MANAGE')))
              INNER JOIN USER_ROLE_ASSIGNMENTS ura ON ura.user_id = tm.user_id
                 AND ura.tenant_id = tm.tenant_id AND ura.status = 'A'
                 AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
