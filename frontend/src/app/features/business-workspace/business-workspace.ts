@@ -35,6 +35,7 @@ export class BusinessWorkspace implements OnInit {
   readonly error = signal('');
   readonly applications = signal<BusinessApplication[]>([]);
   readonly rejectedPaymentBusinessIds = signal<number[]>([]);
+  readonly rejectedPaymentReasons = signal<Record<number, string>>({});
 
   ngOnInit(): void { void this.load(); }
 
@@ -53,6 +54,21 @@ export class BusinessWorkspace implements OnInit {
         return;
       }
       this.applications.set(applications);
+      const rejectedPaymentStates = await Promise.all(applications
+        .filter((business) => business.approval_status === 'PENDING')
+        .map(async (business) => {
+          try {
+            const subscription = await this.api.getCurrentApplicationSubscription(business.business_id, business.tenant_id);
+            return subscription?.subscription_status === 'REJECTED'
+              ? { businessId: business.business_id, reason: subscription.rejection_reason ?? '' }
+              : null;
+          } catch {
+            return null;
+          }
+        }));
+      const rejectedPayments = rejectedPaymentStates.filter((item): item is { businessId: number; reason: string } => item !== null);
+      this.rejectedPaymentBusinessIds.set(rejectedPayments.map((item) => item.businessId));
+      this.rejectedPaymentReasons.set(Object.fromEntries(rejectedPayments.map((item) => [item.businessId, item.reason])));
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
