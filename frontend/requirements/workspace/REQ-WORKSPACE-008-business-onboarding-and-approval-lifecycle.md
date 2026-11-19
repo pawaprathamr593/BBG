@@ -33,7 +33,7 @@ Business details, location, plan selection, QR payment instructions, receipt upl
 - Require an authenticated account before starting or saving a business application.
 - Allow a user to create multiple independent business applications regardless of existing tenant memberships, business ownerships, or roles in other tenants.
 - Replace the single-application redirect with an application list/status experience and a clear action to start another business registration.
-- Provide a resumable multi-step wizard: business identity/contact/address; map location; plan selection; versioned platform QR/payment instructions; payment reference and receipt upload; review and final submission.
+- Provide a resumable multi-step wizard: business identity/contact/address; optional browser geolocation capture; plan selection; versioned platform QR/payment instructions; payment reference and receipt upload; review and final submission.
 - Persist draft progress server-side after each safe step; reload saved draft when the owner returns or signs in on another device.
 - Preserve the selected QR configuration/version and payee details shown when the payment step was started.
 - Reuse the existing presigned S3 upload and proof submission flow where compatible.
@@ -70,7 +70,7 @@ Business details, location, plan selection, QR payment instructions, receipt upl
 1. Sign in or create a personal BBG account.
 2. Open Business Registration. See all owned business applications and their statuses.
 3. Choose Continue for an existing incomplete application or Register another business.
-4. Complete business details and choose the location on the map. The marker may be moved; coordinates and address are saved.
+4. Complete business details and address. Optionally select Get My Location; after browser permission, save latitude, longitude and reported accuracy. Keep every address field editable so the applicant can correct or replace the business address. Geolocation is optional; manual address entry remains available.
 5. Continue to plan selection. Display only active, purchasable plans and their current prices/entitlements.
 6. Select a plan and review its billing amount and billing period.
 7. Display the currently effective platform QR configuration and payment instructions captured for this subscription request.
@@ -85,7 +85,7 @@ Business details, location, plan selection, QR payment instructions, receipt upl
 1. Open the unified pending business/payment review queue.
 2. See concise rows/cards with business name, selected plan, payment amount and current review status; primary actions are Approve and View details.
 3. Open View details in the shared right-side drawer.
-4. Inspect full business details, address/map coordinates, selected plan, captured QR/payee snapshot, payment reference, uploaded receipt and review history.
+4. Inspect full business details, editable address values, captured coordinates/accuracy, selected plan, captured QR/payee snapshot, payment reference, uploaded receipt and review history.
 5. Approve or reject with a reason according to the agreed review policy.
 6. On approval, backend performs the full activation transition atomically. On rejection, the owner sees the reason and can correct/resubmit without losing application history.
 7. Repeated approval/rejection requests are idempotently rejected or return the already-final state; no duplicate subscriptions or review rows are created.
@@ -104,7 +104,7 @@ Business details, location, plan selection, QR payment instructions, receipt upl
 | --- | --- | --- |
 | My businesses | List all applications, statuses and next actions | Existing /workspace page and shared record/card patterns |
 | Business details step | Capture identity/contact/address fields | Existing business registration form patterns |
-| Map location step | Select precise business location and save coordinates | Reuse existing map/location component if present; otherwise agree on provider and build one typed shared component |
+| Location capture | Optionally capture device coordinates and manually edit address fields | Browser Geolocation API; no map SDK or geocoding provider |
 | Plan selection step | Compare eligible plans and select one | Existing subscription plans module and plan DTOs |
 | QR payment step | Show versioned QR and instructions | Existing platform QR configuration and captured subscription payment instructions |
 | Receipt step | Upload proof and enter payment reference | Existing S3 presigned upload service and subscription proof workflow |
@@ -161,7 +161,9 @@ Backend authorization is authoritative. Frontend route visibility and role label
 - Do not block registration because the user already has other tenants, owner roles, employee roles or a Consumer platform role.
 - Every new business creates its own tenant, owner membership and tenant-scoped TENANT_OWNER assignment; never create a PLATFORM/GLOBAL role assignment for business ownership.
 - Verify slug uniqueness across active business profiles and reserve a slug for a draft according to an approved expiry/cancellation policy.
-- Latitude must be within -90..90 and longitude within -180..180. Coordinate precision must be sufficient for a map pin; inspect deployed column precision before migration. The supplied DB design currently describes DOUBLE(10,2), which may be too coarse.
+- Browser geolocation requires a secure context (HTTPS, except localhost) and explicit user permission. Handle permission denied, timeout, unavailable position and unsupported browsers without blocking registration.
+- Store latitude and longitude independently from address text; validate latitude within -90..90 and longitude within -180..180. Store reported accuracy when the verified schema supports it. Editing address text must not silently change coordinates; the user can recapture location explicitly.
+- The browser Geolocation API returns coordinates, not a postal address. Do not fabricate an address or add reverse-geocoding/network dependencies under this requirement. Keep address fields editable and allow manual entry/correction.
 - Plan price, currency, billing period and entitlements are loaded from active backend plan data. Never trust client-submitted amount or entitlements.
 - QR payee, UPI ID, QR file path, instructions and config version are captured immutably for each subscription request.
 - Uploading a receipt is not payment approval and must not activate the subscription or storefront.
@@ -185,7 +187,7 @@ Mobile-first wizard with compact progress on narrow screens. Map interaction rem
 2. Given an authenticated user who already owns or belongs to one or more businesses or has other tenant/platform roles, when they start another registration, then a separate business application can be created without changing existing memberships or roles.
 3. Given a user with multiple applications, when they open My Businesses, then every application they own is listed with its correct status and Continue/View action.
 4. Given an incomplete draft, when the user leaves and returns or signs in on another device, then the wizard resumes from persisted server data without creating another tenant/profile.
-5. Given a business details step, when the user chooses or moves the map marker, then valid latitude/longitude and the selected address are saved and restored.
+5. Given a business details step, when the user chooses Get My Location and grants permission, then valid latitude/longitude are captured and saved; the address fields remain editable and can be corrected independently. Given permission is denied or unavailable, manual address entry still works.
 6. Given an eligible plan, when the user selects it, then the server records the plan against the correct application/tenant and shows server-calculated price/currency/billing details.
 7. Given a pending subscription, when the payment step opens, then the exact effective QR configuration and instructions are shown and captured for that subscription.
 8. Given a receipt upload, when the upload succeeds, then proof can be submitted but subscription, tenant and storefront remain inactive pending admin review.
@@ -201,7 +203,7 @@ Mobile-first wizard with compact progress on narrow screens. Map interaction rem
 
 ## Open questions
 
-- UNKNOWN: Map provider/component available in this repository/runtime. No map SDK is declared in frontend/package.json. Confirm provider, API-key ownership, geocoding and tile policy before adding a dependency or external service.
+- Confirm the deployed BUSINESS_PROFILES coordinate column precision and whether an accuracy column exists before applying any schema migration. Browser geolocation does not provide reverse-geocoded address text; reverse geocoding remains out of scope.
 - UNKNOWN: Exact request/response DTOs for subscription request, proof upload/submit, admin pending list/detail/approve/reject and public storefront slug lookup.
 - UNKNOWN: Should draft tenant/profile rows be created immediately, or should BUSINESS_APPLICATIONS be the pre-tenant source of truth and tenant creation happen later? The existing BUSINESS_APPLICATIONS table is not used by the active BusinessServices registration path.
 - UNKNOWN: Reconcile application status values and ownership across BUSINESS_APPLICATIONS, BUSINESS_PROFILES, TENANTS, TENANT_SUBSCRIPTIONS and SUBSCRIPTION_PAYMENT_PROOFS.
@@ -217,4 +219,5 @@ Mobile-first wizard with compact progress on narrow screens. Map interaction rem
 
 - Requirement drafted on feature/business-onboarding-lifecycle.
 - Current-code findings: initial registration rejects a second owner application; frontend redirects to workspace/subscriptions immediately after submission; getMyBusinessApplication returns one row; BUSINESS_APPLICATIONS is not used by the current registration service; public route is /store/:businessSlug.
-- No application code or database migration changed in this draft.
+- Location decision updated: use optional browser Geolocation API; no map SDK or reverse-geocoding provider. Coordinates and address text are separate; address fields remain editable.
+- Implementation is in progress.
