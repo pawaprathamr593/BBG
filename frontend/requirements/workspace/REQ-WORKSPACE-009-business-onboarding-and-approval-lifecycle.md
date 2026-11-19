@@ -42,7 +42,7 @@ A signed-in person must be able to register more than one business, save and res
 - Physical deletion of applications, subscriptions, memberships or invitations.
 
 ## 4. Entry and context
-- Routes: /business/register, /workspace, /dashboard/subscription-approval, /dashboard/subscriptions, /business/team, /invite/accept.
+- Routes: /business/register, /workspace, /dashboard/subscription-approval, /dashboard/subscriptions, /business/team, /business/storefront, /invite/accept.
 - Business registration and application-scoped payment actions require an authenticated user who owns the selected business application.
 - Admin review uses the existing platform-admin authorization path.
 - Team management requires the active tenant owner. Invitation acceptance requires an authenticated account whose email matches the invitation.
@@ -89,6 +89,10 @@ A signed-in person must be able to register more than one business, save and res
 | Search eligible existing users | POST | /api/v1/tenants/members/search | tenantParam | Added |
 | Add existing user | POST | /api/v1/tenants/members/add | tenantParam | Added |
 | Create invitation | POST | /api/v1/tenants/invitations/create | tenantParam | Added |
+| Get owner storefront | POST | /api/v1/business/storefront/owner/get | businessParam | Added |
+| Update owner storefront | POST | /api/v1/business/storefront/owner/update | businessParam | Added |
+| Publish owner storefront | POST | /api/v1/business/storefront/owner/publish | businessParam | Added |
+| Unpublish owner storefront | POST | /api/v1/business/storefront/owner/unpublish | businessParam | Added |
 | Accept invitation | POST | /api/v1/tenants/invitations/accept | tenantParam | Added |
 
 ## 8. Permissions
@@ -98,6 +102,7 @@ A signed-in person must be able to register more than one business, save and res
 | Admin review and decision | Existing platform admin permission path | Existing |
 | Upgrade/renew and subscription proof | Active TENANT_OWNER for the selected tenant; server validates ownership | Added as scoped owner operations |
 | Manage team | Active TENANT_OWNER for the selected tenant; server validates ownership | Added as scoped owner operations |
+| Configure/publish storefront | Active TENANT_OWNER plus existing storefront.enabled entitlement; server validates ownership and approved business | Added as scoped owner operations; existing entitlement rules retained |
 | Team member role | Existing TENANT_ORDER_MANAGER with TENANT scope only | Existing role; no RBAC seed changes |
 | Invitation acceptance | Authenticated user email must match invitation email; token is one-time and expires after seven days | Added |
 
@@ -138,7 +143,8 @@ Use existing BBG SCSS tokens and light/dark themes. The registration, payment, t
 14. Given an owner searches an existing active BBG user by email, then the owner can add them only with TENANT_ORDER_MANAGER.
 15. Given no active BBG account exists for an email, then the owner can create a seven-day invitation link.
 16. Given an invitee signs in/registers with the invited email and accepts the token, then membership and the existing tenant role are assigned.
-17. At no point does this workflow modify RBAC definitions, auth, guards, interceptors or tenant authorization logic.
+17. Given an approved business with the storefront entitlement, when the owner saves storefront settings and publishes, then STOREFRONT_SETTINGS and BUSINESS_PROFILES publication states are updated and the existing /store/:businessSlug route can resolve the public storefront.
+18. At no point does this workflow modify RBAC definitions, auth, guards, interceptors or tenant authorization logic.
 
 ## Open questions
 - The new SQL migrations are additive and covered by CI; applying them to a real development/staging database still requires schema verification and backup.
@@ -150,5 +156,6 @@ Use existing BBG SCSS tokens and light/dark themes. The registration, payment, t
 - Added payment-backed admin queue filtering and business/plan fields; existing subscription approval atomically approves the business and activates the tenant/subscription.
 - Added subscription replacement lineage for upgrades/renewals; prior subscription closes only after replacement approval.
 - Added owner-scoped team search/add and seven-day single-use invitation tokens on /business/team. Existing dashboard permission guard/navigation remain unchanged. Only existing TENANT_ORDER_MANAGER role is assignable.
+- Added owner-scoped storefront configuration/publication using existing DAO operations and entitlement checks, exposed from the approved business card.
 - Added a workspace invitation acceptance route and multi-business status/resume UI.
 - Verification at commit 7a0f9f46fcfd38e89318532b8c7348d22bd57800: Angular frontend build, backend PHP syntax lint, static API route/actionType contract checks, and MySQL 8.4 migration/schema checks all passed in GitHub Actions. Prettier, git diff --check, visual browser checks and applying migrations to a real development/staging database remain to be completed.
