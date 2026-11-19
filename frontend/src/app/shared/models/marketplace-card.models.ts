@@ -29,6 +29,8 @@ export interface BusinessCardModel {
 
 export interface ProductCardModel {
   id: number;
+  public_id?: string;
+  slug?: string;
   product_name: string;
   description: string | null;
   category_name: string | null;
