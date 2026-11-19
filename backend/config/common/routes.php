@@ -73,6 +73,7 @@ return [
 
     Route::post('/api/v1/business/application/submit')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/application/submit'),
     Route::post('/api/v1/business/application/get')->action([BusinessController::class, 'actionGetBusiness'])->name('api/v1/business/application/get'),
+    Route::post('/api/v1/business/application/list')->action([BusinessController::class, 'actionGetBusiness'])->name('api/v1/business/application/list'),
     Route::post('/api/v1/business/application/update')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/application/update'),
     Route::post('/api/v1/business/application/resubmit')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/application/resubmit'),
     Route::post('/api/v1/business/profile/get')->action([BusinessController::class, 'actionGetBusiness'])->name('api/v1/business/profile/get'),
