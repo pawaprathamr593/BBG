@@ -26,6 +26,12 @@ interface StorefrontForm {
   storefront_title: string; storefront_description: string; show_prices: boolean;
   accept_online_orders: boolean; whatsapp_enabled: boolean; whatsapp_number: string; theme_code: string;
 }
+interface PersonalProfileForm { full_name: string; email: string; mobile: string; }
+interface AddressForm {
+  recipient_name: string; mobile: string; address_line_1: string; address_line_2: string;
+  city: string; state: string; postal_code: string; country_code: string; address_label: string;
+  is_default: boolean;
+}
 class StaleWorkspaceRequestError extends Error {}
 
 const ACTION_PERMISSION_CODES: Record<string, string> = {
@@ -109,6 +115,9 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
     .workspace-edit-form footer{display:flex;justify-content:flex-end;gap:9px;margin-top:6px}
     .workspace-edit-error{margin:0;color:#bd4941;font-size:.76rem}
     @media(max-width:600px){.workspace-edit-grid{grid-template-columns:1fr}.workspace-edit-grid .full{grid-column:auto}}
+
+    .drawer-checkbox{display:flex;align-items:center;gap:9px;color:var(--text-secondary);font-size:.78rem}
+    .drawer-checkbox input{width:17px;height:17px;accent-color:var(--brand)}
   `],
 })
 export class DashboardModule implements OnInit {
@@ -168,6 +177,14 @@ export class DashboardModule implements OnInit {
   });
   readonly showBusinessProfileDrawer = signal(false);
   readonly showStorefrontDrawer = signal(false);
+  readonly showPersonalProfileDrawer = signal(false);
+  readonly showAddressDrawer = signal(false);
+  readonly addressEditingId = signal<number | null>(null);
+  readonly personalProfileForm = signal<PersonalProfileForm>({ full_name: '', email: '', mobile: '' });
+  readonly addressForm = signal<AddressForm>({
+    recipient_name: '', mobile: '', address_line_1: '', address_line_2: '', city: '', state: '',
+    postal_code: '', country_code: 'IN', address_label: 'Home', is_default: false,
+  });
   readonly businessProfileForm = signal<BusinessProfileForm>({
     business_name: '', business_email: '', business_phone: '', business_description: '',
     address_line_1: '', address_line_2: '', city: '', state: '', postal_code: '',
@@ -679,33 +696,9 @@ export class DashboardModule implements OnInit {
         }
         path=action==='approve-subscription'?'/api/v1/admin/subscriptions/approve':'/api/v1/admin/subscriptions/reject'; actionType=action==='approve-subscription'?'approveSubscription':'rejectSubscription'; data={subscription_id:Number(item['subscription_id'] ?? item['id']),...dates,...(reason?{reason:reason.trim()}:{})}; break;
       }
-      case 'edit-address': {
-        const addressId = Number(item['address_id'] ?? item['id'] ?? 0);
-        const line1 = window.prompt('Address line 1 (required):', String(item['address_line_1'] ?? ''));
-        if (line1 === null) return;
-        if (!line1.trim()) { this.error.set('Address line 1 is required.'); return; }
-        const recipient = window.prompt('Recipient name:', String(item['recipient_name'] ?? ''));
-        if (recipient === null) return;
-        const mobile = window.prompt('Mobile number:', String(item['mobile'] ?? ''));
-        if (mobile === null) return;
-        const line2 = window.prompt('Address line 2:', String(item['address_line_2'] ?? ''));
-        if (line2 === null) return;
-        const city = window.prompt('City:', String(item['city'] ?? ''));
-        if (city === null) return;
-        const state = window.prompt('State:', String(item['state'] ?? ''));
-        if (state === null) return;
-        const postal = window.prompt('Postal code:', String(item['postal_code'] ?? ''));
-        if (postal === null) return;
-        const country = window.prompt('Country code (2 letters):', String(item['country_code'] ?? 'IN'));
-        if (country === null) return;
-        const label = window.prompt('Address label:', String(item['address_label'] ?? 'Home'));
-        if (label === null || !addressId) return;
-        path='/api/v1/customers/addresses/update'; key='customerParam'; actionType='updateMyAddress';
-        data={address_id:addressId,address_line_1:line1.trim(),recipient_name:recipient,mobile,
-          address_line_2:line2,city,state,postal_code:postal,country_code:country.trim().toUpperCase(),
-          address_label:label,is_default:Number(item['is_default'] ?? 0) === 1 ? 1 : 0};
-        break;
-      }
+      case 'edit-address':
+        this.openAddressEditor(item);
+        return;
       case 'default-address': case 'delete-address': {
         const remove = action==='delete-address';
         if (remove && !window.confirm('Delete this saved address?')) return;
@@ -1045,40 +1038,79 @@ export class DashboardModule implements OnInit {
     } finally { this.busy.set(false); }
   }
 
-  async editPersonalProfile(): Promise<void> {
+  editPersonalProfile(): void {
     const current = this.summary();
-    if (!current || this.busy()) return;
-    const fullName = window.prompt('Full name:', String(current['full_name'] ?? ''));
-    if (fullName === null) return;
-    const email = window.prompt('Email address:', String(current['email'] ?? ''));
-    if (email === null) return;
-    const mobile = window.prompt('Mobile number:', String(current['mobile'] ?? ''));
-    if (mobile === null) return;
-    if (!fullName.trim()) {
-      this.error.set('Full name is required.');
-      return;
-    }
-    await this.performAction('/api/v1/auth/profile/update', 'authParam', 'updateProfile', {
-      full_name: fullName.trim(),
-      email: email.trim(),
-      mobile: mobile.trim(),
+    if (!current || this.busy() || !this.can('user.update')) return;
+    this.personalProfileForm.set({
+      full_name: String(current['full_name'] ?? ''),
+      email: String(current['email'] ?? ''),
+      mobile: String(current['mobile'] ?? ''),
     });
+    this.error.set('');
+    this.showPersonalProfileDrawer.set(true);
   }
 
-  async createAddress(): Promise<void> {
-    const line1 = window.prompt('Address line 1 (required):');
-    if (!line1?.trim()) return;
-    const recipient = window.prompt('Recipient name:');
-    const mobile = window.prompt('Mobile number:');
-    const city = window.prompt('City:');
-    const state = window.prompt('State:');
-    const postal = window.prompt('Postal code:');
-    const country = window.prompt('Country code (2 letters):','IN');
-    const label = window.prompt('Address label (Home, Office, etc.):','Home');
-    await this.performAction('/api/v1/customers/addresses/create','customerParam','createMyAddress',{
-      address_line_1:line1.trim(),recipient_name:recipient ?? '',mobile:mobile ?? '',
-      city:city ?? '',state:state ?? '',postal_code:postal ?? '',country_code:(country ?? 'IN').toUpperCase(),address_label:label ?? '',
+  updatePersonalProfileField(field: keyof PersonalProfileForm, event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.personalProfileForm.update((form) => ({ ...form, [field]: value }));
+  }
+
+  async savePersonalProfile(): Promise<void> {
+    const form = this.personalProfileForm();
+    if (!form.full_name.trim()) { this.error.set('Full name is required.'); return; }
+    const saved = await this.performAction('/api/v1/auth/profile/update', 'authParam', 'updateProfile', {
+      full_name: form.full_name.trim(), email: form.email.trim(), mobile: form.mobile.trim(),
     });
+    if (saved) this.showPersonalProfileDrawer.set(false);
+  }
+
+  createAddress(): void {
+    if (!this.can('user.update')) return;
+    this.addressEditingId.set(null);
+    this.addressForm.set({
+      recipient_name: '', mobile: '', address_line_1: '', address_line_2: '', city: '', state: '',
+      postal_code: '', country_code: 'IN', address_label: 'Home', is_default: false,
+    });
+    this.error.set('');
+    this.showAddressDrawer.set(true);
+  }
+
+  openAddressEditor(item: DataRecord): void {
+    const addressId = Number(item['address_id'] ?? item['id'] ?? 0);
+    if (!addressId || !this.can('user.update')) return;
+    this.addressEditingId.set(addressId);
+    this.addressForm.set({
+      recipient_name: String(item['recipient_name'] ?? ''), mobile: String(item['mobile'] ?? ''),
+      address_line_1: String(item['address_line_1'] ?? ''), address_line_2: String(item['address_line_2'] ?? ''),
+      city: String(item['city'] ?? ''), state: String(item['state'] ?? ''),
+      postal_code: String(item['postal_code'] ?? ''), country_code: String(item['country_code'] ?? 'IN'),
+      address_label: String(item['address_label'] ?? 'Home'), is_default: Number(item['is_default'] ?? 0) === 1,
+    });
+    this.error.set('');
+    this.showAddressDrawer.set(true);
+  }
+
+  updateAddressField(field: keyof AddressForm, event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.type === 'checkbox' ? target.checked : target.value;
+    this.addressForm.update((form) => ({ ...form, [field]: value }));
+  }
+
+  async saveAddress(): Promise<void> {
+    const form = this.addressForm();
+    if (!form.address_line_1.trim()) { this.error.set('Address line 1 is required.'); return; }
+    const editingId = this.addressEditingId();
+    const payload = {
+      address_line_1: form.address_line_1.trim(), recipient_name: form.recipient_name.trim(),
+      mobile: form.mobile.trim(), address_line_2: form.address_line_2.trim(), city: form.city.trim(),
+      state: form.state.trim(), postal_code: form.postal_code.trim(),
+      country_code: form.country_code.trim().toUpperCase(), address_label: form.address_label.trim(),
+      ...(editingId !== null ? { address_id: editingId, is_default: form.is_default ? 1 : 0 } : {}),
+    };
+    const saved = editingId === null
+      ? await this.performAction('/api/v1/customers/addresses/create', 'customerParam', 'createMyAddress', payload)
+      : await this.performAction('/api/v1/customers/addresses/update', 'customerParam', 'updateMyAddress', payload);
+    if (saved) this.showAddressDrawer.set(false);
   }
 
   async createCategory(): Promise<void> {

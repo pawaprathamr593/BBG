@@ -290,6 +290,37 @@
         </div>
       }
 
+      <app-workspace-drawer [open]="showPersonalProfileDrawer()" title="Edit personal details" description="Update your BBG account contact information." (closed)="showPersonalProfileDrawer.set(false)">
+        <form class="workspace-edit-form" (submit)="$event.preventDefault(); savePersonalProfile()">
+          <div class="workspace-edit-grid">
+            <label>Full name<input [value]="personalProfileForm().full_name" (input)="updatePersonalProfileField('full_name',$event)" maxlength="180" required></label>
+            <label>Email address<input type="email" [value]="personalProfileForm().email" (input)="updatePersonalProfileField('email',$event)"></label>
+            <label>Mobile number<input type="tel" [value]="personalProfileForm().mobile" (input)="updatePersonalProfileField('mobile',$event)"></label>
+          </div>
+          @if (error()) { <p class="workspace-edit-error" role="alert">{{ error() }}</p> }
+          <footer><button type="button" class="refresh" (click)="showPersonalProfileDrawer.set(false)" [disabled]="busy()">Cancel</button><button type="submit" class="secondary-action" [disabled]="busy() || !personalProfileForm().full_name.trim()">{{ busy() ? 'Saving…' : 'Save details' }}</button></footer>
+        </form>
+      </app-workspace-drawer>
+
+      <app-workspace-drawer [open]="showAddressDrawer()" [title]="addressEditingId() === null ? 'Add address' : 'Edit address'" description="Maintain your saved delivery address." (closed)="showAddressDrawer.set(false)">
+        <form class="workspace-edit-form" (submit)="$event.preventDefault(); saveAddress()">
+          <div class="workspace-edit-grid">
+            <label>Address label<input [value]="addressForm().address_label" (input)="updateAddressField('address_label',$event)" maxlength="80" placeholder="Home"></label>
+            <label>Recipient name<input [value]="addressForm().recipient_name" (input)="updateAddressField('recipient_name',$event)"></label>
+            <label>Mobile number<input type="tel" [value]="addressForm().mobile" (input)="updateAddressField('mobile',$event)"></label>
+            <label>Address line 1<input [value]="addressForm().address_line_1" (input)="updateAddressField('address_line_1',$event)" required></label>
+            <label class="full">Address line 2<input [value]="addressForm().address_line_2" (input)="updateAddressField('address_line_2',$event)"></label>
+            <label>City<input [value]="addressForm().city" (input)="updateAddressField('city',$event)"></label>
+            <label>State<input [value]="addressForm().state" (input)="updateAddressField('state',$event)"></label>
+            <label>Postal code<input [value]="addressForm().postal_code" (input)="updateAddressField('postal_code',$event)"></label>
+            <label>Country code<input [value]="addressForm().country_code" (input)="updateAddressField('country_code',$event)" maxlength="2"></label>
+          </div>
+          @if (addressEditingId() !== null) { <label class="drawer-checkbox"><input type="checkbox" [checked]="addressForm().is_default" (change)="updateAddressField('is_default',$event)"> Set as default address</label> }
+          @if (error()) { <p class="workspace-edit-error" role="alert">{{ error() }}</p> }
+          <footer><button type="button" class="refresh" (click)="showAddressDrawer.set(false)" [disabled]="busy()">Cancel</button><button type="submit" class="secondary-action" [disabled]="busy() || !addressForm().address_line_1.trim()">{{ busy() ? 'Saving…' : (addressEditingId() === null ? 'Add address' : 'Save address') }}</button></footer>
+        </form>
+      </app-workspace-drawer>
+
       <app-workspace-drawer [open]="showBusinessProfileDrawer()" title="Edit business profile" description="Update the business information displayed across BBG." (closed)="showBusinessProfileDrawer.set(false)">
         <form class="workspace-edit-form" (submit)="$event.preventDefault(); saveBusinessProfile()">
           <div class="workspace-edit-grid">
@@ -326,10 +357,7 @@
           <footer><button type="button" class="refresh" (click)="showStorefrontDrawer.set(false)" [disabled]="busy()">Cancel</button><button type="submit" class="secondary-action" [disabled]="busy() || !storefrontForm().storefront_title.trim()">{{ busy() ? 'Saving…' : 'Save storefront' }}</button></footer>
         </form>
       </app-workspace-drawer>
-      @if (showPromotionComposer()) {
-        <div class="composer-backdrop" (click)="closePromotionComposer()">
-          <section class="promotion-composer" role="dialog" aria-modal="true" aria-labelledby="promotion-composer-title" (click)="$event.stopPropagation()">
-            <header><div><p class="eyebrow">BUSINESS WORKSPACE / PROMOTIONS</p><h2 id="promotion-composer-title">Create promotion</h2><p>Prepare your post and attach multiple media files.</p></div><button type="button" class="composer-close" (click)="closePromotionComposer()" [disabled]="promotionMediaBusy()">×</button></header>
+      <app-workspace-drawer [open]="showPromotionComposer()" title="Create promotion" description="Prepare your post and attach multiple media files." (closed)="closePromotionComposer()">
             <label>Post title <input type="text" maxlength="180" [value]="promotionTitle()" (input)="setPromotionField('title',$event)" placeholder="e.g. Festive season offer"></label>
             <label>Post content <textarea rows="5" maxlength="10000" [value]="promotionContent()" (input)="setPromotionField('content',$event)" placeholder="Tell customers about your offer…" required></textarea></label>
             <label>Valid until <input type="datetime-local" [value]="promotionValidUntil()" (input)="setPromotionField('validUntil',$event)"><small>Optional. Leave blank for no expiry date.</small></label>
@@ -346,8 +374,6 @@
             @if (promotionError()) { <p class="composer-error" role="alert">{{ promotionError() }}</p> }
             @if (promotionMediaBusy()) { <div class="composer-progress" role="status"><progress [value]="promotionUploadProgress()" max="100"></progress><span>Uploading attachments… {{ promotionUploadProgress() }}%</span></div> }
             <footer><button type="button" class="refresh" (click)="closePromotionComposer()" [disabled]="promotionMediaBusy()">Cancel</button>@if (draftPromotionId() ? can('promotion.update') : can('promotion.create')) { <button type="button" class="secondary-action" (click)="submitPromotion()" [disabled]="promotionMediaBusy() || !promotionContent().trim()">{{ promotionMediaBusy() ? 'Uploading…' : (promotionFiles().length ? 'Save post & upload media' : 'Create draft') }}</button> } </footer>
-          </section>
-        </div>
-      }
+      </app-workspace-drawer>
     </main>
   
