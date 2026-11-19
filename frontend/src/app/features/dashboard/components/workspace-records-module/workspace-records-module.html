@@ -37,7 +37,7 @@
             <div class="post-media-strip" aria-label="Post attachments">
               @for (media of card.media; track media.id) {
                 <div class="post-media-item">
-                  @if (media.url && media.type === 'IMAGE') { <img [src]="media.url" [alt]="'Post image ' + media.id"> }
+                  @if (media.url && media.type === 'IMAGE') { <img [src]="media.url" [alt]="Post image attachment"> }
                   @else if (media.url && media.type === 'VIDEO') { <video controls [src]="media.url" aria-label="Post video attachment"></video> }
                   @else if (media.url && media.type === 'AUDIO') { <audio controls [src]="media.url" aria-label="Post audio attachment"></audio> }
                   @else if (media.url) { <a [href]="media.url" target="_blank" rel="noopener">Open {{ media.type }} attachment</a> }
