@@ -84,7 +84,7 @@ export class WorkspaceDrawer {
   private focusInitialControl(): void {
     if (!this.open()) return;
     const first = this.focusableElements()[0];
-    (first ?? this.element.nativeElement.querySelector<HTMLElement>('.workspace-drawer'))?.focus();
+    (first ?? (this.element.nativeElement.querySelector('.workspace-drawer') as HTMLElement | null))?.focus();
   }
 
   private focusableElements(): HTMLElement[] {
