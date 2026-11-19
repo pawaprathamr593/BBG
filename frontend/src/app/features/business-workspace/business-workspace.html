@@ -27,7 +27,12 @@
             } @else if (business.approval_status === 'DRAFT') {
               <p class="application-note">This application has not been submitted yet.</p>
             } @else {
-              <p class="application-note">Your business registration has been submitted. Our team is reviewing it.</p>
+              @if (rejectedPaymentBusinessIds().includes(business.business_id)) {
+                <p class="application-note">Your payment proof needs attention. Upload a corrected receipt to send it for review again.</p>
+                <button class="market-button" type="button" (click)="resumePayment(business)">Update payment receipt <span aria-hidden="true">→</span></button>
+              } @else {
+                <p class="application-note">Your business registration and payment are awaiting BBG review.</p>
+              }
             }
           </article>
         }
