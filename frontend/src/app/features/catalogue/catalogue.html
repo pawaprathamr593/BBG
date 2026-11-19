@@ -25,7 +25,7 @@
           <article><span>Units available</span><strong>{{ units().length }}</strong></article>
         </section>
 
-        <section class="catalogue-layout">
+        <div class="catalogue-sections">
           <div class="products-panel">
             <div class="panel-heading">
               <div><h2>Products</h2><p>Search and maintain your product listings.</p></div>
@@ -61,26 +61,18 @@
             }
           </div>
 
-          <aside class="categories-panel">
-            <div class="panel-heading"><div><h2>Categories</h2><p>Organise your catalogue.</p></div></div>
-            @if (canCreate()) { <form class="category-form" (ngSubmit)="addCategory()">
-              <label>Category name<input name="categoryName" [(ngModel)]="categoryName" maxlength="120" required placeholder="e.g. Office furniture"></label>
-              <label>Description <span class="optional">(optional)</span><input name="categoryDescription" [(ngModel)]="categoryDescription" maxlength="500" placeholder="Short description"></label>
-              <button class="secondary-button full-width" type="submit" [disabled]="!canCreate() || savingCategory() || !categoryName.trim()"> {{ savingCategory() ? 'Adding…' : 'Add category' }} </button>
-            </form> }
+          <section class="categories-panel" aria-labelledby="catalogue-categories-heading">
+            <div class="panel-heading"><div><h2 id="catalogue-categories-heading">Categories</h2><p>Organise products into clear catalogue groups.</p></div>@if (canCreate()) { <button type="button" class="secondary-button" (click)="openCategoryCreate()">＋ Add category</button> }</div>
             <ul class="category-list">
               @for (category of categories(); track category.id) {
                 <li><div><strong>{{ category.category_name }}</strong><small>{{ category.description || 'No description' }}</small></div>@if (canDelete()) { <button type="button" class="icon-button" [attr.aria-label]="'Delete ' + category.category_name" (click)="removeCategory(category)">×</button> }</li>
               } @empty { <li class="category-empty">No categories created yet.</li> }
             </ul>
-          </aside>
-        </section>
+          </section>
+        </div>
       }
 
-      @if (showForm()) {
-        <div class="modal-backdrop" (click)="closeForm()">
-          <section class="product-modal" role="dialog" aria-modal="true" aria-labelledby="product-modal-title" (click)="$event.stopPropagation()">
-            <header><div><p class="eyebrow">{{ editingId() ? 'UPDATE LISTING' : 'NEW LISTING' }}</p><h2 id="product-modal-title">{{ editingId() ? 'Edit product' : 'Add product' }}</h2></div><button type="button" class="icon-button close-button" aria-label="Close" (click)="closeForm()">×</button></header>
+      <app-workspace-drawer [open]="showForm()" [title]="editingId() ? 'Edit product' : 'Add product'" [description]="editingId() ? 'Update product information and manage its media.' : 'Add a product to this business catalogue.'" (closed)="closeForm()">
             <form (ngSubmit)="saveProduct()">
               <div class="form-grid">
                 <label>Product code<input name="productCode" [(ngModel)]="form.product_code" maxlength="80" required></label>
@@ -105,7 +97,7 @@
                 @if (selectedMediaFiles().length) {
                   <div class="media-list">
                     @for (file of selectedMediaFiles(); track $index) {
-                      <div class="media-item"><span class="media-kind">{{ mediaKind(file.type) }}</span><div><strong>{{ file.name }}</strong><small>{{ formatFileSize(file.size) }} · Ready to upload</small></div><button type="button" class="icon-button" [attr.aria-label]="'Remove ' + file.name" (click)="removeSelectedMedia($index)">×</button></div>
+                      <div class="media-item">@if (previewMediaUrl(file); as preview) { @if (file.type.startsWith('image/')) { <img class="media-thumb" [src]="preview" [alt]="file.name"> } @else { <video class="media-preview" controls [src]="preview"></video> } } @else { <span class="media-kind">{{ mediaKind(file.type) }}</span> }<div><strong>{{ file.name }}</strong><small>{{ formatFileSize(file.size) }} · Ready to upload</small></div><button type="button" class="icon-button" [attr.aria-label]="'Remove ' + file.name" (click)="removeSelectedMedia($index)">×</button></div>
                     }
                   </div>
                 }
@@ -130,9 +122,16 @@
               @if (formError()) { <p class="form-error" role="alert">{{ formError() }}</p> }
               <footer><button type="button" class="secondary-button" (click)="closeForm()">Cancel</button><button type="submit" class="primary-button" [disabled]="saving() || (editingId() ? !canUpdate() : !canCreate())">{{ saving() ? 'Saving…' : 'Save product' }}</button></footer>
             </form>
-          </section>
-        </div>
-      }
+      </app-workspace-drawer>
+
+      <app-workspace-drawer [open]="showCategoryForm()" title="Add category" description="Create a category for organizing products." (closed)="closeCategoryForm()">
+        <form class="category-drawer-form" (ngSubmit)="addCategory()">
+          <label>Category name<input name="categoryName" [(ngModel)]="categoryName" maxlength="120" required placeholder="e.g. Office furniture"></label>
+          <label>Description <span class="optional">(optional)</span><textarea name="categoryDescription" [(ngModel)]="categoryDescription" maxlength="500" rows="4" placeholder="Short description"></textarea></label>
+          @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+          <footer><button type="button" class="secondary-button" (click)="closeCategoryForm()">Cancel</button><button class="primary-button" type="submit" [disabled]="savingCategory() || !categoryName.trim()">{{ savingCategory() ? 'Adding…' : 'Add category' }}</button></footer>
+        </form>
+      </app-workspace-drawer>
       @if (notice()) { <div class="toast" role="status">{{ notice() }}</div> }
     </main>
   
