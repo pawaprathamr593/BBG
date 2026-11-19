@@ -201,6 +201,14 @@ final readonly class TenantDao
                     WHERE tm.tenant_id = :tenant_id AND tm.user_id = u.id
                         AND tm.membership_status = 'ACTIVE' AND tm.status = 'A'
                 )
+                AND NOT EXISTS (
+                    SELECT 1 FROM USER_ROLE_ASSIGNMENTS owner_assignment
+                    INNER JOIN ROLES owner_role ON owner_role.id = owner_assignment.role_id
+                        AND owner_role.role_code = 'TENANT_OWNER' AND owner_role.scope_type = 'TENANT' AND owner_role.status = 'A'
+                    WHERE owner_assignment.tenant_id = :tenant_id AND owner_assignment.user_id = u.id
+                        AND owner_assignment.status = 'A'
+                        AND (owner_assignment.expires_on IS NULL OR owner_assignment.expires_on > CURRENT_TIMESTAMP)
+                )
              ORDER BY u.full_name ASC, u.id ASC
              LIMIT :limit",
             [':tenant_id' => $tenantId, ':email_query' => '%' . strtolower($emailQuery) . '%', ':limit' => $limit],
@@ -247,6 +255,20 @@ final readonly class TenantDao
             )->queryOne();
             if (!is_array($user)) {
                 $resArr['msgArr'][] = 'The selected user account is not active.';
+                return $resArr;
+            }
+            $existingOwner = $db->createCommand(
+                "SELECT ura.id
+                 FROM USER_ROLE_ASSIGNMENTS ura
+                 INNER JOIN ROLES r ON r.id = ura.role_id
+                    AND r.role_code = 'TENANT_OWNER' AND r.scope_type = 'TENANT' AND r.status = 'A'
+                 WHERE ura.tenant_id = :tenant_id AND ura.user_id = :user_id
+                    AND ura.status = 'A' AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
+                 LIMIT 1",
+                [':tenant_id' => $tenantId, ':user_id' => $userId],
+            )->queryOne();
+            if (is_array($existingOwner)) {
+                $resArr['msgArr'][] = 'A tenant owner cannot be added as a team member.';
                 return $resArr;
             }
             $membership = $db->createCommand(
