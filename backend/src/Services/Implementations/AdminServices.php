@@ -120,6 +120,9 @@ final readonly class AdminServices implements IAdminServices
                 case 'approveBusiness':
                     $resArr = $this->manageBusinessDecision($actionData, 'APPROVED');
                     break;
+                case 'approveBusinessWithSubscription':
+                    $resArr = $this->manageBusinessAndSubscriptionApproval($actionData);
+                    break;
                 case 'rejectBusiness':
                     $resArr = $this->manageBusinessDecision($actionData, 'REJECTED');
                     break;
@@ -276,6 +279,96 @@ final readonly class AdminServices implements IAdminServices
             unset($resArr['data']['proof_file_path']);
         }
         return $resArr;
+    }
+
+    private function manageBusinessAndSubscriptionApproval(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'business.approve');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::manageBusinessAndSubscriptionApproval');
+        }
+        $businessId = $this->positiveInt($actionData['business_id'] ?? null);
+        if ($businessId === null) {
+            $resArr['msgArr'][] = 'A valid business_id is required.';
+            return $resArr;
+        }
+        $business = $this->dao->getBusinessForReview($this->db, $businessId);
+        if ($business['status'] !== 'SUCCESS' || $business['data'] === []) {
+            return $this->propagateFailure($business, 'AdminServices::manageBusinessAndSubscriptionApproval');
+        }
+        $businessData = $business['data'];
+        $businessStatus = (string) ($businessData['approval_status'] ?? '');
+        $tenantId = (int) ($businessData['tenant_id'] ?? 0);
+        $adminId = (int) $context['data']['user_id'];
+        if ($tenantId <= 0) {
+            $resArr['msgArr'][] = 'The business application has no valid tenant.';
+            return $resArr;
+        }
+        if ($businessStatus === 'APPROVED') {
+            $active = $this->dao->getActiveSubscriptionForTenant($this->db, $tenantId);
+            if ($active['status'] === 'SUCCESS' && $active['data'] !== []) {
+                $resArr['status'] = 'SUCCESS';
+                $resArr['data'] = [
+                    'business_id' => $businessId,
+                    'tenant_id' => $tenantId,
+                    'approval_status' => 'APPROVED',
+                    'subscription_status' => 'ACTIVE',
+                ];
+                return $resArr;
+            }
+            $resArr['msgArr'][] = 'The business is already approved, but no active subscription is available.';
+            return $resArr;
+        }
+        if ($businessStatus !== 'PENDING') {
+            $resArr['msgArr'][] = 'Only pending business applications can be approved.';
+            return $resArr;
+        }
+
+        $activeSubscription = $this->dao->getActiveSubscriptionForTenant($this->db, $tenantId);
+        if ($activeSubscription['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($activeSubscription, 'AdminServices::manageBusinessAndSubscriptionApproval');
+        }
+        if ($activeSubscription['data'] !== []) {
+            $transaction = $this->db->beginTransaction();
+            try {
+                $result = $this->dao->setBusinessApproval(
+                    $this->db, $businessId, $tenantId, $adminId, 'APPROVED', null,
+                );
+                if ($result['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($result, 'AdminServices::manageBusinessAndSubscriptionApproval');
+                }
+                $transaction->commit();
+                $result['data']['subscription_status'] = 'ACTIVE';
+                return $result;
+            } catch (Throwable $exception) {
+                if ($transaction->isActive()) {
+                    $transaction->rollBack();
+                }
+                throw $exception;
+            }
+        }
+
+        $subscriptionId = $this->positiveInt(
+            $actionData['subscription_id'] ?? $businessData['subscription_id'] ?? null,
+        );
+        if ($subscriptionId === null) {
+            $resArr['msgArr'][] = 'A pending payment-backed subscription is required before this business can be approved.';
+            return $resArr;
+        }
+        $subscription = $this->dao->getSubscriptionForReview($this->db, $subscriptionId);
+        if ($subscription['status'] !== 'SUCCESS' || $subscription['data'] === []) {
+            return $this->propagateFailure($subscription, 'AdminServices::manageBusinessAndSubscriptionApproval');
+        }
+        if ((int) ($subscription['data']['tenant_id'] ?? 0) !== $tenantId
+            || (string) ($subscription['data']['subscription_status'] ?? '') !== 'PENDING'
+        ) {
+            $resArr['msgArr'][] = 'The selected pending subscription does not belong to this business.';
+            return $resArr;
+        }
+        $actionData['subscription_id'] = $subscriptionId;
+        return $this->manageSubscriptionDecision($actionData, true, $businessData);
     }
 
     private function manageBusinessDecision(array $actionData, string $newStatus): array
@@ -526,7 +619,7 @@ final readonly class AdminServices implements IAdminServices
         return $resArr;
     }
 
-    private function manageSubscriptionDecision(array $actionData, bool $approve): array
+    private function manageSubscriptionDecision(array $actionData, bool $approve, ?array $businessApproval = null): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $context = $this->platformContext($actionData, 'subscription.approve');
@@ -562,6 +655,13 @@ final readonly class AdminServices implements IAdminServices
         }
         $tenantId = (int) $subscriptionData['tenant_id'];
         $adminId = (int) $context['data']['user_id'];
+        if ($businessApproval !== null
+            && ((int) ($businessApproval['tenant_id'] ?? 0) !== $tenantId
+                || (string) ($businessApproval['approval_status'] ?? '') !== 'PENDING')
+        ) {
+            $resArr['msgArr'][] = 'The business application must belong to this subscription and remain pending for combined approval.';
+            return $resArr;
+        }
         $planId = $approve ? $this->positiveInt($subscriptionData['plan_id'] ?? null) : null;
         if ($approve && $planId === null) {
             $resArr['msgArr'][] = 'The subscription has no valid plan ID and cannot be approved.';
@@ -645,6 +745,23 @@ final readonly class AdminServices implements IAdminServices
                     return $this->propagateFailure($savedBcn, 'AdminServices::manageSubscriptionDecision');
                 }
                 $result['data']['bcn'] = $bcn;
+            }
+
+            if ($approve && $businessApproval !== null) {
+                $businessResult = $this->dao->setBusinessApproval(
+                    $this->db,
+                    (int) $businessApproval['id'],
+                    $tenantId,
+                    $adminId,
+                    'APPROVED',
+                    null,
+                );
+                if ($businessResult['status'] !== 'SUCCESS') {
+                    $transaction->rollBack();
+                    return $this->propagateFailure($businessResult, 'AdminServices::manageSubscriptionDecision');
+                }
+                $result['data']['business_id'] = (int) $businessApproval['id'];
+                $result['data']['business_approval_status'] = 'APPROVED';
             }
 
             $transaction->commit();
