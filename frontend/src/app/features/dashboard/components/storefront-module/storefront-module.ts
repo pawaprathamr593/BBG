@@ -23,11 +23,32 @@ export class StorefrontModule {
   constructor(){this.destroyRef.onDestroy(()=>{this.alive=false;});}
   private readonly workspace=inject(WorkspaceContextService);
   private readonly api=inject(WorkspaceModuleApiService);
-  readonly fields=[
-    {key:'storefront_title',label:'Storefront title'},{key:'storefront_description',label:'Description',wide:true},
-    {key:'show_prices',label:'Show product prices',boolean:true},{key:'accept_online_orders',label:'Accept online orders',boolean:true},
-    {key:'whatsapp_enabled',label:'WhatsApp contact',boolean:true},{key:'whatsapp_number',label:'WhatsApp number'},
-    {key:'theme_code',label:'Theme code'},
+  readonly groups = [
+    {
+      title: 'Storefront identity',
+      fields: [
+        { key: 'storefront_title', label: 'Storefront title' },
+        { key: 'storefront_description', label: 'Description', wide: true },
+        { key: 'theme_code', label: 'Theme code' },
+      ],
+    },
+    {
+      title: 'Publication status',
+      fields: [
+        { key: 'storefront_status', label: 'Storefront status' },
+        { key: 'publication_status', label: 'Publication status' },
+        { key: 'approval_status', label: 'Business approval status' },
+      ],
+    },
+    {
+      title: 'Customer experience',
+      fields: [
+        { key: 'show_prices', label: 'Show product prices', boolean: true },
+        { key: 'accept_online_orders', label: 'Accept online orders', boolean: true },
+        { key: 'whatsapp_enabled', label: 'WhatsApp contact', boolean: true },
+        { key: 'whatsapp_number', label: 'WhatsApp number' },
+      ],
+    },
   ];
   edit():void {
     const data=this.storefront();if(!this.canEdit())return;
@@ -45,6 +66,7 @@ export class StorefrontModule {
   async save():Promise<void>{
     const tenantId=this.workspace.activeTenantId(),form=this.form();
     if(!tenantId||!form.storefront_title.trim()){this.error.set('A storefront title and active business workspace are required.');return;}
+    if(form.whatsapp_enabled&&!/^\\+?[0-9]{8,15}$/.test(form.whatsapp_number.trim())){this.error.set('Enter a valid WhatsApp number with 8 to 15 digits and an optional leading plus sign.');return;}
     if(this.saving())return;this.saving.set(true);this.error.set('');
     try{
       await this.api.request('/api/v1/business/storefront/update','updateMyStorefront',{
