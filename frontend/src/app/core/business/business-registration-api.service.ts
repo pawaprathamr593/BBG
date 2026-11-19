@@ -118,6 +118,14 @@ export class BusinessRegistrationApiService {
     return Array.isArray(data.items) ? data.items : [];
   }
 
+  async getMySubscriptionDetail(tenantId: number, subscriptionId: number): Promise<BusinessSubscription> {
+    return this.subscriptionRequest<BusinessSubscription>(
+      '/api/v1/subscriptions/mine/detail',
+      'getMySubscription',
+      { tenant_id: tenantId, subscription_id: subscriptionId },
+    );
+  }
+
   async requestSubscription(tenantId: number, planId: number): Promise<{ id: number }> {
     return this.subscriptionRequest<{ id: number }>(
       '/api/v1/subscriptions/request',
