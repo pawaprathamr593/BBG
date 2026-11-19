@@ -1,14 +1,25 @@
 <section class="business-profile" aria-labelledby="business-profile-heading">
   <header class="profile-heading">
     <div><p class="eyebrow">BUSINESS INFORMATION</p><h2 id="business-profile-heading">Business profile</h2><p>Review the registered information associated with this workspace.</p></div>
-    <div class="profile-actions"><span class="status-pill">{{ status() }}</span>@if (canEdit()) { <button type="button" (click)="editRequested.emit()">Edit profile</button> }</div>
+    <div class="profile-actions"><span class="status-pill">{{ status() }}</span>@if (canEdit()) { <button type="button" (click)="edit()">Edit profile</button> }</div>
   </header>
   <div class="profile-grid">
     @for (field of fields; track field.key) {
-      <article class="detail-card" [class.wide]="field.wide">
-        <span>{{ field.label }}</span>
-        <strong>{{ display(business()[field.key]) }}</strong>
-      </article>
+      <article class="detail-card" [class.wide]="field.wide"><span>{{ field.label }}</span><strong>{{ display(business()[field.key]) }}</strong></article>
     }
   </div>
 </section>
+<app-workspace-drawer [open]="drawerOpen()" title="Edit business profile" description="Update the business information displayed across BBG." (closed)="drawerOpen.set(false)">
+  <form class="profile-form" (ngSubmit)="save()">
+    <label>Business name<input name="businessName" [ngModel]="form().business_name" (ngModelChange)="updateField('business_name',$event)" maxlength="180" required></label>
+    <label>Business email<input type="email" name="businessEmail" [ngModel]="form().business_email" (ngModelChange)="updateField('business_email',$event)" maxlength="180"></label>
+    <label>Business phone<input name="businessPhone" [ngModel]="form().business_phone" (ngModelChange)="updateField('business_phone',$event)" maxlength="30"></label>
+    <label>Description<textarea name="businessDescription" [ngModel]="form().business_description" (ngModelChange)="updateField('business_description',$event)" maxlength="5000" rows="4"></textarea></label>
+    <label>Address line 1<input name="addressLine1" [ngModel]="form().address_line_1" (ngModelChange)="updateField('address_line_1',$event)" maxlength="180"></label>
+    <label>Address line 2<input name="addressLine2" [ngModel]="form().address_line_2" (ngModelChange)="updateField('address_line_2',$event)" maxlength="180"></label>
+    <div class="form-row"><label>City<input name="city" [ngModel]="form().city" (ngModelChange)="updateField('city',$event)" maxlength="100"></label><label>State<input name="state" [ngModel]="form().state" (ngModelChange)="updateField('state',$event)" maxlength="100"></label></div>
+    <label>Postal code<input name="postalCode" [ngModel]="form().postal_code" (ngModelChange)="updateField('postal_code',$event)" maxlength="20"></label>
+    @if (error()) { <p class="module-error" role="alert">{{ error() }}</p> }
+    <footer><button type="button" class="secondary-button" (click)="drawerOpen.set(false)" [disabled]="saving()">Cancel</button><button type="submit" class="primary-button" [disabled]="saving() || !form().business_name.trim()">{{ saving()?'Saving…':'Save changes' }}</button></footer>
+  </form>
+</app-workspace-drawer>

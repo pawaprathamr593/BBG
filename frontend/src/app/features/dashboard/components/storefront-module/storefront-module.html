@@ -1,14 +1,25 @@
 <section class="storefront-profile" aria-labelledby="storefront-heading">
   <header class="storefront-heading">
     <div><p class="eyebrow">CUSTOMER-FACING EXPERIENCE</p><h2 id="storefront-heading">Storefront settings</h2><p>Review the public identity and shopping preferences for your storefront.</p></div>
-    <div class="storefront-actions"><span class="status-pill" [class.published]="status() === 'PUBLISHED'">{{ status() }}</span>@if (canEdit()) { <button type="button" (click)="editRequested.emit()">Edit settings</button> }</div>
+    <div class="storefront-actions"><span class="status-pill" [class.published]="status()==='PUBLISHED'">{{ status() }}</span>@if (canEdit()) { <button type="button" (click)="edit()">Edit settings</button><button type="button" class="publication-action" (click)="togglePublication()" [disabled]="saving()">{{ status()==='PUBLISHED'?'Unpublish':'Publish' }}</button> }</div>
   </header>
   <div class="storefront-grid">
     @for (field of fields; track field.key) {
-      <article class="detail-card" [class.wide]="field.wide">
-        <span>{{ field.label }}</span>
-        <strong>{{ display(storefront()[field.key], field.boolean ?? false) }}</strong>
-      </article>
+      <article class="detail-card" [class.wide]="field.wide"><span>{{ field.label }}</span><strong>{{ display(storefront()[field.key],field.boolean??false) }}</strong></article>
     }
   </div>
+  @if (error()) { <p class="module-error" role="alert">{{ error() }}</p> }
 </section>
+<app-workspace-drawer [open]="drawerOpen()" title="Edit storefront" description="Manage your storefront identity and customer-facing settings." (closed)="drawerOpen.set(false)">
+  <form class="storefront-form" (ngSubmit)="save()">
+    <label>Storefront title<input name="storefrontTitle" [ngModel]="form().storefront_title" (ngModelChange)="updateText('storefront_title',$event)" maxlength="180" required></label>
+    <label>Description<textarea name="storefrontDescription" [ngModel]="form().storefront_description" (ngModelChange)="updateText('storefront_description',$event)" maxlength="5000" rows="4"></textarea></label>
+    <label>WhatsApp number<input name="whatsappNumber" [ngModel]="form().whatsapp_number" (ngModelChange)="updateText('whatsapp_number',$event)" maxlength="30"></label>
+    <label>Theme code<input name="themeCode" [ngModel]="form().theme_code" (ngModelChange)="updateText('theme_code',$event)" maxlength="40"></label>
+    <label class="toggle-row"><input type="checkbox" [ngModel]="form().show_prices" (ngModelChange)="updateToggle('show_prices',$event)" name="showPrices"> Show product prices</label>
+    <label class="toggle-row"><input type="checkbox" [ngModel]="form().accept_online_orders" (ngModelChange)="updateToggle('accept_online_orders',$event)" name="acceptOrders"> Accept online orders</label>
+    <label class="toggle-row"><input type="checkbox" [ngModel]="form().whatsapp_enabled" (ngModelChange)="updateToggle('whatsapp_enabled',$event)" name="whatsappEnabled"> Enable WhatsApp contact</label>
+    @if (error()) { <p class="module-error" role="alert">{{ error() }}</p> }
+    <footer><button type="button" class="secondary-button" (click)="drawerOpen.set(false)" [disabled]="saving()">Cancel</button><button type="submit" class="primary-button" [disabled]="saving()||!form().storefront_title.trim()">{{ saving()?'Saving…':'Save settings' }}</button></footer>
+  </form>
+</app-workspace-drawer>
