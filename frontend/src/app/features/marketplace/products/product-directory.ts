@@ -61,8 +61,8 @@ export class ProductDirectory implements OnInit {
     void this.router.navigate(['/store', product.business.business_slug, 'products', productId]);
   }
 
-  protected openBusiness(product: MarketplaceProduct): void {
-    void this.router.navigate(['/store', product.business.business_slug]);
+  protected openBusiness(businessSlug: string): void {
+    void this.router.navigate(['/store', businessSlug]);
   }
 
   protected slugifyProduct(value: string): string {
