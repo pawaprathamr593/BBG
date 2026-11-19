@@ -275,3 +275,7 @@ function slugify(value: string): string {
     void this.router.navigate(['/store', promotion.business_slug]);
   }
 
+  protected openBusiness(businessSlug: string): void {
+    void this.router.navigate(['/store', businessSlug]);
+  }
+
