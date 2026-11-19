@@ -102,7 +102,7 @@ A signed-in person must be able to register more than one business, save and res
 | Admin review and decision | Existing platform admin permission path | Existing |
 | Upgrade/renew and subscription proof | Active TENANT_OWNER for the selected tenant; server validates ownership | Added as scoped owner operations |
 | Manage team | Active TENANT_OWNER for the selected tenant; server validates ownership | Added as scoped owner operations |
-| Configure/publish storefront | Active TENANT_OWNER plus existing storefront.enabled entitlement; server validates ownership and approved business | Added as scoped owner operations; existing entitlement rules retained |
+| Configure/publish storefront | Active TENANT_OWNER plus existing STOREFRONT_ACCESS entitlement; server validates ownership and approved business | Added as scoped owner operations; existing entitlement rules retained |
 | Team member role | Existing TENANT_ORDER_MANAGER with TENANT scope only | Existing role; no RBAC seed changes |
 | Invitation acceptance | Authenticated user email must match invitation email; token is one-time and expires after seven days | Added |
 
