@@ -12,7 +12,7 @@ function isPlatformAdministratorPermission(permission: DashboardPermission): boo
 }
 
 function isPersonalPermission(permission: DashboardPermission): boolean {
-  return permission.scope_type === 'GLOBAL' || permission.role_code === 'CONSUMER';
+  return permission.scope_type === 'PLATFORM' && permission.role_code === 'CONSUMER';
 }
 
 @Injectable({ providedIn: 'root' })
@@ -165,19 +165,19 @@ export class WorkspaceContextService {
       if (restoredTenantId !== null) this.persistLastWorkspace(restoredTenantId);
       const savedContext = this.readActiveContext();
       const hasPlatformAccess = savedPermissions.some(isPlatformAdministratorPermission);
-      const defaultScope = savedContext === 'PERSONAL'
-        ? 'GLOBAL'
+      const defaultContext = savedContext === 'PERSONAL'
+        ? 'PERSONAL'
         : savedContext === 'PLATFORM' && hasPlatformAccess
           ? 'PLATFORM'
-          : hasPlatformAccess ? 'PLATFORM' : 'GLOBAL';
+          : hasPlatformAccess ? 'PLATFORM' : 'PERSONAL';
       const permissions = restoredTenantId === null
-        ? defaultScope === 'PLATFORM'
+        ? defaultContext === 'PLATFORM'
           ? savedPermissions.filter(isPlatformAdministratorPermission)
           : savedPermissions.filter(isPersonalPermission)
         : await this.api.getPermissions(restoredTenantId);
 
       this.activeTenantId.set(restoredTenantId);
-      this.activeContext.set(restoredTenantId !== null ? 'BUSINESS' : defaultScope === 'PLATFORM' ? 'PLATFORM' : 'PERSONAL');
+      this.activeContext.set(restoredTenantId !== null ? 'BUSINESS' : defaultContext);
       this.permissions.set(permissions);
       if (restoredTenantId !== savedId) this.persistActiveWorkspace(restoredTenantId);
     } catch (error) {
