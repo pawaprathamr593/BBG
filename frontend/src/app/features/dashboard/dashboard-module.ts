@@ -133,6 +133,11 @@ export class DashboardModule implements OnInit {
   readonly proofSubscription = signal<DataRecord | null>(null);
   readonly proofPaymentReference = signal('');
   readonly plans = signal<DataRecord[]>([]);
+  readonly teamSearch = signal('');
+  readonly teamSearchResults = signal<DataRecord[]>([]);
+  readonly teamSearchBusy = signal(false);
+  readonly invitationLink = signal('');
+  readonly invitationExpiresOn = signal('');
   readonly pendingPlanId = signal<number | null>(null);
   readonly proofDrafts = signal<Record<number,{objectKey:string;paymentReference:string;fileName:string}>>({});
   readonly qrPayeeName = signal('');
@@ -379,7 +384,7 @@ export class DashboardModule implements OnInit {
       switch (this.section()) {
         case 'members': {
           if (!tenantId) return this.setUnsupported('Open Business Workspace to view team members.');
-          const data = await this.request<ListResult>('/api/v1/tenants/members/list','tenantParam','listTenantMembers',pageData);
+          const data = await this.request<ListResult>('/api/v1/tenants/members/owner-list','tenantParam','listOwnedTenantMembers',pageData);
           this.setListResult(data); break;
         }
         case 'profile':
@@ -1053,6 +1058,90 @@ export class DashboardModule implements OnInit {
   subscriptionReviewHistory(): DataRecord[] {
     const history = this.subscriptionReview()?.['review_history'];
     return Array.isArray(history) ? history as DataRecord[] : [];
+  }
+
+
+  async searchTeamUsers(): Promise<void> {
+    const tenantId = this.workspace.activeTenantId();
+    const email = this.teamSearch().trim().toLowerCase();
+    if (!tenantId || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      this.error.set('Enter a valid email address to search for an existing BBG user.');
+      return;
+    }
+    this.teamSearchBusy.set(true);
+    this.error.set('');
+    this.teamSearchResults.set([]);
+    this.invitationLink.set('');
+    try {
+      const result = await this.request<{items?: DataRecord[]}>(
+        '/api/v1/tenants/members/search', 'tenantParam', 'searchEligibleTenantUsers',
+        { tenant_id: tenantId, email },
+      );
+      this.teamSearchResults.set(result.items ?? []);
+      if (!(result.items ?? []).length) this.notice.set('No active BBG account was found for this email. You can create an invitation link.');
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.teamSearchBusy.set(false);
+    }
+  }
+
+  async addTeamMember(user: DataRecord): Promise<void> {
+    const tenantId = this.workspace.activeTenantId();
+    const userId = Number(user['user_id'] ?? 0);
+    if (!tenantId || !userId || this.busy()) return;
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      await this.request('/api/v1/tenants/members/add', 'tenantParam', 'addExistingTenantMember', {
+        tenant_id: tenantId, user_id: userId, role_code: 'TENANT_ORDER_MANAGER',
+      });
+      this.notice.set('The existing user was added as a Tenant Order Manager.');
+      this.teamSearchResults.set([]);
+      this.teamSearch.set('');
+      await this.load();
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async createTeamInvitation(): Promise<void> {
+    const tenantId = this.workspace.activeTenantId();
+    const email = this.teamSearch().trim().toLowerCase();
+    if (!tenantId || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || this.busy()) {
+      this.error.set('Enter a valid email address before creating an invitation.');
+      return;
+    }
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      const result = await this.request<DataRecord>(
+        '/api/v1/tenants/invitations/create', 'tenantParam', 'createTenantInvitation',
+        { tenant_id: tenantId, email, role_code: 'TENANT_ORDER_MANAGER' },
+      );
+      const token = String(result['invitation_token'] ?? '');
+      if (!/^[a-f0-9]{64}$/i.test(token)) throw new Error('The invitation was created but no usable invitation token was returned.');
+      this.invitationLink.set(window.location.origin + '/invite/accept?token=' + encodeURIComponent(token));
+      this.invitationExpiresOn.set(String(result['expires_on'] ?? ''));
+      this.notice.set('Invitation link created. Share it with the invited email address; it expires in seven days.');
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async copyInvitationLink(): Promise<void> {
+    const link = this.invitationLink();
+    if (!link) return;
+    try {
+      await navigator.clipboard.writeText(link);
+      this.notice.set('Invitation link copied.');
+    } catch {
+      this.error.set('Could not copy the invitation link. Select and copy it manually.');
+    }
   }
 
   async loadModerationHistory(): Promise<void> {
