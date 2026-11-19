@@ -660,7 +660,7 @@ final readonly class AdminServices implements IAdminServices
     private function getAdminCategories(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'admin.view');
+        $context = $this->platformContext($actionData, 'categories.manage');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getAdminCategories');
         }
@@ -707,9 +707,9 @@ final readonly class AdminServices implements IAdminServices
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $permissionCode = match ($operation) {
-            'create' => 'admin.create',
-            'update' => 'admin.update',
-            'delete' => 'admin.delete',
+            'create' => 'categories.manage',
+            'update' => 'categories.manage',
+            'delete' => 'categories.manage',
             default => '',
         };
         $context = $this->platformContext($actionData, $permissionCode);
@@ -806,7 +806,7 @@ final readonly class AdminServices implements IAdminServices
     private function getModerationQueue(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'admin.view');
+        $context = $this->platformContext($actionData, 'moderation.manage');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getModerationQueue');
         }
@@ -830,7 +830,7 @@ final readonly class AdminServices implements IAdminServices
     private function getModerationHistory(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'admin.view');
+        $context = $this->platformContext($actionData, 'moderation.manage');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getModerationHistory');
         }
@@ -854,7 +854,7 @@ final readonly class AdminServices implements IAdminServices
     private function manageModerationAction(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'admin.update');
+        $context = $this->platformContext($actionData, 'moderation.manage');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::manageModerationAction');
         }
@@ -923,7 +923,7 @@ final readonly class AdminServices implements IAdminServices
     private function getSafeSystemHealth(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $context = $this->platformContext($actionData, 'admin.view');
+        $context = $this->platformContext($actionData, 'system.health.view');
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'AdminServices::getSafeSystemHealth');
         }
@@ -952,8 +952,13 @@ final readonly class AdminServices implements IAdminServices
         }
         // Map service-level capability names to the platform RBAC seed codes.
         $platformPermissionCode = match ($permissionCode) {
+            'user.view', 'user.update' => 'PLATFORM_USERS_MANAGE',
             'business.view', 'business.approve' => 'BUSINESS_APPROVE',
             'subscription.view', 'subscription.update', 'subscription.approve' => 'SUBSCRIPTIONS_APPROVE',
+            'categories.manage' => 'CATEGORIES_MANAGE',
+            'report.view' => 'ANALYTICS_VIEW',
+            'moderation.manage' => 'MODERATION_MANAGE',
+            'system.health.view' => 'SYSTEM_HEALTH_VIEW',
             default => $permissionCode,
         };
         $permission = $this->dao->hasPlatformPermission(
