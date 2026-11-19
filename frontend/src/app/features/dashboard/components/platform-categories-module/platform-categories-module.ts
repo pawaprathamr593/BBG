@@ -47,7 +47,11 @@ export class PlatformCategoriesModule {
     this.error.set('');this.drawerOpen.set(true);
   }
   updateField(field:keyof CategoryForm,value:string):void{
-    this.form.update(form=>({...form,[field]:value}) as CategoryForm);
+    this.form.update(form=>({
+      ...form,
+      [field]:value,
+      ...(field === 'category_type' && value !== form.category_type ? { parent_category_id: '' } : {}),
+    }) as CategoryForm);
   }
   async save():Promise<void>{
     const form=this.form(),id=this.editingId();
@@ -88,11 +92,16 @@ export class PlatformCategoriesModule {
   parentCategories(): CategoryRecord[] {
     const currentId = this.editingId();
     const type = this.form().category_type;
-    return this.categories().filter((category) => {
+    const categories = this.categories().filter((category) => {
       const id = Number(category['category_id'] ?? category['id'] ?? 0);
       return id > 0 && id !== currentId
         && String(category['category_type'] ?? 'BUSINESS').toUpperCase() === type;
     });
+    const selectedId = Number(this.form().parent_category_id);
+    if (selectedId > 0 && !categories.some((category) => this.categoryId(category) === selectedId)) {
+      return [{ category_id: selectedId, category_name: 'Current parent category', category_type: type }, ...categories];
+    }
+    return categories;
   }
   categoryId(category:CategoryRecord):number{return Number(category['category_id']??category['id']??0);}
   name(category:CategoryRecord):string{return String(category['category_name']??'Unnamed category');}
