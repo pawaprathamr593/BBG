@@ -59,6 +59,7 @@ jobs:
           mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261113_001_public_marketplace_engagement.sql
           mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261113_002_social_identity_mapping.sql
           mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261113_003_public_product_discovery_support.sql
+          mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261119_001_business_profile_coordinate_precision.sql
           mysql --protocol=tcp -h 127.0.0.1 -uroot bbg -e "
             CREATE TABLE TENANT_SUBSCRIPTIONS (
               id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -94,6 +95,8 @@ jobs:
           test "$count" -eq 28
           generated=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='bbg' AND extra LIKE '%STORED GENERATED%' AND table_name IN ('CARTS','CART_ITEMS')")
           test "$generated" -eq 4
+          coordinate_columns=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='bbg' AND table_name='BUSINESS_PROFILES' AND column_name IN ('latitude','longitude') AND data_type='double' AND numeric_precision=10 AND numeric_scale=7")
+          test "$coordinate_columns" -eq 2
           upgrade_column=$(mysql --protocol=tcp -N -h 127.0.0.1 -uroot bbg -e "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='bbg' AND table_name='TENANT_SUBSCRIPTIONS' AND column_name='upgrade_from_subscription_id'")
           test "$upgrade_column" -eq 1
       - name: Verify PLATFORM Consumer role seed and idempotent account assignment
