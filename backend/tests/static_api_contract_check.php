@@ -12,8 +12,8 @@ if ($routes === false) {
 
 preg_match_all("~Route::post\\('(/api/v1/[^']+)'\\)~", $routes, $routeMatches);
 $routePaths = $routeMatches[1] ?? [];
-if (count($routePaths) !== 137 || count(array_unique($routePaths)) !== 137) {
-    fwrite(STDERR, 'Expected 137 unique POST API routes; found ' . count($routePaths) . ".\n");
+if (count($routePaths) !== 139 || count(array_unique($routePaths)) !== 139) {
+    fwrite(STDERR, 'Expected 139 unique POST API routes; found ' . count($routePaths) . ".\n");
     exit(1);
 }
 
@@ -192,4 +192,22 @@ if (in_array(false, $socialAuthContracts, true)) {
     exit(1);
 }
 
-echo "Static API contract checks passed: 137 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, social authentication, marketplace discovery and subscription proof S3 flow.\\n";
+$adminController = file_get_contents($root . '/src/Modules/Api/V1/Controllers/AdminController.php');
+$adminService = file_get_contents($root . '/src/Services/Implementations/AdminServices.php');
+$adminDao = file_get_contents($root . '/src/Dao/AdminDao.php');
+if (
+    $adminController === false
+    || $adminService === false
+    || $adminDao === false
+    || !str_contains($routes, '/api/v1/admin/businesses/approve-with-subscription')
+    || !str_contains($adminController, "'/api/v1/admin/businesses/approve-with-subscription' => 'approveBusinessWithSubscription'")
+    || !str_contains($adminService, "case 'approveBusinessWithSubscription':")
+    || !str_contains($adminService, 'private function manageBusinessAndSubscriptionApproval')
+    || !str_contains($adminService, '$businessApproval !== null')
+    || !str_contains($adminDao, 'public function setBusinessApproval')
+) {
+    fwrite(STDERR, "Atomic business and subscription approval contract is incomplete.\\n");
+    exit(1);
+}
+
+echo "Static API contract checks passed: 139 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, social authentication, marketplace discovery, subscription proof S3 flow and atomic business approval.\\n";
