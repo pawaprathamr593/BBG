@@ -1,9 +1,10 @@
-import { HttpClient, HttpEventType, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { filter, firstValueFrom, lastValueFrom, tap } from 'rxjs';
+import { filter, firstValueFrom } from 'rxjs';
 import { API_BASE_URL } from '../../core/config/api-base-url';
+import { S3UploadService } from '../../core/storage/s3-upload.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
 import { hasActiveEntitlement, hasWorkspacePermission } from '../../core/workspace/workspace-access';
@@ -60,6 +61,7 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
 export class DashboardModule implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
+  private readonly s3Upload = inject(S3UploadService);
   private readonly apiBaseUrl = inject(API_BASE_URL);
   private readonly auth = inject(AuthService);
   private readonly workspace = inject(WorkspaceContextService);
@@ -855,17 +857,7 @@ export class DashboardModule implements OnInit {
           },
         );
         this.promotionUploadProgress.set(0);
-        await lastValueFrom(this.http.put(upload.upload_url,file,{
-          headers:new HttpHeaders(upload.headers ?? {'Content-Type':file.type}),
-          observe:'events',reportProgress:true,responseType:'text',
-        }).pipe(
-          tap((event) => {
-            if (event.type === HttpEventType.UploadProgress && event.total) {
-              this.promotionUploadProgress.set(Math.round((event.loaded / event.total) * 100));
-            }
-          }),
-          filter((event) => event.type === HttpEventType.Response),
-        ));
+        await this.s3Upload.upload(upload.upload_url, file, upload.headers ?? { 'Content-Type': file.type }, (progress) => this.promotionUploadProgress.set(progress));
         const mediaType = file.type.startsWith('image/') ? 'IMAGE' : file.type.startsWith('video/') ? 'VIDEO'
           : file.type.startsWith('audio/') ? 'AUDIO' : 'DOCUMENT';
         await this.request('/api/v1/promotions/media/link','promotionParam','linkPromotionMedia',{
@@ -1187,9 +1179,7 @@ export class DashboardModule implements OnInit {
           original_file_name:file.name,mime_type:file.type,file_size_bytes:file.size,
         },
       );
-      await firstValueFrom(this.http.put(upload.upload_url,file,{
-        headers:new HttpHeaders(upload.headers ?? {'Content-Type':file.type}),responseType:'text',
-      }));
+      await this.s3Upload.upload(upload.upload_url, file, upload.headers ?? { 'Content-Type': file.type });
       await this.request('/api/v1/admin/subscriptions/payment-qr/save','adminParam','savePaymentQrConfig',{
         payee_name:this.qrPayeeName().trim(),upi_id:this.qrUpiId().trim(),
         payment_instructions:this.qrInstructions().trim(),qr_file_path:upload.object_key,
@@ -1251,9 +1241,7 @@ export class DashboardModule implements OnInit {
           tenant_id:tenantId,subscription_id:subscriptionId,original_file_name:file.name,mime_type:file.type,file_size_bytes:file.size,
         },
       );
-      await firstValueFrom(this.http.put(upload.upload_url,file,{
-        headers:new HttpHeaders(upload.headers ?? {'Content-Type':file.type}),responseType:'text',
-      }));
+      await this.s3Upload.upload(upload.upload_url, file, upload.headers ?? { 'Content-Type': file.type });
       this.proofDrafts.update((drafts) => ({...drafts,[subscriptionId]:{
         objectKey:upload.object_key,paymentReference:this.proofPaymentReference().trim(),fileName:file.name,
       }}));
