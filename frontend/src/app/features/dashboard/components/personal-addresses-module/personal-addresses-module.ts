@@ -14,6 +14,8 @@ export class PersonalAddressesModule {
  readonly drawerOpen=signal(false);readonly editingId=signal<number|null>(null);readonly form=signal<AddressForm>(emptyForm());
  readonly busy=signal(false);readonly error=signal('');readonly notice=signal('');
  private readonly auth=inject(AuthService);private readonly api=inject(WorkspaceModuleApiService);
+ private readonly destroyRef=inject(DestroyRef);private alive=true;
+ constructor(){this.destroyRef.onDestroy(()=>{this.alive=false;});}
  create():void{if(!this.canManage()||this.busy())return;this.editingId.set(null);this.form.set(emptyForm());this.error.set('');this.drawerOpen.set(true);}
  edit(address:Address):void{
   if(!this.canManage()||this.busy())return;const id=Number(address['address_id']??address['id']??0);if(!id)return;
@@ -43,13 +45,13 @@ export class PersonalAddressesModule {
   const id=Number(address['address_id']??address['id']??0);if(!id||!this.canManage()||this.busy())return;
   this.busy.set(true);this.error.set('');
   try{await this.api.request('/api/v1/customers/addresses/default','setDefaultAddress',{address_id:id},'customerParam');if(!this.alive)return;this.notice.set('Default address updated.');this.refreshRequested.emit();}
-  catch(error){this.error.set(this.auth.errorMessage(error));}finally{if(this.alive)this.busy.set(false);}
+  catch(error){if(this.alive)this.error.set(this.auth.errorMessage(error));}finally{if(this.alive)this.busy.set(false);}
  }
  async remove(address:Address):Promise<void>{
   const id=Number(address['address_id']??address['id']??0);if(!id||!this.canManage()||this.busy())return;
   if(!window.confirm('Delete this saved address?'))return;this.busy.set(true);this.error.set('');
   try{await this.api.request('/api/v1/customers/addresses/delete','deleteMyAddress',{address_id:id},'customerParam');if(!this.alive)return;this.notice.set('Address deleted.');this.refreshRequested.emit();}
-  catch(error){this.error.set(this.auth.errorMessage(error));}finally{this.busy.set(false);}
+  catch(error){this.error.set(this.auth.errorMessage(error));}finally{if(this.alive)this.busy.set(false);}
  }
  label(address:Address):string{return String(address['address_label']??'Address');}
  value(address:Address,key:string):string{return String(address[key]??'').trim();}

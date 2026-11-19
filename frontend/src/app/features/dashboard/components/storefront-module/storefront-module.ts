@@ -67,8 +67,8 @@ export class StorefrontModule {
       await this.api.request(publish?'/api/v1/business/storefront/publish':'/api/v1/business/storefront/unpublish',
         publish?'publishMyStorefront':'unpublishMyStorefront',{tenant_id:tenantId});
       this.refreshRequested.emit();
-    }catch(error){this.error.set(this.auth.errorMessage(error));}
-    finally{this.saving.set(false);}
+    }catch(error){if(this.alive)this.error.set(this.auth.errorMessage(error));}
+    finally{if(this.alive)this.saving.set(false);}
   }
   display(value:unknown,boolean=false):string{return boolean?(value===true||Number(value)===1?'Enabled':'Disabled'):(value===null||value===undefined||value===''?'Not provided':String(value));}
   status():string{return String(this.storefront()['publication_status']??'Not published');}

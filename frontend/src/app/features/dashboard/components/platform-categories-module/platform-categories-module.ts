@@ -70,7 +70,7 @@ export class PlatformCategoriesModule {
       this.notice.set(id===null?'Category created.':'Category updated.');
       if(!this.alive)return;
       this.drawerOpen.set(false);this.refreshRequested.emit();
-    }catch(error){this.error.set(this.auth.errorMessage(error));}
+    }catch(error){if(this.alive)this.error.set(this.auth.errorMessage(error));}
     finally{if(this.alive)this.busy.set(false);}
   }
   async remove(category:CategoryRecord):Promise<void>{
