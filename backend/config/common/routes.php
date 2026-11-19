@@ -70,6 +70,11 @@ return [
     Route::post('/api/v1/tenants/mine/list')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/mine/list'),
     Route::post('/api/v1/tenants/mine/detail')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/mine/detail'),
     Route::post('/api/v1/tenants/members/list')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/members/list'),
+    Route::post('/api/v1/tenants/members/owner-list')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/members/owner-list'),
+    Route::post('/api/v1/tenants/members/search')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/members/search'),
+    Route::post('/api/v1/tenants/members/add')->action([TenantController::class, 'actionManageTenant'])->name('api/v1/tenants/members/add'),
+    Route::post('/api/v1/tenants/invitations/create')->action([TenantController::class, 'actionManageTenant'])->name('api/v1/tenants/invitations/create'),
+    Route::post('/api/v1/tenants/invitations/accept')->action([TenantController::class, 'actionManageTenant'])->name('api/v1/tenants/invitations/accept'),
 
     Route::post('/api/v1/business/application/submit')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/application/submit'),
     Route::post('/api/v1/business/application/draft/save')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/application/draft/save'),
