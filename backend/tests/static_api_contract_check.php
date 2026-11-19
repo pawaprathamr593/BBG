@@ -12,8 +12,8 @@ if ($routes === false) {
 
 preg_match_all("~Route::post\\('(/api/v1/[^']+)'\\)~", $routes, $routeMatches);
 $routePaths = $routeMatches[1] ?? [];
-if (count($routePaths) !== 151 || count(array_unique($routePaths)) !== 151) {
-    fwrite(STDERR, 'Expected 151 unique POST API routes; found ' . count($routePaths) . ".\n");
+if (count($routePaths) !== 155 || count(array_unique($routePaths)) !== 155) {
+    fwrite(STDERR, 'Expected 155 unique POST API routes; found ' . count($routePaths) . ".\n");
     exit(1);
 }
 
@@ -178,6 +178,12 @@ if (in_array(false, $postMediaContracts, true)) {
 
 
 $onboardingContracts = [
+    str_contains($routes, '/api/v1/business/storefront/owner/get')
+        && str_contains($routes, '/api/v1/business/storefront/owner/update')
+        && str_contains($routes, '/api/v1/business/storefront/owner/publish')
+        && str_contains($routes, '/api/v1/business/storefront/owner/unpublish')
+        && str_contains(file_get_contents($root . '/src/Services/Implementations/BusinessServices.php'), 'getOwnedStorefront')
+        && str_contains(file_get_contents($root . '/src/Services/Implementations/BusinessServices.php'), 'ownerScoped'),
     str_contains($routes, '/api/v1/business/application/list')
         && str_contains($routes, '/api/v1/business/application/draft/save')
         && str_contains($routes, '/api/v1/subscriptions/application/request')
@@ -222,4 +228,4 @@ if (in_array(false, $socialAuthContracts, true)) {
     exit(1);
 }
 
-echo "Static API contract checks passed: 151 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, social authentication, marketplace discovery and subscription proof S3 flow.\\n";
+echo "Static API contract checks passed: 155 unique POST routes, 15 route-bound controllers, 15 actionType dispatchers, social authentication, marketplace discovery and subscription proof S3 flow.\\n";
