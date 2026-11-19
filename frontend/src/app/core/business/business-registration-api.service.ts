@@ -20,6 +20,8 @@ export interface BusinessApplication {
   state: string;
   postal_code: string;
   country_code: string;
+  latitude: number | null;
+  longitude: number | null;
   approval_status: 'PENDING' | 'APPROVED' | 'REJECTED' | string;
   approved_on: string | null;
   rejection_reason: string | null;
@@ -48,6 +50,8 @@ export interface BusinessApplicationPayload {
   state: string;
   postal_code: string;
   country_code: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -58,6 +62,18 @@ export class BusinessRegistrationApiService {
 
   private get headers(): HttpHeaders {
     return new HttpHeaders({ Authorization: `Bearer ${this.auth.accessToken() ?? ''}` });
+  }
+
+  async getMyApplications(): Promise<BusinessApplication[]> {
+    const response = await firstValueFrom(this.http.post<BusinessApiResponse<BusinessApplication[]>>(
+      `${this.apiBaseUrl}/api/v1/business/applications/mine/list`,
+      { businessParam: { actionData: {} } },
+      { headers: this.headers },
+    ));
+    if (response.status !== 'SUCCESS' || !Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to load your businesses.');
+    }
+    return response.data;
   }
 
   async getMyApplication(tenantId = 0): Promise<BusinessApplication | null> {
