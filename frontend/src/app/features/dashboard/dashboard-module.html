@@ -8,12 +8,6 @@
           @if (section() === 'customers' && !activeTenantId() && can('user.update')) {
             <button class="secondary-action" type="button" (click)="createAddress()" [disabled]="busy()">+ Add address</button>
           }
-          @if (section() === 'categories' && can('admin.create')) { <button class="secondary-action" type="button" (click)="createCategory()" [disabled]="busy()">+ New category</button> }
-          @if (section() === 'moderation' && can('admin.view')) {
-            <button class="secondary-action" type="button" (click)="loadModerationHistory()" [disabled]="moderationHistoryLoading()">
-              {{ moderationHistoryLoading() ? 'Loading history…' : 'View moderation history' }}
-            </button>
-          }
           <button class="refresh" type="button" (click)="load()" [disabled]="loading()">↻ Refresh</button>
         </div>
       </header>
@@ -71,13 +65,16 @@
           />
         }
 
+        @if (section() === 'categories') {
+          <app-platform-categories-module [categories]="items()" [canCreate]="can('admin.create')" [canUpdate]="can('admin.update')" [canDelete]="can('admin.delete')" (refreshRequested)="load()" />
+        }
         @if (section() === 'platform-analytics' && analyticsTrends().length) {
           <app-platform-analytics-module [points]="analyticsTrends()" />
         }
         @if (section() === 'moderation' && moderationHistoryItems().length) {
           <app-moderation-history-module [items]="moderationHistoryItems()" />
         }
-        @if (filteredItems().length || totalItems() > 0) {
+        @if (section() !== 'categories' && (filteredItems().length || totalItems() > 0)) {
           <app-workspace-records-module
             [heading]="recordsHeading()"
             [cards]="recordCardModels()"
@@ -193,22 +190,7 @@
         </form>
       </app-workspace-drawer>
 
-      <app-workspace-drawer [open]="showCategoryDrawer()" [title]="editingCategoryId() === null ? 'Create marketplace category' : 'Edit marketplace category'" description="Maintain the category taxonomy used by marketplace listings." (closed)="showCategoryDrawer.set(false)">
-        <form class="workspace-edit-form" (submit)="$event.preventDefault(); saveCategory()">
-          <div class="workspace-edit-grid">
-            <label>Category code<input [value]="categoryForm().category_code" (input)="updateCategoryField('category_code',$event)" maxlength="80" required></label>
-            <label>Category name<input [value]="categoryForm().category_name" (input)="updateCategoryField('category_name',$event)" maxlength="150" required></label>
-            <label>Category type<select [value]="categoryForm().category_type" (change)="updateCategoryField('category_type',$event)"><option value="BUSINESS">Business</option><option value="PRODUCT">Product</option></select></label>
-            <label>Parent category ID<input type="number" min="1" [value]="categoryForm().parent_category_id" (input)="updateCategoryField('parent_category_id',$event)"></label>
-            <label>Display order<input type="number" min="0" step="1" [value]="categoryForm().display_order" (input)="updateCategoryField('display_order',$event)"></label>
-            <label class="full">Description<textarea rows="4" [value]="categoryForm().description" (input)="updateCategoryField('description',$event)"></textarea></label>
-          </div>
-          @if (error()) { <p class="workspace-edit-error" role="alert">{{ error() }}</p> }
-          <footer><button type="button" class="refresh" (click)="showCategoryDrawer.set(false)" [disabled]="busy()">Cancel</button><button type="submit" class="secondary-action" [disabled]="busy() || !categoryForm().category_code.trim() || !categoryForm().category_name.trim()">{{ busy() ? 'Saving…' : (editingCategoryId() === null ? 'Create category' : 'Save category') }}</button></footer>
-        </form>
-      </app-workspace-drawer>
-
-      <app-workspace-drawer [open]="showReplyDrawer()" title="Reply to enquiry" description="Send a response to the customer through this enquiry thread." (closed)="showReplyDrawer.set(false)">
+<app-workspace-drawer [open]="showReplyDrawer()" title="Reply to enquiry" description="Send a response to the customer through this enquiry thread." (closed)="showReplyDrawer.set(false)">
         <form class="workspace-edit-form" (submit)="$event.preventDefault(); saveEnquiryReply()">
           <label class="workspace-message-label">Your reply<textarea rows="7" maxlength="5000" [value]="replyMessage()" (input)="replyMessage.set(inputValue($event))" required placeholder="Write your response…"></textarea></label>
           @if (error()) { <p class="workspace-edit-error" role="alert">{{ error() }}</p> }

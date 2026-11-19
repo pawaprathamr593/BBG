@@ -18,6 +18,7 @@ import { PlatformAnalyticsModule } from './components/platform-analytics-module/
 import { ModerationHistoryModule, ModerationHistoryItem } from './components/moderation-history-module/moderation-history-module';
 import { WorkspaceSummaryModule, WorkspaceSummaryItem } from './components/workspace-summary-module/workspace-summary-module';
 import { PaymentQrSettingsModule } from './components/payment-qr-settings-module/payment-qr-settings-module';
+import { PlatformCategoriesModule } from './components/platform-categories-module/platform-categories-module';
 
 type EnvelopeKey = 'authParam' | 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam' | 'tenantParam' | 'dashboardParam';
 interface ApiEnvelope<T = unknown> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION'; msgArr?: string[]; data?: T | []; }
@@ -30,10 +31,6 @@ interface AddressForm {
   recipient_name: string; mobile: string; address_line_1: string; address_line_2: string;
   city: string; state: string; postal_code: string; country_code: string; address_label: string;
   is_default: boolean;
-}
-interface CategoryForm {
-  category_code: string; category_name: string; category_type: 'BUSINESS' | 'PRODUCT';
-  description: string; parent_category_id: string; display_order: string;
 }
 type DecisionKind = 'reject-business' | 'approve-subscription' | 'reject-subscription' | 'moderate';
 class StaleWorkspaceRequestError extends Error {}
@@ -57,15 +54,13 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
   'approve-subscription': 'subscription.approve',
   'reject-subscription': 'subscription.approve',
   moderate: 'admin.update',
-  'edit-category': 'admin.update',
-  'delete-category': 'admin.delete',
 };
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-dashboard-module',
   standalone: true,
-  imports: [WorkspaceDrawer, BusinessProfileModule, StorefrontModule, WorkspaceRecordsModule, PersonalAccountModule, SubscriptionPlansModule, PromotionComposerModule, PlatformAnalyticsModule, ModerationHistoryModule, WorkspaceSummaryModule, PaymentQrSettingsModule],
+  imports: [WorkspaceDrawer, BusinessProfileModule, StorefrontModule, WorkspaceRecordsModule, PersonalAccountModule, SubscriptionPlansModule, PromotionComposerModule, PlatformAnalyticsModule, ModerationHistoryModule, WorkspaceSummaryModule, PaymentQrSettingsModule, PlatformCategoriesModule],
   templateUrl: './dashboard-module.html',
   styleUrl: './dashboard-module.scss',
 })
@@ -132,12 +127,6 @@ export class DashboardModule implements OnInit {
   readonly addressForm = signal<AddressForm>({
     recipient_name: '', mobile: '', address_line_1: '', address_line_2: '', city: '', state: '',
     postal_code: '', country_code: 'IN', address_label: 'Home', is_default: false,
-  });
-  readonly showCategoryDrawer = signal(false);
-  readonly editingCategoryId = signal<number | null>(null);
-  readonly categoryForm = signal<CategoryForm>({
-    category_code: '', category_name: '', category_type: 'BUSINESS', description: '',
-    parent_category_id: '', display_order: '0',
   });
   readonly showReplyDrawer = signal(false);
   readonly showPaymentQrDrawer = signal(false);
@@ -655,7 +644,6 @@ export class DashboardModule implements OnInit {
     if (this.section()==='subscription-approval' && status==='PENDING') return [{key:'approve-subscription',label:'Approve'},{key:'reject-subscription',label:'Reject',danger:true}];
     if (this.section()==='subscriptions' && ['ACTIVE','EXPIRED'].includes(status)) return [{key:'renew-subscription',label:'Renew subscription'}];
     if (this.section()==='moderation' && status==='OPEN') return [{key:'moderate',label:'Review report'}];
-    if (this.section()==='categories') return [{key:'edit-category',label:'Edit category'},{key:'delete-category',label:'Delete category',danger:true}];
     return [];
   }
 
@@ -702,12 +690,6 @@ export class DashboardModule implements OnInit {
         if (remove && !window.confirm('Delete this saved address?')) return;
         path=remove?'/api/v1/customers/addresses/delete':'/api/v1/customers/addresses/default'; key='customerParam'; actionType=remove?'deleteMyAddress':'setDefaultAddress'; data={address_id:Number(item['address_id'] ?? item['id'])}; break;
       }
-      case 'edit-category':
-        this.editCategory(item);
-        return;
-      case 'delete-category':
-        if (!window.confirm('Soft-delete this category? Categories referenced by active businesses or products cannot be deleted.')) return;
-        path='/api/v1/admin/categories/delete'; actionType='deleteCategory'; data={category_id:id}; break;
       case 'moderate':
         this.openDecisionDrawer('moderate', item);
         return;
@@ -1045,69 +1027,6 @@ export class DashboardModule implements OnInit {
     } finally {
       this.busy.set(false);
     }
-  }
-
-  createCategory(): void {
-    if (!this.can('admin.create')) return;
-    this.editingCategoryId.set(null);
-    this.categoryForm.set({
-      category_code: '', category_name: '', category_type: 'BUSINESS', description: '',
-      parent_category_id: '', display_order: '0',
-    });
-    this.error.set('');
-    this.showCategoryDrawer.set(true);
-  }
-
-  editCategory(item: DataRecord): void {
-    if (!this.can('admin.update')) return;
-    const categoryId = Number(item['category_id'] ?? item['id'] ?? 0);
-    if (!categoryId) return;
-    this.editingCategoryId.set(categoryId);
-    this.categoryForm.set({
-      category_code: String(item['category_code'] ?? ''),
-      category_name: String(item['category_name'] ?? ''),
-      category_type: String(item['category_type'] ?? 'BUSINESS').toUpperCase() === 'PRODUCT' ? 'PRODUCT' : 'BUSINESS',
-      description: String(item['description'] ?? ''),
-      parent_category_id: item['parent_category_id'] == null ? '' : String(item['parent_category_id']),
-      display_order: String(item['display_order'] ?? 0),
-    });
-    this.error.set('');
-    this.showCategoryDrawer.set(true);
-  }
-
-  updateCategoryField(field: keyof CategoryForm, event: Event): void {
-    const value = (event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value;
-    this.categoryForm.update((form) => ({ ...form, [field]: value }) as CategoryForm);
-  }
-
-  async saveCategory(): Promise<void> {
-    const form = this.categoryForm();
-    const categoryId = this.editingCategoryId();
-    const parentId = form.parent_category_id.trim() ? Number(form.parent_category_id) : null;
-    const displayOrder = Number(form.display_order);
-    if (!form.category_code.trim() || !form.category_name.trim()) {
-      this.error.set('Category code and name are required.');
-      return;
-    }
-    if ((parentId !== null && (!Number.isInteger(parentId) || parentId < 1 || parentId === categoryId))
-      || !Number.isInteger(displayOrder) || displayOrder < 0) {
-      this.error.set('Enter a valid parent category ID and a non-negative display order.');
-      return;
-    }
-    const payload = {
-      category_code: form.category_code.trim().toUpperCase(),
-      category_name: form.category_name.trim(),
-      category_type: form.category_type,
-      description: form.description.trim(),
-      parent_category_id: parentId,
-      display_order: displayOrder,
-    };
-    const saved = categoryId === null
-      ? await this.performAction('/api/v1/admin/categories/create', 'adminParam', 'createCategory', payload)
-      : await this.performAction('/api/v1/admin/categories/update', 'adminParam', 'updateCategory', {
-        category_id: categoryId, ...payload,
-      });
-    if (saved) this.showCategoryDrawer.set(false);
   }
 
   async saveEnquiryReply(): Promise<void> {
