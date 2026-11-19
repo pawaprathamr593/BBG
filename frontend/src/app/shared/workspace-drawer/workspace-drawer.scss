@@ -1,5 +1,5 @@
 :host{display:contents}
-.workspace-drawer-backdrop{position:fixed;inset:0;z-index:1190;background:rgba(15,23,42,.42);backdrop-filter:blur(2px)}
+.workspace-drawer-backdrop{position:fixed;inset:0;z-index:1190;background:rgba(15,23,42,.42);}
 .workspace-drawer{position:fixed;z-index:1191;inset-block:0;inset-inline-end:0;display:flex;width:min(600px,100%);max-width:100%;flex-direction:column;overflow:hidden;background:var(--surface-card);color:var(--text-primary);border-inline-start:1px solid var(--border);box-shadow:-18px 0 55px rgba(0,0,0,.18);outline:none;animation:workspace-drawer-in .2s ease-out}
 .workspace-drawer-compact{width:clamp(18rem,17.2vw,24rem)}
 .workspace-drawer-offset{inset-block-start:var(--bbg-header-height,76px)}
