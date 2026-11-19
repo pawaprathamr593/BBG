@@ -703,7 +703,12 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         $productIds = array_map(static fn (array $item): int => (int) $item['id'], $items);
         $mediaResult = $this->dao->getPublicProductMediaForProducts($this->db, $productIds);
         if ($mediaResult['status'] !== 'SUCCESS') {
-            throw new RuntimeException('Unable to load public product media.');
+            foreach ($items as &$item) {
+                $item['media'] = [];
+                $item['primary_image_url'] = null;
+            }
+            unset($item);
+            return $items;
         }
 
         $mediaByProduct = [];
