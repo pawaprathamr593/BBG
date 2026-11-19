@@ -39,3 +39,20 @@ SET @longitude_sql = IF(
 PREPARE longitude_statement FROM @longitude_sql;
 EXECUTE longitude_statement;
 DEALLOCATE PREPARE longitude_statement;
+
+SET @accuracy_column_exists = (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'BUSINESS_PROFILES'
+      AND COLUMN_NAME = 'location_accuracy_m'
+);
+
+SET @accuracy_sql = IF(
+    @accuracy_column_exists = 0,
+    'ALTER TABLE BUSINESS_PROFILES ADD COLUMN location_accuracy_m DECIMAL(10,2) NULL',
+    'ALTER TABLE BUSINESS_PROFILES MODIFY COLUMN location_accuracy_m DECIMAL(10,2) NULL'
+);
+PREPARE accuracy_statement FROM @accuracy_sql;
+EXECUTE accuracy_statement;
+DEALLOCATE PREPARE accuracy_statement;
