@@ -42,6 +42,7 @@ final class BusinessController
         $path = $request->getUri()->getPath();
         $getActions = [
             '/api/v1/business/application/get' => 'getMyBusinessApplication',
+            '/api/v1/business/application/list' => 'listMyBusinessApplications',
             '/api/v1/business/profile/get' => 'getMyBusinessProfile',
             '/api/v1/business/verification/get' => 'getBusinessVerification',
             '/api/v1/business/storefront/get' => 'getMyStorefront',
