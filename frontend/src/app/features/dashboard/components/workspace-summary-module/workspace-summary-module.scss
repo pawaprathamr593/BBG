@@ -1,0 +1,7 @@
+:host{display:block}
+.summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 22px}
+.summary-card{display:grid;min-width:0;gap:8px;padding:17px 18px;background:var(--surface-card);border:1px solid var(--border);border-radius:12px}
+.summary-card span{color:var(--text-secondary);font-size:.7rem;font-weight:700}
+.summary-card strong{overflow-wrap:anywhere;font-size:1.05rem;letter-spacing:-.02em}
+@media(max-width:900px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.summary-grid{gap:8px}.summary-card{padding:13px}.summary-card strong{font-size:.9rem}}

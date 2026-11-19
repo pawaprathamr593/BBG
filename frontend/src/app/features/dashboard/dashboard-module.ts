@@ -16,6 +16,8 @@ import { SubscriptionPlansModule } from './components/subscription-plans-module/
 import { PromotionComposerModule } from './components/promotion-composer-module/promotion-composer-module';
 import { PlatformAnalyticsModule } from './components/platform-analytics-module/platform-analytics-module';
 import { ModerationHistoryModule, ModerationHistoryItem } from './components/moderation-history-module/moderation-history-module';
+import { WorkspaceSummaryModule, WorkspaceSummaryItem } from './components/workspace-summary-module/workspace-summary-module';
+import { PaymentQrSettingsModule } from './components/payment-qr-settings-module/payment-qr-settings-module';
 
 type EnvelopeKey = 'authParam' | 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam' | 'tenantParam' | 'dashboardParam';
 interface ApiEnvelope<T = unknown> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION'; msgArr?: string[]; data?: T | []; }
@@ -72,7 +74,7 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-dashboard-module',
   standalone: true,
-  imports: [WorkspaceDrawer, BusinessProfileModule, StorefrontModule, WorkspaceRecordsModule, PersonalAccountModule, SubscriptionPlansModule, PromotionComposerModule, PlatformAnalyticsModule, ModerationHistoryModule],
+  imports: [WorkspaceDrawer, BusinessProfileModule, StorefrontModule, WorkspaceRecordsModule, PersonalAccountModule, SubscriptionPlansModule, PromotionComposerModule, PlatformAnalyticsModule, ModerationHistoryModule, WorkspaceSummaryModule, PaymentQrSettingsModule],
   templateUrl: './dashboard-module.html',
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
@@ -193,6 +195,9 @@ export class DashboardModule implements OnInit {
     });
   });
   readonly summary = signal<DataRecord | null>(null);
+  readonly summaryCardModels = computed<WorkspaceSummaryItem[]>(() => this.summaryEntries().map((entry) => ({
+    key: entry.key, label: this.humanize(entry.key), value: this.formatValue(entry.value),
+  })));
   readonly storefrontDetails = computed(() => {
     const value = this.summary()?.['storefront'];
     return value && typeof value === 'object' && !Array.isArray(value) ? value as DataRecord : null;
