@@ -22,8 +22,66 @@
                   <strong>{{ application.business_name }}</strong>
                   <small>{{ application.business_slug }} · {{ application.tenant_status }}</small>
                 </div>
-                <span class="status">{{ application.approval_status }}</span>
+                <div class="application-actions">
+                  <span class="status">{{ application.approval_status }}</span>
+                  <button type="button" (click)="selectBusiness(application)" [disabled]="paymentBusy()">Continue</button>
+                </div>
               </article>
+            }
+          </section>
+        }
+        @if (selectedBusiness(); as selected) {
+          <section class="onboarding-panel" aria-labelledby="onboarding-heading">
+            <div class="onboarding-heading">
+              <div><p class="eyebrow">APPLICATION NEXT STEPS</p><h2 id="onboarding-heading">{{ selected.business_name }}</h2></div>
+              <span class="status">{{ selected.approval_status }}</span>
+            </div>
+            @if (paymentBusy()) { <p class="step-note" role="status">Loading your onboarding details…</p> }
+            @if (plans().length > 0) {
+              <h3>Choose a subscription plan</h3>
+              <div class="plan-list">
+                @for (plan of plans(); track plan.id) {
+                  <article class="plan-option">
+                    <div><strong>{{ plan.plan_name }}</strong><small>{{ plan.description || plan.billing_cycle }}</small></div>
+                    <strong>{{ plan.currency }} {{ plan.price }}</strong>
+                    <button type="button" (click)="choosePlan(plan)" [disabled]="paymentBusy()">Choose plan</button>
+                  </article>
+                }
+              </div>
+            }
+            @if (subscription(); as current) {
+              <div class="payment-panel">
+                <div class="onboarding-heading">
+                  <div><h3>{{ current.plan_name }}</h3><p class="step-note">{{ current.currency }} {{ current.amount }} · {{ current.billing_cycle }}</p></div>
+                  <span class="status">{{ current.subscription_status }}</span>
+                </div>
+                @if (current.payment_qr_url) {
+                  <div class="payment-qr"><img [src]="current.payment_qr_url" alt="BBG subscription payment QR code" /></div>
+                }
+                @if (current.payment_payee_name) { <p><strong>Payee:</strong> {{ current.payment_payee_name }}</p> }
+                @if (current.payment_upi_id) { <p><strong>UPI ID:</strong> {{ current.payment_upi_id }}</p> }
+                @if (current.payment_instructions) { <p class="step-note">{{ current.payment_instructions }}</p> }
+                @if (current.latest_proof_review_status === 'PENDING') {
+                  <p class="notice success" role="status">Your receipt has been submitted and is awaiting BBG review.</p>
+                } @else if (current.subscription_status === 'ACTIVE') {
+                  <p class="notice success" role="status">This subscription is active.</p>
+                } @else if (canSubmitProof()) {
+                  <div class="payment-upload">
+                    <label class="field"><span>Payment reference / UTR</span><input [value]="paymentReference()" (input)="paymentReference.set($any($event.target).value)" maxlength="120" placeholder="Optional transaction reference" /></label>
+                    <label class="field"><span>Upload payment receipt *</span><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" (change)="setReceiptFile($event)" /></label>
+                    @if (receiptFile(); as file) { <small>Selected: {{ file.name }}</small> }
+                    @if (uploadProgress() > 0 && uploadProgress() < 100) { <small>Uploading receipt: {{ uploadProgress() }}%</small> }
+                    <button type="button" class="submit-button" (click)="uploadAndSubmitProof()" [disabled]="paymentBusy() || !receiptFile()">
+                      {{ paymentBusy() ? 'Submitting receipt…' : 'Submit payment receipt for review' }}
+                    </button>
+                  </div>
+                } @else {
+                  <p class="step-note">A subscription request already exists. Check its review status above or refresh this business to see the latest status.</p>
+                }
+              </div>
+            }
+            @if (!paymentBusy() && plans().length === 0 && !subscription()) {
+              <p class="step-note">No active subscription plans are currently available. Your business details are saved; please try again later.</p>
             }
           </section>
         }
