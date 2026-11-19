@@ -83,39 +83,10 @@
         }
 
         @if (section() === 'platform-analytics' && analyticsTrends().length) {
-          <section class="records-section">
-            <div class="section-title"><div><p class="eyebrow">LAST 30 DAYS</p><h2>Platform trends</h2></div><span class="record-count">{{ analyticsTrends().length }} data points</span></div>
-            <div class="records-list">
-              @for (point of analyticsTrends(); track $index) {
-                <article class="record-card">
-                  <div class="record-fields">
-                    @for (entry of recordEntries(point); track entry.key) {
-                      <div><span>{{ humanize(entry.key) }}</span><strong>{{ formatValue(entry.value) }}</strong></div>
-                    }
-                  </div>
-                </article>
-              }
-            </div>
-          </section>
+          <app-platform-analytics-module [points]="analyticsTrends()" />
         }
-        @if (section() === 'moderation' && moderationHistory().length) {
-          <section class="records-section">
-            <div class="section-title"><div><p class="eyebrow">AUDIT TRAIL</p><h2>Moderation history</h2></div><span class="record-count">{{ moderationHistory().length }} records</span></div>
-            <div class="records-list">
-              @for (entry of moderationHistory(); track recordId(entry, 'history_id')) {
-                <article class="record-card">
-                  <div class="record-head"><div><strong>{{ recordTitle(entry) }}</strong><span>{{ recordSubtitle(entry) }}</span></div>
-                    @if (statusOf(entry)) { <span class="status-chip">{{ humanize(statusOf(entry)) }}</span> }
-                  </div>
-                  <div class="record-fields">
-                    @for (field of recordEntries(entry); track field.key) {
-                      <div><span>{{ humanize(field.key) }}</span><strong>{{ formatValue(field.value) }}</strong></div>
-                    }
-                  </div>
-                </article>
-              }
-            </div>
-          </section>
+        @if (section() === 'moderation' && moderationHistoryItems().length) {
+          <app-moderation-history-module [items]="moderationHistoryItems()" />
         }
         @if (filteredItems().length || totalItems() > 0) {
           <app-workspace-records-module

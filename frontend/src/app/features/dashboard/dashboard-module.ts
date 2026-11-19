@@ -14,6 +14,8 @@ import { WorkspaceRecordsModule, WorkspaceRecordCardModel } from './components/w
 import { PersonalAccountModule } from './components/personal-account-module/personal-account-module';
 import { SubscriptionPlansModule } from './components/subscription-plans-module/subscription-plans-module';
 import { PromotionComposerModule } from './components/promotion-composer-module/promotion-composer-module';
+import { PlatformAnalyticsModule } from './components/platform-analytics-module/platform-analytics-module';
+import { ModerationHistoryModule, ModerationHistoryItem } from './components/moderation-history-module/moderation-history-module';
 
 type EnvelopeKey = 'authParam' | 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam' | 'tenantParam' | 'dashboardParam';
 interface ApiEnvelope<T = unknown> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION'; msgArr?: string[]; data?: T | []; }
@@ -70,7 +72,7 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-dashboard-module',
   standalone: true,
-  imports: [WorkspaceDrawer, BusinessProfileModule, StorefrontModule, WorkspaceRecordsModule, PersonalAccountModule, SubscriptionPlansModule, PromotionComposerModule],
+  imports: [WorkspaceDrawer, BusinessProfileModule, StorefrontModule, WorkspaceRecordsModule, PersonalAccountModule, SubscriptionPlansModule, PromotionComposerModule, PlatformAnalyticsModule, ModerationHistoryModule],
   templateUrl: './dashboard-module.html',
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
@@ -253,6 +255,16 @@ export class DashboardModule implements OnInit {
   readonly moderationHistory = signal<DataRecord[]>([]);
   readonly moderationHistoryLoading = signal(false);
   readonly analyticsTrends = signal<DataRecord[]>([]);
+  readonly moderationHistoryItems = computed<ModerationHistoryItem[]>(() => this.moderationHistory().map((entry) => ({
+    id: this.recordId(entry, 'history_id'),
+    title: this.recordTitle(entry),
+    subtitle: this.recordSubtitle(entry),
+    status: this.statusOf(entry) ? this.humanize(this.statusOf(entry)) : '',
+    statusClass: this.statusClass(this.statusOf(entry)),
+    fields: this.recordEntries(entry).map((field) => ({
+      key: field.key, label: this.humanize(field.key), value: this.formatValue(field.value),
+    })),
+  })));
   readonly showPromotionComposer = signal(false);
   readonly promotionTitle = signal('');
   readonly promotionContent = signal('');
