@@ -105,7 +105,7 @@
                     [currency]="data.storefront.currency || ''"
                     [actionLabel]="product.offering_type === 'SERVICE' ? 'Contact store' : 'View details'"
                     (selected)="openProduct($event, data.business.business_slug)"
-                    (businessSelected)="openPromotionBusiness({ business_slug: $event.business.business_slug } as any)" />
+                    (businessSelected)="openBusiness($event.business.business_slug)" />
                 }
               </div>
             } @else {
