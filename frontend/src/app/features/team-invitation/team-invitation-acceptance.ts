@@ -1,16 +1,8 @@
-import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import { API_BASE_URL } from '../../core/config/api-base-url';
 import { AuthService } from '../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
-
-interface InvitationResponse {
-  status: 'SUCCESS' | 'FAILED' | 'EXCEPTION';
-  msgArr?: string[];
-  data?: { tenant_id?: number } | [];
-}
+import { TenantManagementApiService } from '../../core/tenant/tenant-management-api.service';
 
 @Component({
   selector: 'app-team-invitation-acceptance',
@@ -57,8 +49,7 @@ interface InvitationResponse {
 export class TeamInvitationAcceptance implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly http = inject(HttpClient);
-  private readonly apiBaseUrl = inject(API_BASE_URL);
+  private readonly tenantApi = inject(TenantManagementApiService);
   private readonly auth = inject(AuthService);
   private readonly workspace = inject(WorkspaceContextService);
 
@@ -88,15 +79,7 @@ export class TeamInvitationAcceptance implements OnInit {
     this.busy.set(true);
     this.error.set('');
     try {
-      const response = await firstValueFrom(this.http.post<InvitationResponse>(
-        this.apiBaseUrl + '/api/v1/tenants/invitations/accept',
-        { tenantParam: { actionData: { invitation_token: this.token } } },
-      ));
-      if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
-        throw new Error(response.msgArr?.join(' ') || 'The invitation could not be accepted.');
-      }
-      const tenantId = Number(response.data.tenant_id ?? 0);
-      if (!tenantId) throw new Error('The invitation was accepted but the workspace could not be identified.');
+      const tenantId = await this.tenantApi.acceptInvitation(this.token);
       await this.workspace.initialize();
       await this.workspace.switchWorkspace(tenantId);
       await this.router.navigate(['/dashboard']);
