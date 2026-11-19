@@ -149,7 +149,7 @@
         } @else if (recentProducts().length) {
           <div class="product-grid">
             @for (product of recentProducts(); track product.id) {
-              <app-product-card [product]="product" [showCreated]="true" [showPrice]="true" currency="₹ " actionLabel="View product" (selected)="openProduct($event)" (businessSelected)="openBusiness($event.business as any)" />
+              <app-product-card [product]="product" [showCreated]="true" [showPrice]="true" currency="₹ " actionLabel="View product" (selected)="openProduct($event)" (businessSelected)="openBusinessSlug($event)" />
             }
           </div>
           <p class="data-note">Only active products from approved, published storefronts are shown. Ordering currently uses product creation time because the product schema does not yet store a separate publication timestamp.</p>
