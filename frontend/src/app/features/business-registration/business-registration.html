@@ -6,6 +6,27 @@
         <p class="intro">Tell us about your business. After registration, you can choose a plan, complete the payment and submit your receipt for review.</p>
 
         @if (error()) { <div class="notice error" role="alert">{{ error() }}</div> }
+        @if (submission(); as saved) {
+          <div class="notice success" role="status">
+            <strong>Business application saved successfully.</strong>
+            Your application is awaiting the next onboarding step. Business ID: {{ saved.business_id }}.
+            You can safely leave this page; your business remains listed below.
+          </div>
+        }
+        @if (applications().length > 0) {
+          <section class="applications" aria-label="Your registered businesses">
+            <h2>Your businesses</h2>
+            @for (application of applications(); track application.business_id) {
+              <article class="application-item">
+                <div>
+                  <strong>{{ application.business_name }}</strong>
+                  <small>{{ application.business_slug }} · {{ application.tenant_status }}</small>
+                </div>
+                <span class="status">{{ application.approval_status }}</span>
+              </article>
+            }
+          </section>
+        }
         <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
           <div class="field-grid">
             <label class="field full"><span>Business name *</span><input formControlName="business_name" maxlength="180" placeholder="Your registered business name" (input)="updateSlug()" /><small>Use the name customers know your business by.</small></label>
@@ -15,6 +36,19 @@
             <label class="field"><span>WhatsApp number</span><input type="tel" formControlName="whatsapp_number" maxlength="25" placeholder="Optional" /></label>
             <label class="field"><span>Postal code *</span><input formControlName="postal_code" maxlength="15" placeholder="PIN code" /></label>
             <label class="field full"><span>Business description</span><textarea formControlName="business_description" rows="4" maxlength="5000" placeholder="Describe your products, services and what makes your business unique."></textarea></label>
+            <div class="field full">
+              <div class="location-tools">
+                <button type="button" (click)="getMyLocation()" [disabled]="locating()">
+                  {{ locating() ? 'Getting location…' : 'Get My Location' }}
+                </button>
+                <small>Optional. Your browser captures coordinates after you grant permission.</small>
+              </div>
+              @if (locationMessage()) { <small role="status">{{ locationMessage() }}</small> }
+              @if (locationAccuracy() !== null) { <small>Reported accuracy: approximately {{ locationAccuracy() }} metres.</small> }
+            </div>
+            <label class="field"><span>Latitude</span><input type="number" step="any" formControlName="latitude" placeholder="Captured by Get My Location" /></label>
+            <label class="field"><span>Longitude</span><input type="number" step="any" formControlName="longitude" placeholder="Captured by Get My Location" /></label>
+            <p class="field full"><small>Location provides coordinates only; it does not return a postal address. The address fields below remain editable. You can correct them manually or capture coordinates again.</small></p>
             <label class="field full"><span>Address line 1 *</span><input formControlName="address_line_1" maxlength="190" placeholder="Building, street and area" /></label>
             <label class="field full"><span>Address line 2</span><input formControlName="address_line_2" maxlength="190" placeholder="Landmark, suite or floor (optional)" /></label>
             <label class="field"><span>City *</span><input formControlName="city" maxlength="100" placeholder="City" /></label>
