@@ -246,13 +246,17 @@ final readonly class BusinessServices implements IBusinessServices
         $country = strtoupper($this->optionalText($actionData['country_code'] ?? 'IN', 2) ?? 'IN');
         $latitudeRaw = $actionData['latitude'] ?? null;
         $longitudeRaw = $actionData['longitude'] ?? null;
+        $accuracyRaw = $actionData['location_accuracy_m'] ?? null;
         $latitude = ($latitudeRaw === null || $latitudeRaw === '') ? null : (is_numeric($latitudeRaw) ? (float) $latitudeRaw : NAN);
         $longitude = ($longitudeRaw === null || $longitudeRaw === '') ? null : (is_numeric($longitudeRaw) ? (float) $longitudeRaw : NAN);
+        $locationAccuracyM = ($accuracyRaw === null || $accuracyRaw === '') ? null : (is_numeric($accuracyRaw) ? (float) $accuracyRaw : NAN);
         if (($latitude !== null && (!is_finite($latitude) || $latitude < -90 || $latitude > 90))
             || ($longitude !== null && (!is_finite($longitude) || $longitude < -180 || $longitude > 180))
             || (($latitude === null) !== ($longitude === null))
+            || ($locationAccuracyM !== null && (!is_finite($locationAccuracyM) || $locationAccuracyM < 0 || $locationAccuracyM > 100000))
+            || ($latitude === null && $locationAccuracyM !== null)
         ) {
-            $resArr['msgArr'][] = 'Latitude and longitude must both be valid coordinates.';
+            $resArr['msgArr'][] = 'Latitude, longitude and location accuracy must contain valid, consistent values.';
             return $resArr;
         }
         if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
@@ -291,7 +295,7 @@ final readonly class BusinessServices implements IBusinessServices
                     $update = $this->dao->updateBusinessApplication(
                         $this->db, $tenantId, $businessId, $userId, $businessName, $businessSlug,
                         $description ?? '', $categoryId, $phone, $whatsapp, $email, $address1, $address2,
-                        $city, $state, $postal, $country, $latitude, $longitude, $resubmit,
+                        $city, $state, $postal, $country, $latitude, $longitude, $locationAccuracyM, $resubmit,
                     );
                     if ($update['status'] !== 'SUCCESS') {
                         $transaction->rollBack();
@@ -337,7 +341,7 @@ final readonly class BusinessServices implements IBusinessServices
                 }
                 $profile = $this->dao->insertBusinessProfile(
                     $this->db, $newTenantId, $businessName, $businessSlug, $description ?? '', $categoryId,
-                    $phone, $whatsapp, $email, $address1, $address2, $city, $state, $postal, $country, $latitude, $longitude, $userId,
+                    $phone, $whatsapp, $email, $address1, $address2, $city, $state, $postal, $country, $latitude, $longitude, $locationAccuracyM, $userId,
                 );
                 if ($profile['status'] !== 'SUCCESS') {
                     $transaction->rollBack();
