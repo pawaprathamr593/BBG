@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MarketplaceApiService, MarketplaceBusinessDetail, MarketplaceCategory, MarketplaceProduct } from '../../core/marketplace/marketplace-api.service';
 import { FilterDrawer } from '../../shared/filter-drawer/filter-drawer';
+import { ProductCard } from '../../shared/components/product-card/product-card';
 import { StorefrontContextService } from './storefront-context.service';
 import { StorefrontSeoService } from './storefront-seo.service';
 
@@ -16,7 +17,7 @@ type ProductFilterKey = keyof ProductFilterValues;
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-storefront-section',
-  imports: [FormsModule, RouterLink, FilterDrawer],
+  imports: [FormsModule, RouterLink, FilterDrawer, ProductCard],
   templateUrl: './storefront-section.html',
   styles: [`
     :host{display:block;color:var(--text-primary)}
