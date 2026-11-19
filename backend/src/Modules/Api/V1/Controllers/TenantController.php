@@ -44,6 +44,11 @@ final class TenantController
             '/api/v1/tenants/mine/list' => 'listMyTenants',
             '/api/v1/tenants/mine/detail' => 'getMyTenant',
             '/api/v1/tenants/members/list' => 'listTenantMembers',
+            '/api/v1/tenants/members/owner-list' => 'listOwnedTenantMembers',
+            '/api/v1/tenants/members/search' => 'searchEligibleTenantUsers',
+            '/api/v1/tenants/members/add' => 'addExistingTenantMember',
+            '/api/v1/tenants/invitations/create' => 'createTenantInvitation',
+            '/api/v1/tenants/invitations/accept' => 'acceptTenantInvitation',
             default => '',
         };
         if ($action === '') {
