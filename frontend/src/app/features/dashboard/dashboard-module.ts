@@ -561,7 +561,7 @@ export class DashboardModule implements OnInit {
       showSubscriptionReview: this.section() === 'subscription-approval',
       paymentQr,
       media,
-      showProofUpload: this.section() === 'subscriptions' && this.can('subscription.update')
+      showProofUpload: this.section() === 'subscriptions' && this.canManageOwnedSubscription()
         && ['PENDING','REJECTED'].includes(status.toUpperCase()) && item['latest_proof_review_status'] !== 'PENDING',
       proofFileName: proof?.fileName ?? null,
       actions: this.visibleActionsFor(item),
@@ -652,7 +652,18 @@ export class DashboardModule implements OnInit {
     return hasWorkspacePermission(this.workspace.permissions(), scope, permissionCode);
   }
 
+  private canManageOwnedSubscription(): boolean {
+    const tenant = this.workspace.activeTenant();
+    const roles = String(tenant?.role_codes ?? '').split(',').map((role) => role.trim());
+    return this.workspace.activeContext() === 'BUSINESS' && roles.includes('TENANT_OWNER');
+  }
+
+  canRequestSubscriptionChange(): boolean {
+    return this.canManageOwnedSubscription();
+  }
+
   canAction(action: string): boolean {
+    if (action === 'renew-subscription') return this.canManageOwnedSubscription();
     const permissionCode = ACTION_PERMISSION_CODES[action];
     return permissionCode !== undefined && this.can(permissionCode);
   }
@@ -706,7 +717,7 @@ export class DashboardModule implements OnInit {
         this.openDecisionDrawer('reject-business', item);
         return;
       case 'renew-subscription':
-        path='/api/v1/subscriptions/renewal/request'; key='subscriptionParam'; actionType='requestSubscriptionRenewal';
+        path='/api/v1/subscriptions/application/renewal/request'; key='subscriptionParam'; actionType='requestApplicationSubscriptionRenewal';
         data={tenant_id:tenantId,subscription_id:id}; break;
       case 'approve-subscription': case 'reject-subscription':
         this.openDecisionDrawer(action, item);
@@ -1242,7 +1253,7 @@ export class DashboardModule implements OnInit {
     this.error.set('');
     try {
       const upload = await this.request<{upload_url:string;object_key:string;method:string;headers:Record<string,string>}>(
-        '/api/v1/subscriptions/proofs/upload-url','subscriptionParam','generateSubscriptionProofUploadUrl',{
+        '/api/v1/subscriptions/application/proofs/upload-url','subscriptionParam','generateApplicationProofUploadUrl',{
           tenant_id:tenantId,subscription_id:subscriptionId,original_file_name:file.name,mime_type:file.type,file_size_bytes:file.size,
         },
       );
@@ -1270,7 +1281,7 @@ export class DashboardModule implements OnInit {
     if (!subscriptionId || !tenantId || !draft || this.busy()) return;
     this.busy.set(true); this.error.set('');
     try {
-      await this.request('/api/v1/subscriptions/proofs/submit','subscriptionParam','submitSubscriptionProof',{
+      await this.request('/api/v1/subscriptions/application/proofs/submit','subscriptionParam','submitApplicationSubscriptionProof',{
         tenant_id:tenantId,subscription_id:subscriptionId,proof_file_path:draft.objectKey,
         ...(draft.paymentReference ? {payment_reference:draft.paymentReference} : {}),
       });
@@ -1289,13 +1300,32 @@ export class DashboardModule implements OnInit {
   }
 
   async requestPlan(plan: DataRecord): Promise<void> {
-    const planId=this.recordId(plan,'plan_id'); if (!planId || this.busy()) return;
-    this.pendingPlanId.set(planId); this.busy.set(true); this.error.set('');
+    const planId = this.recordId(plan, 'plan_id');
+    const tenantId = this.workspace.activeTenantId();
+    const activeSubscription = this.items().find((item) => String(item['subscription_status'] ?? '').toUpperCase() === 'ACTIVE');
+    const subscriptionId = activeSubscription ? this.recordId(activeSubscription, 'subscription_id') : 0;
+    if (!planId || !tenantId || !subscriptionId || !this.canManageOwnedSubscription() || this.busy()) {
+      this.error.set('An active subscription and business-owner access are required to request a plan upgrade.');
+      return;
+    }
+    this.pendingPlanId.set(planId);
+    this.busy.set(true);
+    this.error.set('');
     try {
-      await this.request('/api/v1/subscriptions/request','subscriptionParam','requestSubscription',{tenant_id:this.workspace.activeTenantId(),plan_id:planId});
-      this.notice.set('Your subscription request has been submitted.'); await this.load();
-    } catch(error) { this.error.set(this.auth.errorMessage(error)); }
-    finally { this.pendingPlanId.set(null); this.busy.set(false); }
+      await this.request(
+        '/api/v1/subscriptions/application/upgrade/request',
+        'subscriptionParam',
+        'requestApplicationSubscriptionUpgrade',
+        { tenant_id: tenantId, subscription_id: subscriptionId, plan_id: planId },
+      );
+      this.notice.set('Your upgrade request and payment instructions are ready. Upload the receipt to submit it for review.');
+      await this.load();
+    } catch(error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.pendingPlanId.set(null);
+      this.busy.set(false);
+    }
   }
 
   humanize(value: string): string { return value.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,(letter)=>letter.toUpperCase()); }
