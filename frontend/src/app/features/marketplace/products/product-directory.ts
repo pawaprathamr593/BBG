@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MarketplaceApiService, MarketplaceCategory, MarketplaceProduct } from '../../../core/marketplace/marketplace-api.service';
 import { FilterDrawer } from '../../../shared/filter-drawer/filter-drawer';
 import { ProductCard } from '../../../shared/components/product-card/product-card';
@@ -23,7 +23,7 @@ type ProductFilterKey = keyof ProductFilterValues;
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-product-directory',
-  imports: [FormsModule, RouterLink, FilterDrawer, ProductCard],
+  imports: [FormsModule, FilterDrawer, ProductCard],
   templateUrl: './product-directory.html',
   styles: [`
     :host{display:block}.page{min-height:65vh;padding:0 0 120px;background:var(--surface-page)}
