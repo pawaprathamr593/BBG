@@ -29,7 +29,7 @@ interface ListResult {
   items?: DataRecord[];
   pagination?: { page?: number; page_size?: number; total?: number };
 }
-type DecisionKind = 'reject-business' | 'approve-subscription' | 'reject-subscription' | 'moderate';
+type DecisionKind = 'approve-business' | 'reject-business' | 'approve-subscription' | 'reject-subscription' | 'moderate';
 class StaleWorkspaceRequestError extends Error {}
 
 const ACTION_PERMISSION_CODES: Record<string, string> = {
@@ -700,7 +700,8 @@ export class DashboardModule implements OnInit {
         await this.openBusinessReview(item);
         return;
       case 'approve-business':
-        path='/api/v1/admin/businesses/approve'; actionType='approveBusiness'; data={business_id:Number(item['business_id'] ?? item['id'])}; break;
+        this.openDecisionDrawer('approve-business', item);
+        return;
       case 'reject-business':
         this.openDecisionDrawer('reject-business', item);
         return;
@@ -914,6 +915,7 @@ export class DashboardModule implements OnInit {
 
   decisionTitle(): string {
     const titles: Record<DecisionKind, string> = {
+      'approve-business': 'Approve business and subscription',
       'reject-business': 'Reject business application',
       'approve-subscription': 'Approve subscription',
       'reject-subscription': 'Reject subscription',
@@ -931,7 +933,38 @@ export class DashboardModule implements OnInit {
     let actionType = '';
     let key: EnvelopeKey = 'adminParam';
     let data: DataRecord = {};
-    if (kind === 'reject-business') {
+    if (kind === 'approve-business') {
+      const subscriptionStatus = String(item['subscription_status'] ?? '').toUpperCase();
+      const businessId = Number(item['business_id'] ?? item['id']);
+      const subscriptionId = Number(item['subscription_id'] ?? 0);
+      if (!Number.isInteger(businessId) || businessId <= 0) {
+        this.error.set('A valid business application is required.');
+        return;
+      }
+      if (subscriptionStatus === 'PENDING') {
+        if (!Number.isInteger(subscriptionId) || subscriptionId <= 0) {
+          this.error.set('The pending subscription could not be identified. Refresh the review queue.');
+          return;
+        }
+        if (!this.decisionStartsOn() || !this.decisionEndsOn()) {
+          this.error.set('Enter both subscription start and end dates.');
+          return;
+        }
+      } else if (subscriptionStatus !== 'ACTIVE') {
+        this.error.set('A pending payment-backed or active subscription is required before business approval.');
+        return;
+      }
+      path = '/api/v1/admin/businesses/approve-with-subscription';
+      actionType = 'approveBusinessWithSubscription';
+      data = {
+        business_id: businessId,
+        ...(subscriptionStatus === 'PENDING' ? {
+          subscription_id: subscriptionId,
+          starts_on: this.decisionStartsOn().replace('T', ' ') + ':00',
+          ends_on: this.decisionEndsOn().replace('T', ' ') + ':00',
+        } : {}),
+      };
+    } else if (kind === 'reject-business') {
       if (!reason) { this.error.set('A rejection reason is required.'); return; }
       path = '/api/v1/admin/businesses/reject';
       actionType = 'rejectBusiness';
@@ -974,9 +1007,9 @@ export class DashboardModule implements OnInit {
     this.error.set('');
     try {
       const result = await this.request<DataRecord>(path, key, actionType, data);
-      this.notice.set(kind === 'approve-subscription' && typeof result['bcn'] === 'string' && result['bcn']
-        ? `Subscription approved. BBG Contribution Number: ${result['bcn']}`
-        : 'The requested decision was completed.');
+      this.notice.set((kind === 'approve-subscription' || kind === 'approve-business') && typeof result['bcn'] === 'string' && result['bcn']
+        ? `${kind === 'approve-business' ? 'Business and subscription approved' : 'Subscription approved'}. BBG Contribution Number: ${result['bcn']}`
+        : kind === 'approve-business' ? 'Business approved and storefront activated.' : 'The requested decision was completed.');
       this.showDecisionDrawer.set(false);
       await this.load();
     } catch (error) {
