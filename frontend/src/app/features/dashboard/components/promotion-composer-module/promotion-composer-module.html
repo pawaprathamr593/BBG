@@ -20,9 +20,18 @@
         @for (file of files(); track $index) {
           <div>
             @if (previews().get(file); as preview) {
-              @if (file.type.startsWith('image/')) { <img class="post-file-preview" [src]="preview" [alt]="file.name"> }
-              @else { <video class="post-file-preview" controls [src]="preview"></video> }
-            } @else { <span>{{ mediaLabel(file.type) }}</span> }
+              @if (file.type.startsWith('image/')) {
+                <img class="post-file-preview" [src]="preview" [alt]="file.name">
+              } @else if (file.type.startsWith('video/')) {
+                <video class="post-file-preview" controls [src]="preview"></video>
+              } @else if (file.type.startsWith('audio/')) {
+                <audio class="post-file-audio" controls [src]="preview"></audio>
+              } @else {
+                <span class="post-file-kind">{{ mediaLabel(file.type) }}</span>
+              }
+            } @else {
+              <span class="post-file-kind">{{ mediaLabel(file.type) }}</span>
+            }
             <strong>{{ file.name }}</strong><small>{{ fileSize(file.size) }}</small><button type="button" (click)="fileRemoved.emit($index)" [disabled]="busy()">Remove</button>
           </div>
         }

@@ -1,9 +1,9 @@
 @if (open()) {
   <div class="workspace-drawer-backdrop" aria-hidden="true" (click)="requestClose()"></div>
-  <aside class="workspace-drawer" role="dialog" aria-modal="true" tabindex="-1" [attr.aria-label]="title()">
+  <aside class="workspace-drawer" role="dialog" aria-modal="true" tabindex="-1" aria-labelledby="workspace-drawer-title">
     <header class="workspace-drawer-header">
       <div>
-        <h2>{{ title() }}</h2>
+        <h2 id="workspace-drawer-title">{{ title() }}</h2>
         @if (description()) { <p>{{ description() }}</p> }
       </div>
       <button type="button" class="workspace-drawer-close" aria-label="Close drawer" (click)="requestClose()">×</button>

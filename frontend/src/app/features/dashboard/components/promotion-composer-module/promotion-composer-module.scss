@@ -23,3 +23,7 @@
 .promotion-composer-form .submit-button{border-color:var(--brand);background:var(--brand);color:#fff}
 .promotion-composer-form button:disabled{opacity:.55;cursor:wait}
 @media(max-width:480px){.post-file-list>div{grid-template-columns:44px minmax(0,1fr) auto}.promotion-composer-form footer{flex-direction:column-reverse}.promotion-composer-form footer button{width:100%}}
+
+.post-file-audio{grid-row:span 2;width:100px;max-width:100%;height:36px;accent-color:var(--brand)}
+.post-file-kind{display:grid;grid-row:span 2;width:60px;min-height:52px;place-items:center;border:1px solid var(--border);border-radius:7px;background:var(--surface-subtle);color:var(--text-secondary);font-size:.62rem;font-weight:850}
+@media(max-width:480px){.post-file-kind{width:44px}}
