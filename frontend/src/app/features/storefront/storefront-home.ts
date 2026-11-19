@@ -1,14 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MarketplaceApiService, MarketplaceBusinessDetail, MarketplaceProduct, MarketplacePromotion } from '../../core/marketplace/marketplace-api.service';
 import { StorefrontContextService } from './storefront-context.service';
 import { StorefrontSeoService } from './storefront-seo.service';
+import { ProductCard } from '../../shared/components/product-card/product-card';
+import { PromotionCard } from '../../shared/components/promotion-card/promotion-card';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-storefront-home',
-  imports: [RouterLink],
+  imports: [RouterLink, ProductCard, PromotionCard],
   templateUrl: './storefront-home.html',
   styles: [`
     :host{display:block;color:var(--text-primary);background:var(--surface-page)}
@@ -111,6 +113,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
 export class StorefrontHome {
   readonly context = inject(StorefrontContextService);
   private readonly api = inject(MarketplaceApiService);
+  private readonly router = inject(Router);
   private readonly seo = inject(StorefrontSeoService);
   readonly products = signal<MarketplaceProduct[]>([]);
   readonly promotions = signal<MarketplacePromotion[]>([]);
@@ -260,3 +263,15 @@ function pathForBusiness(slug: string): string { return '/store/' + encodeURICom
 function slugify(value: string): string {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
 }
+  protected openProduct(product: MarketplaceProduct, businessSlug: string): void {
+    if (product.offering_type === 'SERVICE') {
+      void this.router.navigate(['/store', businessSlug, 'contact'], { queryParams: { subject: 'Service enquiry: ' + product.product_name } });
+      return;
+    }
+    void this.router.navigate(['/store', businessSlug, 'products', this.productRoute(product)]);
+  }
+
+  protected openPromotionBusiness(promotion: MarketplacePromotion): void {
+    void this.router.navigate(['/store', promotion.business_slug]);
+  }
+
