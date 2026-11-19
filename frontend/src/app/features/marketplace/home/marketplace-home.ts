@@ -4,11 +4,14 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { AuthDialogService } from '../../../core/auth/auth-dialog.service';
 import { BusinessRegistrationApiService } from '../../../core/business/business-registration-api.service';
 import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, MarketplaceProduct, MarketplacePromotion, MarketplaceHomeStats } from '../../../core/marketplace/marketplace-api.service';
+import { BusinessCard } from '../../../shared/components/business-card/business-card';
+import { ProductCard } from '../../../shared/components/product-card/product-card';
+import { PromotionCard } from '../../../shared/components/promotion-card/promotion-card';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-marketplace-home',
-  imports: [RouterLink],
+  imports: [RouterLink, BusinessCard, ProductCard, PromotionCard],
   templateUrl: './marketplace-home.html',
   styles: [`
     :host { display:block; }
@@ -192,6 +195,19 @@ export class MarketplaceHome implements OnInit {
 
   protected slugifyProduct(value: string): string {
     return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
+  }
+
+  protected openBusiness(business: MarketplaceBusiness): void {
+    void this.router.navigate(['/store', business.business_slug]);
+  }
+
+  protected openProduct(product: MarketplaceProduct): void {
+    const slug = (product.slug || this.slugifyProduct(product.product_name)) + '-' + (product.public_id || product.id);
+    void this.router.navigate(['/store', product.business.business_slug, 'products', slug]);
+  }
+
+  protected openPromotion(promotion: MarketplacePromotion): void {
+    void this.router.navigate(['/store', promotion.business_slug]);
   }
 
   ngOnInit(): void {
