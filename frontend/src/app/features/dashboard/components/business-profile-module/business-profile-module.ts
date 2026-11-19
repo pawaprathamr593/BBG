@@ -12,7 +12,6 @@ const emptyForm=():ProfileForm=>({business_name:'',business_email:'',business_ph
 export class BusinessProfileModule {
   readonly business=input.required<Record<string,unknown>>();
   readonly canEdit=input(false);
-  readonly editRequested=output<void>();
   readonly refreshRequested=output<void>();
   readonly drawerOpen=signal(false);
   readonly saving=signal(false);

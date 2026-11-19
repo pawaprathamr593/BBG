@@ -4,7 +4,7 @@ title: Workspace modular component architecture and unified drawer UX
 area: workspace
 type: enhancement
 owner: unset
-status: ready
+status: in-progress
 ---
 
 # Workspace modular component architecture and unified drawer UX
@@ -168,3 +168,11 @@ Every data-driven module/section must handle applicable states:
 ## Implementation log
 
 - Requirement drafted on branch `refactor/workspace-module-components` after reviewing REQ-WORKSPACE-003 through REQ-WORKSPACE-006, frontend agent instructions and the current workspace implementation.
+
+- Extracted DashboardModule's inline styles into `dashboard-module.scss` and retained the existing selectors/styles.
+- Added a shared `WorkspaceModuleApiService` for the business-profile and storefront feature components, preserving their existing Yii API endpoints, envelope and action names.
+- Moved Business Profile and Storefront edit/publish workflows into their respective standalone feature components; successful mutations request a parent refresh and failed mutations retain the drawer with an error.
+- Added a consistent accessible title association to the shared workspace drawer and improved mobile safe-area spacing/touch target sizing.
+- Corrected promotion composer media previews so image, video, audio and document files render with type-appropriate previews or indicators.
+- Catalogue Products and Categories remain separate vertically stacked management sections; product media drawer retains existing/new media, upload progress and failure feedback.
+- Verification still pending: Angular development build, Prettier, automated tests and authenticated responsive browser checks. No build or browser success is claimed.
