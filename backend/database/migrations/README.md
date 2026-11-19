@@ -73,3 +73,13 @@ Creates `CONTENT_LIKES` and `PRODUCT_MEDIA` when they are not already present. T
 File: `20261117_002_subscription_payment_review_workflow.sql`
 
 Adds versioned Platform Admin UPI QR configuration, immutable per-subscription payment-instruction snapshots, and an append-only subscription review history with a legacy decision backfill. Apply after `20261117_001_global_customer_addresses.sql` on a verified local/staging database after backup. The migration is not automatically executed by the application.
+
+
+## 20261119 — Business onboarding lifecycle additions
+
+- `20261119_002_subscription_upgrade_lineage.sql` adds nullable `TENANT_SUBSCRIPTIONS.upgrade_from_subscription_id` and its tenant-scoped index. A replacement subscription remains pending while the current subscription remains active; the previous subscription is closed only inside the admin approval transaction.
+- `20261119_003_tenant_member_invitations.sql` creates `TENANT_INVITATIONS` for one-time, seven-day tenant invitations. Only a SHA-256 token hash is stored; the raw token is returned once to the owner for sharing.
+- The application onboarding flow uses additive application-owner operations to save drafts, list owned applications, create payment requests and submit payment proof. These operations verify the authenticated user's active `TENANT_OWNER` membership for the specific tenant/application. They do not change RBAC roles, permission rows, tenant permission evaluation, authentication, guards or interceptors.
+- The payment-backed admin queue is the existing subscription review queue. Approval continues through the existing admin subscription decision path, which also approves the business profile and activates its tenant.
+- Team management uses only the already-seeded `TENANT_ORDER_MANAGER` role with `TENANT` scope. No new roles or permission codes are introduced. Tenant owners cannot assign `TENANT_OWNER` or any `PLATFORM` role.
+- Before applying either migration to a real database, verify the live schema and take a backup. CI validates these scripts against a clean MySQL 8.4 test database; that does not replace staging/production schema verification.
