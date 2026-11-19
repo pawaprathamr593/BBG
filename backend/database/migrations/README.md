@@ -19,7 +19,7 @@ Apply these additive, idempotent seeds after verifying the target database and b
 1. `../seeds/20261112_001_tenant_order_manager.sql` — tenant-scoped `TENANT_ORDER_MANAGER` role and `ORDERS_MANAGE` permission assignment for the configured test user/tenant pair. The seed checks the active membership precondition and does not assign the role if it is missing.
 2. `../seeds/20261112_002_api_rbac_baseline.sql` — `TENANT_OWNER` and `PLATFORM_ADMIN` roles, tenant/platform permissions, and role-permission links. It deliberately does **not** assign `PLATFORM_ADMIN` to any user. A trusted platform operator must be assigned separately through an authorized administrative process.
 3. `../seeds/20261112_003_plan_entitlements.sql` — the Gold/Diamond/Platinum entitlement matrix: Gold storefront capabilities; Diamond product management and one promotion per tenant-local day; Platinum product management, five promotions per tenant-local day, and SEO/AEO/GEO plus advanced analytics entitlements.
-4. `../seeds/20261113_004_global_consumer_role.sql` — creates the global `CONSUMER` role and idempotently assigns it to all active existing accounts. New password and social registrations assign the same role inside the account-creation transaction.
+4. `../seeds/20261113_004_platform_consumer_role.sql` — ensures the platform-scoped `CONSUMER` role and idempotently assigns it to all active existing accounts. New password and social registrations assign the same role inside the account-creation transaction.
 
 The seeds do not alter table structures. Review each script before execution and verify the result queries afterwards.
 
