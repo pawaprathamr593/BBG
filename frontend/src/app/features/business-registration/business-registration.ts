@@ -77,7 +77,7 @@ export class BusinessRegistration implements OnInit {
         const owned = await this.api.getMyApplications();
         const existing = owned.find((item) => item.business_id === businessId && item.tenant_id === tenantId);
         if (!existing) throw new Error('This business draft was not found or you are not its owner.');
-        if (existing.approval_status !== 'DRAFT') {
+        if (!['DRAFT', 'PENDING'].includes(existing.approval_status)) {
           await this.router.navigate(['/workspace']);
           return;
         }
@@ -94,6 +94,9 @@ export class BusinessRegistration implements OnInit {
         if (pendingPayment) {
           this.subscription.set(pendingPayment);
           this.step.set('payment');
+        } else if (existing.approval_status !== 'DRAFT') {
+          await this.router.navigate(['/workspace']);
+          return;
         }
       }
       // Keep registration available even when the user already owns other businesses.
