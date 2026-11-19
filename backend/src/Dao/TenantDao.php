@@ -208,6 +208,21 @@ final readonly class TenantDao
         );
     }
 
+
+    public function findActiveUserByEmail(ConnectionInterface $db, string $email): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->one(
+            $db,
+            "SELECT id AS user_id, full_name, LOWER(email) AS email
+             FROM USERS
+             WHERE LOWER(email) = :email AND status = 'A' AND account_status = 'ACTIVE'
+             LIMIT 1",
+            [':email' => strtolower($email)],
+            'findActiveUserByEmail',
+        );
+    }
+
     public function getActiveUserEmail(ConnectionInterface $db, int $userId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
