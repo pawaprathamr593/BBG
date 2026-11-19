@@ -1,0 +1,14 @@
+<section class="storefront-profile" aria-labelledby="storefront-heading">
+  <header class="storefront-heading">
+    <div><p class="eyebrow">CUSTOMER-FACING EXPERIENCE</p><h2 id="storefront-heading">Storefront settings</h2><p>Review the public identity and shopping preferences for your storefront.</p></div>
+    <div class="storefront-actions"><span class="status-pill" [class.published]="status() === 'PUBLISHED'">{{ status() }}</span>@if (canEdit()) { <button type="button" (click)="editRequested.emit()">Edit settings</button> }</div>
+  </header>
+  <div class="storefront-grid">
+    @for (field of fields; track field.key) {
+      <article class="detail-card" [class.wide]="field.wide">
+        <span>{{ field.label }}</span>
+        <strong>{{ display(storefront()[field.key], field.boolean ?? false) }}</strong>
+      </article>
+    }
+  </div>
+</section>

@@ -1,0 +1,14 @@
+<section class="business-profile" aria-labelledby="business-profile-heading">
+  <header class="profile-heading">
+    <div><p class="eyebrow">BUSINESS INFORMATION</p><h2 id="business-profile-heading">Business profile</h2><p>Review the registered information associated with this workspace.</p></div>
+    <div class="profile-actions"><span class="status-pill">{{ status() }}</span>@if (canEdit()) { <button type="button" (click)="editRequested.emit()">Edit profile</button> }</div>
+  </header>
+  <div class="profile-grid">
+    @for (field of fields; track field.key) {
+      <article class="detail-card" [class.wide]="field.wide">
+        <span>{{ field.label }}</span>
+        <strong>{{ display(business()[field.key]) }}</strong>
+      </article>
+    }
+  </div>
+</section>
