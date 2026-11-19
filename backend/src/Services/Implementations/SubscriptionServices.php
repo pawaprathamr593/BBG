@@ -614,6 +614,10 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             return $this->propagateFailure($current, 'SubscriptionServices::requestApplicationSubscriptionReplacement');
         }
         $currentStatus = (string) ($current['data']['subscription_status'] ?? '');
+        if ($currentStatus === 'ACTIVE' && !empty($current['data']['ends_on'])
+            && strtotime((string) $current['data']['ends_on']) < time()) {
+            $currentStatus = 'EXPIRED';
+        }
         if ($operation === 'upgrade' && $currentStatus !== 'ACTIVE') {
             $resArr['msgArr'][] = 'Only an active subscription can be upgraded.';
             return $resArr;
