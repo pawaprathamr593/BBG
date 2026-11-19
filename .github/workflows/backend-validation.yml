@@ -8,6 +8,7 @@ on:
       - development
       - feature/public-marketplace-pages
       - HG_CODE_IMPROVEMENTS
+      - feature/business-onboarding-from-workspace-base
   pull_request:
     branches:
       - main
@@ -83,6 +84,8 @@ jobs:
             );
           "
           mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261117_002_subscription_payment_review_workflow.sql
+          mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261119_002_subscription_upgrade_lineage.sql
+          mysql --protocol=tcp -h 127.0.0.1 -uroot bbg < backend/database/migrations/20261119_003_tenant_member_invitations.sql
       - name: Verify migration tables and generated cart keys
         env:
           MYSQL_PWD: root
