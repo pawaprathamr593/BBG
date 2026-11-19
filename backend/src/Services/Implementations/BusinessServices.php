@@ -44,6 +44,9 @@ final readonly class BusinessServices implements IBusinessServices
                 case 'getMyBusinessApplication':
                     $resArr = $this->getBusinessApplication($actionData);
                     break;
+                case 'listMyBusinessApplications':
+                    $resArr = $this->getMyBusinessApplications($actionData);
+                    break;
                 case 'getMyBusinessProfile':
                     $resArr = $this->getBusinessProfile($actionData);
                     break;
@@ -141,6 +144,23 @@ final readonly class BusinessServices implements IBusinessServices
         }
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = $result['data'];
+        return $resArr;
+    }
+
+
+    private function getMyBusinessApplications(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->principal($actionData);
+        if ($principal['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'BusinessServices::getMyBusinessApplications');
+        }
+        $result = $this->dao->getMyBusinessApplications($this->db, (int) $principal['data']['user_id']);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'BusinessServices::getMyBusinessApplications');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['items' => $result['data']];
         return $resArr;
     }
 
