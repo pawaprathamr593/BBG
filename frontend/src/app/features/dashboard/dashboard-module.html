@@ -194,7 +194,7 @@
                   }
                   @if (section() === 'subscriptions' && can('subscription.update') && ['PENDING','REJECTED'].includes(statusOf(item).toUpperCase()) && item['latest_proof_review_status'] !== 'PENDING') {
                     <label class="upload-proof">Upload payment proof
-                      <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" [disabled]="busy()" (change)="uploadProof($event, item)" />
+                      <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" [disabled]="busy()" (change)="prepareProofUpload($event, item)" />
                     </label>
                     @if (proofDrafts()[recordId(item,'subscription_id')] && can('subscription.update')) {
                       <div class="proof-ready" role="status">
@@ -279,6 +279,35 @@
           </section>
         </div>
       }
+
+      <app-workspace-drawer [open]="showDecisionDrawer()" [title]="decisionTitle()" description="Review the record and confirm the requested decision." (closed)="showDecisionDrawer.set(false)">
+        <form class="workspace-edit-form" (submit)="$event.preventDefault(); saveDecision()">
+          @if (decisionKind() === 'reject-business' || decisionKind() === 'reject-subscription') {
+            <label class="workspace-message-label">Reason<textarea rows="5" maxlength="2000" [value]="decisionReason()" (input)="decisionReason.set(inputValue($event))" required placeholder="Provide a clear reason for this decision."></textarea></label>
+          }
+          @if (decisionKind() === 'approve-subscription') {
+            <label class="workspace-message-label">Subscription starts on<input type="datetime-local" [value]="decisionStartsOn()" (input)="decisionStartsOn.set(inputValue($event))" required></label>
+            <label class="workspace-message-label">Subscription ends on<input type="datetime-local" [value]="decisionEndsOn()" (input)="decisionEndsOn.set(inputValue($event))" required></label>
+          }
+          @if (decisionKind() === 'moderate') {
+            <label class="workspace-message-label">Moderation action<select [value]="moderationAction()" (change)="moderationAction.set(inputValue($event))"><option value="DISMISS_REPORT">Dismiss report</option><option value="UNPUBLISH_POST">Unpublish post</option><option value="UNPUBLISH_PRODUCT">Unpublish product</option></select></label>
+            <label class="workspace-message-label">Reason<textarea rows="5" maxlength="2000" [value]="decisionReason()" (input)="decisionReason.set(inputValue($event))" required placeholder="Explain the moderation decision."></textarea></label>
+          }
+          @if (error()) { <p class="workspace-edit-error" role="alert">{{ error() }}</p> }
+          <footer><button type="button" class="refresh" (click)="showDecisionDrawer.set(false)" [disabled]="busy()">Cancel</button><button type="submit" class="secondary-action" [disabled]="busy()">{{ busy() ? 'Saving…' : 'Confirm decision' }}</button></footer>
+        </form>
+      </app-workspace-drawer>
+
+      <app-workspace-drawer [open]="showProofDrawer()" title="Upload subscription payment proof" description="Upload a receipt and optionally include the payment reference." (closed)="closeProofDrawer()">
+        <form class="workspace-edit-form" (submit)="$event.preventDefault(); uploadProof()">
+          @if (proofFile(); as file) {
+            <div class="proof-ready"><strong>{{ file.name }}</strong><span>{{ fileSize(file.size) }}</span></div>
+          }
+          <label class="workspace-message-label">Payment reference (optional)<input type="text" maxlength="150" [value]="proofPaymentReference()" (input)="proofPaymentReference.set(inputValue($event))" placeholder="Transaction or UTR reference"></label>
+          @if (error()) { <p class="workspace-edit-error" role="alert">{{ error() }}</p> }
+          <footer><button type="button" class="refresh" (click)="closeProofDrawer()" [disabled]="busy()">Cancel</button><button type="submit" class="secondary-action" [disabled]="busy() || !proofFile()">{{ busy() ? 'Uploading…' : 'Upload receipt' }}</button></footer>
+        </form>
+      </app-workspace-drawer>
 
       <app-workspace-drawer [open]="showPasswordForm()" [title]="summary()?.['has_password'] ? 'Change account password' : 'Set account password'" description="Use a secure password of at least eight characters." (closed)="closePasswordForm()">
         <form class="workspace-edit-form" (submit)="$event.preventDefault(); updatePassword()">

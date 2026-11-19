@@ -36,6 +36,7 @@ interface CategoryForm {
   category_code: string; category_name: string; category_type: 'BUSINESS' | 'PRODUCT';
   description: string; parent_category_id: string; display_order: string;
 }
+type DecisionKind = 'reject-business' | 'approve-subscription' | 'reject-subscription' | 'moderate';
 class StaleWorkspaceRequestError extends Error {}
 
 const ACTION_PERMISSION_CODES: Record<string, string> = {
@@ -210,6 +211,17 @@ export class DashboardModule implements OnInit {
   readonly showPaymentQrDrawer = signal(false);
   readonly replyEnquiryId = signal<number | null>(null);
   readonly replyMessage = signal('');
+  readonly showDecisionDrawer = signal(false);
+  readonly decisionKind = signal<DecisionKind>('reject-business');
+  readonly decisionItem = signal<DataRecord | null>(null);
+  readonly decisionReason = signal('');
+  readonly decisionStartsOn = signal('');
+  readonly decisionEndsOn = signal('');
+  readonly moderationAction = signal('DISMISS_REPORT');
+  readonly showProofDrawer = signal(false);
+  readonly proofFile = signal<File | null>(null);
+  readonly proofSubscription = signal<DataRecord | null>(null);
+  readonly proofPaymentReference = signal('');
   readonly businessProfileForm = signal<BusinessProfileForm>({
     business_name: '', business_email: '', business_phone: '', business_description: '',
     address_line_1: '', address_line_2: '', city: '', state: '', postal_code: '',
@@ -703,26 +715,17 @@ export class DashboardModule implements OnInit {
         path=action==='publish-promotion'?'/api/v1/promotions/publish':'/api/v1/promotions/unpublish'; key='promotionParam'; actionType=action==='publish-promotion'?'publishPromotion':'unpublishPromotion'; data={tenant_id:tenantId,promotion_id:id}; break;
       case 'suspend-user': case 'restore-user':
         path=action==='suspend-user'?'/api/v1/admin/users/suspend':'/api/v1/admin/users/restore'; actionType=action==='suspend-user'?'suspendPlatformUser':'restorePlatformUser'; data={user_id:id}; break;
-      case 'approve-business': case 'reject-business': {
-        const reason = action==='reject-business' ? window.prompt('Reason for rejecting this application:') : null;
-        if (action==='reject-business' && !reason?.trim()) return;
-        path=action==='approve-business'?'/api/v1/admin/businesses/approve':'/api/v1/admin/businesses/reject'; actionType=action==='approve-business'?'approveBusiness':'rejectBusiness'; data={business_id:Number(item['business_id'] ?? item['id']),...(reason?{reason:reason.trim()}:{})}; break;
-      }
+      case 'approve-business':
+        path='/api/v1/admin/businesses/approve'; actionType='approveBusiness'; data={business_id:Number(item['business_id'] ?? item['id'])}; break;
+      case 'reject-business':
+        this.openDecisionDrawer('reject-business', item);
+        return;
       case 'renew-subscription':
         path='/api/v1/subscriptions/renewal/request'; key='subscriptionParam'; actionType='requestSubscriptionRenewal';
         data={tenant_id:tenantId,subscription_id:id}; break;
-      case 'approve-subscription': case 'reject-subscription': {
-        const reason = action==='reject-subscription' ? window.prompt('Reason for rejecting this subscription:') : null;
-        if (action==='reject-subscription' && !reason?.trim()) return;
-        let dates: DataRecord = {};
-        if (action==='approve-subscription') {
-          const startsOn = window.prompt('Subscription start date and time (YYYY-MM-DD HH:MM:SS):');
-          const endsOn = window.prompt('Subscription end date and time (YYYY-MM-DD HH:MM:SS):');
-          if (!startsOn?.trim() || !endsOn?.trim()) return;
-          dates = { starts_on: startsOn.trim(), ends_on: endsOn.trim() };
-        }
-        path=action==='approve-subscription'?'/api/v1/admin/subscriptions/approve':'/api/v1/admin/subscriptions/reject'; actionType=action==='approve-subscription'?'approveSubscription':'rejectSubscription'; data={subscription_id:Number(item['subscription_id'] ?? item['id']),...dates,...(reason?{reason:reason.trim()}:{})}; break;
-      }
+      case 'approve-subscription': case 'reject-subscription':
+        this.openDecisionDrawer(action, item);
+        return;
       case 'edit-address':
         this.openAddressEditor(item);
         return;
@@ -737,15 +740,9 @@ export class DashboardModule implements OnInit {
       case 'delete-category':
         if (!window.confirm('Soft-delete this category? Categories referenced by active businesses or products cannot be deleted.')) return;
         path='/api/v1/admin/categories/delete'; actionType='deleteCategory'; data={category_id:id}; break;
-      case 'moderate': {
-        const contentType=String(item['content_type'] ?? '').toUpperCase();
-        const actionTypeChoice=window.prompt('Enter UNPUBLISH_POST, UNPUBLISH_PRODUCT or DISMISS_REPORT:');
-        if (!actionTypeChoice || !['UNPUBLISH_POST','UNPUBLISH_PRODUCT','DISMISS_REPORT'].includes(actionTypeChoice.toUpperCase())) return;
-        const reason=window.prompt('Reason for this moderation decision:'); if(!reason?.trim()) return;
-        path='/api/v1/admin/moderation/action'; actionType='applyModerationAction'; data={report_id:id,action_type:actionTypeChoice.toUpperCase(),reason:reason.trim()};
-        if ((actionTypeChoice.toUpperCase()==='UNPUBLISH_POST' && contentType!=='POST') || (actionTypeChoice.toUpperCase()==='UNPUBLISH_PRODUCT' && contentType!=='PRODUCT')) { this.error.set('That moderation action does not match the reported content type.'); return; }
-        break;
-      }
+      case 'moderate':
+        this.openDecisionDrawer('moderate', item);
+        return;
       default: return;
     }
     this.busy.set(true); this.error.set('');
@@ -1118,6 +1115,91 @@ export class DashboardModule implements OnInit {
     if (saved) this.showAddressDrawer.set(false);
   }
 
+  openDecisionDrawer(kind: DecisionKind, item: DataRecord): void {
+    this.decisionKind.set(kind);
+    this.decisionItem.set(item);
+    this.decisionReason.set('');
+    this.decisionStartsOn.set('');
+    this.decisionEndsOn.set('');
+    this.moderationAction.set('DISMISS_REPORT');
+    this.error.set('');
+    this.showDecisionDrawer.set(true);
+  }
+
+  decisionTitle(): string {
+    const titles: Record<DecisionKind, string> = {
+      'reject-business': 'Reject business application',
+      'approve-subscription': 'Approve subscription',
+      'reject-subscription': 'Reject subscription',
+      moderate: 'Review reported content',
+    };
+    return titles[this.decisionKind()];
+  }
+
+  async saveDecision(): Promise<void> {
+    const kind = this.decisionKind();
+    const item = this.decisionItem();
+    if (!item || this.busy()) return;
+    const reason = this.decisionReason().trim();
+    let path = '';
+    let actionType = '';
+    let key: EnvelopeKey = 'adminParam';
+    let data: DataRecord = {};
+    if (kind === 'reject-business') {
+      if (!reason) { this.error.set('A rejection reason is required.'); return; }
+      path = '/api/v1/admin/businesses/reject';
+      actionType = 'rejectBusiness';
+      data = { business_id: Number(item['business_id'] ?? item['id']), reason };
+    } else if (kind === 'approve-subscription') {
+      if (!this.decisionStartsOn() || !this.decisionEndsOn()) {
+        this.error.set('Enter both subscription start and end dates.');
+        return;
+      }
+      path = '/api/v1/admin/subscriptions/approve';
+      actionType = 'approveSubscription';
+      data = {
+        subscription_id: Number(item['subscription_id'] ?? item['id']),
+        starts_on: this.decisionStartsOn().replace('T', ' ') + ':00',
+        ends_on: this.decisionEndsOn().replace('T', ' ') + ':00',
+      };
+    } else if (kind === 'reject-subscription') {
+      if (!reason) { this.error.set('A rejection reason is required.'); return; }
+      path = '/api/v1/admin/subscriptions/reject';
+      actionType = 'rejectSubscription';
+      data = { subscription_id: Number(item['subscription_id'] ?? item['id']), reason };
+    } else {
+      const contentType = String(item['content_type'] ?? '').toUpperCase();
+      const moderationAction = this.moderationAction();
+      if (!reason) { this.error.set('A reason for this moderation decision is required.'); return; }
+      if (!['UNPUBLISH_POST', 'UNPUBLISH_PRODUCT', 'DISMISS_REPORT'].includes(moderationAction)) {
+        this.error.set('Choose a valid moderation action.');
+        return;
+      }
+      if ((moderationAction === 'UNPUBLISH_POST' && contentType !== 'POST')
+        || (moderationAction === 'UNPUBLISH_PRODUCT' && contentType !== 'PRODUCT')) {
+        this.error.set('That moderation action does not match the reported content type.');
+        return;
+      }
+      path = '/api/v1/admin/moderation/action';
+      actionType = 'applyModerationAction';
+      data = { report_id: this.recordId(item), action_type: moderationAction, reason };
+    }
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      const result = await this.request<DataRecord>(path, key, actionType, data);
+      this.notice.set(kind === 'approve-subscription' && typeof result['bcn'] === 'string' && result['bcn']
+        ? `Subscription approved. BBG Contribution Number: ${result['bcn']}`
+        : 'The requested decision was completed.');
+      this.showDecisionDrawer.set(false);
+      await this.load();
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
   createCategory(): void {
     if (!this.can('admin.create')) return;
     this.editingCategoryId.set(null);
@@ -1381,7 +1463,7 @@ export class DashboardModule implements OnInit {
     }
   }
 
-  async uploadProof(event: Event, subscription: DataRecord): Promise<void> {
+  prepareProofUpload(event: Event, subscription: DataRecord): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
@@ -1391,11 +1473,36 @@ export class DashboardModule implements OnInit {
       input.value = '';
       return;
     }
-    const subscriptionId = this.recordId(subscription,'subscription_id');
+    const subscriptionId = this.recordId(subscription, 'subscription_id');
+    if (!subscriptionId || !this.workspace.activeTenantId()) {
+      this.error.set('Subscription or workspace details are unavailable.');
+      input.value = '';
+      return;
+    }
+    this.proofFile.set(file);
+    this.proofSubscription.set(subscription);
+    this.proofPaymentReference.set('');
+    this.error.set('');
+    this.showProofDrawer.set(true);
+    input.value = '';
+  }
+
+  closeProofDrawer(): void {
+    if (this.busy()) return;
+    this.showProofDrawer.set(false);
+    this.proofFile.set(null);
+    this.proofSubscription.set(null);
+    this.proofPaymentReference.set('');
+  }
+
+  async uploadProof(): Promise<void> {
+    const file = this.proofFile();
+    const subscription = this.proofSubscription();
+    const subscriptionId = subscription ? this.recordId(subscription, 'subscription_id') : 0;
     const tenantId = this.workspace.activeTenantId();
-    if (!subscriptionId || !tenantId) { this.error.set('Subscription or workspace details are unavailable.'); input.value=''; return; }
-    const paymentReference = window.prompt('Payment reference (optional):') ?? '';
-    this.busy.set(true); this.error.set('');
+    if (!file || !subscriptionId || !tenantId || this.busy()) return;
+    this.busy.set(true);
+    this.error.set('');
     try {
       const upload = await this.request<{upload_url:string;object_key:string;method:string;headers:Record<string,string>}>(
         '/api/v1/subscriptions/proofs/upload-url','subscriptionParam','generateSubscriptionProofUploadUrl',{
@@ -1406,16 +1513,20 @@ export class DashboardModule implements OnInit {
         headers:new HttpHeaders(upload.headers ?? {'Content-Type':file.type}),responseType:'text',
       }));
       this.proofDrafts.update((drafts) => ({...drafts,[subscriptionId]:{
-        objectKey:upload.object_key,paymentReference:paymentReference.trim(),fileName:file.name,
+        objectKey:upload.object_key,paymentReference:this.proofPaymentReference().trim(),fileName:file.name,
       }}));
       this.notice.set('Receipt uploaded. Select “Submit for Review” when you are ready to send it to the BBG team.');
+      this.showProofDrawer.set(false);
+      this.proofFile.set(null);
+      this.proofSubscription.set(null);
+      this.proofPaymentReference.set('');
     } catch(error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
       this.busy.set(false);
-      input.value = '';
     }
   }
+
 
   async submitProof(subscription: DataRecord): Promise<void> {
     const subscriptionId = this.recordId(subscription,'subscription_id');
