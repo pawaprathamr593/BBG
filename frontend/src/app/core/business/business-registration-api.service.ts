@@ -20,8 +20,8 @@ export interface BusinessApplication {
   state: string;
   postal_code: string;
   country_code: string;
-  latitude: number | null;
-  longitude: number | null;
+  latitude: number | string | null;
+  longitude: number | string | null;
   approval_status: 'PENDING' | 'APPROVED' | 'REJECTED' | string;
   approved_on: string | null;
   rejection_reason: string | null;
