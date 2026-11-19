@@ -20,7 +20,10 @@
               <span><small>Storefront</small><strong>{{ business.publication_status || 'Not published' }}</strong></span>
             </div>
             @if (business.approval_status === 'APPROVED') {
-              <button class="market-button" type="button" (click)="openWorkspace(business)">Open business workspace <span aria-hidden="true">→</span></button>
+              <div class="approved-actions">
+                <button class="market-button" type="button" (click)="openWorkspace(business)">Open business workspace <span aria-hidden="true">→</span></button>
+                <button class="market-button secondary-market-button" type="button" (click)="manageTeam(business)">Manage team</button>
+              </div>
             } @else if (business.approval_status === 'REJECTED') {
               <p class="application-note">Your application needs attention. Check the review note or contact BBG support.</p>
               @if (business.rejection_reason) { <div class="reason"><strong>Review note</strong><span>{{ business.rejection_reason }}</span></div> }
