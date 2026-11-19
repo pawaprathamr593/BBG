@@ -43,6 +43,7 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
   'suspend-user': 'user.update',
   'restore-user': 'user.update',
   'approve-business': 'business.approve',
+  'view-business': 'business.approve',
   'reject-business': 'business.approve',
   'renew-subscription': 'subscription.create',
   'approve-subscription': 'subscription.approve',
@@ -664,7 +665,7 @@ export class DashboardModule implements OnInit {
       ? [{key:'unpublish-promotion',label:'Unpublish'}]
       : [{key:'manage-post-media',label:'Manage media'},{key:'publish-promotion',label:'Publish'}];
     if (this.section()==='platform-users') return status==='SUSPENDED' ? [{key:'restore-user',label:'Restore account'}] : [{key:'suspend-user',label:'Suspend account',danger:true}];
-    if (this.section()==='business-approval' && status==='PENDING') return [{key:'approve-business',label:'Approve'},{key:'reject-business',label:'Reject',danger:true}];
+    if (this.section()==='business-approval' && status==='PENDING') return [{key:'approve-business',label:'Approve'},{key:'view-business',label:'View details'},{key:'reject-business',label:'Reject',danger:true}];
     if (this.section()==='subscription-approval' && status==='PENDING') return [{key:'approve-subscription',label:'Approve'},{key:'reject-subscription',label:'Reject',danger:true}];
     if (this.section()==='subscriptions' && ['ACTIVE','EXPIRED'].includes(status)) return [{key:'renew-subscription',label:'Renew subscription'}];
     if (this.section()==='moderation' && status==='OPEN') return [{key:'moderate',label:'Review report'}];
@@ -695,6 +696,9 @@ export class DashboardModule implements OnInit {
         path=action==='publish-promotion'?'/api/v1/promotions/publish':'/api/v1/promotions/unpublish'; key='promotionParam'; actionType=action==='publish-promotion'?'publishPromotion':'unpublishPromotion'; data={tenant_id:tenantId,promotion_id:id}; break;
       case 'suspend-user': case 'restore-user':
         path=action==='suspend-user'?'/api/v1/admin/users/suspend':'/api/v1/admin/users/restore'; actionType=action==='suspend-user'?'suspendPlatformUser':'restorePlatformUser'; data={user_id:id}; break;
+      case 'view-business':
+        await this.openBusinessReview(item);
+        return;
       case 'approve-business':
         path='/api/v1/admin/businesses/approve'; actionType='approveBusiness'; data={business_id:Number(item['business_id'] ?? item['id'])}; break;
       case 'reject-business':
@@ -1118,6 +1122,27 @@ export class DashboardModule implements OnInit {
     this.recordDetail.set(null);
     try {
       this.recordDetail.set(await this.request<DataRecord>(path, key, actionType, actionData));
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async openBusinessReview(item: DataRecord): Promise<void> {
+    const businessId = this.recordId(item, 'business_id');
+    if (!businessId || this.busy()) return;
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      const detail = await this.request<DataRecord>(
+        '/api/v1/admin/businesses/detail',
+        'adminParam',
+        'getBusinessForReview',
+        { business_id: businessId },
+      );
+      this.recordDetailTitle.set('Business application details');
+      this.recordDetail.set(detail);
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
