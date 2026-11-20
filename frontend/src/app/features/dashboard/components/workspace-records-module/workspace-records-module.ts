@@ -22,6 +22,7 @@ export interface WorkspaceRecordCardModel {
   statusClass: string;
   fields: Array<{ key: string; label: string; value: string }>;
   bcn: string | null;
+  showBcn: boolean;
   showDetail: boolean;
   showSubscriptionReview: boolean;
   paymentQr: {
