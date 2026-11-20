@@ -100,6 +100,17 @@
         (closed)="recordDetail.set(null)">
         @if (recordDetail(); as detail) {
           <div class="record-detail-content">
+            @if (section() === 'subscriptions') {
+              <div class="bcn-record">
+                <span>BBG Contribution Number (BCN ID)</span>
+                <div>
+                  <strong>{{ detail['bcn'] || 'Not assigned yet' }}</strong>
+                  @if (hasBcn(detail)) {
+                    <button type="button" (click)="copyBcn(detail['bcn'])">Copy</button>
+                  }
+                </div>
+              </div>
+            }
             @for (group of detailGroups(detail); track group.title) {
               <section class="record-detail-section">
                 <h3>{{ group.title }}</h3>
@@ -136,12 +147,15 @@
                 <div><span>{{ humanize(key) }}</span><strong>{{ detail[key] || '—' }}</strong></div>
               }
             </div>
-            @if (hasBcn(detail)) {
-              <div class="bcn-record">
-                <span>BBG Contribution Number</span>
-                <div><strong>{{ detail['bcn'] }}</strong><button type="button" (click)="copyBcn(detail['bcn'])">Copy</button></div>
+            <div class="bcn-record">
+              <span>BBG Contribution Number (BCN ID)</span>
+              <div>
+                <strong>{{ detail['bcn'] || 'Not assigned yet' }}</strong>
+                @if (hasBcn(detail)) {
+                  <button type="button" (click)="copyBcn(detail['bcn'])">Copy</button>
+                }
               </div>
-            }
+            </div>
             @if (detail['payment_qr_file_url']) {
               <img class="payment-qr-preview" [src]="asUrl(detail['payment_qr_file_url'])" alt="Captured payment QR">
             }
