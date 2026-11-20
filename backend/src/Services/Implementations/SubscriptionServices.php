@@ -174,11 +174,6 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         if ($context['status'] !== 'SUCCESS') {
             return $this->propagateFailure($context, 'SubscriptionServices::getMySubscription');
         }
-        $application = $context['data']['application'];
-        if (($application['approval_status'] ?? '') === 'APPROVED' && ($application['tenant_status'] ?? '') !== 'ACTIVE') {
-            $resArr['msgArr'][] = 'The business tenant must be active to submit subscription payment proof.';
-            return $resArr;
-        }
         $subscriptionId = $this->positiveInt($actionData['subscription_id'] ?? null);
         if ($subscriptionId === null) {
             $resArr['msgArr'][] = 'A valid subscription_id is required.';
