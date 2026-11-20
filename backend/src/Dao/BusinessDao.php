@@ -595,6 +595,19 @@ final readonly class BusinessDao
         return $resArr;
     }
 
+    private function many(ConnectionInterface $db, string $sql, array $params, string $operation): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $rows = $db->createCommand($sql, $params)->queryAll();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = is_array($rows) ? $rows : [];
+        } catch (Throwable $exception) {
+            return $this->error($operation, $exception);
+        }
+        return $resArr;
+    }
+
     private function one(ConnectionInterface $db, string $sql, array $params, string $operation): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
