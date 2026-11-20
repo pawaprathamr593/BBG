@@ -52,6 +52,7 @@
       @if (subscription(); as payment) {
         <section class="payment-card">
           <div class="payment-summary"><span>Selected plan</span><strong>{{ payment.plan_name }}</strong><span>Amount to pay</span><strong>{{ payment.currency }} {{ payment.amount }}</strong></div>
+          <div class="bcn-id"><span>BBG Contribution Number (BCN ID)</span><strong>{{ payment.bcn || 'Not assigned yet' }}</strong></div>
           @if (payment.subscription_status === 'REJECTED' && payment.rejection_reason) {
             <div class="notice error" role="alert">Payment proof was rejected: {{ payment.rejection_reason }}</div>
           }
