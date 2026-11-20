@@ -191,9 +191,9 @@ final readonly class BusinessDao
              FROM BUSINESS_PROFILES bp
              INNER JOIN TENANTS t ON t.id = bp.tenant_id AND t.status = 'A'
              INNER JOIN TENANT_MEMBERSHIPS tm ON tm.tenant_id = bp.tenant_id
-                AND tm.user_id = :user_id AND tm.membership_status = 'ACTIVE' AND tm.status = 'A'
+                AND tm.user_id = :membership_user_id AND tm.membership_status = 'ACTIVE' AND tm.status = 'A'
              INNER JOIN USER_ROLE_ASSIGNMENTS ura ON ura.tenant_id = bp.tenant_id
-                AND ura.user_id = :user_id AND ura.status = 'A'
+                AND ura.user_id = :assignment_user_id AND ura.status = 'A'
                 AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
              INNER JOIN ROLES r ON r.id = ura.role_id
                 AND r.scope_type = 'TENANT' AND r.status = 'A'
@@ -201,7 +201,7 @@ final readonly class BusinessDao
                 AND (:tenant_id_filter = 0 OR bp.tenant_id = :tenant_id_match)
                 AND (:owner_only = 0 OR r.role_code = 'TENANT_OWNER')
              ORDER BY bp.id DESC LIMIT 1",
-            [':user_id' => $userId, ':tenant_id_filter' => $tenantId, ':tenant_id_match' => $tenantId, ':owner_only' => $tenantId === 0 ? 1 : 0],
+            [':membership_user_id' => $userId, ':assignment_user_id' => $userId, ':tenant_id_filter' => $tenantId, ':tenant_id_match' => $tenantId, ':owner_only' => $tenantId === 0 ? 1 : 0],
             'getMyBusinessApplication',
         );
     }
@@ -221,15 +221,15 @@ final readonly class BusinessDao
              FROM BUSINESS_PROFILES bp
              INNER JOIN TENANTS t ON t.id = bp.tenant_id AND t.status = 'A'
              INNER JOIN TENANT_MEMBERSHIPS tm ON tm.tenant_id = bp.tenant_id
-                AND tm.user_id = :user_id AND tm.membership_status = 'ACTIVE' AND tm.status = 'A'
+                AND tm.user_id = :membership_user_id AND tm.membership_status = 'ACTIVE' AND tm.status = 'A'
              INNER JOIN USER_ROLE_ASSIGNMENTS ura ON ura.tenant_id = bp.tenant_id
-                AND ura.user_id = :user_id AND ura.status = 'A'
+                AND ura.user_id = :assignment_user_id AND ura.status = 'A'
                 AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
              INNER JOIN ROLES r ON r.id = ura.role_id
                 AND r.role_code = 'TENANT_OWNER' AND r.scope_type = 'TENANT' AND r.status = 'A'
              WHERE bp.status = 'A'
              ORDER BY bp.id DESC",
-            [':user_id' => $userId],
+            [':membership_user_id' => $userId, ':assignment_user_id' => $userId],
             'getMyBusinessApplications',
         );
     }
@@ -249,14 +249,14 @@ final readonly class BusinessDao
              FROM BUSINESS_PROFILES bp
              INNER JOIN TENANTS t ON t.id = bp.tenant_id AND t.status = 'A'
              INNER JOIN TENANT_MEMBERSHIPS tm ON tm.tenant_id = bp.tenant_id
-                AND tm.user_id = :user_id AND tm.membership_status = 'ACTIVE' AND tm.status = 'A'
+                AND tm.user_id = :membership_user_id AND tm.membership_status = 'ACTIVE' AND tm.status = 'A'
              INNER JOIN USER_ROLE_ASSIGNMENTS ura ON ura.tenant_id = bp.tenant_id
-                AND ura.user_id = :user_id AND ura.status = 'A'
+                AND ura.user_id = :assignment_user_id AND ura.status = 'A'
                 AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
              INNER JOIN ROLES r ON r.id = ura.role_id
                 AND r.role_code = 'TENANT_OWNER' AND r.scope_type = 'TENANT' AND r.status = 'A'
              WHERE bp.tenant_id = :tenant_id AND bp.status = 'A' LIMIT 1",
-            [':user_id' => $userId, ':tenant_id' => $tenantId],
+            [':membership_user_id' => $userId, ':assignment_user_id' => $userId, ':tenant_id' => $tenantId],
             'getOwnedBusinessApplication',
         );
     }
