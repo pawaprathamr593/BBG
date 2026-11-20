@@ -18,10 +18,15 @@
               }
             </div>
           }
-          @if (card.bcn; as bcn) {
+          @if (card.showBcn) {
             <div class="bcn-record">
-              <span>BBG Contribution Number</span>
-              <div><strong>{{ bcn }}</strong><button type="button" (click)="copyBcnRequested.emit(bcn)">Copy</button></div>
+              <span>BBG Contribution Number (BCN ID)</span>
+              <div>
+                <strong>{{ card.bcn || 'Not assigned yet' }}</strong>
+                @if (card.bcn; as bcn) {
+                  <button type="button" (click)="copyBcnRequested.emit(bcn)">Copy</button>
+                }
+              </div>
             </div>
           }
           @if (card.showDetail) { <button type="button" class="secondary-action" (click)="detailRequested.emit(card.record)" [disabled]="loading()">View details</button> }
