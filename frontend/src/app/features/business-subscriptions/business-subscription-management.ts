@@ -23,7 +23,7 @@ import { ApplicationSubscription, BusinessRegistrationApiService, SubscriptionPl
         } @else if (step() === 'overview') {
           @if (activeSubscription(); as active) {
             <section class="current-plan">
-              <div><span>Current plan</span><h2>{{ active.plan_name }}</h2><p>{{ active.billing_cycle }} · {{ active.currency }} {{ active.amount }}</p></div>
+              <div><span>Current plan</span><h2>{{ active.plan_name }}</h2><p>{{ active.billing_cycle }} · {{ active.currency }} {{ active.amount }}</p><p class="bcn-value"><strong>BCN ID:</strong> {{ active.bcn || 'Not assigned yet' }}</p></div>
               <span class="status-pill active">ACTIVE</span>
             </section>
             <div class="section-heading"><div><h2>Upgrade your plan</h2><p>Your current subscription stays active until the replacement is approved.</p></div></div>
@@ -39,7 +39,7 @@ import { ApplicationSubscription, BusinessRegistrationApiService, SubscriptionPl
             </div>
             <section class="renew-section"><div><h2>Renew current plan</h2><p>Request another billing period on your current plan.</p></div><button class="secondary-button" type="button" (click)="requestRenewal(active)" [disabled]="busy()">Request renewal</button></section>
           } @else if (expiredSubscription(); as expired) {
-            <section class="current-plan"><div><span>Last subscription</span><h2>{{ expired.plan_name }}</h2><p>{{ expired.billing_cycle }} · {{ expired.currency }} {{ expired.amount }}</p></div><span class="status-pill expired">EXPIRED</span></section>
+            <section class="current-plan"><div><span>Last subscription</span><h2>{{ expired.plan_name }}</h2><p>{{ expired.billing_cycle }} · {{ expired.currency }} {{ expired.amount }}</p><p class="bcn-value"><strong>BCN ID:</strong> {{ expired.bcn || 'Not assigned yet' }}</p></div><span class="status-pill expired">EXPIRED</span></section>
             <section class="renew-section"><div><h2>Renew your plan</h2><p>Submit a renewal request. Your subscription becomes active after payment proof approval.</p></div><button class="primary-button" type="button" (click)="requestRenewal(expired)" [disabled]="busy()">Renew current plan</button></section>
           } @else {
             <p class="state-message">No active or expired subscription was found for this business.</p>
@@ -47,13 +47,13 @@ import { ApplicationSubscription, BusinessRegistrationApiService, SubscriptionPl
           <section class="history-section">
             <h2>Subscription history</h2>
             @for (item of subscriptions(); track item.id) {
-              <div class="history-row"><div><strong>{{ item.plan_name }}</strong><span>{{ item.created_on }}</span></div><span class="status-pill">{{ item.subscription_status }}</span></div>
+              <div class="history-row"><div><strong>{{ item.plan_name }}</strong><span>{{ item.created_on }}</span><span class="bcn-history"><strong>BCN ID:</strong> {{ item.bcn || 'Not assigned yet' }}</span></div><span class="status-pill">{{ item.subscription_status }}</span></div>
             }
           </section>
         } @else if (step() === 'payment') {
           @if (payment(); as item) {
             <section class="payment-panel">
-              <div class="payment-summary"><div><span>Selected plan</span><strong>{{ item.plan_name }}</strong></div><div><span>Amount due</span><strong>{{ item.currency }} {{ item.amount }}</strong></div></div>
+              <div class="payment-summary"><div><span>Selected plan</span><strong>{{ item.plan_name }}</strong></div><div><span>Amount due</span><strong>{{ item.currency }} {{ item.amount }}</strong></div><div class="bcn-summary"><span>BCN ID</span><strong>{{ item.bcn || 'Not assigned yet' }}</strong></div></div>
               @if (item.subscription_status === 'REJECTED' && item.rejection_reason) { <div class="notice error">Previous payment proof was rejected: {{ item.rejection_reason }}</div> }
               @if (item.payment_qr_url) { <div class="qr-panel"><img [src]="item.payment_qr_url" alt="BBG subscription payment QR code" /><span>Scan using your UPI app</span></div> }
               @if (item.payment_payee_name) { <p class="payment-line"><strong>Payee:</strong> {{ item.payment_payee_name }}</p> }
@@ -80,7 +80,7 @@ import { ApplicationSubscription, BusinessRegistrationApiService, SubscriptionPl
     .plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.plan-option{display:grid;align-content:start;gap:9px;padding:16px;background:var(--surface-card);border:1px solid var(--border);border-radius:12px}.plan-option>div>span{color:var(--brand);font-size:.65rem;font-weight:850}.plan-option h3{margin:5px 0;font-size:.98rem}.plan-option p{margin:0;color:var(--text-secondary);font-size:.73rem;line-height:1.45}.plan-option strong{font-size:1.05rem}.plan-option small{color:var(--text-secondary);font-size:.7rem}
     .primary-button,.secondary-button{padding:11px 14px;border:0;border-radius:9px;font:inherit;font-size:.77rem;font-weight:800;cursor:pointer}.primary-button{color:#fff;background:var(--brand)}.secondary-button{color:var(--text-primary);background:var(--surface-page);border:1px solid var(--border)}button:disabled{opacity:.55;cursor:wait}
     .renew-section{margin-top:16px}.history-section{display:grid;gap:10px;margin-top:24px}.history-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;background:var(--surface-subtle);border-radius:9px}.history-row>div{display:grid;gap:4px}.history-row strong{font-size:.78rem}.history-row span:not(.status-pill){color:var(--text-secondary);font-size:.68rem}
-    .payment-panel{display:grid;gap:14px}.payment-summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:15px;background:var(--surface-subtle);border:1px solid var(--border);border-radius:10px}.payment-summary div{display:grid;gap:5px}.payment-summary span{color:var(--text-secondary);font-size:.7rem}.payment-summary strong{font-size:.9rem}.qr-panel{display:grid;justify-items:center;gap:8px;padding:18px;background:#fff;border:1px solid var(--border);border-radius:10px}.qr-panel img{width:min(230px,100%);height:auto}.qr-panel span{color:#4b5563;font-size:.72rem}.payment-line{margin:0;padding:10px 12px;background:var(--surface-subtle);border-radius:8px;font-size:.76rem;line-height:1.5}.field{display:grid;gap:7px}.field span{font-size:.75rem;font-weight:750}.field input{width:100%;padding:11px 12px;color:var(--text-primary);background:var(--surface-page);border:1px solid var(--border);border-radius:8px;font:inherit;font-size:.82rem}
+    .payment-panel{display:grid;gap:14px}.payment-summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:15px;background:var(--surface-subtle);border:1px solid var(--border);border-radius:10px}.payment-summary div{display:grid;gap:5px}.payment-summary span{color:var(--text-secondary);font-size:.7rem}.payment-summary strong{font-size:.9rem}.payment-summary .bcn-summary{grid-column:1/-1;padding-top:10px;border-top:1px solid var(--border)}.bcn-value{margin:8px 0 0!important;color:var(--text-primary)!important;font-size:.78rem!important}.bcn-history{color:var(--text-secondary);font-size:.68rem}.bcn-history strong{color:var(--text-primary)}.qr-panel{display:grid;justify-items:center;gap:8px;padding:18px;background:#fff;border:1px solid var(--border);border-radius:10px}.qr-panel img{width:min(230px,100%);height:auto}.qr-panel span{color:#4b5563;font-size:.72rem}.payment-line{margin:0;padding:10px 12px;background:var(--surface-subtle);border-radius:8px;font-size:.76rem;line-height:1.5}.field{display:grid;gap:7px}.field span{font-size:.75rem;font-weight:750}.field input{width:100%;padding:11px 12px;color:var(--text-primary);background:var(--surface-page);border:1px solid var(--border);border-radius:8px;font:inherit;font-size:.82rem}
     .submitted-panel{display:grid;justify-items:center;text-align:center;padding:30px 10px}.success-icon{display:grid;width:56px;height:56px;place-items:center;color:#176b43;background:#e8f5ed;border-radius:50%;font-size:1.7rem;font-weight:850}.submitted-panel h2{margin:15px 0 5px}.submitted-panel p{max-width:520px;color:var(--text-secondary);font-size:.8rem;line-height:1.6}
     @media(max-width:620px){.current-plan,.renew-section{align-items:stretch;flex-direction:column}.current-plan .status-pill{align-self:flex-start}.payment-summary{grid-template-columns:1fr}.history-row{align-items:flex-start}}
   `],
