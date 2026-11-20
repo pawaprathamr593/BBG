@@ -100,6 +100,7 @@ export interface SubscriptionPlan {
 export interface ApplicationSubscription {
   id: number;
   plan_id: number;
+  bcn?: string | null;
   plan_name: string;
   billing_cycle: string;
   created_on?: string;
