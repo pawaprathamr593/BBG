@@ -556,6 +556,7 @@ export class DashboardModule implements OnInit {
         key: entry.key, label: this.humanize(entry.key), value: this.formatValue(entry.value),
       })),
       bcn: this.hasBcn(item) ? String(item['bcn']) : null,
+      showBcn: ['subscriptions', 'subscription-approval'].includes(this.section()),
       showDetail: ['platform-users','business-approval','orders','enquiries','payments'].includes(this.section())
         || (this.section() === 'subscriptions' && this.activeTenantId() !== null),
       showSubscriptionReview: this.section() === 'subscription-approval',
@@ -1025,9 +1026,7 @@ export class DashboardModule implements OnInit {
   }
 
   hasBcn(item: DataRecord): boolean {
-    return typeof item['bcn'] === 'string'
-      && item['bcn'] !== ''
-      && ['ACTIVE', 'EXPIRED', 'APPROVED'].includes(this.statusOf(item).toUpperCase());
+    return typeof item['bcn'] === 'string' && item['bcn'].trim() !== '';
   }
 
   async copyBcn(value: unknown): Promise<void> {
