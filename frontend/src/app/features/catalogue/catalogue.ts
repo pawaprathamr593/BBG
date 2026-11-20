@@ -8,6 +8,8 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
 import { hasActiveEntitlement, hasWorkspacePermission } from '../../core/workspace/workspace-access';
 import { CatalogueApiService, CatalogueCategory, CatalogueProduct, CatalogueUnit, ProductMedia } from './catalogue-api.service';
 import { WorkspaceDrawer } from '../../shared/workspace-drawer/workspace-drawer';
+import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
+import { SkeletonLoaderComponent } from '../../shared/components/skeleton-loader/skeleton-loader.component';
 
 interface ProductForm {
   product_code: string;
@@ -32,7 +34,7 @@ const emptyProduct = (): ProductForm => ({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-catalogue',
   standalone: true,
-  imports: [DecimalPipe, FormsModule, RouterLink, WorkspaceDrawer],
+  imports: [DecimalPipe, FormsModule, RouterLink, WorkspaceDrawer, StatusBadgeComponent, SkeletonLoaderComponent],
   templateUrl: './catalogue.html',
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}

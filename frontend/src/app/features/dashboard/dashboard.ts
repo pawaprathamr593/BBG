@@ -6,13 +6,14 @@ import { WorkspaceContextService } from '../../core/workspace/workspace-context.
 import { BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
 import { WorkspaceNavIconComponent } from '../workspace/workspace-nav-icon';
 import { getWorkspaceNavItems } from '../workspace/workspace-navigation';
-
+import { MetricCardComponent } from '../../shared/components/metric-card/metric-card.component';
+import { SkeletonLoaderComponent } from '../../shared/components/skeleton-loader/skeleton-loader.component';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterLink, WorkspaceNavIconComponent],
+  imports: [RouterLink, WorkspaceNavIconComponent, MetricCardComponent, SkeletonLoaderComponent],
   templateUrl: './dashboard.html',
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}

@@ -1,114 +1,122 @@
 # BBG Frontend Coding Standards
 
 **Applies to:** `frontend/`  
-**Baseline:** Angular 22, TypeScript 6, RxJS 7.8, SCSS  
-**Purpose:** Improve consistency, type safety, accessibility and maintainability without changing BBG features, API contracts, routes, styling or user-visible behaviour.
+**Baseline:** Angular 22, TypeScript 5.9+, RxJS 7.8, SCSS  
+**Purpose:** Improve consistency, type safety, accessibility, component reusability and maintainability without changing BBG features, API contracts, routes, styling or user-visible behaviour.
 
-These standards are BBG-specific. The uploaded agent skills kit is an engineering reference, not an instruction to copy its EduNova stack, PrimeNG/Tailwind conventions, `de-*` component library, NgRx setup or legacy file structure.
+These standards are BBG-specific and authoritative. The uploaded agent skills kit is an engineering reference, not an instruction to copy its EduNova stack, PrimeNG/Tailwind conventions, `de-*` component library, NgRx setup or legacy file structure.
 
-## 1. Non-negotiable change boundaries
+---
+
+## 1. Non-negotiable Change Boundaries
 
 - Preserve existing feature behaviour, API endpoints, request envelopes, response mapping, route paths, permissions and navigation.
 - Preserve existing visual design, CSS tokens, responsive layouts, theme behaviour, content and interaction patterns during code-quality refactors.
-- Do not introduce a UI framework, state library, API wrapper, runtime dependency or new architecture without explicit approval.
+- Do not introduce a UI framework (e.g. Tailwind, PrimeNG, Material, Bootstrap), state library (NgRx, Akita), API wrapper, runtime dependency or new architecture without explicit approval.
 - Keep changes scoped. Do not combine formatting-only changes with unrelated feature changes.
 - Do not modify backend code, database/schema, infrastructure, AWS resources or deployment configuration as part of frontend-only work.
 - Existing code is the source of truth when a convention in an external reference conflicts with the current BBG implementation.
 
-## 2. Angular and TypeScript
+---
 
-- Use standalone Angular components and lazy feature loading, following the existing route structure.
-- Use `ChangeDetectionStrategy.OnPush` for new components and adopt it in existing components only when their state updates are compatible with OnPush.
-- Prefer `inject()` for dependency injection in new code.
-- Prefer signal inputs (`input()`), outputs (`output()`), `signal()` and `computed()` for new Angular components where appropriate. Preserve existing public component bindings and event names when migrating decorators.
-- Use interfaces for object contracts. Do not add `any`; use `unknown` at untrusted boundaries and narrow it before use.
-- Use explicit return types for public methods and exported helpers when they improve the contract.
-- Use descriptive camelCase names for variables and functions, PascalCase for classes and interfaces, and UPPER_SNAKE_CASE for true constants.
-- Boolean names should communicate intent, e.g. `isLoading`, `hasPermission`, `canSubmit`.
-- Keep functions focused. Prefer an options object when a function needs more than three independent arguments.
-- Use immutable array/object updates (`map`, `filter`, spread) rather than mutating shared state.
-- Prefer pure helpers in focused utility files when logic is reused or independently testable.
-- Keep new component TypeScript files focused; split domain models, API contracts and reusable helpers rather than creating oversized components.
+## 2. Angular Architecture & Component Structure
 
-## 3. Components and templates
+### 2.1 Component Classification
+- **Container (Smart) Components:** Own route context, service injection, API orchestration, loading/error signals, permissions, and navigation. Located under `src/app/features/`.
+- **Presentational (Dumb) Components:** Pure presentation. Strictly receive data via typed inputs (`input()`) and emit events via outputs (`output()`). Must NOT inject HTTP services or mutate global state. Located under `src/app/shared/components/` or feature-specific subfolders.
+- **Layout Components:** Shell structures managing responsive navigation, sidebars, headers, and content projection (`<ng-content>`).
 
-- Route-level/feature components own orchestration: route context, service calls, loading/error handling, permissions and navigation.
-- Presentational components receive typed inputs and emit outputs. They should not independently call APIs or own feature-wide state.
-- Reuse existing BBG components, services, models and CSS tokens before introducing new abstractions.
-- Keep templates declarative. Move non-trivial transformations and repeated calculations into typed component members or pure helpers.
-- Use Angular control flow (`@if`, `@for`, `@switch`) in new templates.
-- Every repeated list must use a stable `track` expression based on a real identity where available.
-- Use strict comparisons (`===` / `!==`) and avoid unsafe non-null assertions on API data.
-- Keep template expressions simple; do not perform expensive transformations or side effects in templates.
-- Use semantic HTML and native controls where they fit the existing design. Every interactive control needs an accessible name and keyboard operation.
+### 2.2 Component Class Structure Order
+Every Angular component should follow a uniform internal member ordering:
+1. `@Component` decorator with `standalone: true`, `changeDetection: ChangeDetectionStrategy.OnPush`, `imports`, and template/styles.
+2. Injected dependencies using `inject(...)` at field declaration level.
+3. Component inputs: `input<T>()` or `input.required<T>()`.
+4. Component outputs: `output<T>()`.
+5. Reactive state: `signal<T>()`, `computed<T>()`, `toSignal(...)`.
+6. Lifecycle hooks in chronological order: `ngOnInit()`, `ngAfterViewInit()`, `ngOnDestroy()`.
+7. Public methods called from template event bindings.
+8. Private helper methods.
 
-## 4. API and data contracts
+### 2.3 Naming & File Conventions
+- **Class Names:** PascalCase with standard suffixes: `MarketplaceHomeComponent`, `ProductCardComponent`, `AuthService`, `AuthInterceptor`.
+- **Selectors:** kebab-case prefixed with `app-`, e.g. `app-business-card`, `app-workspace-drawer`.
+- **Files:** kebab-case. Shared components: `[name].component.ts`, `[name].component.html`, `[name].component.scss`. Route feature containers may retain established concise naming (`marketplace-home.ts`, `catalogue.ts`) to avoid breaking existing imports.
+- **Directories:** Feature-first organization under `src/app/features/<feature-name>/`, shared reusable UI under `src/app/shared/components/`, core singleton services under `src/app/core/services/`.
 
-- Keep HTTP calls in core/feature API services, not presentational components.
-- Use the existing BBG endpoint, payload envelope, response contract and authentication interceptor. Do not invent endpoints, fields, permission codes or response shapes.
-- Keep API DTOs distinct from view models when a mapping boundary exists or is introduced for a new feature.
-- Type service inputs and outputs. Treat network data as untrusted and validate/narrow it before use.
-- Preserve existing error semantics and user-facing messages unless a separate behaviour change is approved.
-- Do not log access tokens, credentials, personal data or raw authentication responses.
-- Do not move tokens or sensitive user data into localStorage/sessionStorage. Follow the existing authentication/session design.
-- Do not bypass HTTP interceptors or add ad-hoc authorization headers unless the existing API contract explicitly requires them.
+---
 
-## 5. State and asynchronous work
+## 3. TypeScript Strictness & Data Contracts
 
-- Use Angular signals for synchronous component and feature state where the current feature already follows that pattern.
-- Use RxJS for HTTP streams, cancellation, composition and event streams. Do not introduce NgRx solely to match the external kit.
-- Maintain one source of truth for each data set; avoid duplicated component/service/store copies.
-- Use `takeUntilDestroyed` for component-owned subscriptions that do not complete on their own.
-- Handle loading, empty, error and success states explicitly. Disable duplicate submissions while a mutation is in progress.
-- Cancel or ignore stale requests when changing search/filter context where the existing feature requires it.
-- Avoid nested subscriptions; compose dependent asynchronous operations with RxJS operators or clearly awaited promises.
-- Do not put HTTP requests or side effects inside `computed()` or reactive derivations.
+- **No `any`:** Strict typing is mandatory. Use specific interfaces or union types. At untrusted external boundaries (e.g. raw JSON parsing), use `unknown` and narrow it with type guards before use.
+- **Explicit Return Types:** Exported functions, service methods, and public component methods must specify explicit return types.
+- **Backend API Envelopes:** Preserve Yii 3 action-envelope contracts (`businessParam`, `authParam`, `adminParam`, `customerParam`, `subscriptionParam`, `tenantParam`, `dashboardParam`). Never send flat payloads to endpoints expecting envelope objects.
+- **Immutability:** Use immutable array and object updates (`.map()`, `.filter()`, object spread `{ ...state }`) instead of mutating arrays in-place.
+- **Strict Equality:** Always use `===` and `!==`. Never use loose equality (`==`, `!=`).
 
-## 6. Styling and visual regression protection
+---
 
-- Keep the current BBG design system: existing SCSS, CSS custom properties, theme attributes and component-specific styling.
-- Do not introduce Tailwind, PrimeNG or another component framework as part of a standards refactor.
-- Reuse existing design tokens for brand, surfaces, text and borders; avoid duplicating hard-coded values when a token already exists.
-- Preserve light/dark theme contrast and ensure new styles work in both themes.
-- Keep layouts mobile-first and test narrow screens (at least 360–390px) as well as tablet and desktop widths.
-- Do not change spacing, typography, colours, dimensions, animation, breakpoints or component composition during a code-only refactor unless required to fix a verified defect and approved.
-- Respect `prefers-reduced-motion`, visible focus states and touch targets.
+## 4. HTML Template Standards
 
-## 7. Accessibility and UI states
+- **Control Flow:** Exclusively use modern Angular control flow syntax: `@if`, `@for`, `@switch`. Do not introduce legacy `*ngIf` or `*ngFor` in new templates.
+- **Stable Tracking:** Every `@for` loop must provide a stable, unique tracking key: `@for (item of items(); track item.id)`. Never track by volatile index unless the list is strictly static and read-only.
+- **Logic-Free Templates:** Do not embed complex calculations, multi-step ternary logic, or function invocations in template expressions. Delegate to `computed()` signals or component getters.
+- **Semantic HTML:** Use native semantic elements: `<main>`, `<nav>`, `<aside>`, `<header>`, `<footer>`, `<section>`, `<article>`, `<button>`, `<table>`. Do not use `<div (click)="...">` when `<button>` is semantically appropriate.
 
-- Use semantic landmarks, headings, labels and buttons.
-- Associate form labels with controls; expose validation and errors to assistive technology.
-- Provide visible keyboard focus and do not make hover the only way to access an action.
-- Use `aria-live`, `role="status"` or `role="alert"` appropriately for asynchronous feedback.
-- Keep layout stable while loading; explain empty states and provide a next step where appropriate.
-- Confirm destructive actions and report mutation failures accurately. Never show success feedback when an operation failed.
+---
 
-## 8. Formatting and hygiene
+## 5. Styling, Design Tokens & SCSS Architecture
 
-- Follow the existing `frontend/.prettierrc` and `.editorconfig`: 2-space indentation, single quotes in TypeScript, 100-character print width and Angular HTML parsing.
-- Keep imports used and ordered consistently with nearby files.
-- Remove newly introduced unused variables, imports, dead code and debugging logs.
-- Do not leave commented-out implementation blocks or temporary mock data in release code.
-- Avoid broad reformatting of untouched files.
+- **Centralized Design Tokens:** All colors, spacing, borders, shadows, and radii must reference CSS custom properties defined in `src/app/core/theme/tokens.scss` or `src/styles.scss` (e.g. `var(--bbg-brand-primary)`).
+- **Zero Hardcoded Hex Codes:** Hardcoded hexadecimal color literals (e.g. `#174D35`, `#F5D928`) are strictly prohibited in component styles. Always use semantic CSS variables.
+- **Theme Support:** Every component style must support both Light and Dark modes seamlessly via CSS custom properties. Test contrast across both themes.
+- **SCSS Nesting Limit:** Limit CSS/SCSS nesting to a maximum of 3 levels deep to prevent specificity bloat and performance degradation.
+- **Bundle Budgets:** Keep component SCSS lean. Reusable styles belong in shared SCSS partials or shared components to prevent exceeding Angular's 16kB component style budget.
+- **Mobile-First Responsive Grid:**
+  - `Mobile (Compact)`: `< 640px`
+  - `Tablet`: `640px - 1023px`
+  - `Desktop`: `1024px - 1439px`
+  - `Wide`: `>= 1440px`
 
-## 9. Testing and verification
+---
 
-For every scoped change:
+## 6. Signals, State & Asynchronous Programming
 
-1. Run Prettier check on touched files.
-2. Run `npx ng build --configuration development` from `frontend/`.
-3. Run relevant unit/component tests when present.
-4. Run `git diff --check`.
-5. For UI-adjacent changes, manually check the affected flow at mobile and desktop sizes, in light and dark themes, and verify keyboard/focus behaviour.
+- **Signal-First Reactivity:** Use Angular Signals (`signal()`, `computed()`) for local component state and synchronous derivations.
+- **RxJS for Async Streams:** Use RxJS Observables for HTTP communication, real-time streams, debouncing, and event cancellation.
+- **Subscription Lifecycle Management:** Every component-owned `.subscribe()` must be automatically cleaned up using `takeUntilDestroyed(this.destroyRef)` or converted to a signal with `toSignal()`. Unmanaged subscriptions that cause memory leaks are strictly prohibited.
+- **No Side Effects in `computed()`:** Computed signals must be pure synchronous derivations. Never make HTTP calls or dispatch state mutations inside a `computed()` block.
+- **Explicit UI States:** Every screen and data-dependent component must handle and visually present 4 core states:
+  1. *Loading State:* Shimmer skeleton (`app-skeleton-loader`) or focused spinner.
+  2. *Empty State:* Meaningful message, icon/illustration, and next-step action button (`app-empty-state`).
+  3. *Error State:* Non-blocking alert banner with human-readable error and retry action.
+  4. *Success State:* Clean populated UI with optimistic or immediate updates.
 
-Report each check as passed, failed or not run. Never claim visual verification without actually performing it.
+---
 
-## 10. Safe refactoring checklist
+## 7. Accessibility (WCAG 2.2 AA) Standards
 
-- [ ] Existing inputs, outputs, route paths and API contracts remain compatible.
-- [ ] No feature or interaction has been removed or reinterpreted.
-- [ ] No visual, responsive or theme changes were introduced intentionally.
-- [ ] New code is typed and does not introduce `any`.
-- [ ] Subscriptions and asynchronous work have clear lifecycle/error handling.
-- [ ] Loading, empty, error and success feedback remain correct.
-- [ ] Build, tests, formatting and diff checks are reported honestly.
+- **Color Contrast:** All body text must maintain a minimum contrast ratio of 4.5:1 against its background. Large headings (>=24px) and graphical elements must maintain at least 3:1.
+- **Focus Rings:** Interactive elements must have a high-visibility `:focus-visible` ring (`var(--bbg-focus-ring)`). Never set `outline: none` without providing an accessible focus alternative.
+- **Form Controls:** Every input, select, and textarea must be explicitly associated with a `<label>` or contain an `aria-label` / `aria-labelledby` attribute. Form validation errors must be linked via `aria-describedby`.
+- **Modals & Drawers:** Overlays must trap keyboard focus, set `role="dialog"`, declare `aria-modal="true"`, supply an accessible `aria-labelledby`, and dismiss safely on `Escape` key press.
+- **Live Regions:** Asynchronous notifications and toast alerts must use `aria-live="polite"` or `role="alert"`.
+
+---
+
+## 8. Services & Dependency Injection
+
+- **`inject()` Pattern:** Use `inject(ServiceName)` for dependency injection instead of constructor parameter injection.
+- **Single Responsibility Services:** Keep services focused. API services handle communication with specific endpoints; state services manage shared client state.
+- **Token Storage & Security:** Authentication tokens must remain in-memory signals in `AuthService`. Refresh tokens reside in HttpOnly cookies. Never store tokens or sensitive credentials in `localStorage` or `sessionStorage`.
+
+---
+
+## 9. Verification & Safe Refactoring Checklist
+
+Before completing any task or moving between phases:
+1. Verify TypeScript compiles with zero errors: `npx tsc --noEmit`.
+2. Verify Angular builds with zero errors: `npm run build`.
+3. Check all affected routes and interactions at mobile (<640px) and desktop (>1024px) viewports.
+4. Verify both Light and Dark themes.
+5. Verify keyboard navigation and focus indicators.
+6. Verify API request and response payload integrity.

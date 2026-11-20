@@ -2,7 +2,11 @@
       <section class="intro"><p class="eyebrow">OFFERS FROM THE BBG COMMUNITY</p><h1>Discover <span>promotions</span></h1><p class="lead">Keep up with the latest public promotions shared by businesses on BBG.</p></section>
       <section class="content">
         <div class="heading"><div><p class="eyebrow">WHAT'S HAPPENING</p><h2>Latest promotions</h2></div><span>{{ promotions().length }} available</span></div>
-        @if (loading()) { <div class="state" role="status">Loading promotions…</div> }
+        @if (loading()) {
+          <div style="padding: 24px 0">
+            <app-skeleton-loader variant="card" [count]="6" />
+          </div>
+        }
         @else if (error()) { <div class="state error" role="alert">{{ error() }}</div> }
         @else if (promotions().length) {
           <div class="grid">
@@ -10,7 +14,14 @@
               <app-promotion-card [promotion]="promotion" (selected)="openBusiness($event)" />
             }
           </div>
-        } @else { <div class="empty"><div class="gift">✦</div><h3>No active promotions right now</h3><p>When businesses publish public promotions, they will show up here.</p></div> }
+        } @else {
+          <app-empty-state
+            icon="🎁"
+            title="No active promotions right now"
+            description="When businesses publish special offers or seasonal discounts, they will appear here."
+            actionText="Explore products"
+            (actionClicked)="openBusiness({ business_slug: '' })" />
+        }
       </section>
     </main>
   

@@ -3,17 +3,27 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { ApplicationSubscription, BusinessApplication, BusinessApplicationPayload, BusinessRegistrationApiService, SubscriptionPlan } from '../../core/business/business-registration-api.service';
+import { PlanCardComponent } from '../../shared/components/plan-card/plan-card.component';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-business-registration',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, PlanCardComponent],
   templateUrl: './business-registration.html',
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
     .registration-page{padding:48px 20px 76px}.registration-card{width:min(820px,100%);margin:0 auto;padding:clamp(22px,4vw,42px);background:var(--surface-card);border:1px solid var(--border);border-radius:20px;box-shadow:0 16px 48px rgba(18,45,30,.06)}
-    .back-link{display:inline-block;margin-bottom:34px;color:var(--text-secondary);font-size:.82rem;text-decoration:none}.eyebrow{margin:0 0 9px;color:var(--brand);font-size:.68rem;font-weight:800;letter-spacing:.14em}
+    .stepper-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:32px;padding:12px 18px;background:var(--bbg-surface-subtle);border:1px solid var(--bbg-border-default);border-radius:var(--bbg-radius-lg)}
+    .step-indicator{display:flex;align-items:center;gap:8px;font-size:0.8125rem;font-weight:600;color:var(--bbg-text-muted)}
+    .step-indicator.active{color:var(--bbg-brand-primary);font-weight:700}
+    .step-indicator.completed{color:var(--bbg-success)}
+    .step-num{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--bbg-border-default);color:var(--bbg-text-secondary);font-size:0.75rem;font-weight:700}
+    .step-indicator.active .step-num{background:var(--bbg-brand-primary);color:var(--bbg-text-inverse)}
+    .step-indicator.completed .step-num{background:var(--bbg-success);color:#fff}
+    .step-divider{flex:1;height:2px;background:var(--bbg-border-default);margin:0 4px}
+    .plans-selection-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:24px 0}
+    .back-link{display:inline-block;margin-bottom:24px;color:var(--text-secondary);font-size:.82rem;text-decoration:none}.eyebrow{margin:0 0 9px;color:var(--brand);font-size:.68rem;font-weight:800;letter-spacing:.14em}
     h1{margin:0;font-size:clamp(2rem,5vw,2.8rem);letter-spacing:-.055em}.intro{max-width:660px;margin:12px 0 28px;color:var(--text-secondary);font-size:.92rem;line-height:1.65}
     .field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.field{display:grid;gap:7px;min-width:0}.field.full{grid-column:1/-1}.field>span{font-size:.78rem;font-weight:750}
     input,textarea{width:100%;min-width:0;padding:12px 13px;color:var(--text-primary);background:var(--surface-page);border:1px solid var(--border);border-radius:9px;font:inherit;font-size:.85rem;outline:none}

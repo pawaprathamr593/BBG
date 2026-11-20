@@ -3,11 +3,13 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { BusinessApplication, BusinessRegistrationApiService } from '../../core/business/business-registration-api.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
+import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-business-workspace',
   standalone: true,
+  imports: [StatusBadgeComponent],
   templateUrl: './business-workspace.html',
   styles: [`
     :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}.status-page{display:grid;min-height:65vh;place-items:start center;padding:54px 18px 76px}

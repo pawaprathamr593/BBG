@@ -1,6 +1,30 @@
 <main class="registration-page">
   <section class="registration-card">
     <a class="back-link" href="/" (click)="goHome($event)">← Back to BBG</a>
+
+    <!-- Stepper indicator -->
+    <nav class="stepper-nav" aria-label="Registration Progress">
+      <div class="step-indicator" [class.active]="step() === 'details'" [class.completed]="step() !== 'details'">
+        <span class="step-num">{{ step() === 'details' ? '1' : '✓' }}</span>
+        <span class="step-text">Details</span>
+      </div>
+      <div class="step-divider"></div>
+      <div class="step-indicator" [class.active]="step() === 'plans'" [class.completed]="step() === 'payment' || step() === 'complete'">
+        <span class="step-num">{{ (step() === 'payment' || step() === 'complete') ? '✓' : '2' }}</span>
+        <span class="step-text">Plan</span>
+      </div>
+      <div class="step-divider"></div>
+      <div class="step-indicator" [class.active]="step() === 'payment'" [class.completed]="step() === 'complete'">
+        <span class="step-num">{{ step() === 'complete' ? '✓' : '3' }}</span>
+        <span class="step-text">Payment</span>
+      </div>
+      <div class="step-divider"></div>
+      <div class="step-indicator" [class.active]="step() === 'complete'">
+        <span class="step-num">4</span>
+        <span class="step-text">Review</span>
+      </div>
+    </nav>
+
     <p class="eyebrow">JOIN THE BBG BUSINESS NETWORK</p>
     <h1>{{ step() === 'details' ? 'Register your business' : step() === 'plans' ? 'Choose your plan' : step() === 'payment' ? 'Complete your payment' : 'Application submitted' }}</h1>
     <p class="intro">
@@ -38,13 +62,15 @@
         </div>
       </form>
     } @else if (step() === 'plans') {
-      <div class="plan-list">
+      <div class="plans-selection-grid">
         @for (plan of plans(); track plan.id) {
-          <article class="plan-card">
-            <div><p class="plan-code">{{ plan.plan_code }}</p><h2>{{ plan.plan_name }}</h2><p>{{ plan.description || 'Business subscription plan' }}</p></div>
-            <div class="plan-price"><strong>{{ plan.currency }} {{ plan.price }}</strong><span>{{ plan.billing_cycle }}</span></div>
-            <button class="submit-button" type="button" (click)="choosePlan(plan)" [disabled]="busy()">Choose this plan <span aria-hidden="true">→</span></button>
-          </article>
+          <app-plan-card
+            [name]="plan.plan_name"
+            [price]="plan.price"
+            [period]="plan.billing_cycle || 'billing cycle'"
+            [badge]="plan.plan_code"
+            [features]="[plan.description || 'Full marketplace access and verified storefront']"
+            (selected)="choosePlan(plan)" />
         }
       </div>
       <button class="secondary-button back-step" type="button" (click)="step.set('details')">← Back to business details</button>

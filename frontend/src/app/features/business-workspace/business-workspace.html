@@ -12,7 +12,7 @@
           <article class="application-card">
             <div class="application-heading">
               <div><h2>{{ business.business_name }}</h2><p>{{ business.business_slug }}</p></div>
-              <span class="status-pill" [attr.data-status]="business.approval_status">{{ statusLabel(business.approval_status) }}</span>
+              <app-status-badge [status]="business.approval_status" [label]="statusLabel(business.approval_status)" />
             </div>
             <div class="business-summary">
               <span><small>Location</small><strong>{{ locationLabel(business) }}</strong></span>

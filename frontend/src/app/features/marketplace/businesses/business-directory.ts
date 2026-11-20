@@ -3,6 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { FilterDrawer } from '../../../shared/filter-drawer/filter-drawer';
 import { BusinessCard } from '../../../shared/components/business-card/business-card';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { SkeletonLoaderComponent } from '../../../shared/components/skeleton-loader/skeleton-loader.component';
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import type { BusinessCardModel } from '../../../shared/models/marketplace-card.models';
 import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory } from '../../../core/marketplace/marketplace-api.service';
 
@@ -16,7 +19,7 @@ interface BusinessFilterValues {
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-business-directory',
-  imports: [FormsModule, FilterDrawer, BusinessCard],
+  imports: [FormsModule, FilterDrawer, BusinessCard, PaginationComponent, SkeletonLoaderComponent, EmptyStateComponent],
   templateUrl: './business-directory.html',
   styles: [`
     :host{display:block}.page{min-height:65vh;padding:0 0 64px;background:var(--surface-page)}

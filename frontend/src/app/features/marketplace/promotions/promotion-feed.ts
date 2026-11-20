@@ -2,12 +2,14 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { Router } from '@angular/router';
 import { MarketplaceApiService, MarketplacePromotion } from '../../../core/marketplace/marketplace-api.service';
 import { PromotionCard } from '../../../shared/components/promotion-card/promotion-card';
+import { SkeletonLoaderComponent } from '../../../shared/components/skeleton-loader/skeleton-loader.component';
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import type { PromotionCardModel } from '../../../shared/models/marketplace-card.models';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-promotion-feed',
-  imports: [PromotionCard],
+  imports: [PromotionCard, SkeletonLoaderComponent, EmptyStateComponent],
   templateUrl: './promotion-feed.html',
   styles: [`
     :host{display:block}.page{min-height:65vh;padding-bottom:64px;background:var(--surface-page)}.intro{position:relative;isolation:isolate;overflow:hidden;padding:78px max(24px,calc((100vw - 1180px)/2)) 66px;color:#fff;background:radial-gradient(ellipse at 88% 12%,rgba(245,217,40,.22),transparent 27%),radial-gradient(ellipse at 8% 100%,rgba(107,174,126,.28),transparent 38%),linear-gradient(120deg,#0d3425,#174d35 58%,#246747);border-radius:0 0 26px 26px;box-shadow:0 18px 48px rgba(17,64,43,.12)}

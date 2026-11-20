@@ -4,6 +4,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MarketplaceApiService, MarketplaceCategory, MarketplaceProduct } from '../../../core/marketplace/marketplace-api.service';
 import { FilterDrawer } from '../../../shared/filter-drawer/filter-drawer';
 import { ProductCard } from '../../../shared/components/product-card/product-card';
+import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { SkeletonLoaderComponent } from '../../../shared/components/skeleton-loader/skeleton-loader.component';
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import type { ProductCardModel } from '../../../shared/models/marketplace-card.models';
 
 type ProductSort = 'newest' | 'popular' | 'nearby' | 'price_low' | 'price_high' | 'name';
@@ -23,7 +26,7 @@ type ProductFilterKey = keyof ProductFilterValues;
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-product-directory',
-  imports: [FormsModule, FilterDrawer, ProductCard],
+  imports: [FormsModule, FilterDrawer, ProductCard, PaginationComponent, SkeletonLoaderComponent, EmptyStateComponent],
   templateUrl: './product-directory.html',
   styles: [`
     :host{display:block}.page{min-height:65vh;padding:0 0 120px;background:var(--surface-page)}

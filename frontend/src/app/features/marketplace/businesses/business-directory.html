@@ -51,7 +51,9 @@
           </div>
         </app-filter-drawer>
         @if (loading()) {
-          <div class="state" role="status">Finding businesses…</div>
+          <div style="padding: 24px 0">
+            <app-skeleton-loader variant="card" [count]="6" />
+          </div>
         } @else if (error()) {
           <div class="state error" role="alert">{{ error() }} <button type="button" (click)="search()">Try again</button></div>
         } @else if (businesses().length) {
@@ -60,13 +62,14 @@
               <app-business-card [business]="business" (selected)="openBusiness($event)" />
             }
           </div>
-          <div class="pagination">
-            <button type="button" [disabled]="page() <= 1" (click)="changePage(page() - 1)">Previous</button>
-            <span>Page {{ page() }} of {{ pages() }}</span>
-            <button type="button" [disabled]="page() >= pages()" (click)="changePage(page() + 1)">Next</button>
-          </div>
+          <app-pagination [currentPage]="page()" [totalItems]="total()" [pageSize]="12" (pageChange)="changePage($event)" />
         } @else {
-          <div class="empty"><div class="empty-mark">⌕</div><h3>No businesses found</h3><p>Try adjusting your search or filters.</p><button type="button" (click)="clearFilters()">Clear all filters</button></div>
+          <app-empty-state
+            icon="🏢"
+            title="No businesses found"
+            description="Try adjusting your search keywords or clearing active filters."
+            actionText="Clear all filters"
+            (actionClicked)="clearFilters()" />
         }
       </section>
     </main>
