@@ -14,6 +14,26 @@
           + New promotion
         </button>
       }
+      @if (section() === 'members' && can('tenant.update')) {
+        <button
+          class="secondary-action"
+          type="button"
+          (click)="openTeamMemberDrawer()"
+          [disabled]="busy()"
+        >
+          + Add / Invite member
+        </button>
+      }
+      @if (section() === 'subscription-plans' && can('subscription.update')) {
+        <button
+          class="secondary-action"
+          type="button"
+          (click)="openPlanCreateDrawer()"
+          [disabled]="busy()"
+        >
+          + New subscription plan
+        </button>
+      }
       <button class="refresh" type="button" (click)="load()" [disabled]="loading()">
         ↻ Refresh
       </button>
@@ -135,9 +155,10 @@
         [totalItems]="totalItems()"
         [currentPage]="currentPage()"
         [pageCount]="pageCount()"
-        [pageSize]="paginationPageSize()"
+        [pageSize]="pageSize()"
         [loading]="loading()"
         (pageChange)="goToPage($event)"
+        (pageSizeChange)="setPageSize($event)"
         (actionRequested)="runAction($event.action, $event.record)"
         (detailRequested)="openRecordDetail($event)"
         (subscriptionReviewRequested)="openSubscriptionReview($event)"
@@ -167,31 +188,238 @@
   >
     @if (recordDetail(); as detail) {
       <div class="record-detail-content">
-        @if (section() === 'subscriptions') {
-          <div class="bcn-record">
-            <span>BBG Contribution Number (BCN ID)</span>
-            <div>
-              <strong>{{ detail['bcn'] || 'Not assigned yet' }}</strong>
-              @if (hasBcn(detail)) {
-                <button type="button" (click)="copyBcn(detail['bcn'])">Copy</button>
+        @if (section() === 'business-approval') {
+          <div class="business-review-hero">
+            @if (detail['cover_image_url']) {
+              <div class="business-review-cover">
+                <img [src]="asUrl(detail['cover_image_url'])" alt="Business cover preview" />
+              </div>
+            }
+            <div class="business-review-brand">
+              @if (detail['logo_url']) {
+                <img class="business-review-logo" [src]="asUrl(detail['logo_url'])" alt="Logo" />
+              } @else {
+                <div class="business-review-logo-placeholder">
+                  {{ initials(detail['business_name']) }}
+                </div>
               }
+              <div class="business-review-heading">
+                <h2>{{ detail['business_name'] || 'Business Name' }}</h2>
+                <div class="business-review-meta">
+                  <span [class]="statusClass(statusOf(detail))">
+                    {{ humanize(statusOf(detail)) }}
+                  </span>
+                  @if (detail['category_name']) {
+                    <span class="category-pill">{{ detail['category_name'] }}</span>
+                  }
+                  @if (detail['business_slug']) {
+                    <small>@{{ detail['business_slug'] }}</small>
+                  }
+                </div>
+              </div>
             </div>
+            @if (detail['business_description']) {
+              <p class="business-review-desc">{{ detail['business_description'] }}</p>
+            }
           </div>
-        }
-        @for (group of detailGroups(detail); track group.title) {
+
           <section class="record-detail-section">
-            <h3>{{ group.title }}</h3>
+            <h3>Applicant & Ownership Details</h3>
             <div class="review-detail-grid">
-              @for (entry of group.entries; track entry.key) {
-                <div [class.detail-value-wide]="isLongDetail(entry.value)">
-                  <span>{{ humanize(entry.key) }}</span
-                  ><strong>{{ formatValue(entry.value) }}</strong>
+              <div>
+                <span>Owner Full Name</span>
+                <strong>{{ detail['owner_name'] || '—' }}</strong>
+              </div>
+              <div>
+                <span>Owner Account Email</span>
+                <strong>{{ detail['owner_email'] || '—' }}</strong>
+              </div>
+              <div>
+                <span>Owner Mobile Number</span>
+                <strong>{{ detail['owner_mobile'] || '—' }}</strong>
+              </div>
+              <div>
+                <span>Application Date</span>
+                <strong>{{ formatValue(detail['created_at']) }}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="record-detail-section">
+            <h3>Contact Channels</h3>
+            <div class="review-detail-grid">
+              <div>
+                <span>Business Public Email</span>
+                <strong>{{ detail['business_email'] || '—' }}</strong>
+              </div>
+              <div>
+                <span>Business Phone</span>
+                <strong>{{ detail['business_phone'] || '—' }}</strong>
+              </div>
+              <div>
+                <span>WhatsApp Enquiry Number</span>
+                <strong>{{ detail['whatsapp_number'] || '—' }}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="record-detail-section">
+            <h3>Registered Premises & Location</h3>
+            <div class="review-detail-grid">
+              <div class="detail-value-wide">
+                <span>Premises Address</span>
+                <strong
+                  >{{ detail['address_line_1']
+                  }}{{ detail['address_line_2'] ? ', ' + detail['address_line_2'] : '' }}</strong
+                >
+              </div>
+              <div>
+                <span>City & State</span>
+                <strong
+                  >{{ detail['city'] || '—'
+                  }}{{ detail['state'] ? ', ' + detail['state'] : '' }}</strong
+                >
+              </div>
+              <div>
+                <span>Postal Code & Country</span>
+                <strong
+                  >{{ detail['postal_code'] || '—' }} ({{ detail['country_code'] || 'IN' }})</strong
+                >
+              </div>
+              @if (detail['latitude'] && detail['longitude']) {
+                <div>
+                  <span>GPS Coordinates</span>
+                  <strong>{{ detail['latitude'] }}, {{ detail['longitude'] }}</strong>
                 </div>
               }
             </div>
           </section>
-        } @empty {
-          <p class="record-detail-empty">No additional details are available for this record.</p>
+
+          @if (detail['rejection_reason']) {
+            <section class="record-detail-section">
+              <h3>Previous Review Notes</h3>
+              <div class="review-notes-box">
+                <p>{{ detail['rejection_reason'] }}</p>
+              </div>
+            </section>
+          }
+
+          <footer class="drawer-actions-strip">
+            @if (statusOf(detail).toUpperCase() === 'PENDING') {
+              <button
+                type="button"
+                class="secondary-action"
+                [disabled]="busy()"
+                (click)="runAction('approve-business', detail); recordDetail.set(null)"
+              >
+                Approve Business
+              </button>
+              <button
+                type="button"
+                class="danger-button"
+                [disabled]="busy()"
+                (click)="runAction('reject-business', detail); recordDetail.set(null)"
+              >
+                Reject Application
+              </button>
+            }
+            @if (statusOf(detail).toUpperCase() === 'REJECTED') {
+              <button
+                type="button"
+                class="secondary-action"
+                [disabled]="busy()"
+                (click)="runAction('reopen-business', detail); recordDetail.set(null)"
+              >
+                Reopen Application
+              </button>
+            }
+          </footer>
+        } @else if (section() === 'members') {
+          <div class="member-detail-hero">
+            <div class="member-avatar">
+              {{ initials(detail['full_name'] || detail['name'] || 'U') }}
+            </div>
+            <div>
+              <h2>{{ detail['full_name'] || detail['name'] || 'Team Member' }}</h2>
+              <span class="role-pill">{{
+                humanize(asString(detail['role_code'] ?? 'STAFF'))
+              }}</span>
+              <span [class]="statusClass(statusOf(detail))">
+                {{ humanize(statusOf(detail)) }}
+              </span>
+            </div>
+          </div>
+
+          <section class="record-detail-section">
+            <h3>Contact & Account</h3>
+            <div class="review-detail-grid">
+              <div>
+                <span>Email Address</span>
+                <strong>{{ detail['email'] || '—' }}</strong>
+              </div>
+              <div>
+                <span>Mobile Number</span>
+                <strong>{{ detail['mobile'] || '—' }}</strong>
+              </div>
+              <div>
+                <span>Membership Status</span>
+                <strong>{{ humanize(statusOf(detail)) }}</strong>
+              </div>
+              <div>
+                <span>Joined Workspace On</span>
+                <strong>{{ formatValue(detail['created_on'] ?? detail['created_at']) }}</strong>
+              </div>
+            </div>
+          </section>
+
+          @if (
+            asString(detail['role_code'] ?? '').toUpperCase() !== 'TENANT_OWNER' &&
+            can('tenant.update')
+          ) {
+            <footer class="drawer-actions-strip">
+              <button
+                type="button"
+                class="secondary-action"
+                (click)="openChangeRoleDrawer(detail); recordDetail.set(null)"
+              >
+                Change Role
+              </button>
+              <button
+                type="button"
+                class="danger-button"
+                (click)="runAction('remove-member', detail); recordDetail.set(null)"
+              >
+                Remove from Team
+              </button>
+            </footer>
+          }
+        } @else {
+          @if (section() === 'subscriptions') {
+            <div class="bcn-record">
+              <span>BBG Contribution Number (BCN ID)</span>
+              <div>
+                <strong>{{ detail['bcn'] || 'Not assigned yet' }}</strong>
+                @if (hasBcn(detail)) {
+                  <button type="button" (click)="copyBcn(detail['bcn'])">Copy</button>
+                }
+              </div>
+            </div>
+          }
+          @for (group of detailGroups(detail); track group.title) {
+            <section class="record-detail-section">
+              <h3>{{ group.title }}</h3>
+              <div class="review-detail-grid">
+                @for (entry of group.entries; track entry.key) {
+                  <div [class.detail-value-wide]="isLongDetail(entry.value)">
+                    <span>{{ humanize(entry.key) }}</span
+                    ><strong>{{ formatValue(entry.value) }}</strong>
+                  </div>
+                }
+              </div>
+            </section>
+          } @empty {
+            <p class="record-detail-empty">No additional details are available for this record.</p>
+          }
         }
       </div>
     }
@@ -562,6 +790,93 @@
           placeholder="Brief description of plan features and limits"
         ></textarea>
       </label>
+
+      <div class="entitlements-config-block">
+        <h4>Included Database Entitlements & Limits</h4>
+        <div class="entitlement-checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              [checked]="editingPlanEntitlements()['business.profile'] === true"
+              (change)="setEditPlanEntitlement('business.profile', $any($event.target).checked)"
+            />
+            <span>Business Profile (<code>business.profile</code>)</span>
+          </label>
+        </div>
+        <div class="entitlement-checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              [checked]="editingPlanEntitlements()['storefront.enabled'] === true"
+              (change)="setEditPlanEntitlement('storefront.enabled', $any($event.target).checked)"
+            />
+            <span>Storefront Enabled (<code>storefront.enabled</code>)</span>
+          </label>
+        </div>
+        <div class="entitlement-checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              [checked]="editingPlanEntitlements()['catalogue.enabled'] === true"
+              (change)="setEditPlanEntitlement('catalogue.enabled', $any($event.target).checked)"
+            />
+            <span>Catalogue Enabled (<code>catalogue.enabled</code>)</span>
+          </label>
+        </div>
+        <label class="workspace-message-label">
+          Product Limit (<code>product.limit</code>)
+          <input
+            type="text"
+            [value]="editingPlanEntitlements()['product.limit'] || '50'"
+            (input)="setEditPlanEntitlement('product.limit', inputValue($event))"
+            placeholder="e.g. 50 or UNLIMITED"
+          />
+        </label>
+        <div class="entitlement-checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              [checked]="editingPlanEntitlements()['promotions.enabled'] === true"
+              (change)="setEditPlanEntitlement('promotions.enabled', $any($event.target).checked)"
+            />
+            <span>Promotions Enabled (<code>promotions.enabled</code>)</span>
+          </label>
+        </div>
+        <label class="workspace-message-label">
+          Promotions Limit (<code>promotions.limit</code>)
+          <input
+            type="text"
+            [value]="editingPlanEntitlements()['promotions.limit'] || '10'"
+            (input)="setEditPlanEntitlement('promotions.limit', inputValue($event))"
+            placeholder="e.g. 10 or UNLIMITED"
+          />
+        </label>
+        <div class="entitlement-checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              [checked]="editingPlanEntitlements()['advanced.reports.enabled'] === true"
+              (change)="
+                setEditPlanEntitlement('advanced.reports.enabled', $any($event.target).checked)
+              "
+            />
+            <span>Advanced Reports Enabled (<code>advanced.reports.enabled</code>)</span>
+          </label>
+        </div>
+        <label class="workspace-message-label">
+          Support Level (<code>support.level</code>)
+          <select
+            [value]="editingPlanEntitlements()['support.level'] || 'STANDARD'"
+            (change)="setEditPlanEntitlement('support.level', inputValue($event))"
+          >
+            <option value="BASIC">BASIC</option>
+            <option value="STANDARD">STANDARD</option>
+            <option value="PRIORITY">PRIORITY</option>
+            <option value="DEDICATED">DEDICATED</option>
+          </select>
+        </label>
+      </div>
+
       @if (error()) {
         <p class="workspace-edit-error" role="alert">{{ error() }}</p>
       }
@@ -575,6 +890,391 @@
           [disabled]="busy() || !editingPlanName().trim() || !editingPlanPrice()"
         >
           {{ busy() ? 'Saving…' : 'Save plan changes' }}
+        </button>
+      </footer>
+    </form>
+  </app-workspace-drawer>
+
+  <app-workspace-drawer
+    [open]="showPlanCreateDrawer()"
+    title="New subscription plan"
+    description="Configure a new subscription tier with database-driven entitlement definitions."
+    (closed)="closePlanCreateDrawer()"
+  >
+    <form class="workspace-edit-form" (submit)="$event.preventDefault(); submitCreatePlan()">
+      <label class="workspace-message-label"
+        >Plan code
+        <input
+          type="text"
+          maxlength="50"
+          [value]="newPlanCode()"
+          (input)="newPlanCode.set(inputValue($event).toUpperCase())"
+          placeholder="e.g. ENTERPRISE_YEARLY"
+          required
+        />
+        <small>Unique alphanumeric code with underscores.</small>
+      </label>
+      <label class="workspace-message-label"
+        >Plan name
+        <input
+          type="text"
+          maxlength="100"
+          [value]="newPlanName()"
+          (input)="newPlanName.set(inputValue($event))"
+          placeholder="e.g. Enterprise Tier"
+          required
+        />
+      </label>
+      <label class="workspace-message-label"
+        >Billing cycle
+        <select [value]="newPlanCycle()" (change)="newPlanCycle.set(inputValue($event))">
+          <option value="QUARTERLY">Quarterly</option>
+          <option value="YEARLY">Yearly</option>
+          <option value="MONTHLY">Monthly</option>
+        </select>
+      </label>
+      <label class="workspace-message-label"
+        >Price (₹)
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          [value]="newPlanPrice()"
+          (input)="newPlanPrice.set(inputValue($event))"
+          placeholder="e.g. 4999.00"
+          required
+        />
+      </label>
+      <label class="workspace-message-label"
+        >Plan status
+        <select [value]="newPlanStatus()" (change)="newPlanStatus.set(inputValue($event))">
+          <option value="ACTIVE">ACTIVE</option>
+          <option value="INACTIVE">INACTIVE</option>
+        </select>
+      </label>
+      <label class="workspace-message-label"
+        >Description
+        <textarea
+          rows="3"
+          maxlength="1000"
+          [value]="newPlanDescription()"
+          (input)="newPlanDescription.set(inputValue($event))"
+          placeholder="Brief description of who this plan is for"
+        ></textarea>
+      </label>
+
+      <div class="entitlements-config-block">
+        <h4>Included Database Entitlements & Limits</h4>
+        <div class="entitlement-checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              [checked]="newPlanEntitlements()['business.profile'] === true"
+              (change)="setNewPlanEntitlement('business.profile', $any($event.target).checked)"
+            />
+            <span>Business Profile (<code>business.profile</code>)</span>
+          </label>
+        </div>
+        <div class="entitlement-checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              [checked]="newPlanEntitlements()['storefront.enabled'] === true"
+              (change)="setNewPlanEntitlement('storefront.enabled', $any($event.target).checked)"
+            />
+            <span>Storefront Enabled (<code>storefront.enabled</code>)</span>
+          </label>
+        </div>
+        <div class="entitlement-checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              [checked]="newPlanEntitlements()['catalogue.enabled'] === true"
+              (change)="setNewPlanEntitlement('catalogue.enabled', $any($event.target).checked)"
+            />
+            <span>Catalogue Enabled (<code>catalogue.enabled</code>)</span>
+          </label>
+        </div>
+        <label class="workspace-message-label">
+          Product Limit (<code>product.limit</code>)
+          <input
+            type="text"
+            [value]="newPlanEntitlements()['product.limit'] || '50'"
+            (input)="setNewPlanEntitlement('product.limit', inputValue($event))"
+            placeholder="e.g. 50 or UNLIMITED"
+          />
+        </label>
+        <div class="entitlement-checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              [checked]="newPlanEntitlements()['promotions.enabled'] === true"
+              (change)="setNewPlanEntitlement('promotions.enabled', $any($event.target).checked)"
+            />
+            <span>Promotions Enabled (<code>promotions.enabled</code>)</span>
+          </label>
+        </div>
+        <label class="workspace-message-label">
+          Promotions Limit (<code>promotions.limit</code>)
+          <input
+            type="text"
+            [value]="newPlanEntitlements()['promotions.limit'] || '10'"
+            (input)="setNewPlanEntitlement('promotions.limit', inputValue($event))"
+            placeholder="e.g. 10 or UNLIMITED"
+          />
+        </label>
+        <div class="entitlement-checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              [checked]="newPlanEntitlements()['advanced.reports.enabled'] === true"
+              (change)="
+                setNewPlanEntitlement('advanced.reports.enabled', $any($event.target).checked)
+              "
+            />
+            <span>Advanced Reports Enabled (<code>advanced.reports.enabled</code>)</span>
+          </label>
+        </div>
+        <label class="workspace-message-label">
+          Support Level (<code>support.level</code>)
+          <select
+            [value]="newPlanEntitlements()['support.level'] || 'STANDARD'"
+            (change)="setNewPlanEntitlement('support.level', inputValue($event))"
+          >
+            <option value="BASIC">BASIC</option>
+            <option value="STANDARD">STANDARD</option>
+            <option value="PRIORITY">PRIORITY</option>
+            <option value="DEDICATED">DEDICATED</option>
+          </select>
+        </label>
+      </div>
+
+      @if (error()) {
+        <p class="workspace-edit-error" role="alert">{{ error() }}</p>
+      }
+      <footer>
+        <button type="button" class="refresh" (click)="closePlanCreateDrawer()" [disabled]="busy()">
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="secondary-action"
+          [disabled]="busy() || !newPlanCode().trim() || !newPlanName().trim() || !newPlanPrice()"
+        >
+          {{ busy() ? 'Creating…' : 'Create subscription plan' }}
+        </button>
+      </footer>
+    </form>
+  </app-workspace-drawer>
+
+  <app-workspace-drawer
+    [open]="showTeamMemberDrawer()"
+    title="Add or invite team member"
+    description="Assign existing BBG users to your business workspace or generate an invitation token."
+    (closed)="closeTeamMemberDrawer()"
+  >
+    <div class="team-member-drawer-tabs">
+      <button
+        type="button"
+        [class.active]="teamMemberMode() === 'add'"
+        (click)="teamMemberMode.set('add')"
+      >
+        Search & Add User
+      </button>
+      <button
+        type="button"
+        [class.active]="teamMemberMode() === 'invite'"
+        (click)="teamMemberMode.set('invite')"
+      >
+        Send Invitation Link
+      </button>
+    </div>
+
+    @if (teamMemberMode() === 'add') {
+      <div class="team-search-form">
+        <label class="workspace-message-label">
+          Search user by email
+          <div class="input-action-row">
+            <input
+              type="email"
+              [value]="teamSearchEmail()"
+              (input)="teamSearchEmail.set(inputValue($event))"
+              (keydown.enter)="$event.preventDefault(); searchEligibleUsers()"
+              placeholder="user@example.com"
+            />
+            <button
+              type="button"
+              class="secondary-action"
+              [disabled]="teamSearchLoading() || !teamSearchEmail().trim()"
+              (click)="searchEligibleUsers()"
+            >
+              {{ teamSearchLoading() ? 'Searching…' : 'Search' }}
+            </button>
+          </div>
+          <small>Search for registered users by their exact email address.</small>
+        </label>
+
+        @if (teamSearchResults().length) {
+          <div class="team-results-list">
+            @for (user of teamSearchResults(); track user['id']) {
+              <div
+                class="team-user-row"
+                [class.selected]="teamSelectedUserId() === asNumber(user['id'])"
+                (click)="selectUserToAdd(user)"
+              >
+                <div class="team-user-info">
+                  <strong>{{ user['full_name'] || user['name'] || user['email'] }}</strong>
+                  <span>{{ user['email'] }}</span>
+                  @if (user['mobile']) {
+                    <small>{{ user['mobile'] }}</small>
+                  }
+                </div>
+                <button
+                  type="button"
+                  [class]="
+                    teamSelectedUserId() === asNumber(user['id']) ? 'selected-pill' : 'refresh'
+                  "
+                >
+                  {{ teamSelectedUserId() === asNumber(user['id']) ? '✓ Selected' : 'Select' }}
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        @if (teamSelectedUserId()) {
+          <form class="workspace-edit-form" (submit)="$event.preventDefault(); submitAddMember()">
+            <label class="workspace-message-label">
+              Selected user
+              <input type="text" [value]="teamSelectedUserName()" disabled />
+            </label>
+            <label class="workspace-message-label">
+              Assign role
+              <select
+                [value]="teamSelectedRole()"
+                (change)="teamSelectedRole.set(inputValue($event))"
+              >
+                <option value="BUSINESS_MANAGER">Business Manager</option>
+                <option value="SALES_MANAGER">Sales Manager</option>
+                <option value="PRODUCT_MANAGER">Product Manager</option>
+                <option value="ORDER_MANAGER">Order Manager</option>
+                <option value="FINANCE_MANAGER">Finance Manager</option>
+                <option value="STAFF">Staff Member</option>
+              </select>
+            </label>
+
+            @if (error()) {
+              <p class="workspace-edit-error" role="alert">{{ error() }}</p>
+            }
+
+            <footer>
+              <button
+                type="button"
+                class="refresh"
+                (click)="closeTeamMemberDrawer()"
+                [disabled]="busy()"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="secondary-action" [disabled]="busy()">
+                {{ busy() ? 'Adding…' : 'Add to Workspace' }}
+              </button>
+            </footer>
+          </form>
+        }
+      </div>
+    }
+
+    @if (teamMemberMode() === 'invite') {
+      <form class="workspace-edit-form" (submit)="$event.preventDefault(); submitInviteMember()">
+        <label class="workspace-message-label">
+          Recipient email
+          <input
+            type="email"
+            [value]="teamInviteEmail()"
+            (input)="teamInviteEmail.set(inputValue($event))"
+            placeholder="colleague@example.com"
+            required
+          />
+        </label>
+        <label class="workspace-message-label">
+          Assign role
+          <select [value]="teamSelectedRole()" (change)="teamSelectedRole.set(inputValue($event))">
+            <option value="BUSINESS_MANAGER">Business Manager</option>
+            <option value="SALES_MANAGER">Sales Manager</option>
+            <option value="PRODUCT_MANAGER">Product Manager</option>
+            <option value="ORDER_MANAGER">Order Manager</option>
+            <option value="FINANCE_MANAGER">Finance Manager</option>
+            <option value="STAFF">Staff Member</option>
+          </select>
+        </label>
+
+        @if (createdInvitationToken()) {
+          <div class="invitation-token-box">
+            <span>Invitation Created:</span>
+            <code>{{ createdInvitationToken() }}</code>
+            <small>Share this invitation token or have the user accept it via email.</small>
+          </div>
+        }
+
+        @if (error()) {
+          <p class="workspace-edit-error" role="alert">{{ error() }}</p>
+        }
+
+        <footer>
+          <button
+            type="button"
+            class="refresh"
+            (click)="closeTeamMemberDrawer()"
+            [disabled]="busy()"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="secondary-action"
+            [disabled]="busy() || !teamInviteEmail().trim()"
+          >
+            {{ busy() ? 'Inviting…' : 'Generate Invitation' }}
+          </button>
+        </footer>
+      </form>
+    }
+  </app-workspace-drawer>
+
+  <app-workspace-drawer
+    [open]="showChangeRoleDrawer()"
+    title="Change member role"
+    description="Update the workspace permissions role assigned to this team member."
+    (closed)="closeChangeRoleDrawer()"
+  >
+    <form class="workspace-edit-form" (submit)="$event.preventDefault(); submitChangeRole()">
+      <label class="workspace-message-label">
+        Team member
+        <input type="text" [value]="targetMemberName()" disabled />
+      </label>
+      <label class="workspace-message-label">
+        Assigned role
+        <select [value]="targetMemberRole()" (change)="targetMemberRole.set(inputValue($event))">
+          <option value="BUSINESS_MANAGER">Business Manager</option>
+          <option value="SALES_MANAGER">Sales Manager</option>
+          <option value="PRODUCT_MANAGER">Product Manager</option>
+          <option value="ORDER_MANAGER">Order Manager</option>
+          <option value="FINANCE_MANAGER">Finance Manager</option>
+          <option value="STAFF">Staff Member</option>
+        </select>
+      </label>
+
+      @if (error()) {
+        <p class="workspace-edit-error" role="alert">{{ error() }}</p>
+      }
+
+      <footer>
+        <button type="button" class="refresh" (click)="closeChangeRoleDrawer()" [disabled]="busy()">
+          Cancel
+        </button>
+        <button type="submit" class="secondary-action" [disabled]="busy()">
+          {{ busy() ? 'Saving…' : 'Save role change' }}
         </button>
       </footer>
     </form>

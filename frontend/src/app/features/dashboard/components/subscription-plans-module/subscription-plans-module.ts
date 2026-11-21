@@ -41,4 +41,45 @@ export class SubscriptionPlansModule {
     }
     return '—';
   }
+
+  entitlementsList(
+    plan: Record<string, unknown>,
+  ): Array<{ label: string; value: string; isBoolean: boolean }> {
+    const raw = plan['entitlements'];
+    if (!raw) {
+      const desc = String(plan['description'] ?? '');
+      return desc ? [{ label: desc, value: '', isBoolean: true }] : [];
+    }
+    const items: Array<{ label: string; value: string; isBoolean: boolean }> = [];
+    if (typeof raw === 'string') {
+      const parts = raw.split(';');
+      for (const part of parts) {
+        const [code, val] = part.split('=');
+        if (!code) continue;
+        const cleanCode = code.trim();
+        const cleanVal = (val ?? '').trim();
+        const isBool = ['true', '1', 'yes'].includes(cleanVal.toLowerCase());
+        items.push({
+          label: this.humanizeEntitlement(cleanCode),
+          value: isBool ? '' : cleanVal,
+          isBoolean: isBool,
+        });
+      }
+    }
+    return items;
+  }
+
+  humanizeEntitlement(code: string): string {
+    const map: Record<string, string> = {
+      'business.profile': 'Verified Business Profile',
+      'storefront.enabled': 'Custom Public Storefront',
+      'catalogue.enabled': 'Product Catalogue Access',
+      'product.limit': 'Product Listing Limit',
+      'promotions.enabled': 'Promotional Campaigns',
+      'promotions.limit': 'Monthly Promotions Limit',
+      'advanced.reports.enabled': 'Advanced Business Analytics',
+      'support.level': 'Support Level',
+    };
+    return map[code] || code.replace(/\./g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  }
 }

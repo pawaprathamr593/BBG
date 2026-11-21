@@ -106,6 +106,59 @@ h2 {
   flex: 1;
 }
 
+.plan-entitlements-list {
+  margin: 0.75rem 0 1.25rem;
+  padding: 0.75rem;
+  background: var(--surface-subtle);
+  border-radius: var(--bbg-radius-md, 8px);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.entitlements-heading {
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--bbg-brand-primary);
+}
+
+.features-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.check-icon {
+  color: var(--bbg-brand-primary);
+  font-weight: 800;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.feature-text {
+  flex: 1;
+}
+
+.feature-limit {
+  color: var(--bbg-brand-primary);
+  font-weight: 700;
+}
+
 .plan-btn {
   width: 100%;
   min-height: 40px;

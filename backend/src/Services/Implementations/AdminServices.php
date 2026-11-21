@@ -153,6 +153,9 @@ final readonly class AdminServices implements IAdminServices
                 case 'applyModerationAction':
                     $resArr = $this->manageModerationAction($actionData);
                     break;
+                case 'createAdminPlan':
+                    $resArr = $this->createAdminPlan($actionData);
+                    break;
                 case 'updateAdminPlan':
                     $resArr = $this->updateAdminPlan($actionData);
                     break;
@@ -270,6 +273,12 @@ final readonly class AdminServices implements IAdminServices
         $result = $this->dao->getBusinessForReview($this->db, $businessId);
         if ($result['status'] !== 'SUCCESS' || $result['data'] === []) {
             return $this->propagateFailure($result, 'AdminServices::getBusinessForReview');
+        }
+        if (!empty($result['data']['logo_path'])) {
+            $result['data']['logo_url'] = $this->s3Storage->resolveDownloadUrl((string) $result['data']['logo_path']);
+        }
+        if (!empty($result['data']['cover_image_path'])) {
+            $result['data']['cover_image_url'] = $this->s3Storage->resolveDownloadUrl((string) $result['data']['cover_image_path']);
         }
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = $result['data'];
@@ -410,6 +419,49 @@ final readonly class AdminServices implements IAdminServices
         return $resArr;
     }
 
+    private function createAdminPlan(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'subscription.update');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::createAdminPlan');
+        }
+        $adminId = (int) $context['data']['user_id'];
+        $planCode = strtoupper(trim((string) ($actionData['plan_code'] ?? '')));
+        $planName = $this->requiredText($actionData['plan_name'] ?? '', 100);
+        $description = $this->nullableText($actionData['description'] ?? null, 500);
+        $billingCycle = strtoupper(trim((string) ($actionData['billing_cycle'] ?? 'QUARTERLY')));
+        $price = isset($actionData['price']) && is_numeric($actionData['price']) && (float) $actionData['price'] >= 0
+            ? (float) $actionData['price']
+            : null;
+        $currency = strtoupper(trim((string) ($actionData['currency'] ?? 'INR')));
+        $planStatus = strtoupper(trim((string) ($actionData['plan_status'] ?? 'ACTIVE')));
+        $entitlements = is_array($actionData['entitlements'] ?? null) ? $actionData['entitlements'] : [];
+
+        if ($planCode === '' || strlen($planCode) > 50 || !preg_match('/^[A-Z0-9_]+$/', $planCode)) {
+            $resArr['msgArr'][] = 'A valid alphanumeric plan_code is required (uppercase letters, numbers, underscores).';
+            return $resArr;
+        }
+        if ($planName === null || $price === null || !in_array($billingCycle, ['QUARTERLY', 'YEARLY', 'MONTHLY'], true)) {
+            $resArr['msgArr'][] = 'Valid plan_name, non-negative price, and valid billing_cycle (QUARTERLY/YEARLY) are required.';
+            return $resArr;
+        }
+        if (!in_array($planStatus, ['ACTIVE', 'INACTIVE'], true)) {
+            $planStatus = 'ACTIVE';
+        }
+
+        $result = $this->dao->createPlan(
+            $this->db, $planCode, $planName, $description, $billingCycle,
+            $price, $currency, $planStatus, $entitlements, $adminId,
+        );
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'AdminServices::createAdminPlan');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = $result['data'];
+        return $resArr;
+    }
+
     private function updateAdminPlan(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
@@ -429,11 +481,12 @@ final readonly class AdminServices implements IAdminServices
             ? (float) $actionData['price']
             : null;
         $planStatus = strtoupper(trim((string) ($actionData['plan_status'] ?? 'ACTIVE')));
+        $entitlements = is_array($actionData['entitlements'] ?? null) ? $actionData['entitlements'] : [];
         if ($planName === null || $price === null || !in_array($planStatus, ['ACTIVE', 'INACTIVE'], true)) {
             $resArr['msgArr'][] = 'Valid plan_name, non-negative price, and plan_status (ACTIVE/INACTIVE) are required.';
             return $resArr;
         }
-        $result = $this->dao->updatePlan($this->db, $planId, $planName, $description, $price, $planStatus, $adminId);
+        $result = $this->dao->updatePlan($this->db, $planId, $planName, $description, $price, $planStatus, $adminId, $entitlements);
         if ($result['status'] !== 'SUCCESS') {
             return $this->propagateFailure($result, 'AdminServices::updateAdminPlan');
         }

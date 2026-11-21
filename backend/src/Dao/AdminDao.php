@@ -127,9 +127,13 @@ final readonly class AdminDao
     public function getBusinessForReview(ConnectionInterface $db, int $businessId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        return $this->one($db, "SELECT bp.*, t.tenant_code, t.tenant_name, t.tenant_type, t.tenant_status
+        return $this->one($db, "SELECT bp.*, t.tenant_code, t.tenant_name, t.tenant_type, t.tenant_status,
+            u.full_name AS owner_name, u.email AS owner_email, u.mobile AS owner_mobile,
+            c.category_name
             FROM BUSINESS_PROFILES bp
             INNER JOIN TENANTS t ON t.id = bp.tenant_id AND t.status = 'A'
+            LEFT JOIN USERS u ON u.id = bp.created_by AND u.status = 'A'
+            LEFT JOIN CATEGORIES c ON c.id = bp.primary_category_id AND c.status = 'A'
             WHERE bp.id = :id AND bp.status = 'A' LIMIT 1",
             [':id' => $businessId], 'getBusinessForReview');
     }
@@ -522,6 +526,67 @@ final readonly class AdminDao
             ORDER BY p.price ASC, p.id ASC", [], 'getAllPlans');
     }
 
+    public function createPlan(
+        ConnectionInterface $db,
+        string $planCode,
+        string $planName,
+        ?string $description,
+        string $billingCycle,
+        float $price,
+        string $currency,
+        string $planStatus,
+        array $entitlements,
+        int $adminId,
+    ): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $existing = $db->createCommand("SELECT id FROM PLANS WHERE plan_code = :code LIMIT 1", [':code' => $planCode])->queryOne();
+            if (is_array($existing)) {
+                $resArr['msgArr'][] = 'A plan with this plan_code already exists.';
+                return $resArr;
+            }
+            $db->createCommand("INSERT INTO PLANS
+                (plan_code, plan_name, description, billing_cycle, price, currency, plan_status, status, created_by, updated_by)
+                VALUES (:plan_code, :plan_name, :description, :billing_cycle, :price, :currency, :plan_status, 'A', :admin_id, :admin_id)",
+                [
+                    ':plan_code' => $planCode,
+                    ':plan_name' => $planName,
+                    ':description' => $description,
+                    ':billing_cycle' => $billingCycle,
+                    ':price' => $price,
+                    ':currency' => $currency,
+                    ':plan_status' => $planStatus,
+                    ':admin_id' => $adminId,
+                ]
+            )->execute();
+            $planId = (int) $db->getLastInsertId();
+
+            foreach ($entitlements as $code => $val) {
+                $codeStr = trim((string) $code);
+                $valStr = trim((string) $val);
+                if ($codeStr === '') continue;
+                $valueType = in_array(strtolower($valStr), ['true', 'false', '1', '0'], true) ? 'BOOLEAN' : 'STRING';
+                $db->createCommand("INSERT INTO PLAN_ENTITLEMENTS
+                    (plan_id, entitlement_code, entitlement_value, value_type, status, created_by, updated_by)
+                    VALUES (:plan_id, :code, :val, :type, 'A', :admin_id, :admin_id)",
+                    [
+                        ':plan_id' => $planId,
+                        ':code' => $codeStr,
+                        ':val' => $valStr,
+                        ':type' => $valueType,
+                        ':admin_id' => $adminId,
+                    ]
+                )->execute();
+            }
+
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['id' => $planId, 'plan_code' => $planCode];
+        } catch (Throwable $exception) {
+            return $this->error('createPlan', $exception);
+        }
+        return $resArr;
+    }
+
     public function updatePlan(
         ConnectionInterface $db,
         int $planId,
@@ -530,6 +595,7 @@ final readonly class AdminDao
         float $price,
         string $planStatus,
         int $adminId,
+        array $entitlements = [],
     ): array {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         try {
@@ -550,6 +616,27 @@ final readonly class AdminDao
                 if ($exists['status'] !== 'SUCCESS' || $exists['data'] === []) {
                     $resArr['msgArr'][] = 'Subscription plan not found.';
                     return $resArr;
+                }
+            }
+            if (!empty($entitlements)) {
+                foreach ($entitlements as $code => $val) {
+                    $codeStr = trim((string) $code);
+                    $valStr = trim((string) $val);
+                    if ($codeStr === '') continue;
+                    $valueType = in_array(strtolower($valStr), ['true', 'false', '1', '0'], true) ? 'BOOLEAN' : 'STRING';
+                    $existingEnt = $db->createCommand("SELECT id FROM PLAN_ENTITLEMENTS WHERE plan_id = :plan_id AND entitlement_code = :code LIMIT 1",
+                        [':plan_id' => $planId, ':code' => $codeStr])->queryOne();
+                    if (is_array($existingEnt)) {
+                        $db->createCommand("UPDATE PLAN_ENTITLEMENTS
+                            SET entitlement_value = :val, value_type = :type, status = 'A', updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
+                            WHERE id = :id",
+                            [':val' => $valStr, ':type' => $valueType, ':admin_id' => $adminId, ':id' => (int) $existingEnt['id']])->execute();
+                    } else {
+                        $db->createCommand("INSERT INTO PLAN_ENTITLEMENTS
+                            (plan_id, entitlement_code, entitlement_value, value_type, status, created_by, updated_by)
+                            VALUES (:plan_id, :code, :val, :type, 'A', :admin_id, :admin_id)",
+                            [':plan_id' => $planId, ':code' => $codeStr, ':val' => $valStr, ':type' => $valueType, ':admin_id' => $adminId])->execute();
+                    }
                 }
             }
             $resArr['status'] = 'SUCCESS';

@@ -47,6 +47,8 @@ final class TenantController
             '/api/v1/tenants/members/owner-list' => 'listOwnedTenantMembers',
             '/api/v1/tenants/members/search' => 'searchEligibleTenantUsers',
             '/api/v1/tenants/members/add' => 'addExistingTenantMember',
+            '/api/v1/tenants/members/remove' => 'removeTenantMember',
+            '/api/v1/tenants/members/role' => 'changeTenantMemberRole',
             '/api/v1/tenants/invitations/create' => 'createTenantInvitation',
             '/api/v1/tenants/invitations/accept' => 'acceptTenantInvitation',
             default => '',

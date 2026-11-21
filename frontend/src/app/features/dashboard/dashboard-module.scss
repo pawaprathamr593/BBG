@@ -838,3 +838,312 @@ h1 {
     grid-column: auto;
   }
 }
+
+/* Business Review & Member Detail Rich Drawer Views */
+.business-review-hero {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.business-review-cover {
+  width: 100%;
+  height: 140px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+.business-review-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.business-review-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.business-review-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--surface-card);
+}
+.business-review-logo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 1.5rem;
+  font-weight: 800;
+  border: 1px solid var(--border);
+}
+.business-review-heading {
+  display: grid;
+  gap: 6px;
+}
+.business-review-heading h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.business-review-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.78rem;
+}
+.category-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.business-review-desc {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+.review-notes-box {
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--bbg-danger-soft, #fee2e2);
+  border: 1px solid color-mix(in srgb, var(--bbg-danger, #b91c1c) 25%, transparent);
+  color: var(--bbg-danger, #b91c1c);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.drawer-actions-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.danger-button {
+  min-height: 40px;
+  padding: 0 14px;
+  color: var(--bbg-danger, #b91c1c);
+  background: var(--surface-card);
+  border: 1px solid color-mix(in srgb, var(--bbg-danger, #b91c1c) 35%, var(--border));
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.danger-button:hover:not(:disabled) {
+  background: var(--bbg-danger-soft, #fee2e2);
+}
+.danger-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+/* Team Member Hero View */
+.member-detail-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+}
+.member-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.member-detail-hero h2 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.role-pill {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* Database Entitlements Config in Plan Drawers */
+.entitlements-config-block {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+}
+.entitlements-config-block h4 {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+.entitlement-checkbox-row label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+.entitlement-checkbox-row input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+.entitlement-checkbox-row code {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+/* Team Member Drawer Tabs & Forms */
+.team-member-drawer-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+.team-member-drawer-tabs button {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+.team-member-drawer-tabs button.active {
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-color: color-mix(in srgb, var(--brand) 30%, var(--border));
+}
+.team-search-form {
+  display: grid;
+  gap: 16px;
+}
+.input-action-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+.input-action-row input {
+  flex: 1;
+}
+.team-results-list {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.team-user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--surface-card);
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.team-user-row:hover {
+  border-color: var(--brand);
+}
+.team-user-row.selected {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
+.team-user-info {
+  display: grid;
+  gap: 3px;
+}
+.team-user-info strong {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+.team-user-info span {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.team-user-info small {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.selected-pill {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+.invitation-token-box {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--border));
+  margin: 12px 0;
+}
+.invitation-token-box span {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--brand);
+}
+.invitation-token-box code {
+  font-size: 0.82rem;
+  word-break: break-all;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+.invitation-token-box small {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}

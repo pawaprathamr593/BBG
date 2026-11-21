@@ -20,6 +20,25 @@
 
         <p class="plan-description">{{ value(plan, ['description', 'plan_description']) }}</p>
 
+        @if (entitlementsList(plan); as entitlements) {
+          <div class="plan-entitlements-list">
+            <span class="entitlements-heading">WHAT'S INCLUDED</span>
+            <ul class="features-list">
+              @for (item of entitlements; track item.label) {
+                <li class="feature-item">
+                  <span class="check-icon" aria-hidden="true">✓</span>
+                  <span class="feature-text">
+                    {{ item.label }}
+                    @if (item.value) {
+                      <strong class="feature-limit">: {{ item.value }}</strong>
+                    }
+                  </span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
         @if (canRequest()) {
           <button
             type="button"

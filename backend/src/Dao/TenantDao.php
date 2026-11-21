@@ -309,9 +309,97 @@ final readonly class TenantDao
                 )->execute();
             }
             $resArr['status'] = 'SUCCESS';
-            $resArr['data'] = ['tenant_id' => $tenantId, 'user_id' => $userId, 'role_code' => 'TENANT_ORDER_MANAGER'];
+            $resArr['data'] = ['tenant_id' => $tenantId, 'user_id' => $userId, 'role_code' => 'ORDER_MANAGER'];
         } catch (Throwable $exception) {
             return $this->error('addTenantMember', $exception);
+        }
+        return $resArr;
+    }
+
+    public function removeTenantMember(ConnectionInterface $db, int $tenantId, int $userId, int $actorUserId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $isOwner = $db->createCommand(
+                "SELECT ura.id
+                 FROM USER_ROLE_ASSIGNMENTS ura
+                 INNER JOIN ROLES r ON r.id = ura.role_id
+                    AND r.role_code = 'TENANT_OWNER' AND r.scope_type = 'TENANT' AND r.status = 'A'
+                 WHERE ura.tenant_id = :tenant_id AND ura.user_id = :user_id
+                    AND ura.status = 'A' AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
+                 LIMIT 1",
+                [':tenant_id' => $tenantId, ':user_id' => $userId],
+            )->queryOne();
+            if (is_array($isOwner)) {
+                $resArr['msgArr'][] = 'The tenant owner cannot be removed from the business.';
+                return $resArr;
+            }
+
+            $db->createCommand(
+                "UPDATE TENANT_MEMBERSHIPS
+                 SET membership_status = 'REVOKED', status = 'Z',
+                     updated_by = :actor_id, updated_on = CURRENT_TIMESTAMP
+                 WHERE tenant_id = :tenant_id AND user_id = :user_id AND status = 'A'",
+                [':tenant_id' => $tenantId, ':user_id' => $userId, ':actor_id' => $actorUserId],
+            )->execute();
+
+            $db->createCommand(
+                "UPDATE USER_ROLE_ASSIGNMENTS
+                 SET status = 'Z', updated_by = :actor_id, updated_on = CURRENT_TIMESTAMP
+                 WHERE tenant_id = :tenant_id AND user_id = :user_id AND status = 'A'",
+                [':tenant_id' => $tenantId, ':user_id' => $userId, ':actor_id' => $actorUserId],
+            )->execute();
+
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['tenant_id' => $tenantId, 'user_id' => $userId, 'removed' => true];
+        } catch (Throwable $exception) {
+            return $this->error('removeTenantMember', $exception);
+        }
+        return $resArr;
+    }
+
+    public function updateTenantMemberRole(
+        ConnectionInterface $db,
+        int $tenantId,
+        int $userId,
+        int $roleId,
+        int $actorUserId,
+    ): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $isOwner = $db->createCommand(
+                "SELECT ura.id
+                 FROM USER_ROLE_ASSIGNMENTS ura
+                 INNER JOIN ROLES r ON r.id = ura.role_id
+                    AND r.role_code = 'TENANT_OWNER' AND r.scope_type = 'TENANT' AND r.status = 'A'
+                 WHERE ura.tenant_id = :tenant_id AND ura.user_id = :user_id
+                    AND ura.status = 'A' AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
+                 LIMIT 1",
+                [':tenant_id' => $tenantId, ':user_id' => $userId],
+            )->queryOne();
+            if (is_array($isOwner)) {
+                $resArr['msgArr'][] = 'The tenant owner role cannot be changed through this action.';
+                return $resArr;
+            }
+
+            $db->createCommand(
+                "UPDATE USER_ROLE_ASSIGNMENTS
+                 SET status = 'Z', updated_by = :actor_id, updated_on = CURRENT_TIMESTAMP
+                 WHERE tenant_id = :tenant_id AND user_id = :user_id AND status = 'A'",
+                [':tenant_id' => $tenantId, ':user_id' => $userId, ':actor_id' => $actorUserId],
+            )->execute();
+
+            $db->createCommand(
+                "INSERT INTO USER_ROLE_ASSIGNMENTS
+                    (user_id, role_id, tenant_id, assigned_by, assigned_on, expires_on, status, created_by, updated_by)
+                 VALUES (:user_id, :role_id, :tenant_id, :actor_id, CURRENT_TIMESTAMP, NULL, 'A', :actor_id, :actor_id)",
+                [':user_id' => $userId, ':role_id' => $roleId, ':tenant_id' => $tenantId, ':actor_id' => $actorUserId],
+            )->execute();
+
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['tenant_id' => $tenantId, 'user_id' => $userId, 'role_id' => $roleId];
+        } catch (Throwable $exception) {
+            return $this->error('updateTenantMemberRole', $exception);
         }
         return $resArr;
     }

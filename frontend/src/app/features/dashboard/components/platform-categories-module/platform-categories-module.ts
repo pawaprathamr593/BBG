@@ -53,6 +53,7 @@ export class PlatformCategoriesModule {
   readonly pageCount = input(1);
   readonly loading = input(false);
   readonly pageChange = output<number>();
+  readonly viewMode = signal<'table' | 'grid'>('table');
   readonly drawerOpen = signal(false);
   readonly editingId = signal<number | null>(null);
   readonly form = signal<CategoryForm>(emptyForm());
@@ -228,5 +229,8 @@ export class PlatformCategoriesModule {
   }
   categoryType(category: CategoryRecord): string {
     return String(category['category_type'] ?? 'BUSINESS');
+  }
+  order(category: CategoryRecord): number {
+    return Number(category['display_order'] ?? 0);
   }
 }

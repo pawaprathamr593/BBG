@@ -82,6 +82,10 @@ final readonly class TenantServices implements ITenantServices
             switch ((string) $tenantParam['actionType']) {
                 case 'addExistingTenantMember':
                     return $this->addExistingTenantMember($actionData);
+                case 'removeTenantMember':
+                    return $this->removeTenantMember($actionData);
+                case 'changeTenantMemberRole':
+                    return $this->changeTenantMemberRole($actionData);
                 case 'createTenantInvitation':
                     return $this->createTenantInvitation($actionData);
                 case 'acceptTenantInvitation':
@@ -246,14 +250,15 @@ final readonly class TenantServices implements ITenantServices
         $context = $this->ownedTenantContext($actionData);
         if ($context['status'] !== 'SUCCESS') return $this->propagateFailure($context, 'TenantServices::addExistingTenantMember');
         $userId = $this->positiveInt($actionData['user_id'] ?? null);
-        $roleCode = strtoupper(trim((string) ($actionData['role_code'] ?? 'TENANT_ORDER_MANAGER')));
-        if ($userId === null || $roleCode !== 'TENANT_ORDER_MANAGER') {
-            $resArr['msgArr'][] = 'Only the existing TENANT_ORDER_MANAGER role can be assigned through this workflow.';
+        $roleCode = strtoupper(trim((string) ($actionData['role_code'] ?? 'ORDER_MANAGER')));
+        $allowedRoles = ['BUSINESS_MANAGER', 'SALES_MANAGER', 'PRODUCT_MANAGER', 'ORDER_MANAGER', 'FINANCE_MANAGER', 'STAFF'];
+        if ($userId === null || !in_array($roleCode, $allowedRoles, true)) {
+            $resArr['msgArr'][] = 'A valid user ID and eligible tenant role are required.';
             return $resArr;
         }
-        $role = $this->dao->getAssignableTenantRole($this->db, 'TENANT_ORDER_MANAGER');
+        $role = $this->dao->getAssignableTenantRole($this->db, $roleCode);
         if ($role['status'] !== 'SUCCESS' || $role['data'] === []) {
-            $resArr['msgArr'][] = 'The existing TENANT_ORDER_MANAGER role is not configured in this database.';
+            $resArr['msgArr'][] = "The role '{$roleCode}' is not configured in this database.";
             return $resArr;
         }
         $transaction = $this->db->beginTransaction();
@@ -267,7 +272,71 @@ final readonly class TenantServices implements ITenantServices
                 return $this->propagateFailure($added, 'TenantServices::addExistingTenantMember');
             }
             $transaction->commit();
+            $added['data']['role_code'] = $roleCode;
             return $added;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) $transaction->rollBack();
+            throw $exception;
+        }
+    }
+
+    private function removeTenantMember(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->ownedTenantContext($actionData);
+        if ($context['status'] !== 'SUCCESS') return $this->propagateFailure($context, 'TenantServices::removeTenantMember');
+        $userId = $this->positiveInt($actionData['user_id'] ?? null);
+        if ($userId === null) {
+            $resArr['msgArr'][] = 'A valid user_id is required.';
+            return $resArr;
+        }
+        $transaction = $this->db->beginTransaction();
+        try {
+            $removed = $this->dao->removeTenantMember(
+                $this->db, (int) $context['data']['tenant_id'], $userId, (int) $context['data']['user_id'],
+            );
+            if ($removed['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($removed, 'TenantServices::removeTenantMember');
+            }
+            $transaction->commit();
+            return $removed;
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) $transaction->rollBack();
+            throw $exception;
+        }
+    }
+
+    private function changeTenantMemberRole(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->ownedTenantContext($actionData);
+        if ($context['status'] !== 'SUCCESS') return $this->propagateFailure($context, 'TenantServices::changeTenantMemberRole');
+        $userId = $this->positiveInt($actionData['user_id'] ?? null);
+        $roleCode = strtoupper(trim((string) ($actionData['role_code'] ?? '')));
+        $allowedRoles = ['BUSINESS_MANAGER', 'SALES_MANAGER', 'PRODUCT_MANAGER', 'ORDER_MANAGER', 'FINANCE_MANAGER', 'STAFF'];
+        if ($userId === null || !in_array($roleCode, $allowedRoles, true)) {
+            $resArr['msgArr'][] = 'A valid user_id and eligible tenant role are required.';
+            return $resArr;
+        }
+        $role = $this->dao->getAssignableTenantRole($this->db, $roleCode);
+        if ($role['status'] !== 'SUCCESS' || $role['data'] === []) {
+            $resArr['msgArr'][] = "The role '{$roleCode}' is not configured in this database.";
+            return $resArr;
+        }
+        $transaction = $this->db->beginTransaction();
+        try {
+            $updated = $this->dao->updateTenantMemberRole(
+                $this->db, (int) $context['data']['tenant_id'], $userId, (int) $role['data']['id'], (int) $context['data']['user_id'],
+            );
+            if ($updated['status'] !== 'SUCCESS') {
+                $transaction->rollBack();
+                return $this->propagateFailure($updated, 'TenantServices::changeTenantMemberRole');
+            }
+            $transaction->commit();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['tenant_id' => (int) $context['data']['tenant_id'], 'user_id' => $userId, 'role_code' => $roleCode];
+            return $resArr;
         } catch (Throwable $exception) {
             if ($transaction->isActive()) $transaction->rollBack();
             throw $exception;
@@ -290,9 +359,15 @@ final readonly class TenantServices implements ITenantServices
             $resArr['msgArr'][] = 'This email already belongs to an active BBG user. Search and add the existing user instead.';
             return $resArr;
         }
-        $role = $this->dao->getAssignableTenantRole($this->db, 'TENANT_ORDER_MANAGER');
+        $roleCode = strtoupper(trim((string) ($actionData['role_code'] ?? 'ORDER_MANAGER')));
+        $allowedRoles = ['BUSINESS_MANAGER', 'SALES_MANAGER', 'PRODUCT_MANAGER', 'ORDER_MANAGER', 'FINANCE_MANAGER', 'STAFF'];
+        if (!in_array($roleCode, $allowedRoles, true)) {
+            $resArr['msgArr'][] = 'An eligible tenant role is required.';
+            return $resArr;
+        }
+        $role = $this->dao->getAssignableTenantRole($this->db, $roleCode);
         if ($role['status'] !== 'SUCCESS' || $role['data'] === []) {
-            $resArr['msgArr'][] = 'The existing TENANT_ORDER_MANAGER role is not configured in this database.';
+            $resArr['msgArr'][] = "The role '{$roleCode}' is not configured in this database.";
             return $resArr;
         }
         $token = bin2hex(random_bytes(32));
@@ -312,7 +387,7 @@ final readonly class TenantServices implements ITenantServices
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = [
                 'invitation_id' => (int) $created['data']['invitation_id'],
-                'email' => $email, 'role_code' => 'TENANT_ORDER_MANAGER',
+                'email' => $email, 'role_code' => $roleCode,
                 'invitation_token' => $token, 'expires_on' => $expiresOn,
             ];
             return $resArr;

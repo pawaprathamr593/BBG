@@ -49,6 +49,106 @@ h2 {
   font-size: 0.8125rem;
 }
 
+.heading-actions-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.view-toggles {
+  display: inline-flex;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--bbg-radius-md, 8px);
+  padding: 2px;
+}
+
+.toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: var(--bbg-radius-sm, 6px);
+  cursor: pointer;
+  transition: all var(--bbg-transition-fast, 150ms ease-in-out);
+
+  &:hover {
+    color: var(--text-primary);
+  }
+
+  &.active {
+    background: var(--surface-card);
+    color: var(--bbg-brand-primary);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.table-responsive-container {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--bbg-radius-md, 8px);
+  background: var(--surface-card);
+  margin-bottom: 1.5rem;
+}
+
+.workspace-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.8125rem;
+
+  thead {
+    background: var(--surface-subtle);
+    border-bottom: 1px solid var(--border);
+
+    th {
+      padding: 0.75rem 1rem;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+  }
+
+  tbody {
+    tr.table-row {
+      border-bottom: 1px solid var(--border);
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        background: color-mix(in srgb, var(--surface-subtle) 60%, var(--surface-card));
+      }
+
+      td {
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+        color: var(--text-primary);
+      }
+    }
+  }
+}
+
+.cat-desc-cell {
+  display: block;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
 .btn-create {
   min-height: 38px;
   padding: 0 1.125rem;

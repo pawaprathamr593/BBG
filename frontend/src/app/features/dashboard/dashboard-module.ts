@@ -81,10 +81,14 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
   'restore-user': 'user.update',
   'approve-business': 'business.approve',
   'reject-business': 'business.approve',
+  'reopen-business': 'business.approve',
   'renew-subscription': 'subscription.create',
   'approve-subscription': 'subscription.approve',
   'reject-subscription': 'subscription.approve',
   'edit-plan': 'subscription.update',
+  'create-plan': 'subscription.update',
+  'change-member-role': 'tenant.update',
+  'remove-member': 'tenant.update',
   moderate: 'admin.update',
 };
 
@@ -130,15 +134,22 @@ export class DashboardModule implements OnInit {
   readonly unsupportedTitle = signal('This section is not available');
   readonly items = signal<DataRecord[]>([]);
   readonly currentPage = signal(1);
-  readonly pageSize = 3;
+  readonly pageSize = signal(10);
   readonly totalItems = signal(0);
-  readonly paginationPageSize = computed(() => this.pageSize);
+  readonly paginationPageSize = computed(() => this.pageSize());
   readonly pageCount = computed(() =>
     Math.max(1, Math.ceil(this.totalItems() / this.paginationPageSize())),
   );
   private loadSequence = 0;
   private loadedContextKey: string | null = null;
   private lastLoadedPage = 1;
+
+  setPageSize(size: number): void {
+    if (this.pageSize() === size) return;
+    this.pageSize.set(size);
+    this.currentPage.set(1);
+    void this.load();
+  }
   readonly filterSearch = signal('');
   readonly filterStatus = signal('');
   readonly filterFrom = signal('');
@@ -215,6 +226,38 @@ export class DashboardModule implements OnInit {
   readonly editingPlanCycle = signal('');
   readonly editingPlanDescription = signal('');
   readonly editingPlanStatus = signal('ACTIVE');
+  readonly editingPlanEntitlements = signal<Record<string, unknown>>({});
+  readonly showPlanCreateDrawer = signal(false);
+  readonly newPlanCode = signal('');
+  readonly newPlanName = signal('');
+  readonly newPlanCycle = signal('QUARTERLY');
+  readonly newPlanPrice = signal('');
+  readonly newPlanDescription = signal('');
+  readonly newPlanStatus = signal('ACTIVE');
+  readonly newPlanEntitlements = signal<Record<string, unknown>>({
+    'business.profile': true,
+    'storefront.enabled': true,
+    'catalogue.enabled': true,
+    'product.limit': '50',
+    'promotions.enabled': true,
+    'promotions.limit': '10',
+    'advanced.reports.enabled': false,
+    'support.level': 'STANDARD',
+  });
+  readonly showTeamMemberDrawer = signal(false);
+  readonly teamMemberMode = signal<'add' | 'invite'>('add');
+  readonly teamSearchEmail = signal('');
+  readonly teamSearchResults = signal<DataRecord[]>([]);
+  readonly teamSearchLoading = signal(false);
+  readonly teamSelectedUserId = signal<number | null>(null);
+  readonly teamSelectedUserName = signal('');
+  readonly teamInviteEmail = signal('');
+  readonly teamSelectedRole = signal('STAFF');
+  readonly createdInvitationToken = signal<string | null>(null);
+  readonly showChangeRoleDrawer = signal(false);
+  readonly targetMemberId = signal<number | null>(null);
+  readonly targetMemberName = signal('');
+  readonly targetMemberRole = signal('STAFF');
   readonly replyEnquiryId = signal<number | null>(null);
   readonly replyMessage = signal('');
   readonly showDecisionDrawer = signal(false);
@@ -592,7 +635,7 @@ export class DashboardModule implements OnInit {
       }
       const pageData = {
         page: this.currentPage(),
-        page_size: this.pageSize,
+        page_size: this.pageSize(),
         ...(tenantId ? { tenant_id: tenantId } : {}),
       };
       switch (this.section()) {
@@ -784,7 +827,7 @@ export class DashboardModule implements OnInit {
             '/api/v1/admin/categories/list',
             'adminParam',
             'listAdminCategories',
-            { page: this.currentPage(), page_size: this.pageSize },
+            { page: this.currentPage(), page_size: this.pageSize() },
           );
           this.setListResult(data);
           break;
@@ -794,7 +837,7 @@ export class DashboardModule implements OnInit {
             '/api/v1/admin/users/list',
             'adminParam',
             'listPlatformUsers',
-            { page: this.currentPage(), page_size: this.pageSize },
+            { page: this.currentPage(), page_size: this.pageSize() },
           );
           this.setListResult(data);
           break;
@@ -804,7 +847,7 @@ export class DashboardModule implements OnInit {
             '/api/v1/admin/businesses/pending/list',
             'adminParam',
             'listPendingBusinesses',
-            { page: this.currentPage(), page_size: this.pageSize },
+            { page: this.currentPage(), page_size: this.pageSize() },
           );
           this.setListResult(data);
           break;
@@ -825,9 +868,9 @@ export class DashboardModule implements OnInit {
             ),
           ]);
           const combined = [...(pending.items ?? []), ...(active.items ?? [])];
-          const start = (this.currentPage() - 1) * this.pageSize;
+          const start = (this.currentPage() - 1) * this.pageSize();
           this.setListResult({
-            items: combined.slice(start, start + this.pageSize),
+            items: combined.slice(start, start + this.pageSize()),
             pagination: {
               total: combined.length,
             },
@@ -839,7 +882,7 @@ export class DashboardModule implements OnInit {
             '/api/v1/admin/plans/list',
             'adminParam',
             'listAdminPlans',
-            { page: this.currentPage(), page_size: this.pageSize },
+            { page: this.currentPage(), page_size: this.pageSize() },
           );
           this.setListResult(data);
           break;
@@ -862,7 +905,7 @@ export class DashboardModule implements OnInit {
             '/api/v1/admin/moderation/queue',
             'adminParam',
             'listModerationQueue',
-            { page: this.currentPage(), page_size: this.pageSize },
+            { page: this.currentPage(), page_size: this.pageSize() },
           );
           this.setListResult(data);
           break;
@@ -940,9 +983,14 @@ export class DashboardModule implements OnInit {
       bcn: this.hasBcn(item) ? String(item['bcn']) : null,
       showBcn: ['subscriptions', 'subscription-approval'].includes(this.section()),
       showDetail:
-        ['platform-users', 'business-approval', 'orders', 'enquiries', 'payments'].includes(
-          this.section(),
-        ) ||
+        [
+          'platform-users',
+          'business-approval',
+          'orders',
+          'enquiries',
+          'payments',
+          'members',
+        ].includes(this.section()) ||
         (this.section() === 'subscriptions' && this.activeTenantId() !== null),
       showSubscriptionReview: this.section() === 'subscription-approval',
       paymentQr,
@@ -1191,11 +1239,27 @@ export class DashboardModule implements OnInit {
       return status === 'SUSPENDED'
         ? [{ key: 'restore-user', label: 'Restore account' }]
         : [{ key: 'suspend-user', label: 'Suspend account', danger: true }];
-    if (this.section() === 'business-approval' && status === 'PENDING')
-      return [
-        { key: 'approve-business', label: 'Approve' },
-        { key: 'reject-business', label: 'Reject', danger: true },
-      ];
+    if (this.section() === 'members' && this.workspace.activeTenantId() !== null) {
+      const roleCode = String(item['role_code'] ?? '').toUpperCase();
+      if (roleCode !== 'TENANT_OWNER') {
+        return [
+          { key: 'change-member-role', label: 'Change role' },
+          { key: 'remove-member', label: 'Remove member', danger: true },
+        ];
+      }
+      return [];
+    }
+    if (this.section() === 'business-approval') {
+      if (status === 'PENDING') {
+        return [
+          { key: 'approve-business', label: 'Approve' },
+          { key: 'reject-business', label: 'Reject', danger: true },
+        ];
+      }
+      if (status === 'REJECTED') {
+        return [{ key: 'reopen-business', label: 'Reopen application' }];
+      }
+    }
     if (this.section() === 'subscription-approval' && status === 'PENDING')
       return [
         { key: 'approve-subscription', label: 'Approve' },
@@ -1269,6 +1333,26 @@ export class DashboardModule implements OnInit {
       case 'reject-business':
         this.openDecisionDrawer('reject-business', item);
         return;
+      case 'reopen-business':
+        path = '/api/v1/admin/businesses/reopen';
+        actionType = 'reopenBusinessReview';
+        data = { business_id: Number(item['business_id'] ?? item['id']) };
+        break;
+      case 'change-member-role':
+        this.openChangeRoleDrawer(item);
+        return;
+      case 'remove-member':
+        if (
+          !window.confirm(
+            `Are you sure you want to remove ${this.recordTitle(item)} from this workspace?`,
+          )
+        )
+          return;
+        path = '/api/v1/tenants/members/remove';
+        key = 'tenantParam';
+        actionType = 'removeTenantMember';
+        data = { tenant_id: tenantId, user_id: Number(item['user_id'] ?? item['id']) };
+        break;
       case 'renew-subscription':
         path = '/api/v1/subscriptions/application/renewal/request';
         key = 'subscriptionParam';
@@ -1863,6 +1947,10 @@ export class DashboardModule implements OnInit {
       actionType = 'getMySubscription';
       actionData = { tenant_id: tenantId, subscription_id: subscriptionId };
       this.recordDetailTitle.set('Subscription details');
+    } else if (section === 'members') {
+      this.recordDetail.set(item);
+      this.recordDetailTitle.set('Team member details');
+      return;
     } else {
       return;
     }
@@ -1988,6 +2076,29 @@ export class DashboardModule implements OnInit {
     this.editingPlanCycle.set(String(item['billing_cycle'] ?? ''));
     this.editingPlanDescription.set(String(item['description'] ?? ''));
     this.editingPlanStatus.set(String(item['plan_status'] ?? 'ACTIVE'));
+
+    const entStr = String(item['entitlements'] ?? '');
+    const entMap: Record<string, unknown> = {
+      'business.profile': true,
+      'storefront.enabled': true,
+      'catalogue.enabled': true,
+      'product.limit': '50',
+      'promotions.enabled': true,
+      'promotions.limit': '10',
+      'advanced.reports.enabled': false,
+      'support.level': 'STANDARD',
+    };
+    if (entStr) {
+      entStr.split(';').forEach((pair) => {
+        const [k, v] = pair.split('=');
+        if (k && v !== undefined) {
+          if (v === '1' || v.toLowerCase() === 'true') entMap[k] = true;
+          else if (v === '0' || v.toLowerCase() === 'false') entMap[k] = false;
+          else entMap[k] = v;
+        }
+      });
+    }
+    this.editingPlanEntitlements.set(entMap);
     this.error.set('');
     this.showPlanEditDrawer.set(true);
   }
@@ -1996,6 +2107,10 @@ export class DashboardModule implements OnInit {
     if (this.busy()) return;
     this.showPlanEditDrawer.set(false);
     this.editingPlanId.set(null);
+  }
+
+  setEditPlanEntitlement(code: string, value: unknown): void {
+    this.editingPlanEntitlements.update((prev) => ({ ...prev, [code]: value }));
   }
 
   async savePlanEdit(): Promise<void> {
@@ -2010,6 +2125,7 @@ export class DashboardModule implements OnInit {
         price: Number(this.editingPlanPrice()),
         description: this.editingPlanDescription().trim(),
         plan_status: this.editingPlanStatus(),
+        entitlements: this.editingPlanEntitlements(),
       });
       this.notice.set('Subscription plan updated successfully.');
       this.showPlanEditDrawer.set(false);
@@ -2017,6 +2133,215 @@ export class DashboardModule implements OnInit {
       await this.load();
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  openPlanCreateDrawer(): void {
+    if (!this.can('subscription.update')) return;
+    this.newPlanCode.set('');
+    this.newPlanName.set('');
+    this.newPlanCycle.set('QUARTERLY');
+    this.newPlanPrice.set('');
+    this.newPlanDescription.set('');
+    this.newPlanStatus.set('ACTIVE');
+    this.newPlanEntitlements.set({
+      'business.profile': true,
+      'storefront.enabled': true,
+      'catalogue.enabled': true,
+      'product.limit': '50',
+      'promotions.enabled': true,
+      'promotions.limit': '10',
+      'advanced.reports.enabled': false,
+      'support.level': 'STANDARD',
+    });
+    this.error.set('');
+    this.showPlanCreateDrawer.set(true);
+  }
+
+  closePlanCreateDrawer(): void {
+    if (this.busy()) return;
+    this.showPlanCreateDrawer.set(false);
+  }
+
+  setNewPlanEntitlement(code: string, value: unknown): void {
+    this.newPlanEntitlements.update((prev) => ({ ...prev, [code]: value }));
+  }
+
+  async submitCreatePlan(): Promise<void> {
+    if (!this.can('subscription.update') || this.busy()) return;
+    const planCode = this.newPlanCode().trim().toUpperCase();
+    const planName = this.newPlanName().trim();
+    const price = Number(this.newPlanPrice());
+    const billingCycle = this.newPlanCycle();
+    const description = this.newPlanDescription().trim();
+    const planStatus = this.newPlanStatus();
+    const entitlements = this.newPlanEntitlements();
+
+    if (!planCode || !planName || Number.isNaN(price) || price < 0) {
+      this.error.set('Please provide a valid plan code, name, and non-negative price.');
+      return;
+    }
+
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      await this.request('/api/v1/admin/plans/create', 'adminParam', 'createAdminPlan', {
+        plan_code: planCode,
+        plan_name: planName,
+        billing_cycle: billingCycle,
+        price,
+        description,
+        plan_status: planStatus,
+        currency: 'INR',
+        entitlements,
+      });
+      this.notice.set(`Subscription plan "${planName}" created successfully.`);
+      this.closePlanCreateDrawer();
+      await this.load();
+    } catch (err) {
+      this.error.set(this.auth.errorMessage(err));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  openTeamMemberDrawer(): void {
+    if (!this.can('tenant.update')) return;
+    this.teamMemberMode.set('add');
+    this.teamSearchEmail.set('');
+    this.teamSearchResults.set([]);
+    this.teamSearchLoading.set(false);
+    this.teamSelectedUserId.set(null);
+    this.teamSelectedUserName.set('');
+    this.teamInviteEmail.set('');
+    this.teamSelectedRole.set('STAFF');
+    this.createdInvitationToken.set(null);
+    this.error.set('');
+    this.showTeamMemberDrawer.set(true);
+  }
+
+  closeTeamMemberDrawer(): void {
+    if (this.busy()) return;
+    this.showTeamMemberDrawer.set(false);
+    this.teamSearchResults.set([]);
+    this.teamSelectedUserId.set(null);
+    this.createdInvitationToken.set(null);
+  }
+
+  async searchEligibleUsers(): Promise<void> {
+    const email = this.teamSearchEmail().trim().toLowerCase();
+    const tenantId = this.workspace.activeTenantId();
+    if (!email || !tenantId) return;
+    this.teamSearchLoading.set(true);
+    this.teamSearchResults.set([]);
+    this.teamSelectedUserId.set(null);
+    this.error.set('');
+    try {
+      const result = await this.request<{ items?: DataRecord[] }>(
+        '/api/v1/tenants/members/search',
+        'tenantParam',
+        'searchEligibleTenantUsers',
+        { tenant_id: tenantId, email },
+      );
+      this.teamSearchResults.set(result.items ?? []);
+      if (!result.items?.length) {
+        this.notice.set('No active users found with that email address.');
+      }
+    } catch (err) {
+      this.error.set(this.auth.errorMessage(err));
+    } finally {
+      this.teamSearchLoading.set(false);
+    }
+  }
+
+  selectUserToAdd(user: DataRecord): void {
+    this.teamSelectedUserId.set(Number(user['id'] ?? user['user_id']));
+    this.teamSelectedUserName.set(String(user['full_name'] ?? user['name'] ?? user['email']));
+  }
+
+  async submitAddMember(): Promise<void> {
+    const tenantId = this.workspace.activeTenantId();
+    const userId = this.teamSelectedUserId();
+    const roleCode = this.teamSelectedRole();
+    if (!tenantId || !userId || !roleCode || this.busy()) return;
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      await this.request('/api/v1/tenants/members/add', 'tenantParam', 'addExistingTenantMember', {
+        tenant_id: tenantId,
+        user_id: userId,
+        role_code: roleCode,
+      });
+      this.notice.set('Team member successfully added.');
+      this.closeTeamMemberDrawer();
+      await this.load();
+    } catch (err) {
+      this.error.set(this.auth.errorMessage(err));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async submitInviteMember(): Promise<void> {
+    const tenantId = this.workspace.activeTenantId();
+    const email = this.teamInviteEmail().trim().toLowerCase();
+    const roleCode = this.teamSelectedRole();
+    if (!tenantId || !email || !roleCode || this.busy()) return;
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      const result = await this.request<{ token?: string }>(
+        '/api/v1/tenants/members/invite',
+        'tenantParam',
+        'createTenantInvitation',
+        { tenant_id: tenantId, email, role_code: roleCode },
+      );
+      this.createdInvitationToken.set(result.token ?? 'INVITATION_RECORDED');
+      this.notice.set(`Invitation created for ${email}.`);
+      await this.load();
+    } catch (err) {
+      this.error.set(this.auth.errorMessage(err));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  openChangeRoleDrawer(member: DataRecord): void {
+    if (!this.can('tenant.update')) return;
+    const userId = Number(member['user_id'] ?? member['id']);
+    this.targetMemberId.set(userId);
+    this.targetMemberName.set(this.recordTitle(member));
+    this.targetMemberRole.set(String(member['role_code'] ?? 'STAFF'));
+    this.error.set('');
+    this.showChangeRoleDrawer.set(true);
+  }
+
+  closeChangeRoleDrawer(): void {
+    if (this.busy()) return;
+    this.showChangeRoleDrawer.set(false);
+    this.targetMemberId.set(null);
+  }
+
+  async submitChangeRole(): Promise<void> {
+    const tenantId = this.workspace.activeTenantId();
+    const userId = this.targetMemberId();
+    const roleCode = this.targetMemberRole();
+    if (!tenantId || !userId || !roleCode || this.busy()) return;
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      await this.request('/api/v1/tenants/members/role', 'tenantParam', 'changeTenantMemberRole', {
+        tenant_id: tenantId,
+        user_id: userId,
+        role_code: roleCode,
+      });
+      this.notice.set('Member role updated successfully.');
+      this.closeChangeRoleDrawer();
+      await this.load();
+    } catch (err) {
+      this.error.set(this.auth.errorMessage(err));
     } finally {
       this.busy.set(false);
     }
@@ -2214,5 +2539,15 @@ export class DashboardModule implements OnInit {
     if (['REJECTED', 'CANCELLED', 'SUSPENDED', 'FAILED', 'DISMISSED'].includes(value))
       return 'status-chip bad';
     return 'status-chip';
+  }
+  asString(value: unknown): string {
+    return typeof value === 'string' ? value : String(value ?? '');
+  }
+  asNumber(value: unknown): number {
+    return Number(value ?? 0);
+  }
+  initials(value: unknown): string {
+    const str = typeof value === 'string' ? value.trim() : '';
+    return (str ? str.charAt(0) : 'B').toUpperCase();
   }
 }

@@ -71,6 +71,7 @@ final class AdminController
             '/api/v1/admin/categories/update' => 'updateCategory',
             '/api/v1/admin/categories/delete' => 'deleteCategory',
             '/api/v1/admin/moderation/action' => 'applyModerationAction',
+            '/api/v1/admin/plans/create' => 'createAdminPlan',
             '/api/v1/admin/plans/update' => 'updateAdminPlan',
         ];
         $path = $request->getUri()->getPath();

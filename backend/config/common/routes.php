@@ -74,6 +74,8 @@ return [
     Route::post('/api/v1/tenants/members/owner-list')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/members/owner-list'),
     Route::post('/api/v1/tenants/members/search')->action([TenantController::class, 'actionGetTenant'])->name('api/v1/tenants/members/search'),
     Route::post('/api/v1/tenants/members/add')->action([TenantController::class, 'actionManageTenant'])->name('api/v1/tenants/members/add'),
+    Route::post('/api/v1/tenants/members/remove')->action([TenantController::class, 'actionManageTenant'])->name('api/v1/tenants/members/remove'),
+    Route::post('/api/v1/tenants/members/role')->action([TenantController::class, 'actionManageTenant'])->name('api/v1/tenants/members/role'),
     Route::post('/api/v1/tenants/invitations/create')->action([TenantController::class, 'actionManageTenant'])->name('api/v1/tenants/invitations/create'),
     Route::post('/api/v1/tenants/invitations/accept')->action([TenantController::class, 'actionManageTenant'])->name('api/v1/tenants/invitations/accept'),
 
@@ -202,6 +204,7 @@ return [
     Route::post('/api/v1/admin/moderation/action')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/moderation/action'),
     Route::post('/api/v1/admin/health/summary')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/health/summary'),
     Route::post('/api/v1/admin/plans/list')->action([AdminController::class, 'actionGetAdmin'])->name('api/v1/admin/plans/list'),
+    Route::post('/api/v1/admin/plans/create')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/plans/create'),
     Route::post('/api/v1/admin/plans/update')->action([AdminController::class, 'actionManageAdmin'])->name('api/v1/admin/plans/update'),
 
     Route::post('/api/v1/payments/mine/list')->action([PaymentController::class, 'actionGetPayment'])->name('api/v1/payments/mine/list'),

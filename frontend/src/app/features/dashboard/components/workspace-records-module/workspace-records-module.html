@@ -1,160 +1,380 @@
 <section class="records-section" aria-labelledby="records-heading">
+  <!-- SECTION HEADER & TOOLBAR -->
   <div class="section-title">
     <div class="title-meta">
       <span class="eyebrow">WORKSPACE RECORDS</span>
       <h2 id="records-heading">{{ heading() }}</h2>
     </div>
-    <span class="record-count-badge">
-      <span class="count-num">{{ cards().length }}</span> shown of {{ totalItems() }} records
-    </span>
+
+    <div class="records-toolbar">
+      <span class="record-count-badge">
+        <span class="count-num">{{ cards().length }}</span> shown of {{ totalItems() }} records
+      </span>
+
+      <!-- VIEW TOGGLES (Table vs Grid) -->
+      <div class="view-toggles" role="group" aria-label="View display mode">
+        <button
+          type="button"
+          class="toggle-btn"
+          [class.active]="viewMode() === 'table'"
+          (click)="viewMode.set('table')"
+          title="Switch to Table view"
+          aria-label="Table view"
+          [attr.aria-pressed]="viewMode() === 'table'"
+        >
+          <span aria-hidden="true">☰</span> Table
+        </button>
+        <button
+          type="button"
+          class="toggle-btn"
+          [class.active]="viewMode() === 'grid'"
+          (click)="viewMode.set('grid')"
+          title="Switch to Grid view"
+          aria-label="Grid view"
+          [attr.aria-pressed]="viewMode() === 'grid'"
+        >
+          <span aria-hidden="true">▦</span> Grid
+        </button>
+      </div>
+
+      <!-- PAGE SIZE SELECTOR -->
+      <div class="page-size-selector">
+        <label for="page-size-select" class="sr-only">Items per page</label>
+        <span class="page-size-label">Rows:</span>
+        <select
+          id="page-size-select"
+          class="size-select"
+          [value]="pageSize()"
+          (change)="changePageSize($event)"
+          title="Select number of records per page"
+        >
+          @for (option of pageSizeOptions; track option) {
+            <option [value]="option">{{ option }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- COLUMN CONFIGURATION (Table view only) -->
+      @if (viewMode() === 'table' && availableColumns().length > 0) {
+        <div class="column-config-wrapper">
+          <button
+            type="button"
+            class="column-config-btn"
+            (click)="toggleColumnMenu()"
+            [attr.aria-expanded]="showColumnMenu()"
+            aria-haspopup="true"
+            title="Configure visible columns"
+          >
+            <span aria-hidden="true">⚙</span> Columns
+            <span class="col-count"
+              >({{ visibleColumns().length }}/{{ availableColumns().length }})</span
+            >
+          </button>
+
+          @if (showColumnMenu()) {
+            <div class="column-dropdown-panel" role="menu">
+              <div class="dropdown-header">
+                <strong>Configure Columns</strong>
+                <button type="button" class="btn-text-action" (click)="resetColumns()">
+                  Reset
+                </button>
+              </div>
+              <div class="dropdown-body">
+                @for (col of availableColumns(); track col.key) {
+                  <label class="col-checkbox-label">
+                    <input
+                      type="checkbox"
+                      [checked]="isColumnVisible(col.key)"
+                      (change)="toggleColumn(col.key)"
+                    />
+                    <span>{{ col.label }}</span>
+                  </label>
+                }
+              </div>
+              <div class="dropdown-footer">
+                <button type="button" class="btn-done" (click)="showColumnMenu.set(false)">
+                  Done
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
   </div>
 
-  <div class="records-list">
-    @if (cards().length) {
-      @for (card of cards(); track card.id) {
-        <article class="record-card">
-          <div class="record-head">
-            <div class="record-title-group">
-              <strong class="record-title">{{ card.title }}</strong>
-              <span class="record-subtitle">{{ card.subtitle }}</span>
-            </div>
-            @if (card.status) {
-              <app-status-badge [status]="card.status" size="sm" />
-            }
-          </div>
+  @if (!cards().length) {
+    <div class="empty-state-wrap">
+      <app-empty-state
+        icon="⌑"
+        title="No records found"
+        description="There are currently no records available for this section."
+      />
+    </div>
+  } @else {
+    <!-- ==================== TABLE VIEW ==================== -->
+    @if (viewMode() === 'table') {
+      <div class="table-responsive-container">
+        <table class="workspace-data-table" role="table">
+          <thead>
+            <tr>
+              <th scope="col" class="th-primary">Record / Item</th>
+              @for (col of visibleColumns(); track col.key) {
+                <th scope="col" class="th-dynamic">{{ col.label }}</th>
+              }
+              <th scope="col" class="th-status">Status</th>
+              @if (cards()[0]?.showBcn) {
+                <th scope="col" class="th-bcn">BCN ID</th>
+              }
+              <th scope="col" class="th-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (card of cards(); track card.id) {
+              <tr class="table-row">
+                <!-- PRIMARY IDENTITY CELL WITH MEDIA THUMBNAIL -->
+                <td class="td-primary">
+                  <div class="primary-cell-content">
+                    @if (getPrimaryImage(card); as imgUrl) {
+                      <img
+                        class="cell-media-thumb"
+                        [src]="imgUrl"
+                        [alt]="card.title"
+                        loading="lazy"
+                      />
+                    } @else {
+                      <div class="cell-media-avatar" aria-hidden="true">
+                        {{ getInitials(card.title) }}
+                      </div>
+                    }
+                    <div class="cell-text-group">
+                      <strong class="cell-title">{{ card.title }}</strong>
+                      @if (card.subtitle) {
+                        <span class="cell-subtitle">{{ card.subtitle }}</span>
+                      }
+                    </div>
+                  </div>
+                </td>
 
-          @if (card.fields.length) {
-            <div class="record-fields-grid">
-              @for (field of card.fields; track field.key) {
-                <div class="field-item">
-                  <span class="field-label">{{ field.label }}</span>
-                  <strong class="field-value">{{ field.value }}</strong>
+                <!-- CONFIGURED DYNAMIC COLUMNS -->
+                @for (col of visibleColumns(); track col.key) {
+                  <td class="td-dynamic">
+                    <span class="cell-val">{{ getFieldValue(card, col.key) }}</span>
+                  </td>
+                }
+
+                <!-- STATUS BADGE CELL -->
+                <td class="td-status">
+                  @if (card.status) {
+                    <app-status-badge [status]="card.status" size="sm" />
+                  } @else {
+                    <span class="status-none">—</span>
+                  }
+                </td>
+
+                <!-- BCN BADGE CELL -->
+                @if (card.showBcn) {
+                  <td class="td-bcn">
+                    @if (card.bcn; as bcn) {
+                      <div class="bcn-cell-wrap">
+                        <app-bcn-badge [bcn]="bcn" />
+                        <button
+                          type="button"
+                          class="btn-copy-icon"
+                          (click)="copyBcnRequested.emit(bcn)"
+                          title="Copy BCN ID"
+                          aria-label="Copy BCN ID"
+                        >
+                          📋
+                        </button>
+                      </div>
+                    } @else {
+                      <span class="bcn-unassigned">Not assigned</span>
+                    }
+                  </td>
+                }
+
+                <!-- ACTIONS CELL -->
+                <td class="td-actions">
+                  <div class="row-actions-group">
+                    @if (card.showDetail) {
+                      <button
+                        type="button"
+                        class="btn-action-outline"
+                        (click)="detailRequested.emit(card.record)"
+                        title="View complete record details"
+                      >
+                        Details
+                      </button>
+                    }
+                    @if (card.showSubscriptionReview) {
+                      <button
+                        type="button"
+                        class="btn-action-outline highlight"
+                        (click)="subscriptionReviewRequested.emit(card.record)"
+                        title="Review onboarding and payment details"
+                      >
+                        Review
+                      </button>
+                    }
+                    @for (action of card.actions; track action.key) {
+                      <button
+                        type="button"
+                        class="btn-action-primary"
+                        [class.btn-danger]="action.danger"
+                        (click)="actionRequested.emit({ action: action.key, record: card.record })"
+                      >
+                        {{ action.label }}
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- ==================== GRID VIEW ==================== -->
+    @else {
+      <div class="records-card-grid">
+        @for (card of cards(); track card.id) {
+          <article class="record-grid-card">
+            <!-- CARD MEDIA HEADER -->
+            <div class="card-media-banner">
+              @if (getPrimaryImage(card); as imgUrl) {
+                <img class="card-cover-img" [src]="imgUrl" [alt]="card.title" loading="lazy" />
+              } @else {
+                <div class="card-media-placeholder">
+                  <span class="placeholder-monogram">{{ getInitials(card.title) }}</span>
+                </div>
+              }
+              @if (card.status) {
+                <div class="card-status-pill">
+                  <app-status-badge [status]="card.status" size="sm" />
                 </div>
               }
             </div>
-          }
 
-          @if (card.showBcn) {
-            <div class="bcn-record-strip">
-              <span class="bcn-label">BBG Contribution Number (BCN ID)</span>
-              <div class="bcn-badge-wrap">
-                @if (card.bcn; as bcn) {
-                  <app-bcn-badge [bcn]="bcn" />
-                  <button
-                    type="button"
-                    class="bcn-copy-btn"
-                    (click)="copyBcnRequested.emit(bcn)"
-                    title="Copy BCN ID"
-                  >
-                    Copy
-                  </button>
-                } @else {
-                  <span class="bcn-unassigned">Not assigned yet</span>
+            <!-- CARD BODY -->
+            <div class="card-body">
+              <div class="card-header-group">
+                <strong class="card-title">{{ card.title }}</strong>
+                @if (card.subtitle) {
+                  <span class="card-subtitle">{{ card.subtitle }}</span>
                 }
               </div>
-            </div>
-          }
 
-          @if (card.paymentQr; as qr) {
-            <div class="subscription-payment-qr">
-              <div class="qr-img-box">
-                <img [src]="qr.url" alt="UPI payment QR for this subscription" />
-              </div>
-              <div class="qr-info">
-                <strong>Pay via UPI</strong>
-                <span class="payee-name">{{ qr.payeeName }}</span>
-                <code class="upi-id">{{ qr.upiId }}</code>
-                <small class="qr-version"
-                  >QR version {{ qr.version }} · captured for this request</small
-                >
-              </div>
-            </div>
-            @if (qr.instructions) {
-              <p class="payment-instructions">{{ qr.instructions }}</p>
-            }
-          }
-
-          @if (card.media.length) {
-            <div class="post-media-strip" aria-label="Media attachments">
-              @for (media of card.media; track media.id) {
-                <div class="post-media-item">
-                  @if (media.url && media.type === 'IMAGE') {
-                    <img [src]="media.url" alt="Media attachment" />
-                  } @else if (media.url && media.type === 'VIDEO') {
-                    <video controls [src]="media.url" aria-label="Video attachment"></video>
-                  } @else if (media.url && media.type === 'AUDIO') {
-                    <audio controls [src]="media.url" aria-label="Audio attachment"></audio>
-                  } @else if (media.url) {
-                    <a [href]="media.url" target="_blank" rel="noopener" class="media-file-link">
-                      📄 Open {{ media.type }} file
-                    </a>
-                  } @else {
-                    <span class="media-file-kind">{{ media.type }} attachment</span>
+              <!-- DYNAMIC FIELDS GRID -->
+              @if (card.fields.length) {
+                <div class="card-fields-grid">
+                  @for (field of card.fields; track field.key) {
+                    <div class="grid-field-item">
+                      <span class="grid-field-label">{{ field.label }}</span>
+                      <strong class="grid-field-value">{{ field.value }}</strong>
+                    </div>
                   }
-                  @if (media.canRemove) {
+                </div>
+              }
+
+              <!-- BCN BADGE STRIP -->
+              @if (card.showBcn) {
+                <div class="bcn-grid-strip">
+                  <span class="bcn-strip-label">BBG BCN:</span>
+                  @if (card.bcn; as bcn) {
+                    <div class="bcn-wrap">
+                      <app-bcn-badge [bcn]="bcn" />
+                      <button
+                        type="button"
+                        class="bcn-copy-mini"
+                        (click)="copyBcnRequested.emit(bcn)"
+                        title="Copy BCN"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  } @else {
+                    <span class="bcn-pending">Pending assignment</span>
+                  }
+                </div>
+              }
+
+              <!-- PAYMENT QR PREVIEW (if applicable) -->
+              @if (card.paymentQr; as qr) {
+                <div class="payment-qr-preview-card">
+                  <img class="qr-thumbnail" [src]="qr.url" alt="UPI payment QR code" />
+                  <div class="qr-info-meta">
+                    <strong>{{ qr.payeeName }}</strong>
+                    <code class="upi-code">{{ qr.upiId }}</code>
+                    <small>Version {{ qr.version }}</small>
+                  </div>
+                </div>
+              }
+
+              <!-- MULTI-MEDIA ATTACHMENTS (e.g. Promotions) -->
+              @if (card.media.length > 1) {
+                <div class="media-attachments-strip">
+                  @for (media of card.media; track media.id) {
+                    <div class="media-mini-badge">
+                      @if (media.url && media.type === 'IMAGE') {
+                        <img [src]="media.url" alt="Attachment" class="media-mini-thumb" />
+                      } @else {
+                        <span class="media-type-badge">{{ media.type }}</span>
+                      }
+                      @if (media.canRemove) {
+                        <button
+                          type="button"
+                          class="btn-remove-media"
+                          (click)="
+                            mediaRemoveRequested.emit({
+                              record: card.record,
+                              media: { id: media.id },
+                            })
+                          "
+                          title="Remove attachment"
+                        >
+                          ✕
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- PROOF UPLOAD (Subscriptions) -->
+              @if (card.showProofUpload) {
+                <div class="proof-upload-box">
+                  <label class="proof-file-label">
+                    <span class="file-prompt">{{
+                      card.proofFileName || 'Attach payment receipt'
+                    }}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      (change)="proofFileSelected.emit({ event: $event, record: card.record })"
+                    />
+                  </label>
+                  @if (card.proofFileName) {
                     <button
                       type="button"
-                      class="media-remove-btn"
-                      (click)="
-                        mediaRemoveRequested.emit({
-                          record: card.record,
-                          media: { id: media.id, media_type: media.type, url: media.url },
-                        })
-                      "
-                      [disabled]="loading()"
+                      class="btn-submit-proof"
+                      (click)="proofSubmitRequested.emit(card.record)"
                     >
-                      Remove
+                      Submit Receipt
                     </button>
                   }
                 </div>
               }
             </div>
-          }
 
-          @if (card.showProofUpload) {
-            <div class="proof-upload-section">
-              <label class="upload-proof-box">
-                <span class="upload-icon">📤</span>
-                <div class="upload-text">
-                  <strong>Upload payment receipt / proof</strong>
-                  <small>JPG, PNG, WebP or PDF format</small>
-                </div>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,application/pdf"
-                  [disabled]="loading()"
-                  (change)="proofFileSelected.emit({ event: $event, record: card.record })"
-                />
-              </label>
-              @if (card.proofFileName) {
-                <div class="proof-ready-badge" role="status">
-                  <div class="file-info">
-                    <span class="check-icon">✓</span>
-                    <span
-                      >File ready: <strong>{{ card.proofFileName }}</strong></span
-                    >
-                  </div>
-                  <button
-                    type="button"
-                    class="proof-submit-btn"
-                    (click)="proofSubmitRequested.emit(card.record)"
-                    [disabled]="loading()"
-                  >
-                    Submit for Review
-                  </button>
-                </div>
-              }
-            </div>
-          }
-
-          <div class="record-card-footer">
-            <div class="left-actions">
+            <!-- CARD FOOTER ACTIONS -->
+            <footer class="card-footer">
               @if (card.showDetail) {
                 <button
                   type="button"
-                  class="action-btn secondary"
+                  class="btn-card-action outline"
                   (click)="detailRequested.emit(card.record)"
-                  [disabled]="loading()"
                 >
                   View Details
                 </button>
@@ -162,51 +382,38 @@
               @if (card.showSubscriptionReview) {
                 <button
                   type="button"
-                  class="action-btn secondary"
+                  class="btn-card-action outline highlight"
                   (click)="subscriptionReviewRequested.emit(card.record)"
-                  [disabled]="loading()"
                 >
-                  Review Details &amp; History
+                  Review Application
                 </button>
               }
-            </div>
-
-            @if (card.actions.length) {
-              <div class="record-actions">
-                @for (action of card.actions; track action.key) {
-                  <button
-                    type="button"
-                    class="action-btn"
-                    [class.danger]="action.danger"
-                    [class.primary]="!action.danger"
-                    (click)="actionRequested.emit({ action: action.key, record: card.record })"
-                    [disabled]="loading()"
-                  >
-                    {{ action.label }}
-                  </button>
-                }
-              </div>
-            }
-          </div>
-        </article>
-      }
-    } @else {
-      <app-empty-state
-        title="No matching records"
-        description="No records match the current filters on this page. Adjust or reset the filters to see more results."
-        icon="📋"
-      />
+              @for (action of card.actions; track action.key) {
+                <button
+                  type="button"
+                  class="btn-card-action primary"
+                  [class.danger]="action.danger"
+                  (click)="actionRequested.emit({ action: action.key, record: card.record })"
+                >
+                  {{ action.label }}
+                </button>
+              }
+            </footer>
+          </article>
+        }
+      </div>
     }
-  </div>
 
-  @if (totalItems() > pageSize()) {
-    <div class="pagination-container">
-      <app-pagination
-        [currentPage]="currentPage()"
-        [totalItems]="totalItems()"
-        [pageSize]="pageSize()"
-        (pageChange)="pageChange.emit($event)"
-      />
-    </div>
+    <!-- PAGINATION BAR -->
+    @if (pageCount() > 1 || totalItems() > pageSize()) {
+      <div class="records-pagination-bar">
+        <app-pagination
+          [currentPage]="currentPage()"
+          [totalItems]="totalItems()"
+          [pageSize]="pageSize()"
+          (pageChange)="pageChange.emit($event)"
+        />
+      </div>
+    }
   }
 </section>
