@@ -4,7 +4,7 @@ title: Global BBG light and dark theme colour system and UI consistency
 area: shared
 type: enhancement
 owner: unset
-status: implemented
+status: approved-colour-refinement
 ---
 
 # Global BBG light and dark theme colour system and UI consistency
@@ -129,15 +129,31 @@ The following brand values are fixed across Light and Dark Mode:
 
 | Token | Value | Usage |
 | --- | --- | --- |
-| `--bbg-brand-primary` | `#10B981` | Primary brand green |
-| `--bbg-brand-primary-hover` | `#059669` | Primary green hover |
-| `--bbg-brand-primary-active` | `#047857` | Primary green pressed |
-| `--bbg-brand-primary-soft` | Theme-specific | Subtle green selection/surface |
-| `--bbg-brand-accent` | `#FBBF24` | Amber yellow accent |
+| `--bbg-brand-primary` | `#06402B` | Forest Green primary brand identity and primary actions |
+| `--bbg-brand-primary-hover` | `#075438` | Primary green hover |
+| `--bbg-brand-primary-active` | `#043522` | Primary green pressed |
+| `--bbg-brand-highlight` | `#10B981` | Emerald highlights, charts and indicators where semantically appropriate |
+| `--bbg-brand-primary-soft` | `#D1FAE5` | Soft green selection |
+| `--bbg-brand-primary-tint` | `#ECFDF5` | Subtle green-tinted surface |
+| `--bbg-brand-accent` | `#FBBF24` | Warm yellow accent |
 | `--bbg-brand-accent-hover` | `#F59E0B` | Yellow hover |
 | `--bbg-brand-accent-active` | `#D97706` | Yellow pressed |
 
-Primary green must remain green in Dark Mode. Do not repurpose the primary brand token as yellow. Yellow is an accent and must not replace the primary green identity.
+Primary brand green remains `#06402B` in both themes. Emerald `#10B981` is retained as a highlight colour; it is no longer the primary brand colour. Do not repurpose the primary brand token as yellow.
+
+### 9.1.1 Semantic brand text mapping
+
+Semantic brand-green text in Light Mode must become Warm Yellow (`#FBBF24`) in Dark Mode. Apply this through dedicated theme-aware semantic tokens for brand text, brand links, active navigation labels, selected tab labels, brand-highlighted text and active brand icons.
+
+| Semantic use | Light Mode | Dark Mode |
+| --- | --- | --- |
+| Brand text and links | `#06402B` | `#FBBF24` |
+| Active navigation text | `#06402B` | `#FBBF24` |
+| Selected tab text when brand-green | `#06402B` | `#FBBF24` |
+| Brand-highlighted text | `#06402B` | `#FBBF24` |
+| Active brand icon | `#06402B` | `#FBBF24` |
+
+Do not globally recolour every green element. Normal text, semantic success/status green, chart series, green button backgrounds and other non-brand semantic colours must retain their own meanings. Primary green buttons retain white text/icons; yellow buttons retain black text/icons.
 
 ### 9.2 Light Mode palette
 
@@ -147,8 +163,8 @@ Primary green must remain green in Dark Mode. Do not repurpose the primary brand
 | `--bbg-surface-sidebar` | `#FFFFFF` |
 | `--bbg-surface-card` | `#FFFFFF` |
 | `--bbg-surface-elevated` | `#FFFFFF` |
-| `--bbg-surface-hover` | `#F0F7F3` |
-| `--bbg-surface-selected` | `#DCFCE7` |
+| `--bbg-surface-hover` | `#ECFDF5` |
+| `--bbg-surface-selected` | `#D1FAE5` |
 | `--bbg-surface-input` | `#FFFFFF` |
 | `--bbg-text-primary` | `#14231B` |
 | `--bbg-text-secondary` | `#52635A` |
@@ -156,30 +172,30 @@ Primary green must remain green in Dark Mode. Do not repurpose the primary brand
 | `--bbg-text-disabled` | `#A3ADA6` |
 | `--bbg-border-default` | `#DCE6DF` |
 | `--bbg-border-strong` | `#BCCBC1` |
-| `--bbg-border-focus` | `#059669` |
+| `--bbg-border-focus` | `#06402B` |
 | `--bbg-focus-ring-colour` | `#10B981` |
 
 ### 9.3 Dark Mode palette
 
 | Semantic token | Exact value |
 | --- | --- |
-| `--bbg-surface-page` | `#0B1210` |
-| `--bbg-surface-sidebar` | `#101A16` |
-| `--bbg-surface-card` | `#16231D` |
-| `--bbg-surface-elevated` | `#1C2D25` |
-| `--bbg-surface-hover` | `#24372D` |
-| `--bbg-surface-selected` | `#203D30` |
-| `--bbg-surface-input` | `#101A16` |
+| `--bbg-surface-page` | `#09130F` |
+| `--bbg-surface-sidebar` | `#0D1B14` |
+| `--bbg-surface-card` | `#14251C` |
+| `--bbg-surface-elevated` | `#1B3024` |
+| `--bbg-surface-hover` | `#243D2F` |
+| `--bbg-surface-selected` | `#193D2C` |
+| `--bbg-surface-input` | `#0D1B14` |
 | `--bbg-text-primary` | `#F3F7F4` |
 | `--bbg-text-secondary` | `#B0BDB5` |
 | `--bbg-text-muted` | `#829188` |
 | `--bbg-text-disabled` | `#64736A` |
-| `--bbg-border-default` | `#2A3B32` |
-| `--bbg-border-strong` | `#35483D` |
+| `--bbg-border-default` | `#293C30` |
+| `--bbg-border-strong` | `#3A5142` |
 | `--bbg-border-focus` | `#10B981` |
 | `--bbg-focus-ring-colour` | `#10B981` |
 
-Dark Mode must use layered surfaces. Do not flatten every element to one background colour. Keep the hierarchy: application page → sidebar/input → card → elevated menu/dialog → hover/selected state.
+Dark Mode must use layered evergreen surfaces. Keep the hierarchy: application page → sidebar/input → card → elevated menu/dialog → hover/selected state. Do not flatten every element to one background colour.
 
 ### 9.4 Semantic status palette
 
@@ -211,7 +227,8 @@ This rule applies to primary/secondary CTAs when yellow is selected, icon button
 
 ### 9.6 Other interactive component rules
 
-- Green primary buttons use the primary green tokens and a foreground that passes contrast requirements. Do not change green to yellow in Dark Mode.
+- Green primary buttons use Forest Green (`#06402B`), hover `#075438`, active `#043522`, and white (`#FFFFFF`) text/icons in both themes.
+- Semantic brand-green text in Light Mode maps to Warm Yellow (`#FBBF24`) in Dark Mode through dedicated semantic tokens. Do not apply this mapping to normal text, status colours or chart series.
 - Secondary, outline, ghost, danger and link buttons use semantic tokens, not arbitrary per-screen colours.
 - Inputs, selects and textareas use theme-specific input surfaces, text, border, placeholder, disabled and focus tokens.
 - Checkboxes, radios and switches use the primary green selected state.
@@ -282,7 +299,8 @@ The inventory must include all route components discovered from the current rout
 
 1. Given the current frontend route configuration, when the audit is completed, then every route-backed screen and lazy-loaded route is listed in the screen/component inventory.
 2. Given the current frontend shared and feature component directories, when the audit is completed, then every reusable component, dialog, drawer, popover and component stylesheet is accounted for.
-3. Given the approved brand palette, when either theme is active, then primary brand green remains `#10B981` and accent yellow remains `#FBBF24`.
+3. Given the approved brand palette, when either theme is active, then primary brand green is `#06402B`, emerald highlight is `#10B981`, and accent yellow is `#FBBF24`.
+3a. Given semantic brand-green text is displayed, when Dark Mode is active, then that brand text maps to `#FBBF24`; normal text and semantic status colours remain unchanged.
 4. Given Dark Mode is active, when any page or component renders, then it uses the approved layered dark surface palette and does not revert to unrelated blue/grey/charcoal palettes.
 5. Given Light Mode is active, when any page or component renders, then it uses the approved clean neutral palette.
 6. Given a button has a yellow background, when it is rendered in default, hover, active, focus-visible or disabled state, then its text and icons are black (`#000000`).
@@ -307,19 +325,17 @@ The inventory must include all route components discovered from the current rout
 
 ## Implementation log
 
-- Requirement drafted from the user's confirmed design decisions:
-  - Primary green: `#10B981`.
-  - Accent yellow: `#FBBF24`.
-  - Dark Mode: proposed layered palette.
-  - Surface treatment: layered.
-  - Light Mode: matching clean neutral palette.
-  - Yellow-background button text and icons: always `#000000`.
-- Repository baseline inspected on `feature/business-onboarding-from-workspace-base`:
-  - `frontend/src/styles.scss` updated to canonical brand tokens: primary `#10B981` (hover `#059669`, active `#047857`) and accent `#FBBF24` (hover `#F59E0B`, active `#D97706`).
-  - Dark Mode updated to layered dark surfaces (`#0B1210`, `#101A16`, `#16231D`, `#1C2D25`, `#24372D`, `#203D30`). Primary green remains green in Dark Mode.
-  - Light Mode updated to clean neutral surfaces with green tint (`#F7FAF8`, `#FFFFFF`, `#F0F7F3`, `#DCFCE7`).
-  - Strict rule for yellow buttons (`--bbg-btn-accent-*`) enforced with foreground text and icons locked to `#000000`.
-  - Audited and updated 22 route-backed screens, shells, and 21 shared UI components.
-  - Full audit catalog documented in `frontend/requirements/shared/REQ-SHARED-001-UI-AUDIT.md`.
-  - Validated with TypeScript compiler (`npx tsc --noEmit`), unit test suite (12 test suites, 92 tests passing), and production build (`ng build`).
-- Status updated to **implemented**.
+- Previous implementation baseline (reported on `feature/business-onboarding-from-workspace-base`):
+  - Existing Light / Dark / System theme support, ThemeService, `data-theme="dark"` mechanism and centralized token architecture are to be preserved.
+  - Previous palette used Emerald Green `#10B981` as primary and Amber Yellow `#FBBF24` as accent.
+  - Yellow-background button text and icons were locked to `#000000`.
+  - The previous implementation report recorded 22 route-backed screens/shells and 21 shared UI components audited, plus TypeScript, unit test and production build checks. These are historical reported results, not verification of this palette refinement.
+- Newly approved colour-only refinement:
+  - Primary brand changed to Forest Green `#06402B`; hover `#075438`; active `#043522`.
+  - Emerald `#10B981` retained as a highlight colour.
+  - Accent remains Warm Yellow `#FBBF24`; hover `#F59E0B`; active `#D97706`.
+  - Light and Dark surface palettes updated to the exact values in Sections 9.2 and 9.3.
+  - Semantic brand-green text in Light Mode maps to yellow `#FBBF24` in Dark Mode. This does not recolour status green or normal text.
+  - Yellow-background buttons continue to use black text and icons in all states and themes.
+- The existing theme implementation, layouts, component structure and functionality are not to be rebuilt or redesigned.
+- Status of the newly approved palette refinement: **pending implementation and verification**.
