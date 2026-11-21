@@ -1,5 +1,8 @@
 <section class="summary-grid" aria-label="Summary">
   @for (entry of entries(); track entry.key) {
-    <article class="summary-card"><span>{{ entry.label }}</span><strong>{{ entry.value }}</strong></article>
+    <article class="summary-card">
+      <span>{{ entry.label }}</span
+      ><strong>{{ entry.value }}</strong>
+    </article>
   }
 </section>

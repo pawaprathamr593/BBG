@@ -8,14 +8,26 @@
     aria-modal="true"
     tabindex="-1"
     aria-labelledby="workspace-drawer-title"
-    [attr.aria-describedby]="description() ? 'workspace-drawer-description' : null">
+    [attr.aria-describedby]="description() ? 'workspace-drawer-description' : null"
+  >
     <header class="workspace-drawer-header">
       <div class="workspace-drawer-heading">
-        @if (eyebrow()) { <p class="workspace-drawer-eyebrow">{{ eyebrow() }}</p> }
+        @if (eyebrow()) {
+          <p class="workspace-drawer-eyebrow">{{ eyebrow() }}</p>
+        }
         <h2 id="workspace-drawer-title">{{ title() }}</h2>
-        @if (description()) { <p id="workspace-drawer-description">{{ description() }}</p> }
+        @if (description()) {
+          <p id="workspace-drawer-description">{{ description() }}</p>
+        }
       </div>
-      <button type="button" class="workspace-drawer-close" aria-label="Close drawer" (click)="requestClose()">×</button>
+      <button
+        type="button"
+        class="workspace-drawer-close"
+        aria-label="Close drawer"
+        (click)="requestClose()"
+      >
+        ×
+      </button>
     </header>
     <div class="workspace-drawer-body">
       <ng-content />

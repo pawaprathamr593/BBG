@@ -1,5 +1,13 @@
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter, firstValueFrom } from 'rxjs';
@@ -7,24 +15,53 @@ import { API_BASE_URL } from '../../core/config/api-base-url';
 import { S3UploadService } from '../../core/storage/s3-upload.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
-import { hasActiveEntitlement, hasWorkspacePermission } from '../../core/workspace/workspace-access';
+import {
+  hasActiveEntitlement,
+  hasWorkspacePermission,
+} from '../../core/workspace/workspace-access';
 import { WorkspaceDrawer } from '../../shared/workspace-drawer/workspace-drawer';
 import { BusinessProfileModule } from './components/business-profile-module/business-profile-module';
 import { StorefrontModule } from './components/storefront-module/storefront-module';
-import { WorkspaceRecordsModule, WorkspaceRecordCardModel } from './components/workspace-records-module/workspace-records-module';
+import {
+  WorkspaceRecordsModule,
+  WorkspaceRecordCardModel,
+} from './components/workspace-records-module/workspace-records-module';
 import { PersonalAccountModule } from './components/personal-account-module/personal-account-module';
 import { SubscriptionPlansModule } from './components/subscription-plans-module/subscription-plans-module';
 import { PromotionComposerModule } from './components/promotion-composer-module/promotion-composer-module';
 import { PlatformAnalyticsModule } from './components/platform-analytics-module/platform-analytics-module';
-import { ModerationHistoryModule, ModerationHistoryItem } from './components/moderation-history-module/moderation-history-module';
-import { WorkspaceSummaryModule, WorkspaceSummaryItem } from './components/workspace-summary-module/workspace-summary-module';
+import {
+  ModerationHistoryModule,
+  ModerationHistoryItem,
+} from './components/moderation-history-module/moderation-history-module';
+import {
+  WorkspaceSummaryModule,
+  WorkspaceSummaryItem,
+} from './components/workspace-summary-module/workspace-summary-module';
 import { PaymentQrSettingsModule } from './components/payment-qr-settings-module/payment-qr-settings-module';
 import { PlatformCategoriesModule } from './components/platform-categories-module/platform-categories-module';
 import { PersonalAddressesModule } from './components/personal-addresses-module/personal-addresses-module';
 
-type EnvelopeKey = 'authParam' | 'businessParam' | 'customerParam' | 'orderParam' | 'enquiryParam' | 'paymentParam' | 'promotionParam' | 'subscriptionParam' | 'adminParam' | 'tenantParam' | 'dashboardParam';
-interface ApiEnvelope<T = unknown> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION'; msgArr?: string[]; data?: T | []; }
-interface DataRecord { [key: string]: unknown; }
+type EnvelopeKey =
+  | 'authParam'
+  | 'businessParam'
+  | 'customerParam'
+  | 'orderParam'
+  | 'enquiryParam'
+  | 'paymentParam'
+  | 'promotionParam'
+  | 'subscriptionParam'
+  | 'adminParam'
+  | 'tenantParam'
+  | 'dashboardParam';
+interface ApiEnvelope<T = unknown> {
+  status: 'SUCCESS' | 'FAILED' | 'EXCEPTION';
+  msgArr?: string[];
+  data?: T | [];
+}
+interface DataRecord {
+  [key: string]: unknown;
+}
 interface ListResult {
   items?: DataRecord[];
   pagination?: { page?: number; page_size?: number; total?: number };
@@ -54,7 +91,21 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-dashboard-module',
   standalone: true,
-  imports: [WorkspaceDrawer, BusinessProfileModule, StorefrontModule, WorkspaceRecordsModule, PersonalAccountModule, SubscriptionPlansModule, PromotionComposerModule, PlatformAnalyticsModule, ModerationHistoryModule, WorkspaceSummaryModule, PaymentQrSettingsModule, PlatformCategoriesModule, PersonalAddressesModule],
+  imports: [
+    WorkspaceDrawer,
+    BusinessProfileModule,
+    StorefrontModule,
+    WorkspaceRecordsModule,
+    PersonalAccountModule,
+    SubscriptionPlansModule,
+    PromotionComposerModule,
+    PlatformAnalyticsModule,
+    ModerationHistoryModule,
+    WorkspaceSummaryModule,
+    PaymentQrSettingsModule,
+    PlatformCategoriesModule,
+    PersonalAddressesModule,
+  ],
   templateUrl: './dashboard-module.html',
   styleUrl: './dashboard-module.scss',
 })
@@ -78,10 +129,12 @@ export class DashboardModule implements OnInit {
   readonly unsupportedTitle = signal('This section is not available');
   readonly items = signal<DataRecord[]>([]);
   readonly currentPage = signal(1);
-  readonly pageSize = 25;
+  readonly pageSize = 3;
   readonly totalItems = signal(0);
-  readonly paginationPageSize = computed(() => this.section() === 'subscription-approval' ? this.pageSize * 2 : this.pageSize);
-  readonly pageCount = computed(() => Math.max(1, Math.ceil(this.totalItems() / this.paginationPageSize())));
+  readonly paginationPageSize = computed(() => this.pageSize);
+  readonly pageCount = computed(() =>
+    Math.max(1, Math.ceil(this.totalItems() / this.paginationPageSize())),
+  );
   private loadSequence = 0;
   private loadedContextKey: string | null = null;
   private lastLoadedPage = 1;
@@ -95,14 +148,42 @@ export class DashboardModule implements OnInit {
     const from = this.filterFrom();
     const to = this.filterTo();
     return this.items().filter((item) => {
-      if (search && !Object.values(item).some((value) => value !== null && typeof value !== 'object' && String(value).toLowerCase().includes(search))) return false;
-      const statusValue = ['order_status','payment_status','enquiry_status','publication_status','approval_status','subscription_status','status'].map((key) => item[key]).find((value) => value !== undefined && value !== null);
+      if (
+        search &&
+        !Object.values(item).some(
+          (value) =>
+            value !== null &&
+            typeof value !== 'object' &&
+            String(value).toLowerCase().includes(search),
+        )
+      )
+        return false;
+      const statusValue = [
+        'order_status',
+        'payment_status',
+        'enquiry_status',
+        'publication_status',
+        'approval_status',
+        'subscription_status',
+        'status',
+      ]
+        .map((key) => item[key])
+        .find((value) => value !== undefined && value !== null);
       if (status && String(statusValue ?? '').toUpperCase() !== status) return false;
-      const dateValue = ['created_on','created_at','order_date','enquiry_date','payment_date','updated_on'].map((key) => item[key]).find((value) => value !== undefined && value !== null);
+      const dateValue = [
+        'created_on',
+        'created_at',
+        'order_date',
+        'enquiry_date',
+        'payment_date',
+        'updated_on',
+      ]
+        .map((key) => item[key])
+        .find((value) => value !== undefined && value !== null);
       if (from || to) {
         const date = dateValue ? new Date(String(dateValue)) : null;
         if (!date || Number.isNaN(date.getTime())) return false;
-        const day = date.toISOString().slice(0,10);
+        const day = date.toISOString().slice(0, 10);
         if (from && day < from) return false;
         if (to && day > to) return false;
       }
@@ -110,12 +191,18 @@ export class DashboardModule implements OnInit {
     });
   });
   readonly summary = signal<DataRecord | null>(null);
-  readonly summaryCardModels = computed<WorkspaceSummaryItem[]>(() => this.summaryEntries().map((entry) => ({
-    key: entry.key, label: this.humanize(entry.key), value: this.formatValue(entry.value),
-  })));
+  readonly summaryCardModels = computed<WorkspaceSummaryItem[]>(() =>
+    this.summaryEntries().map((entry) => ({
+      key: entry.key,
+      label: this.humanize(entry.key),
+      value: this.formatValue(entry.value),
+    })),
+  );
   readonly storefrontDetails = computed(() => {
     const value = this.summary()?.['storefront'];
-    return value && typeof value === 'object' && !Array.isArray(value) ? value as DataRecord : null;
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as DataRecord)
+      : null;
   });
   readonly showReplyDrawer = signal(false);
   readonly showPaymentQrDrawer = signal(false);
@@ -134,7 +221,9 @@ export class DashboardModule implements OnInit {
   readonly proofPaymentReference = signal('');
   readonly plans = signal<DataRecord[]>([]);
   readonly pendingPlanId = signal<number | null>(null);
-  readonly proofDrafts = signal<Record<number,{objectKey:string;paymentReference:string;fileName:string}>>({});
+  readonly proofDrafts = signal<
+    Record<number, { objectKey: string; paymentReference: string; fileName: string }>
+  >({});
   readonly qrPayeeName = signal('');
   readonly qrUpiId = signal('');
   readonly qrInstructions = signal('');
@@ -146,20 +235,25 @@ export class DashboardModule implements OnInit {
   readonly moderationHistory = signal<DataRecord[]>([]);
   readonly moderationHistoryLoading = signal(false);
   readonly analyticsTrends = signal<DataRecord[]>([]);
-  readonly moderationHistoryItems = computed<ModerationHistoryItem[]>(() => this.moderationHistory().map((entry) => ({
-    id: this.recordId(entry, 'history_id'),
-    title: this.recordTitle(entry),
-    subtitle: this.recordSubtitle(entry),
-    status: this.statusOf(entry) ? this.humanize(this.statusOf(entry)) : '',
-    statusClass: this.statusClass(this.statusOf(entry)),
-    fields: this.recordEntries(entry).map((field) => ({
-      key: field.key, label: this.humanize(field.key), value: this.formatValue(field.value),
+  readonly moderationHistoryItems = computed<ModerationHistoryItem[]>(() =>
+    this.moderationHistory().map((entry) => ({
+      id: this.recordId(entry, 'history_id'),
+      title: this.recordTitle(entry),
+      subtitle: this.recordSubtitle(entry),
+      status: this.statusOf(entry) ? this.humanize(this.statusOf(entry)) : '',
+      statusClass: this.statusClass(this.statusOf(entry)),
+      fields: this.recordEntries(entry).map((field) => ({
+        key: field.key,
+        label: this.humanize(field.key),
+        value: this.formatValue(field.value),
+      })),
     })),
-  })));
+  );
   readonly showPromotionComposer = signal(false);
   readonly promotionTitle = signal('');
   readonly promotionContent = signal('');
   readonly promotionValidUntil = signal('');
+  readonly originalPromotionValidUntil = signal('');
   readonly promotionFiles = signal<File[]>([]);
   readonly promotionMediaPreviews = signal<Map<File, string>>(new Map());
   readonly promotionMediaBusy = signal(false);
@@ -179,7 +273,10 @@ export class DashboardModule implements OnInit {
       };
       if (personalTitles[section]) return personalTitles[section];
     }
-    return this.config[section]?.title ?? (this.workspace.activeTenantId() === null ? 'My Account' : 'Business Workspace');
+    return (
+      this.config[section]?.title ??
+      (this.workspace.activeTenantId() === null ? 'My Account' : 'Business Workspace')
+    );
   });
   readonly description = computed(() => {
     const personalDescriptions: Record<string, string> = {
@@ -189,25 +286,30 @@ export class DashboardModule implements OnInit {
       payments: 'Review payments associated with your customer orders.',
     };
     return this.isPersonalContext()
-      ? personalDescriptions[this.section()] ?? 'Manage your personal BBG account.'
-      : this.config[this.section()]?.description ?? 'Manage your business operations.';
+      ? (personalDescriptions[this.section()] ?? 'Manage your personal BBG account.')
+      : (this.config[this.section()]?.description ?? 'Manage your business operations.');
   });
-  readonly contextLabel = computed(() => this.workspace.activeTenantId() !== null
-    ? 'BUSINESS WORKSPACE'
-    : this.workspace.permissions().some((permission) => permission.scope_type === 'PLATFORM')
-      ? 'PLATFORM ADMINISTRATION'
-      : 'MY ACCOUNT');
+  readonly contextLabel = computed(() =>
+    this.workspace.activeTenantId() !== null
+      ? 'BUSINESS WORKSPACE'
+      : this.workspace.permissions().some((permission) => permission.scope_type === 'PLATFORM')
+        ? 'PLATFORM ADMINISTRATION'
+        : 'MY ACCOUNT',
+  );
   readonly summaryEntries = computed(() => {
     const source = this.summary();
     if (!source) return [];
-    const entries: Array<{key:string;value:unknown}> = [];
+    const entries: Array<{ key: string; value: unknown }> = [];
     for (const [key, value] of Object.entries(source)) {
       if (this.isInternalField(key)) continue;
-      if (value !== null && typeof value !== 'object') entries.push({key,value});
+      if (value !== null && typeof value !== 'object') entries.push({ key, value });
       else if (value && typeof value === 'object' && !Array.isArray(value)) {
         for (const [nestedKey, nestedValue] of Object.entries(value as DataRecord)) {
-          if (!this.isInternalField(nestedKey) && (nestedValue === null || typeof nestedValue !== 'object')) {
-            entries.push({key: nestedKey, value: nestedValue});
+          if (
+            !this.isInternalField(nestedKey) &&
+            (nestedValue === null || typeof nestedValue !== 'object')
+          ) {
+            entries.push({ key: nestedKey, value: nestedValue });
           }
         }
       }
@@ -222,18 +324,29 @@ export class DashboardModule implements OnInit {
       { key: 'members', label: 'Team & access', path: '/dashboard/members' },
       { key: 'customers', label: 'Customers', path: '/dashboard/customers' },
       { key: 'enquiries', label: 'Enquiries', path: '/dashboard/enquiries' },
-      { key: 'orders', label: 'Orders', path: '/dashboard/orders' },
       { key: 'promotions', label: 'Promotions', path: '/dashboard/promotions' },
       { key: 'subscriptions', label: 'Subscriptions', path: '/dashboard/subscriptions' },
       { key: 'payments', label: 'Payments', path: '/dashboard/payments' },
       { key: 'analytics', label: 'Analytics', path: '/dashboard/analytics' },
       { key: 'platform-users', label: 'Users', path: '/dashboard/platform-users' },
       { key: 'business-approval', label: 'Business reviews', path: '/dashboard/business-approval' },
-      { key: 'subscription-approval', label: 'Business onboarding & payments', path: '/dashboard/subscription-approval' },
-      { key: 'payment-qr-settings', label: 'Payment QR settings', path: '/dashboard/payment-qr-settings' },
+      {
+        key: 'subscription-approval',
+        label: 'Business onboarding & payments',
+        path: '/dashboard/subscription-approval',
+      },
+      {
+        key: 'payment-qr-settings',
+        label: 'Payment QR settings',
+        path: '/dashboard/payment-qr-settings',
+      },
       { key: 'moderation', label: 'Moderation', path: '/dashboard/moderation' },
       { key: 'system-health', label: 'System health', path: '/dashboard/system-health' },
-      { key: 'platform-analytics', label: 'Platform analytics', path: '/dashboard/platform-analytics' },
+      {
+        key: 'platform-analytics',
+        label: 'Platform analytics',
+        path: '/dashboard/platform-analytics',
+      },
       { key: 'categories', label: 'Categories', path: '/dashboard/categories' },
     ];
     const context = this.workspace.activeContext();
@@ -277,45 +390,105 @@ export class DashboardModule implements OnInit {
       enquiries: 'enquiry.own.view',
       orders: 'order.own.view',
     };
-    return links.filter((link) => {
-      const requiredPermission = scope === 'TENANT'
-        ? tenantRequirements[link.key]
-        : scope === 'PLATFORM'
-          ? platformRequirements[link.key]
-          : personalRequirements[link.key];
-      if (!requiredPermission || !hasWorkspacePermission(permissions, scope, requiredPermission)) return false;
-      const entitlement = scope === 'TENANT' ? tenantEntitlements[link.key] : undefined;
-      return entitlement === undefined || hasActiveEntitlement(entitlements, entitlement);
-    }).map((link) => {
-      if (scope !== 'GLOBAL') return link;
-      const personalLabels: Record<string, string> = {
-        customers: 'My Profile & Addresses',
-        enquiries: 'My Enquiries',
-        orders: 'My Orders',
-      };
-      return personalLabels[link.key] ? { ...link, label: personalLabels[link.key] } : link;
-    });
+    return links
+      .filter((link) => {
+        const requiredPermission =
+          scope === 'TENANT'
+            ? tenantRequirements[link.key]
+            : scope === 'PLATFORM'
+              ? platformRequirements[link.key]
+              : personalRequirements[link.key];
+        if (!requiredPermission || !hasWorkspacePermission(permissions, scope, requiredPermission))
+          return false;
+        const entitlement = scope === 'TENANT' ? tenantEntitlements[link.key] : undefined;
+        return entitlement === undefined || hasActiveEntitlement(entitlements, entitlement);
+      })
+      .map((link) => {
+        if (scope !== 'GLOBAL') return link;
+        const personalLabels: Record<string, string> = {
+          customers: 'My Profile & Addresses',
+          enquiries: 'My Enquiries',
+          orders: 'My Orders',
+        };
+        return personalLabels[link.key] ? { ...link, label: personalLabels[link.key] } : link;
+      });
   });
 
   private readonly config: Record<string, { title: string; description: string }> = {
-    profile: { title: 'Business profile', description: 'Review your approved business information and account details.' },
-    storefront: { title: 'Storefront', description: 'Review the public storefront information and publication status for this business.' },
-    customers: { title: 'Customers', description: 'Review customer information and available customer records.' },
-    enquiries: { title: 'Enquiries', description: 'Review incoming enquiries and manage sales conversations.' },
-    orders: { title: 'Order management', description: 'Process, update and track orders for this business.' },
-    promotions: { title: 'Promotions', description: 'Review campaigns and publish or pause eligible promotions.' },
-    subscriptions: { title: 'Subscriptions & plans', description: 'Review available plans and the subscription history for this business.' },
-    payments: { title: 'Payments', description: 'Review payment activity and related business records.' },
-    analytics: { title: 'Analytics', description: 'Review the summary metrics available in this area.' },
-    members: { title: 'Team & access', description: 'Review the members assigned to this business workspace.' },
-    'platform-analytics': { title: 'Platform analytics', description: 'Review platform-wide metrics exposed to authorized administrators.' },
-    categories: { title: 'Marketplace categories', description: 'Review the category taxonomy used by marketplace listings.' },
-    'platform-users': { title: 'Platform users', description: 'Review platform accounts and suspend or restore eligible users.' },
-    'business-approval': { title: 'Business approvals', description: 'Review pending business applications and process approval decisions.' },
-    'subscription-approval': { title: 'Business onboarding reviews', description: 'Review submitted business details, selected plans and payment receipts before activating a business workspace.' },
-    'payment-qr-settings': { title: 'Payment QR settings', description: 'Manage the UPI payment QR used for new subscription requests.' },
-    moderation: { title: 'Marketplace moderation', description: 'Review reported marketplace content and record moderation decisions.' },
-    'system-health': { title: 'System health', description: 'Review safe operational health information exposed to platform staff.' },
+    profile: {
+      title: 'Business profile',
+      description: 'Review your approved business information and account details.',
+    },
+    storefront: {
+      title: 'Storefront',
+      description:
+        'Review the public storefront information and publication status for this business.',
+    },
+    customers: {
+      title: 'Customers',
+      description: 'Review customer information and available customer records.',
+    },
+    enquiries: {
+      title: 'Enquiries',
+      description: 'Review incoming enquiries and manage sales conversations.',
+    },
+    orders: {
+      title: 'Order management',
+      description: 'Process, update and track orders for this business.',
+    },
+    promotions: {
+      title: 'Promotions',
+      description: 'Review campaigns and publish or pause eligible promotions.',
+    },
+    subscriptions: {
+      title: 'Subscriptions & plans',
+      description: 'Review available plans and the subscription history for this business.',
+    },
+    payments: {
+      title: 'Payments',
+      description: 'Review payment activity and related business records.',
+    },
+    analytics: {
+      title: 'Analytics',
+      description: 'Review the summary metrics available in this area.',
+    },
+    members: {
+      title: 'Team & access',
+      description: 'Review the members assigned to this business workspace.',
+    },
+    'platform-analytics': {
+      title: 'Platform analytics',
+      description: 'Review platform-wide metrics exposed to authorized administrators.',
+    },
+    categories: {
+      title: 'Marketplace categories',
+      description: 'Review the category taxonomy used by marketplace listings.',
+    },
+    'platform-users': {
+      title: 'Platform users',
+      description: 'Review platform accounts and suspend or restore eligible users.',
+    },
+    'business-approval': {
+      title: 'Business approvals',
+      description: 'Review pending business applications and process approval decisions.',
+    },
+    'subscription-approval': {
+      title: 'Business onboarding reviews',
+      description:
+        'Review submitted business details, selected plans and payment receipts before activating a business workspace.',
+    },
+    'payment-qr-settings': {
+      title: 'Payment QR settings',
+      description: 'Manage the UPI payment QR used for new subscription requests.',
+    },
+    moderation: {
+      title: 'Marketplace moderation',
+      description: 'Review reported marketplace content and record moderation decisions.',
+    },
+    'system-health': {
+      title: 'System health',
+      description: 'Review safe operational health information exposed to platform staff.',
+    },
   };
 
   ngOnInit(): void {
@@ -333,19 +506,31 @@ export class DashboardModule implements OnInit {
     });
   }
 
-  private async request<T = unknown>(path: string, key: EnvelopeKey, actionType: string, actionData: DataRecord = {}): Promise<T> {
+  private async request<T = unknown>(
+    path: string,
+    key: EnvelopeKey,
+    actionType: string,
+    actionData: DataRecord = {},
+  ): Promise<T> {
     const loadId = this.loading() ? this.loadSequence : null;
     const section = this.section();
     const tenantId = this.workspace.activeTenantId();
     const context = this.workspace.activeContext();
-    const response = await firstValueFrom(this.http.post<ApiEnvelope<T>>(`${this.apiBaseUrl}${path}`, {
-      [key]: { actionType, actionData },
-    }));
+    const response = await firstValueFrom(
+      this.http.post<ApiEnvelope<T>>(`${this.apiBaseUrl}${path}`, {
+        [key]: { actionType, actionData },
+      }),
+    );
     if (loadId !== null && loadId !== this.loadSequence) throw new StaleWorkspaceRequestError();
-    if (section !== this.section() || tenantId !== this.workspace.activeTenantId() || context !== this.workspace.activeContext()) {
+    if (
+      section !== this.section() ||
+      tenantId !== this.workspace.activeTenantId() ||
+      context !== this.workspace.activeContext()
+    ) {
       throw new StaleWorkspaceRequestError();
     }
-    if (response.status !== 'SUCCESS') throw new Error(response.msgArr?.join(' ') || 'The request could not be completed.');
+    if (response.status !== 'SUCCESS')
+      throw new Error(response.msgArr?.join(' ') || 'The request could not be completed.');
     return response.data as T;
   }
 
@@ -357,7 +542,8 @@ export class DashboardModule implements OnInit {
   }
 
   goToPage(page: number): void {
-    if (this.loading() || page < 1 || page > this.pageCount() || page === this.currentPage()) return;
+    if (this.loading() || page < 1 || page > this.pageCount() || page === this.currentPage())
+      return;
     this.currentPage.set(page);
     void this.load();
   }
@@ -365,34 +551,76 @@ export class DashboardModule implements OnInit {
   async load(): Promise<void> {
     const loadId = ++this.loadSequence;
     let contextKey: string | null = null;
-    this.loading.set(true); this.error.set(''); this.unsupported.set('');
+    this.loading.set(true);
+    this.error.set('');
+    this.unsupported.set('');
     try {
       await this.workspace.initialize();
       if (loadId !== this.loadSequence) return;
       const tenantId = this.workspace.activeTenantId();
-      contextKey = [this.section(), this.workspace.activeContext() ?? 'UNKNOWN', tenantId ?? 'none'].join(':');
+      contextKey = [
+        this.section(),
+        this.workspace.activeContext() ?? 'UNKNOWN',
+        tenantId ?? 'none',
+      ].join(':');
       if (this.loadedContextKey !== contextKey) {
-        this.items.set([]); this.totalItems.set(0); this.summary.set(null); this.plans.set([]);
-        this.moderationHistory.set([]); this.analyticsTrends.set([]);
+        this.items.set([]);
+        this.totalItems.set(0);
+        this.summary.set(null);
+        this.plans.set([]);
+        this.moderationHistory.set([]);
+        this.analyticsTrends.set([]);
       }
-      const pageData = { page: this.currentPage(), page_size: this.pageSize, ...(tenantId ? { tenant_id: tenantId } : {}) };
+      const pageData = {
+        page: this.currentPage(),
+        page_size: this.pageSize,
+        ...(tenantId ? { tenant_id: tenantId } : {}),
+      };
       switch (this.section()) {
         case 'members': {
-          if (!tenantId) return this.setUnsupported('Open Business Workspace to view team members.');
-          const data = await this.request<ListResult>('/api/v1/tenants/members/list','tenantParam','listTenantMembers',pageData);
-          this.setListResult(data); break;
+          if (!tenantId)
+            return this.setUnsupported('Open Business Workspace to view team members.');
+          const data = await this.request<ListResult>(
+            '/api/v1/tenants/members/list',
+            'tenantParam',
+            'listTenantMembers',
+            pageData,
+          );
+          this.setListResult(data);
+          break;
         }
         case 'profile':
-          if (!tenantId) return this.setUnsupported('Open Business Workspace to view your business profile.');
-          this.summary.set(await this.request<DataRecord>('/api/v1/business/profile/get','businessParam','getMyBusinessProfile',{tenant_id:tenantId}));
+          if (!tenantId)
+            return this.setUnsupported('Open Business Workspace to view your business profile.');
+          this.summary.set(
+            await this.request<DataRecord>(
+              '/api/v1/business/profile/get',
+              'businessParam',
+              'getMyBusinessProfile',
+              { tenant_id: tenantId },
+            ),
+          );
           break;
         case 'storefront':
-          if (!tenantId) return this.setUnsupported('Open Business Workspace to view your storefront.');
-          this.summary.set(await this.request<DataRecord>('/api/v1/business/storefront/get','businessParam','getMyStorefront',{tenant_id:tenantId}));
+          if (!tenantId)
+            return this.setUnsupported('Open Business Workspace to view your storefront.');
+          this.summary.set(
+            await this.request<DataRecord>(
+              '/api/v1/business/storefront/get',
+              'businessParam',
+              'getMyStorefront',
+              { tenant_id: tenantId },
+            ),
+          );
           break;
         case 'customers':
           if (tenantId) {
-            const data = await this.request<ListResult>('/api/v1/customers/tenant/list','customerParam','listTenantCustomers',pageData);
+            const data = await this.request<ListResult>(
+              '/api/v1/customers/tenant/list',
+              'customerParam',
+              'listTenantCustomers',
+              pageData,
+            );
             this.setListResult(data);
             break;
           }
@@ -401,97 +629,198 @@ export class DashboardModule implements OnInit {
             if (loadId !== this.loadSequence) return;
             this.summary.set(profile as unknown as DataRecord);
             try {
-              const addresses = await this.request<ListResult>('/api/v1/customers/addresses/list','customerParam','listMyAddresses');
+              const addresses = await this.request<ListResult>(
+                '/api/v1/customers/addresses/list',
+                'customerParam',
+                'listMyAddresses',
+              );
               this.setListResult(addresses);
             } catch (addressError) {
               this.setListResult({ items: [] });
-              this.notice.set('Your account details loaded, but saved addresses are temporarily unavailable. ' + this.auth.errorMessage(addressError));
+              this.notice.set(
+                'Your account details loaded, but saved addresses are temporarily unavailable. ' +
+                  this.auth.errorMessage(addressError),
+              );
             }
           }
           break;
         case 'orders':
-          if (tenantId) {
-            const data = await this.request<ListResult>('/api/v1/orders/tenant/list','orderParam','listTenantOrders',pageData);
-            this.setListResult(data);
-          } else {
-            const data = await this.request<ListResult>('/api/v1/orders/list','orderParam','listMyOrders',pageData);
-            this.setListResult(data);
-          }
+          this.unsupportedTitle.set('Order Management Inactive');
+          this.unsupported.set(
+            'Order workflows and shopping cart are deactivated in this deployment. Please use product catalogue and direct business enquiries.',
+          );
+          this.setListResult({ items: [] });
           break;
         case 'enquiries':
           if (tenantId) {
-            const data = await this.request<ListResult>('/api/v1/enquiries/tenant/list','enquiryParam','listTenantEnquiries',pageData);
+            const data = await this.request<ListResult>(
+              '/api/v1/enquiries/tenant/list',
+              'enquiryParam',
+              'listTenantEnquiries',
+              pageData,
+            );
             this.setListResult(data);
           } else {
-            const data = await this.request<ListResult>('/api/v1/enquiries/mine/list','enquiryParam','listMyEnquiries',pageData);
+            const data = await this.request<ListResult>(
+              '/api/v1/enquiries/mine/list',
+              'enquiryParam',
+              'listMyEnquiries',
+              pageData,
+            );
             this.setListResult(data);
           }
           break;
         case 'payments': {
           const data = tenantId
-            ? await this.request<ListResult>('/api/v1/payments/tenant/list','paymentParam','listTenantPayments',pageData)
-            : await this.request<ListResult>('/api/v1/payments/mine/list','paymentParam','listMyPayments',pageData);
+            ? await this.request<ListResult>(
+                '/api/v1/payments/tenant/list',
+                'paymentParam',
+                'listTenantPayments',
+                pageData,
+              )
+            : await this.request<ListResult>(
+                '/api/v1/payments/mine/list',
+                'paymentParam',
+                'listMyPayments',
+                pageData,
+              );
           this.setListResult(data);
           break;
         }
         case 'promotions':
-          if (!tenantId) return this.setUnsupported('Open Business Workspace to manage promotions.');
+          if (!tenantId)
+            return this.setUnsupported('Open Business Workspace to manage promotions.');
           {
-            const data = await this.request<ListResult>('/api/v1/promotions/mine/list','promotionParam','listMyPromotions',pageData);
+            const data = await this.request<ListResult>(
+              '/api/v1/promotions/mine/list',
+              'promotionParam',
+              'listMyPromotions',
+              pageData,
+            );
             this.setListResult(data);
           }
           break;
         case 'subscriptions':
-          if (!tenantId) return this.setUnsupported('Open Business Workspace to review plans and subscriptions.');
+          if (!tenantId)
+            return this.setUnsupported(
+              'Open Business Workspace to review plans and subscriptions.',
+            );
           {
             const [plans, subscriptions] = await Promise.all([
-              this.request<{items?:DataRecord[]}>('/api/v1/subscriptions/plans/list','subscriptionParam','listActivePlans'),
-              this.request<ListResult>('/api/v1/subscriptions/application/list','subscriptionParam','listApplicationSubscriptions',pageData),
+              this.request<{ items?: DataRecord[] }>(
+                '/api/v1/subscriptions/plans/list',
+                'subscriptionParam',
+                'listActivePlans',
+              ),
+              this.request<ListResult>(
+                '/api/v1/subscriptions/application/list',
+                'subscriptionParam',
+                'listApplicationSubscriptions',
+                pageData,
+              ),
             ]);
-            this.plans.set(plans.items ?? []); this.setListResult(subscriptions);
+            this.plans.set(plans.items ?? []);
+            this.setListResult(subscriptions);
           }
           break;
         case 'analytics':
-          if (tenantId) this.summary.set(await this.request<DataRecord>('/api/v1/dashboard/entrepreneur/summary','dashboardParam','getEntrepreneurDashboard',{tenant_id:tenantId}));
+          if (tenantId)
+            this.summary.set(
+              await this.request<DataRecord>(
+                '/api/v1/dashboard/entrepreneur/summary',
+                'dashboardParam',
+                'getEntrepreneurDashboard',
+                { tenant_id: tenantId },
+              ),
+            );
           else return this.setUnsupported('Business analytics require Business Workspace access.');
           break;
         case 'platform-analytics': {
           const endDate = new Date().toISOString().slice(0, 10);
-          const startDate = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+          const startDate = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .slice(0, 10);
           const [summary, trends] = await Promise.all([
-            this.request<DataRecord>('/api/v1/admin/analytics/summary','adminParam','getAdminAnalyticsSummary'),
-            this.request<{items?: DataRecord[]}>('/api/v1/admin/analytics/trends','adminParam','getAdminAnalyticsTrends',{
-              start_date:startDate,end_date:endDate,
-            }),
+            this.request<DataRecord>(
+              '/api/v1/admin/analytics/summary',
+              'adminParam',
+              'getAdminAnalyticsSummary',
+            ),
+            this.request<{ items?: DataRecord[] }>(
+              '/api/v1/admin/analytics/trends',
+              'adminParam',
+              'getAdminAnalyticsTrends',
+              {
+                start_date: startDate,
+                end_date: endDate,
+              },
+            ),
           ]);
           this.summary.set(summary);
           this.analyticsTrends.set(trends.items ?? []);
           break;
         }
         case 'categories': {
-          const data = await this.request<ListResult>('/api/v1/admin/categories/list','adminParam','listAdminCategories',{page:this.currentPage(),page_size:this.pageSize});
-          this.setListResult(data); break;
+          const data = await this.request<ListResult>(
+            '/api/v1/admin/categories/list',
+            'adminParam',
+            'listAdminCategories',
+            { page: this.currentPage(), page_size: this.pageSize },
+          );
+          this.setListResult(data);
+          break;
         }
         case 'platform-users': {
-          const data = await this.request<ListResult>('/api/v1/admin/users/list','adminParam','listPlatformUsers',{page:this.currentPage(),page_size:this.pageSize});
-          this.setListResult(data); break;
+          const data = await this.request<ListResult>(
+            '/api/v1/admin/users/list',
+            'adminParam',
+            'listPlatformUsers',
+            { page: this.currentPage(), page_size: this.pageSize },
+          );
+          this.setListResult(data);
+          break;
         }
         case 'business-approval': {
-          const data = await this.request<ListResult>('/api/v1/admin/businesses/pending/list','adminParam','listPendingBusinesses',{page:this.currentPage(),page_size:this.pageSize});
-          this.setListResult(data); break;
+          const data = await this.request<ListResult>(
+            '/api/v1/admin/businesses/pending/list',
+            'adminParam',
+            'listPendingBusinesses',
+            { page: this.currentPage(), page_size: this.pageSize },
+          );
+          this.setListResult(data);
+          break;
         }
         case 'subscription-approval': {
           const [pending, active] = await Promise.all([
-            this.request<ListResult>('/api/v1/admin/subscriptions/pending/list','adminParam','listPendingSubscriptions',{page:this.currentPage(),page_size:this.pageSize}),
-            this.request<ListResult>('/api/v1/admin/subscriptions/active/list','adminParam','listActiveSubscriptions',{page:this.currentPage(),page_size:this.pageSize}),
+            this.request<ListResult>(
+              '/api/v1/admin/subscriptions/pending/list',
+              'adminParam',
+              'listPendingSubscriptions',
+              { page: 1, page_size: 50 },
+            ),
+            this.request<ListResult>(
+              '/api/v1/admin/subscriptions/active/list',
+              'adminParam',
+              'listActiveSubscriptions',
+              { page: 1, page_size: 50 },
+            ),
           ]);
+          const combined = [...(pending.items ?? []), ...(active.items ?? [])];
+          const start = (this.currentPage() - 1) * this.pageSize;
           this.setListResult({
-            items: [...(pending.items ?? []), ...(active.items ?? [])],
-            pagination: { total: Number(pending.pagination?.total ?? pending.items?.length ?? 0) + Number(active.pagination?.total ?? active.items?.length ?? 0) },
-          }); break;
+            items: combined.slice(start, start + this.pageSize),
+            pagination: {
+              total: combined.length,
+            },
+          });
+          break;
         }
         case 'payment-qr-settings': {
-          const data = await this.request<DataRecord>('/api/v1/admin/subscriptions/payment-qr/current','adminParam','getCurrentPaymentQrConfig');
+          const data = await this.request<DataRecord>(
+            '/api/v1/admin/subscriptions/payment-qr/current',
+            'adminParam',
+            'getCurrentPaymentQrConfig',
+          );
           this.summary.set(data);
           this.qrPayeeName.set(String(data['payee_name'] ?? ''));
           this.qrUpiId.set(String(data['upi_id'] ?? ''));
@@ -500,11 +829,23 @@ export class DashboardModule implements OnInit {
           break;
         }
         case 'moderation': {
-          const data = await this.request<ListResult>('/api/v1/admin/moderation/queue','adminParam','listModerationQueue',{page:this.currentPage(),page_size:this.pageSize});
-          this.setListResult(data); break;
+          const data = await this.request<ListResult>(
+            '/api/v1/admin/moderation/queue',
+            'adminParam',
+            'listModerationQueue',
+            { page: this.currentPage(), page_size: this.pageSize },
+          );
+          this.setListResult(data);
+          break;
         }
         case 'system-health':
-          this.summary.set(await this.request<DataRecord>('/api/v1/admin/health/summary','adminParam','getSafeSystemHealth'));
+          this.summary.set(
+            await this.request<DataRecord>(
+              '/api/v1/admin/health/summary',
+              'adminParam',
+              'getSafeSystemHealth',
+            ),
+          );
           break;
         default:
           this.setUnsupported('This dashboard section is not configured.');
@@ -523,10 +864,18 @@ export class DashboardModule implements OnInit {
     }
   }
 
-  private setUnsupported(message: string): void { this.unsupported.set(message); this.unsupportedTitle.set('Not available in this area'); this.loading.set(false); }
+  private setUnsupported(message: string): void {
+    this.unsupported.set(message);
+    this.unsupportedTitle.set('Not available in this area');
+    this.loading.set(false);
+  }
 
-  readonly recordsHeading = computed(() => this.section() === 'customers' ? 'Saved addresses' : this.title());
-  readonly recordCardModels = computed(() => this.filteredItems().map((item) => this.toRecordCardModel(item)));
+  readonly recordsHeading = computed(() =>
+    this.section() === 'customers' ? 'Saved addresses' : this.title(),
+  );
+  readonly recordCardModels = computed(() =>
+    this.filteredItems().map((item) => this.toRecordCardModel(item)),
+  );
 
   private toRecordCardModel(item: DataRecord): WorkspaceRecordCardModel {
     const status = this.statusOf(item);
@@ -538,13 +887,15 @@ export class DashboardModule implements OnInit {
       url: entry['url'] ? this.asUrl(entry['url']) : null,
       canRemove: status.toUpperCase() !== 'PUBLISHED' && this.can('promotion.update'),
     }));
-    const paymentQr = item['payment_qr_url'] ? {
-      url: this.asUrl(item['payment_qr_url']),
-      payeeName: String(item['payment_payee_name'] ?? ''),
-      upiId: String(item['payment_upi_id'] ?? ''),
-      version: String(item['payment_qr_version'] ?? ''),
-      instructions: String(item['payment_instructions'] ?? ''),
-    } : null;
+    const paymentQr = item['payment_qr_url']
+      ? {
+          url: this.asUrl(item['payment_qr_url']),
+          payeeName: String(item['payment_payee_name'] ?? ''),
+          upiId: String(item['payment_upi_id'] ?? ''),
+          version: String(item['payment_qr_version'] ?? ''),
+          instructions: String(item['payment_instructions'] ?? ''),
+        }
+      : null;
     return {
       id: this.recordId(item, 'id'),
       record: item,
@@ -553,28 +904,68 @@ export class DashboardModule implements OnInit {
       status: status ? this.humanize(status) : '',
       statusClass: this.statusClass(status),
       fields: this.recordEntries(item).map((entry) => ({
-        key: entry.key, label: this.humanize(entry.key), value: this.formatValue(entry.value),
+        key: entry.key,
+        label: this.humanize(entry.key),
+        value: this.formatValue(entry.value),
       })),
       bcn: this.hasBcn(item) ? String(item['bcn']) : null,
       showBcn: ['subscriptions', 'subscription-approval'].includes(this.section()),
-      showDetail: ['platform-users','business-approval','orders','enquiries','payments'].includes(this.section())
-        || (this.section() === 'subscriptions' && this.activeTenantId() !== null),
+      showDetail:
+        ['platform-users', 'business-approval', 'orders', 'enquiries', 'payments'].includes(
+          this.section(),
+        ) ||
+        (this.section() === 'subscriptions' && this.activeTenantId() !== null),
       showSubscriptionReview: this.section() === 'subscription-approval',
       paymentQr,
       media,
-      showProofUpload: this.section() === 'subscriptions' && this.canManageOwnedSubscription()
-        && ['PENDING','REJECTED'].includes(status.toUpperCase()) && item['latest_proof_review_status'] !== 'PENDING',
+      showProofUpload:
+        this.section() === 'subscriptions' &&
+        this.canManageOwnedSubscription() &&
+        ['PENDING', 'REJECTED'].includes(status.toUpperCase()) &&
+        item['latest_proof_review_status'] !== 'PENDING',
       proofFileName: proof?.fileName ?? null,
       actions: this.visibleActionsFor(item),
     };
   }
   recordId(item: DataRecord, preferred = 'id'): number {
-    const value = item[preferred] ?? item['id'] ?? item['address_id'] ?? item['category_id'] ?? item['business_id'] ?? item['subscription_id'] ?? item['promotion_id'] ?? item['order_id'] ?? item['enquiry_id'] ?? item['payment_id'] ?? item['report_id'] ?? item['user_id'];
+    const value =
+      item[preferred] ??
+      item['id'] ??
+      item['address_id'] ??
+      item['category_id'] ??
+      item['business_id'] ??
+      item['subscription_id'] ??
+      item['promotion_id'] ??
+      item['order_id'] ??
+      item['enquiry_id'] ??
+      item['payment_id'] ??
+      item['report_id'] ??
+      item['user_id'];
     return Number(value ?? 0);
   }
-  valueOf(item: DataRecord, keys: string[]): string { for (const key of keys) if (item[key] !== null && item[key] !== undefined && item[key] !== '') return this.formatValue(item[key]); return '—'; }
+  valueOf(item: DataRecord, keys: string[]): string {
+    for (const key of keys)
+      if (item[key] !== null && item[key] !== undefined && item[key] !== '')
+        return this.formatValue(item[key]);
+    return '—';
+  }
   recordTitle(item: DataRecord): string {
-    const title = this.valueOf(item,['business_name','tenant_name','display_name','address_label','plan_name','post_title','category_name','order_number','enquiry_number','payment_reference','full_name','name','email','report_number']);
+    const title = this.valueOf(item, [
+      'business_name',
+      'tenant_name',
+      'display_name',
+      'address_label',
+      'plan_name',
+      'post_title',
+      'category_name',
+      'order_number',
+      'enquiry_number',
+      'payment_reference',
+      'full_name',
+      'name',
+      'email',
+      'report_number',
+    ]);
     return title === '—' ? 'Record' : title;
   }
   recordSubtitle(item: DataRecord): string {
@@ -583,28 +974,63 @@ export class DashboardModule implements OnInit {
       const status = String(item['subscription_status'] ?? 'PENDING');
       return plan + ' · ' + this.humanize(status);
     }
-    return this.valueOf(item,['email','business_category','category_type','customer_name','address_line_1','city','mobile','created_at','created_on','order_status','enquiry_status','subscription_status']);
+    return this.valueOf(item, [
+      'email',
+      'business_category',
+      'category_type',
+      'customer_name',
+      'address_line_1',
+      'city',
+      'mobile',
+      'created_at',
+      'created_on',
+      'order_status',
+      'enquiry_status',
+      'subscription_status',
+    ]);
   }
-  statusOf(item: DataRecord): string { return String(item['approval_status'] ?? item['subscription_status'] ?? item['publication_status'] ?? item['order_status'] ?? item['enquiry_status'] ?? item['payment_status'] ?? item['report_status'] ?? item['account_status'] ?? item['customer_status'] ?? item['status'] ?? ''); }
+  statusOf(item: DataRecord): string {
+    return String(
+      item['approval_status'] ??
+        item['subscription_status'] ??
+        item['publication_status'] ??
+        item['order_status'] ??
+        item['enquiry_status'] ??
+        item['payment_status'] ??
+        item['report_status'] ??
+        item['account_status'] ??
+        item['customer_status'] ??
+        item['status'] ??
+        '',
+    );
+  }
   private isInternalField(key: string): boolean {
-    return /^(?:id|.*_id|id_.*|uuid|.*_uuid)$/i.test(key)
-      || /^(?:created_by|updated_by|deleted_by|bcn|password_hash|access_token|refresh_token|authorization|raw_payload)$/i.test(key)
-      || /(?:password|token|secret|credential|authorization|hash|raw_payload)/i.test(key);
+    return (
+      /^(?:id|.*_id|id_.*|uuid|.*_uuid)$/i.test(key) ||
+      /^(?:created_by|updated_by|deleted_by|bcn|password_hash|access_token|refresh_token|authorization|raw_payload)$/i.test(
+        key,
+      ) ||
+      /(?:password|token|secret|credential|authorization|hash|raw_payload)/i.test(key)
+    );
   }
 
-  recordEntries(item: DataRecord): Array<{key:string;value:unknown}> {
+  recordEntries(item: DataRecord): Array<{ key: string; value: unknown }> {
     return Object.entries(item)
-      .filter(([key,value]) => !this.isInternalField(key) && value !== null && typeof value !== 'object')
-      .slice(0,8)
-      .map(([key,value])=>({key,value}));
+      .filter(
+        ([key, value]) => !this.isInternalField(key) && value !== null && typeof value !== 'object',
+      )
+      .slice(0, 8)
+      .map(([key, value]) => ({ key, value }));
   }
 
-  detailEntries(item: DataRecord): Array<{key:string;value:unknown}> {
-    const entries: Array<{key:string;value:unknown}> = [];
+  detailEntries(item: DataRecord): Array<{ key: string; value: unknown }> {
+    const entries: Array<{ key: string; value: unknown }> = [];
     const visit = (value: unknown, path: string, depth: number): void => {
       if (value === null || value === undefined || depth > 8) return;
       if (Array.isArray(value)) {
-        value.forEach((entry, index) => visit(entry, path ? path + ' ' + (index + 1) : String(index + 1), depth + 1));
+        value.forEach((entry, index) =>
+          visit(entry, path ? path + ' ' + (index + 1) : String(index + 1), depth + 1),
+        );
         return;
       }
       if (typeof value === 'object') {
@@ -620,14 +1046,34 @@ export class DashboardModule implements OnInit {
     return entries;
   }
 
-  detailGroups(item: DataRecord): Array<{title:string;entries:Array<{key:string;value:unknown}>}> {
-    const groups = new Map<string, Array<{key:string;value:unknown}>>();
-    const labels: Array<{title:string;pattern:RegExp}> = [
-      {title:'Contact information',pattern:/(email|phone|mobile|whatsapp|contact|website|social)/i},
-      {title:'Address information',pattern:/(address|street|city|state|province|postal|zip|country|latitude|longitude|location)/i},
-      {title:'Status & timeline',pattern:/(status|approval|publication|verified|active|created|updated|submitted|reviewed|expires|expiry|date|time)/i},
-      {title:'Business & profile',pattern:/(business|tenant|company|profile|category|description|logo|cover|name|slug)/i},
-      {title:'Payment & order',pattern:/(payment|amount|currency|price|tax|total|order|invoice|transaction|billing|subscription|plan)/i},
+  detailGroups(
+    item: DataRecord,
+  ): Array<{ title: string; entries: Array<{ key: string; value: unknown }> }> {
+    const groups = new Map<string, Array<{ key: string; value: unknown }>>();
+    const labels: Array<{ title: string; pattern: RegExp }> = [
+      {
+        title: 'Contact information',
+        pattern: /(email|phone|mobile|whatsapp|contact|website|social)/i,
+      },
+      {
+        title: 'Address information',
+        pattern:
+          /(address|street|city|state|province|postal|zip|country|latitude|longitude|location)/i,
+      },
+      {
+        title: 'Status & timeline',
+        pattern:
+          /(status|approval|publication|verified|active|created|updated|submitted|reviewed|expires|expiry|date|time)/i,
+      },
+      {
+        title: 'Business & profile',
+        pattern: /(business|tenant|company|profile|category|description|logo|cover|name|slug)/i,
+      },
+      {
+        title: 'Payment & order',
+        pattern:
+          /(payment|amount|currency|price|tax|total|order|invoice|transaction|billing|subscription|plan)/i,
+      },
     ];
     for (const entry of this.detailEntries(item)) {
       const separator = entry.key.indexOf('.');
@@ -635,12 +1081,15 @@ export class DashboardModule implements OnInit {
       const field = separator >= 0 ? entry.key.slice(separator + 1) : entry.key;
       const title = root
         ? this.humanize(root)
-        : labels.find((label) => label.pattern.test(field))?.title ?? 'Additional information';
+        : (labels.find((label) => label.pattern.test(field))?.title ?? 'Additional information');
       const entries = groups.get(title) ?? [];
-      entries.push({key:field.replace(/\.(\d+)/g, ' · Item $1').replace(/\./g,' · '),value:entry.value});
-      groups.set(title,entries);
+      entries.push({
+        key: field.replace(/\.(\d+)/g, ' · Item $1').replace(/\./g, ' · '),
+        value: entry.value,
+      });
+      groups.set(title, entries);
     }
-    return Array.from(groups, ([title,entries]) => ({title,entries}));
+    return Array.from(groups, ([title, entries]) => ({ title, entries }));
   }
 
   isLongDetail(value: unknown): boolean {
@@ -649,13 +1098,16 @@ export class DashboardModule implements OnInit {
   can(permissionCode: string): boolean {
     const context = this.workspace.activeContext();
     if (!context) return false;
-    const scope = context === 'BUSINESS' ? 'TENANT' : context === 'PLATFORM' ? 'PLATFORM' : 'GLOBAL';
+    const scope =
+      context === 'BUSINESS' ? 'TENANT' : context === 'PLATFORM' ? 'PLATFORM' : 'GLOBAL';
     return hasWorkspacePermission(this.workspace.permissions(), scope, permissionCode);
   }
 
   private canManageOwnedSubscription(): boolean {
     const tenant = this.workspace.activeTenant();
-    const roles = String(tenant?.role_codes ?? '').split(',').map((role) => role.trim());
+    const roles = String(tenant?.role_codes ?? '')
+      .split(',')
+      .map((role) => role.trim());
     return this.workspace.activeContext() === 'BUSINESS' && roles.includes('TENANT_OWNER');
   }
 
@@ -669,22 +1121,55 @@ export class DashboardModule implements OnInit {
     return permissionCode !== undefined && this.can(permissionCode);
   }
 
-  visibleActionsFor(item: DataRecord): Array<{key:string;label:string;danger?:boolean}> {
+  visibleActionsFor(item: DataRecord): Array<{ key: string; label: string; danger?: boolean }> {
     return this.actionsFor(item).filter((action) => this.canAction(action.key));
   }
 
-  actionsFor(item: DataRecord): Array<{key:string;label:string;danger?:boolean}> {
+  actionsFor(item: DataRecord): Array<{ key: string; label: string; danger?: boolean }> {
     const status = this.statusOf(item).toUpperCase();
-    if (this.section()==='orders' && this.workspace.activeTenantId()!==null && !['CANCELLED','COMPLETED','DELIVERED'].includes(status)) return [{key:'confirm-order',label:'Confirm order'},{key:'cancel-order',label:'Cancel order',danger:true}];
-    if (this.section()==='enquiries' && this.workspace.activeTenantId()!==null && status!=='CLOSED') return [{key:'reply-enquiry',label:'Reply'},{key:'close-enquiry',label:'Close enquiry',danger:true}];
-    if (this.section()==='promotions') return status==='PUBLISHED'
-      ? [{key:'unpublish-promotion',label:'Unpublish'}]
-      : [{key:'manage-post-media',label:'Manage media'},{key:'publish-promotion',label:'Publish'}];
-    if (this.section()==='platform-users') return status==='SUSPENDED' ? [{key:'restore-user',label:'Restore account'}] : [{key:'suspend-user',label:'Suspend account',danger:true}];
-    if (this.section()==='business-approval' && status==='PENDING') return [{key:'approve-business',label:'Approve'},{key:'reject-business',label:'Reject',danger:true}];
-    if (this.section()==='subscription-approval' && status==='PENDING') return [{key:'approve-subscription',label:'Approve'},{key:'reject-subscription',label:'Reject',danger:true}];
-    if (this.section()==='subscriptions' && ['ACTIVE','EXPIRED'].includes(status)) return [{key:'renew-subscription',label:'Renew subscription'}];
-    if (this.section()==='moderation' && status==='OPEN') return [{key:'moderate',label:'Review report'}];
+    if (
+      this.section() === 'orders' &&
+      this.workspace.activeTenantId() !== null &&
+      !['CANCELLED', 'COMPLETED', 'DELIVERED'].includes(status)
+    )
+      return [
+        { key: 'confirm-order', label: 'Confirm order' },
+        { key: 'cancel-order', label: 'Cancel order', danger: true },
+      ];
+    if (
+      this.section() === 'enquiries' &&
+      this.workspace.activeTenantId() !== null &&
+      status !== 'CLOSED'
+    )
+      return [
+        { key: 'reply-enquiry', label: 'Reply' },
+        { key: 'close-enquiry', label: 'Close enquiry', danger: true },
+      ];
+    if (this.section() === 'promotions')
+      return status === 'PUBLISHED'
+        ? [{ key: 'unpublish-promotion', label: 'Unpublish' }]
+        : [
+            { key: 'manage-post-media', label: 'Manage media' },
+            { key: 'publish-promotion', label: 'Publish' },
+          ];
+    if (this.section() === 'platform-users')
+      return status === 'SUSPENDED'
+        ? [{ key: 'restore-user', label: 'Restore account' }]
+        : [{ key: 'suspend-user', label: 'Suspend account', danger: true }];
+    if (this.section() === 'business-approval' && status === 'PENDING')
+      return [
+        { key: 'approve-business', label: 'Approve' },
+        { key: 'reject-business', label: 'Reject', danger: true },
+      ];
+    if (this.section() === 'subscription-approval' && status === 'PENDING')
+      return [
+        { key: 'approve-subscription', label: 'Approve' },
+        { key: 'reject-subscription', label: 'Reject', danger: true },
+      ];
+    if (this.section() === 'subscriptions' && ['ACTIVE', 'EXPIRED'].includes(status))
+      return [{ key: 'renew-subscription', label: 'Renew subscription' }];
+    if (this.section() === 'moderation' && status === 'OPEN')
+      return [{ key: 'moderate', label: 'Review report' }];
     return [];
   }
 
@@ -692,13 +1177,24 @@ export class DashboardModule implements OnInit {
     if (this.busy() || !this.canAction(action)) return;
     const tenantId = this.workspace.activeTenantId();
     const id = this.recordId(item);
-    let path = ''; let key: EnvelopeKey = 'adminParam'; let actionType = ''; let data: DataRecord = {};
+    let path = '';
+    let key: EnvelopeKey = 'adminParam';
+    let actionType = '';
+    let data: DataRecord = {};
     switch (action) {
       case 'manage-post-media':
         this.addMediaToPromotion(item);
         return;
-      case 'confirm-order': case 'cancel-order':
-        path = action==='confirm-order'?'/api/v1/orders/tenant/confirm':'/api/v1/orders/tenant/cancel'; key='orderParam'; actionType='changeTenantOrderStatus'; data={tenant_id:tenantId,order_id:id}; break;
+      case 'confirm-order':
+      case 'cancel-order':
+        path =
+          action === 'confirm-order'
+            ? '/api/v1/orders/tenant/confirm'
+            : '/api/v1/orders/tenant/cancel';
+        key = 'orderParam';
+        actionType = 'changeTenantOrderStatus';
+        data = { tenant_id: tenantId, order_id: id };
+        break;
       case 'reply-enquiry':
         this.replyEnquiryId.set(id);
         this.replyMessage.set('');
@@ -707,43 +1203,73 @@ export class DashboardModule implements OnInit {
         return;
       case 'close-enquiry':
         if (!window.confirm('Close this enquiry?')) return;
-        path='/api/v1/enquiries/tenant/close'; key='enquiryParam'; actionType='closeEnquiry'; data={tenant_id:tenantId,enquiry_id:id}; break;
-      case 'publish-promotion': case 'unpublish-promotion':
-        path=action==='publish-promotion'?'/api/v1/promotions/publish':'/api/v1/promotions/unpublish'; key='promotionParam'; actionType=action==='publish-promotion'?'publishPromotion':'unpublishPromotion'; data={tenant_id:tenantId,promotion_id:id}; break;
-      case 'suspend-user': case 'restore-user':
-        path=action==='suspend-user'?'/api/v1/admin/users/suspend':'/api/v1/admin/users/restore'; actionType=action==='suspend-user'?'suspendPlatformUser':'restorePlatformUser'; data={user_id:id}; break;
+        path = '/api/v1/enquiries/tenant/close';
+        key = 'enquiryParam';
+        actionType = 'closeEnquiry';
+        data = { tenant_id: tenantId, enquiry_id: id };
+        break;
+      case 'publish-promotion':
+      case 'unpublish-promotion':
+        path =
+          action === 'publish-promotion'
+            ? '/api/v1/promotions/publish'
+            : '/api/v1/promotions/unpublish';
+        key = 'promotionParam';
+        actionType = action === 'publish-promotion' ? 'publishPromotion' : 'unpublishPromotion';
+        data = { tenant_id: tenantId, promotion_id: id };
+        break;
+      case 'suspend-user':
+      case 'restore-user':
+        path =
+          action === 'suspend-user' ? '/api/v1/admin/users/suspend' : '/api/v1/admin/users/restore';
+        actionType = action === 'suspend-user' ? 'suspendPlatformUser' : 'restorePlatformUser';
+        data = { user_id: id };
+        break;
       case 'approve-business':
-        path='/api/v1/admin/businesses/approve'; actionType='approveBusiness'; data={business_id:Number(item['business_id'] ?? item['id'])}; break;
+        path = '/api/v1/admin/businesses/approve';
+        actionType = 'approveBusiness';
+        data = { business_id: Number(item['business_id'] ?? item['id']) };
+        break;
       case 'reject-business':
         this.openDecisionDrawer('reject-business', item);
         return;
       case 'renew-subscription':
-        path='/api/v1/subscriptions/application/renewal/request'; key='subscriptionParam'; actionType='requestApplicationSubscriptionRenewal';
-        data={tenant_id:tenantId,subscription_id:id}; break;
-      case 'approve-subscription': case 'reject-subscription':
+        path = '/api/v1/subscriptions/application/renewal/request';
+        key = 'subscriptionParam';
+        actionType = 'requestApplicationSubscriptionRenewal';
+        data = { tenant_id: tenantId, subscription_id: id };
+        break;
+      case 'approve-subscription':
+      case 'reject-subscription':
         this.openDecisionDrawer(action, item);
         return;
       case 'moderate':
         this.openDecisionDrawer('moderate', item);
         return;
-      default: return;
+      default:
+        return;
     }
-    this.busy.set(true); this.error.set('');
+    this.busy.set(true);
+    this.error.set('');
     try {
-      await this.request<DataRecord>(path,key,actionType,data);
+      await this.request<DataRecord>(path, key, actionType, data);
       this.notice.set('The requested action was completed.');
       await this.load();
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
     }
-    catch (error) { this.error.set(this.auth.errorMessage(error)); }
-    finally { this.busy.set(false); }
   }
 
   addMediaToPromotion(item: DataRecord): void {
+    const localValidUntil = this.utcDateTimeToLocalInput(item['valid_until']);
     this.draftPromotionId.set(this.recordId(item, 'id'));
     this.promotionUploadedCount.set(this.mediaOf(item).length);
     this.promotionTitle.set(String(item['post_title'] ?? ''));
     this.promotionContent.set(String(item['post_content'] ?? ''));
-    this.promotionValidUntil.set(String(item['valid_until'] ?? '').replace(' ', 'T').slice(0,16));
+    this.promotionValidUntil.set(localValidUntil);
+    this.originalPromotionValidUntil.set(localValidUntil);
     this.clearPromotionPreviews();
     this.promotionFiles.set([]);
     this.promotionError.set('');
@@ -758,13 +1284,23 @@ export class DashboardModule implements OnInit {
     this.busy.set(true);
     this.error.set('');
     try {
-      await this.request('/api/v1/promotions/media/delete','promotionParam','deletePromotionMedia',{
-        tenant_id:tenantId,promotion_id:promotionId,media_id:mediaId,
-      });
+      await this.request(
+        '/api/v1/promotions/media/delete',
+        'promotionParam',
+        'deletePromotionMedia',
+        {
+          tenant_id: tenantId,
+          promotion_id: promotionId,
+          media_id: mediaId,
+        },
+      );
       this.notice.set('Post attachment removed.');
       await this.load();
-    } catch (error) { this.error.set(this.auth.errorMessage(error)); }
-    finally { this.busy.set(false); }
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   async createPromotion(): Promise<void> {
@@ -773,6 +1309,7 @@ export class DashboardModule implements OnInit {
     this.promotionTitle.set('');
     this.promotionContent.set('');
     this.promotionValidUntil.set('');
+    this.originalPromotionValidUntil.set('');
     this.clearPromotionPreviews();
     this.promotionFiles.set([]);
     this.promotionError.set('');
@@ -783,6 +1320,7 @@ export class DashboardModule implements OnInit {
     if (this.promotionMediaBusy()) return;
     this.showPromotionComposer.set(false);
     this.draftPromotionId.set(null);
+    this.originalPromotionValidUntil.set('');
     this.promotionUploadedCount.set(0);
     this.clearPromotionPreviews();
   }
@@ -809,7 +1347,9 @@ export class DashboardModule implements OnInit {
     input.value = '';
   }
 
-  allowPromotionMediaDrop(event: DragEvent): void { event.preventDefault(); }
+  allowPromotionMediaDrop(event: DragEvent): void {
+    event.preventDefault();
+  }
 
   dropPromotionMedia(event: DragEvent): void {
     event.preventDefault();
@@ -817,14 +1357,39 @@ export class DashboardModule implements OnInit {
   }
 
   private addPromotionMedia(files: File[]): void {
-    const allowed = new Set(['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm','audio/mpeg','audio/wav','audio/ogg','application/pdf','text/plain','text/csv','application/rtf']);
-    const invalid = files.find((file) => !allowed.has(file.type) || file.size < 1 || file.size > 100 * 1024 * 1024);
-    if (invalid) this.promotionError.set(`"${invalid.name}" is not supported or exceeds the 100 MB per-file limit.`);
+    const allowed = new Set([
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'video/mp4',
+      'video/webm',
+      'audio/mpeg',
+      'audio/wav',
+      'audio/ogg',
+      'application/pdf',
+      'text/plain',
+      'text/csv',
+      'application/rtf',
+    ]);
+    const invalid = files.find(
+      (file) => !allowed.has(file.type) || file.size < 1 || file.size > 100 * 1024 * 1024,
+    );
+    if (invalid)
+      this.promotionError.set(
+        `"${invalid.name}" is not supported or exceeds the 100 MB per-file limit.`,
+      );
     else {
       this.promotionError.set('');
       for (const file of files) {
-        if (file.type.startsWith('image/') || file.type.startsWith('video/') || file.type.startsWith('audio/')) {
-          this.promotionMediaPreviews.update((current) => new Map(current).set(file, URL.createObjectURL(file)));
+        if (
+          file.type.startsWith('image/') ||
+          file.type.startsWith('video/') ||
+          file.type.startsWith('audio/')
+        ) {
+          this.promotionMediaPreviews.update((current) =>
+            new Map(current).set(file, URL.createObjectURL(file)),
+          );
         }
       }
       this.promotionFiles.update((current) => [...current, ...files]);
@@ -835,53 +1400,142 @@ export class DashboardModule implements OnInit {
     const file = this.promotionFiles()[index];
     const preview = file ? this.promotionMediaPreviews().get(file) : undefined;
     if (preview) URL.revokeObjectURL(preview);
-    if (file) this.promotionMediaPreviews.update((current) => {
-      const next = new Map(current);
-      next.delete(file);
-      return next;
-    });
+    if (file)
+      this.promotionMediaPreviews.update((current) => {
+        const next = new Map(current);
+        next.delete(file);
+        return next;
+      });
     this.promotionFiles.update((files) => files.filter((_, position) => position !== index));
+  }
+
+  private utcDateTimeToLocalInput(raw: unknown): string {
+    if (typeof raw !== 'string' || !raw.trim()) return '';
+    const trimmed = raw.trim();
+    const isoUtc = trimmed.includes('T')
+      ? /(?:Z|[+-]\d\d:\d\d)$/.test(trimmed)
+        ? trimmed
+        : trimmed + 'Z'
+      : trimmed.replace(' ', 'T') + 'Z';
+    const parsed = new Date(isoUtc);
+    if (Number.isNaN(parsed.getTime())) return trimmed.replace(' ', 'T').slice(0, 16);
+    const pad = (n: number): string => String(n).padStart(2, '0');
+    return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
+  }
+
+  private localInputToUtcIso(value: string): string | null {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = new Date(trimmed);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toISOString();
   }
 
   async submitPromotion(): Promise<void> {
     const tenantId = this.workspace.activeTenantId();
     if (!tenantId || !this.promotionContent().trim() || this.promotionMediaBusy()) return;
+
+    const existingId = this.draftPromotionId();
+    const validUntilInput = this.promotionValidUntil().trim();
+    const validUntilChanged = !existingId || validUntilInput !== this.originalPromotionValidUntil();
+    const validUntilUtc = validUntilInput ? this.localInputToUtcIso(validUntilInput) : null;
+
+    if (validUntilInput && !validUntilUtc) {
+      this.promotionError.set('Enter a valid expiry date and time.');
+      return;
+    }
+    if (validUntilUtc && validUntilChanged && new Date(validUntilUtc).getTime() <= Date.now()) {
+      this.promotionError.set('Valid until date and time must be in the future.');
+      return;
+    }
+
     this.promotionMediaBusy.set(true);
     this.promotionError.set('');
     try {
-      let promotionId = this.draftPromotionId();
+      let promotionId = existingId;
       if (!promotionId) {
-        const result = await this.request<{id:number}>('/api/v1/promotions/create','promotionParam','createPromotion',{
-          tenant_id:tenantId,post_title:this.promotionTitle().trim(),post_content:this.promotionContent().trim(),
-          ...(this.promotionValidUntil() ? {valid_until:this.promotionValidUntil().replace('T',' ') + (this.promotionValidUntil().length === 16 ? ':00' : '')} : {}),
-        });
+        const result = await this.request<{ id: number }>(
+          '/api/v1/promotions/create',
+          'promotionParam',
+          'createPromotion',
+          {
+            tenant_id: tenantId,
+            post_title: this.promotionTitle().trim(),
+            post_content: this.promotionContent().trim(),
+            ...(validUntilUtc ? { valid_until: validUntilUtc } : {}),
+          },
+        );
         promotionId = Number(result.id);
-        if (!promotionId) throw new Error('The draft was created but its identifier was not returned.');
+        if (!promotionId)
+          throw new Error('The draft was created but its identifier was not returned.');
         this.draftPromotionId.set(promotionId);
       } else {
-        await this.request('/api/v1/promotions/update','promotionParam','updatePromotion',{
-          tenant_id:tenantId,promotion_id:promotionId,post_title:this.promotionTitle().trim(),
-          post_content:this.promotionContent().trim(),
-          ...(this.promotionValidUntil() ? {valid_until:this.promotionValidUntil().replace('T',' ') + (this.promotionValidUntil().length === 16 ? ':00' : '')} : {}),
-        });
+        const updatePayload: DataRecord = {
+          tenant_id: tenantId,
+          promotion_id: promotionId,
+          post_title: this.promotionTitle().trim(),
+          post_content: this.promotionContent().trim(),
+        };
+        if (validUntilChanged) {
+          updatePayload['valid_until'] = validUntilUtc;
+        }
+        await this.request(
+          '/api/v1/promotions/update',
+          'promotionParam',
+          'updatePromotion',
+          updatePayload,
+        );
       }
       const files = this.promotionFiles();
       for (let index = 0; index < files.length; index++) {
         const file = files[index];
-        const upload = await this.request<{upload_url:string;object_key:string;headers:Record<string,string>}>(
-          '/api/v1/promotions/media/upload-url','promotionParam','generatePromotionMediaUploadUrl',{
-            tenant_id:tenantId,promotion_id:promotionId,original_file_name:file.name,mime_type:file.type,file_size_bytes:file.size,
+        const upload = await this.request<{
+          upload_url: string;
+          object_key: string;
+          headers: Record<string, string>;
+        }>(
+          '/api/v1/promotions/media/upload-url',
+          'promotionParam',
+          'generatePromotionMediaUploadUrl',
+          {
+            tenant_id: tenantId,
+            promotion_id: promotionId,
+            original_file_name: file.name,
+            mime_type: file.type,
+            file_size_bytes: file.size,
           },
         );
         this.promotionUploadProgress.set(0);
-        await this.s3Upload.upload(upload.upload_url, file, upload.headers ?? { 'Content-Type': file.type }, (progress) => this.promotionUploadProgress.set(progress));
-        const mediaType = file.type.startsWith('image/') ? 'IMAGE' : file.type.startsWith('video/') ? 'VIDEO'
-          : file.type.startsWith('audio/') ? 'AUDIO' : 'DOCUMENT';
-        await this.request('/api/v1/promotions/media/link','promotionParam','linkPromotionMedia',{
-          tenant_id:tenantId,promotion_id:promotionId,file_path:upload.object_key,mime_type:file.type,
-          file_size_bytes:file.size,display_order:index,media_type:mediaType,
-        });
-        this.promotionFiles.update((remaining) => remaining.filter((candidate) => candidate !== file));
+        await this.s3Upload.upload(
+          upload.upload_url,
+          file,
+          upload.headers ?? { 'Content-Type': file.type },
+          (progress) => this.promotionUploadProgress.set(progress),
+        );
+        const mediaType = file.type.startsWith('image/')
+          ? 'IMAGE'
+          : file.type.startsWith('video/')
+            ? 'VIDEO'
+            : file.type.startsWith('audio/')
+              ? 'AUDIO'
+              : 'DOCUMENT';
+        await this.request(
+          '/api/v1/promotions/media/link',
+          'promotionParam',
+          'linkPromotionMedia',
+          {
+            tenant_id: tenantId,
+            promotion_id: promotionId,
+            file_path: upload.object_key,
+            mime_type: file.type,
+            file_size_bytes: file.size,
+            display_order: index,
+            media_type: mediaType,
+          },
+        );
+        this.promotionFiles.update((remaining) =>
+          remaining.filter((candidate) => candidate !== file),
+        );
         this.promotionUploadedCount.update((count) => count + 1);
       }
       this.notice.set('Promotion draft and attachments saved. Publish it when ready.');
@@ -899,13 +1553,23 @@ export class DashboardModule implements OnInit {
 
   mediaOf(item: DataRecord): DataRecord[] {
     const media = item['media'];
-    return Array.isArray(media) ? media as DataRecord[] : [];
+    return Array.isArray(media) ? (media as DataRecord[]) : [];
   }
   mediaLabel(mime: string): string {
-    return mime.startsWith('image/') ? 'IMAGE' : mime.startsWith('video/') ? 'VIDEO' : mime.startsWith('audio/') ? 'AUDIO' : mime === 'application/pdf' ? 'PDF' : 'DOC';
+    return mime.startsWith('image/')
+      ? 'IMAGE'
+      : mime.startsWith('video/')
+        ? 'VIDEO'
+        : mime.startsWith('audio/')
+          ? 'AUDIO'
+          : mime === 'application/pdf'
+            ? 'PDF'
+            : 'DOC';
   }
   fileSize(bytes: number): string {
-    return bytes < 1024 * 1024 ? `${Math.max(1,Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return bytes < 1024 * 1024
+      ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+      : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   openPaymentQrDrawer(): void {
@@ -945,7 +1609,10 @@ export class DashboardModule implements OnInit {
     let key: EnvelopeKey = 'adminParam';
     let data: DataRecord = {};
     if (kind === 'reject-business') {
-      if (!reason) { this.error.set('A rejection reason is required.'); return; }
+      if (!reason) {
+        this.error.set('A rejection reason is required.');
+        return;
+      }
       path = '/api/v1/admin/businesses/reject';
       actionType = 'rejectBusiness';
       data = { business_id: Number(item['business_id'] ?? item['id']), reason };
@@ -962,20 +1629,28 @@ export class DashboardModule implements OnInit {
         ends_on: this.decisionEndsOn().replace('T', ' ') + ':00',
       };
     } else if (kind === 'reject-subscription') {
-      if (!reason) { this.error.set('A rejection reason is required.'); return; }
+      if (!reason) {
+        this.error.set('A rejection reason is required.');
+        return;
+      }
       path = '/api/v1/admin/subscriptions/reject';
       actionType = 'rejectSubscription';
       data = { subscription_id: Number(item['subscription_id'] ?? item['id']), reason };
     } else {
       const contentType = String(item['content_type'] ?? '').toUpperCase();
       const moderationAction = this.moderationAction();
-      if (!reason) { this.error.set('A reason for this moderation decision is required.'); return; }
+      if (!reason) {
+        this.error.set('A reason for this moderation decision is required.');
+        return;
+      }
       if (!['UNPUBLISH_POST', 'UNPUBLISH_PRODUCT', 'DISMISS_REPORT'].includes(moderationAction)) {
         this.error.set('Choose a valid moderation action.');
         return;
       }
-      if ((moderationAction === 'UNPUBLISH_POST' && contentType !== 'POST')
-        || (moderationAction === 'UNPUBLISH_PRODUCT' && contentType !== 'PRODUCT')) {
+      if (
+        (moderationAction === 'UNPUBLISH_POST' && contentType !== 'POST') ||
+        (moderationAction === 'UNPUBLISH_PRODUCT' && contentType !== 'PRODUCT')
+      ) {
         this.error.set('That moderation action does not match the reported content type.');
         return;
       }
@@ -987,9 +1662,11 @@ export class DashboardModule implements OnInit {
     this.error.set('');
     try {
       const result = await this.request<DataRecord>(path, key, actionType, data);
-      this.notice.set(kind === 'approve-subscription' && typeof result['bcn'] === 'string' && result['bcn']
-        ? `Subscription approved. BBG Contribution Number: ${result['bcn']}`
-        : 'The requested decision was completed.');
+      this.notice.set(
+        kind === 'approve-subscription' && typeof result['bcn'] === 'string' && result['bcn']
+          ? `Subscription approved. BBG Contribution Number: ${result['bcn']}`
+          : 'The requested decision was completed.',
+      );
       this.showDecisionDrawer.set(false);
       await this.load();
     } catch (error) {
@@ -1007,9 +1684,16 @@ export class DashboardModule implements OnInit {
       this.error.set('Enter a reply before submitting.');
       return;
     }
-    const saved = await this.performAction('/api/v1/enquiries/tenant/respond', 'enquiryParam', 'respondToEnquiry', {
-      tenant_id: tenantId, enquiry_id: enquiryId, message,
-    });
+    const saved = await this.performAction(
+      '/api/v1/enquiries/tenant/respond',
+      'enquiryParam',
+      'respondToEnquiry',
+      {
+        tenant_id: tenantId,
+        enquiry_id: enquiryId,
+        message,
+      },
+    );
     if (saved) {
       this.showReplyDrawer.set(false);
       this.replyEnquiryId.set(null);
@@ -1017,12 +1701,26 @@ export class DashboardModule implements OnInit {
     }
   }
 
-  private async performAction(path:string,key:EnvelopeKey,actionType:string,data:DataRecord):Promise<boolean> {
+  private async performAction(
+    path: string,
+    key: EnvelopeKey,
+    actionType: string,
+    data: DataRecord,
+  ): Promise<boolean> {
     if (this.busy()) return false;
-    this.busy.set(true); this.error.set('');
-    try { await this.request(path,key,actionType,data); this.notice.set('Changes saved successfully.'); await this.load(); return true; }
-    catch(error) { this.error.set(this.auth.errorMessage(error)); return false; }
-    finally { this.busy.set(false); }
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      await this.request(path, key, actionType, data);
+      this.notice.set('Changes saved successfully.');
+      await this.load();
+      return true;
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+      return false;
+    } finally {
+      this.busy.set(false);
+    }
   }
 
   hasBcn(item: DataRecord): boolean {
@@ -1041,26 +1739,27 @@ export class DashboardModule implements OnInit {
 
   subscriptionReviewDetail(): DataRecord | null {
     const detail = this.subscriptionReview()?.['subscription'];
-    return detail && typeof detail === 'object' && !Array.isArray(detail) ? detail as DataRecord : null;
+    return detail && typeof detail === 'object' && !Array.isArray(detail)
+      ? (detail as DataRecord)
+      : null;
   }
 
   subscriptionReviewProofs(): DataRecord[] {
     const proofs = this.subscriptionReview()?.['proofs'];
-    return Array.isArray(proofs) ? proofs as DataRecord[] : [];
+    return Array.isArray(proofs) ? (proofs as DataRecord[]) : [];
   }
 
   subscriptionReviewHistory(): DataRecord[] {
     const history = this.subscriptionReview()?.['review_history'];
-    return Array.isArray(history) ? history as DataRecord[] : [];
+    return Array.isArray(history) ? (history as DataRecord[]) : [];
   }
-
 
   async loadModerationHistory(): Promise<void> {
     if (this.moderationHistoryLoading()) return;
     this.moderationHistoryLoading.set(true);
     this.error.set('');
     try {
-      const data = await this.request<{items?: DataRecord[]}>(
+      const data = await this.request<{ items?: DataRecord[] }>(
         '/api/v1/admin/moderation/history',
         'adminParam',
         'listModerationHistory',
@@ -1142,15 +1841,19 @@ export class DashboardModule implements OnInit {
   }
 
   async openSubscriptionReview(item: DataRecord): Promise<void> {
-    const subscriptionId = this.recordId(item,'subscription_id');
+    const subscriptionId = this.recordId(item, 'subscription_id');
     if (!subscriptionId || this.busy()) return;
-    this.busy.set(true); this.error.set('');
+    this.busy.set(true);
+    this.error.set('');
     try {
       const detail = await this.request<DataRecord>(
-        '/api/v1/admin/subscriptions/detail','adminParam','getSubscriptionForReview',{subscription_id:subscriptionId},
+        '/api/v1/admin/subscriptions/detail',
+        'adminParam',
+        'getSubscriptionForReview',
+        { subscription_id: subscriptionId },
       );
       this.subscriptionReview.set(detail);
-    } catch(error) {
+    } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
       this.busy.set(false);
@@ -1160,7 +1863,12 @@ export class DashboardModule implements OnInit {
   setPaymentQrFile(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
-    if (file && (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size < 1 || file.size > 10 * 1024 * 1024)) {
+    if (
+      file &&
+      (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
+        file.size < 1 ||
+        file.size > 10 * 1024 * 1024)
+    ) {
       this.error.set('Choose a JPG, PNG or WEBP image up to 10 MB.');
       this.clearPaymentQrPreview();
     } else {
@@ -1188,23 +1896,44 @@ export class DashboardModule implements OnInit {
   async savePaymentQrConfig(): Promise<void> {
     const file = this.qrFile();
     if (!file || this.busy()) return;
-    this.busy.set(true); this.error.set('');
+    this.busy.set(true);
+    this.error.set('');
     try {
-      const upload = await this.request<{upload_url:string;object_key:string;headers:Record<string,string>}>(
-        '/api/v1/admin/subscriptions/payment-qr/upload-url','adminParam','generatePaymentQrUploadUrl',{
-          original_file_name:file.name,mime_type:file.type,file_size_bytes:file.size,
+      const upload = await this.request<{
+        upload_url: string;
+        object_key: string;
+        headers: Record<string, string>;
+      }>(
+        '/api/v1/admin/subscriptions/payment-qr/upload-url',
+        'adminParam',
+        'generatePaymentQrUploadUrl',
+        {
+          original_file_name: file.name,
+          mime_type: file.type,
+          file_size_bytes: file.size,
         },
       );
-      await this.s3Upload.upload(upload.upload_url, file, upload.headers ?? { 'Content-Type': file.type });
-      await this.request('/api/v1/admin/subscriptions/payment-qr/save','adminParam','savePaymentQrConfig',{
-        payee_name:this.qrPayeeName().trim(),upi_id:this.qrUpiId().trim(),
-        payment_instructions:this.qrInstructions().trim(),qr_file_path:upload.object_key,
-      });
+      await this.s3Upload.upload(
+        upload.upload_url,
+        file,
+        upload.headers ?? { 'Content-Type': file.type },
+      );
+      await this.request(
+        '/api/v1/admin/subscriptions/payment-qr/save',
+        'adminParam',
+        'savePaymentQrConfig',
+        {
+          payee_name: this.qrPayeeName().trim(),
+          upi_id: this.qrUpiId().trim(),
+          payment_instructions: this.qrInstructions().trim(),
+          qr_file_path: upload.object_key,
+        },
+      );
       this.notice.set('A new payment QR configuration is active for new subscription requests.');
       this.clearPaymentQrPreview();
       await this.load();
       this.showPaymentQrDrawer.set(false);
-    } catch(error) {
+    } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
       this.busy.set(false);
@@ -1215,7 +1944,7 @@ export class DashboardModule implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    const allowed = ['image/jpeg','image/png','image/webp','application/pdf'];
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
     if (!allowed.includes(file.type) || file.size < 1 || file.size > 10 * 1024 * 1024) {
       this.error.set('Choose a non-empty JPG, PNG, WEBP or PDF file up to 10 MB.');
       input.value = '';
@@ -1252,47 +1981,77 @@ export class DashboardModule implements OnInit {
     this.busy.set(true);
     this.error.set('');
     try {
-      const upload = await this.request<{upload_url:string;object_key:string;method:string;headers:Record<string,string>}>(
-        '/api/v1/subscriptions/application/proofs/upload-url','subscriptionParam','generateApplicationProofUploadUrl',{
-          tenant_id:tenantId,subscription_id:subscriptionId,original_file_name:file.name,mime_type:file.type,file_size_bytes:file.size,
+      const upload = await this.request<{
+        upload_url: string;
+        object_key: string;
+        method: string;
+        headers: Record<string, string>;
+      }>(
+        '/api/v1/subscriptions/application/proofs/upload-url',
+        'subscriptionParam',
+        'generateApplicationProofUploadUrl',
+        {
+          tenant_id: tenantId,
+          subscription_id: subscriptionId,
+          original_file_name: file.name,
+          mime_type: file.type,
+          file_size_bytes: file.size,
         },
       );
-      await this.s3Upload.upload(upload.upload_url, file, upload.headers ?? { 'Content-Type': file.type });
-      this.proofDrafts.update((drafts) => ({...drafts,[subscriptionId]:{
-        objectKey:upload.object_key,paymentReference:this.proofPaymentReference().trim(),fileName:file.name,
-      }}));
-      this.notice.set('Receipt uploaded. Select “Submit for Review” when you are ready to send it to the BBG team.');
+      await this.s3Upload.upload(
+        upload.upload_url,
+        file,
+        upload.headers ?? { 'Content-Type': file.type },
+      );
+      this.proofDrafts.update((drafts) => ({
+        ...drafts,
+        [subscriptionId]: {
+          objectKey: upload.object_key,
+          paymentReference: this.proofPaymentReference().trim(),
+          fileName: file.name,
+        },
+      }));
+      this.notice.set(
+        'Receipt uploaded. Select “Submit for Review” when you are ready to send it to the BBG team.',
+      );
       this.showProofDrawer.set(false);
       this.proofFile.set(null);
       this.proofSubscription.set(null);
       this.proofPaymentReference.set('');
-    } catch(error) {
+    } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
       this.busy.set(false);
     }
   }
 
-
   async submitProof(subscription: DataRecord): Promise<void> {
-    const subscriptionId = this.recordId(subscription,'subscription_id');
+    const subscriptionId = this.recordId(subscription, 'subscription_id');
     const tenantId = this.workspace.activeTenantId();
     const draft = this.proofDrafts()[subscriptionId];
     if (!subscriptionId || !tenantId || !draft || this.busy()) return;
-    this.busy.set(true); this.error.set('');
+    this.busy.set(true);
+    this.error.set('');
     try {
-      await this.request('/api/v1/subscriptions/application/proofs/submit','subscriptionParam','submitApplicationSubscriptionProof',{
-        tenant_id:tenantId,subscription_id:subscriptionId,proof_file_path:draft.objectKey,
-        ...(draft.paymentReference ? {payment_reference:draft.paymentReference} : {}),
-      });
+      await this.request(
+        '/api/v1/subscriptions/application/proofs/submit',
+        'subscriptionParam',
+        'submitApplicationSubscriptionProof',
+        {
+          tenant_id: tenantId,
+          subscription_id: subscriptionId,
+          proof_file_path: draft.objectKey,
+          ...(draft.paymentReference ? { payment_reference: draft.paymentReference } : {}),
+        },
+      );
       this.proofDrafts.update((drafts) => {
-        const next = {...drafts};
+        const next = { ...drafts };
         delete next[subscriptionId];
         return next;
       });
       this.notice.set('Payment proof submitted for review.');
       await this.load();
-    } catch(error) {
+    } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
       this.busy.set(false);
@@ -1302,10 +2061,22 @@ export class DashboardModule implements OnInit {
   async requestPlan(plan: DataRecord): Promise<void> {
     const planId = this.recordId(plan, 'plan_id');
     const tenantId = this.workspace.activeTenantId();
-    const activeSubscription = this.items().find((item) => String(item['subscription_status'] ?? '').toUpperCase() === 'ACTIVE');
-    const subscriptionId = activeSubscription ? this.recordId(activeSubscription, 'subscription_id') : 0;
-    if (!planId || !tenantId || !subscriptionId || !this.canManageOwnedSubscription() || this.busy()) {
-      this.error.set('An active subscription and business-owner access are required to request a plan upgrade.');
+    const activeSubscription = this.items().find(
+      (item) => String(item['subscription_status'] ?? '').toUpperCase() === 'ACTIVE',
+    );
+    const subscriptionId = activeSubscription
+      ? this.recordId(activeSubscription, 'subscription_id')
+      : 0;
+    if (
+      !planId ||
+      !tenantId ||
+      !subscriptionId ||
+      !this.canManageOwnedSubscription() ||
+      this.busy()
+    ) {
+      this.error.set(
+        'An active subscription and business-owner access are required to request a plan upgrade.',
+      );
       return;
     }
     this.pendingPlanId.set(planId);
@@ -1318,9 +2089,11 @@ export class DashboardModule implements OnInit {
         'requestApplicationSubscriptionUpgrade',
         { tenant_id: tenantId, subscription_id: subscriptionId, plan_id: planId },
       );
-      this.notice.set('Your upgrade request and payment instructions are ready. Upload the receipt to submit it for review.');
+      this.notice.set(
+        'Your upgrade request and payment instructions are ready. Upload the receipt to submit it for review.',
+      );
       await this.load();
-    } catch(error) {
+    } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
       this.pendingPlanId.set(null);
@@ -1328,7 +2101,12 @@ export class DashboardModule implements OnInit {
     }
   }
 
-  humanize(value: string): string { return value.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,(letter)=>letter.toUpperCase()); }
+  humanize(value: string): string {
+    return value
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
   inputValue(event: Event): string {
     return (event.target as HTMLInputElement | HTMLTextAreaElement).value;
   }
@@ -1338,14 +2116,21 @@ export class DashboardModule implements OnInit {
   formatValue(value: unknown): string {
     if (value === null || value === undefined || value === '') return '—';
     if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-    if (typeof value === 'string' && /^\d{4}-\d\d-\d\d/.test(value)) return new Date(value).toLocaleString();
+    if (typeof value === 'string' && /^\d{4}-\d\d-\d\d/.test(value))
+      return new Date(value).toLocaleString();
     return String(value);
   }
   statusClass(status: string): string {
-    const value=status.toUpperCase();
-    if (['ACTIVE','APPROVED','PUBLISHED','CONFIRMED','RESPONDED','PAID','RESOLVED'].includes(value)) return 'status-chip good';
-    if (['PENDING','DRAFT','PROCESSING','OPEN'].includes(value)) return 'status-chip warn';
-    if (['REJECTED','CANCELLED','SUSPENDED','FAILED','DISMISSED'].includes(value)) return 'status-chip bad';
+    const value = status.toUpperCase();
+    if (
+      ['ACTIVE', 'APPROVED', 'PUBLISHED', 'CONFIRMED', 'RESPONDED', 'PAID', 'RESOLVED'].includes(
+        value,
+      )
+    )
+      return 'status-chip good';
+    if (['PENDING', 'DRAFT', 'PROCESSING', 'OPEN'].includes(value)) return 'status-chip warn';
+    if (['REJECTED', 'CANCELLED', 'SUSPENDED', 'FAILED', 'DISMISSED'].includes(value))
+      return 'status-chip bad';
     return 'status-chip';
   }
 }

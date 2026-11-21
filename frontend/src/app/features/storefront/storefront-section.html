@@ -1,228 +1,519 @@
-    @if (context.detail(); as data) {
-      <main class="page-shell">
-        @if (section === 'products') {
-          <section class="page-hero products-hero" aria-labelledby="page-title">
-            <div class="hero-inner">
-              <p class="eyebrow"><span>THE COLLECTION</span><i></i> {{ brandName }}</p>
-              <h1 id="page-title">Products<span>.</span></h1>
-              <p>Browse the products currently published by {{ brandName }}. Find the details you need and connect with the business directly.</p>
-              <div class="hero-meta">
-                <span>{{ pagination().total }} {{ pagination().total === 1 ? 'product' : 'products' }} listed</span>
-                @if (data.business.city || data.business.state) {
-                  <span class="meta-divider"></span>
-                  <span>{{ data.business.city }}{{ data.business.city && data.business.state ? ', ' : '' }}{{ data.business.state }}</span>
-                }
-              </div>
-            </div>
-          </section>
-
-          <section class="catalogue content-wrap" aria-labelledby="catalogue-heading">
-            <div class="catalogue-toolbar">
-              <div>
-                <p class="section-label">OUR CATALOGUE</p>
-                <h2 id="catalogue-heading">Find what you're looking for.</h2>
-              </div>
-              <form class="search-form" role="search" (submit)="submitSearch($event)">
-                <span class="search-icon" aria-hidden="true">⌕</span>
-                <input id="storefront-product-search" type="search" aria-label="Search products" [value]="searchTerm()" (input)="updateSearch($event)" placeholder="Search products..." autocomplete="off" />
-                @if (searchTerm()) {
-                  <button class="clear-search" type="button" aria-label="Clear search" (click)="clearSearch()">×</button>
-                }
-                <button class="search-button" type="submit" [disabled]="loading()">Search</button>
-              </form>
-              <div class="catalogue-tools">
-                <label class="sort-control"><span>Sort by</span>
-                  <select name="store-sort" [ngModel]="sort" (ngModelChange)="sortChanged($event)">
-                    <option value="newest">Newly added</option>
-                    <option value="popular">Most popular</option>
-                    <option value="nearby">Nearby first</option>
-                    <option value="price_low">Price: low to high</option>
-                    <option value="price_high">Price: high to low</option>
-                    <option value="name">Name: A to Z</option>
-                  </select>
-                </label>
-              </div>
-            </div>
-
-            @if (activeFilterChips().length) {
-              <div class="active-filters" aria-label="Applied filters">
-                <span class="active-filter-caption">Applied filters</span>
-                @for (chip of activeFilterChips(); track chip.key) {
-                  <button class="filter-chip" type="button" (click)="removeFilter(chip.key)">{{ chip.label }} <span aria-hidden="true">×</span></button>
-                }
-                <button class="clear-active-filters" type="button" (click)="clearFilters()">Clear all</button>
-              </div>
+@if (context.detail(); as data) {
+  <main class="page-shell">
+    @if (section === 'products') {
+      <section class="page-hero products-hero" aria-labelledby="page-title">
+        <div class="hero-inner">
+          <p class="eyebrow"><span>THE COLLECTION</span><i></i> {{ brandName }}</p>
+          <h1 id="page-title">Products<span>.</span></h1>
+          <p>
+            Browse the products currently published by {{ brandName }}. Find the details you need
+            and connect with the business directly.
+          </p>
+          <div class="hero-meta">
+            <span
+              >{{ pagination().total }}
+              {{ pagination().total === 1 ? 'product' : 'products' }} listed</span
+            >
+            @if (data.business.city || data.business.state) {
+              <span class="meta-divider"></span>
+              <span
+                >{{ data.business.city }}{{ data.business.city && data.business.state ? ', ' : ''
+                }}{{ data.business.state }}</span
+              >
             }
+          </div>
+        </div>
+      </section>
 
-            <app-filter-drawer
-              [open]="filtersOpen()"
-              [activeCount]="activeFilterCount()"
-              (openChange)="setFiltersOpen($event)"
-              (apply)="applyFilters()"
-              (reset)="resetDraftFilters()">
-              <form class="drawer-filters" aria-label="Advanced product filters">
-                @if (filterNotice()) { <p class="drawer-notice" role="alert">{{ filterNotice() }}</p> }
-                <div class="filter-field">
-                  <label for="store-product-category">Category</label>
-                  <select id="store-product-category" name="category" [(ngModel)]="draftFilters.categoryId">
-                    <option value="">All product categories</option>
-                    @for (category of categories(); track category.id) { <option [value]="category.id">{{ category.category_name }}</option> }
-                  </select>
-                </div>
-                <div class="filter-field"><label for="store-product-brand">Brand</label><input id="store-product-brand" name="brand" [(ngModel)]="draftFilters.brand" placeholder="Any brand" /></div>
-                <div class="filter-field"><label for="store-product-city">City</label><input id="store-product-city" name="city" [(ngModel)]="draftFilters.city" placeholder="Any city" /></div>
-                <div class="filter-field"><label for="store-product-state">State</label><input id="store-product-state" name="state" [(ngModel)]="draftFilters.state" placeholder="Any state" /></div>
-                <div class="filter-field"><label for="store-product-min-price">Minimum price (₹)</label><input id="store-product-min-price" name="minPrice" type="number" min="0" step="0.01" [(ngModel)]="draftFilters.minPrice" placeholder="No minimum" /></div>
-                <div class="filter-field"><label for="store-product-max-price">Maximum price (₹)</label><input id="store-product-max-price" name="maxPrice" type="number" min="0" step="0.01" [(ngModel)]="draftFilters.maxPrice" placeholder="No maximum" /></div>
-                <label class="check-field"><input type="checkbox" name="onlineOnly" [(ngModel)]="draftFilters.onlineOnly" /><span>Businesses accepting online orders only</span></label>
-                <label class="check-field"><input type="checkbox" name="variantsOnly" [(ngModel)]="draftFilters.variantsOnly" /><span>Variant products only</span></label>
-                <label class="check-field"><input type="checkbox" name="withImages" [(ngModel)]="draftFilters.withImages" /><span>Products with images</span></label>
-              </form>
-            </app-filter-drawer>
-
-            @if (filterNotice()) { <p class="filter-notice" role="status">{{ filterNotice() }}</p> }
-            @if (loading()) {
-              <div class="catalogue-grid" aria-label="Loading products">
-                @for (item of skeletons; track item) { <div class="product-skeleton"><span></span><i></i><i></i><b></b></div> }
-              </div>
-            } @else if (products().length) {
-              <p class="results-summary" aria-live="polite">
-                Showing {{ resultStart }}–{{ resultEnd }} of {{ pagination().total }} {{ pagination().total === 1 ? 'result' : 'results' }}
-                @if (searchTerm().trim()) { <span>for “{{ searchTerm().trim() }}”</span> }
-                @if (sort === 'nearby') { <span> · sorted by distance</span> }
-              </p>
-              <div class="catalogue-grid">
-                @for (product of products(); track product.id; let index = $index) {
-                  <app-product-card
-                    [product]="product"
-                    [showPrice]="data.storefront.show_prices"
-                    [currency]="data.storefront.currency || ''"
-                    [actionLabel]="'View details'"
-                    (selected)="openProduct($event, data.business.business_slug)"
-                    (businessSelected)="openBusiness($event)" />
-                }
-              </div>
-              @if (totalPages > 1) {
-                <nav class="pagination" aria-label="Product pages">
-                  @if (pagination().page > 1) {
-                    <a [routerLink]="[]" [queryParams]="{ page: pagination().page - 1, q: searchTerm().trim() || null }">← Previous</a>
-                  } @else { <span class="page-disabled">← Previous</span> }
-                  <span>Page <strong>{{ pagination().page }}</strong> of {{ totalPages }}</span>
-                  @if (pagination().page < totalPages) {
-                    <a [routerLink]="[]" [queryParams]="{ page: pagination().page + 1, q: searchTerm().trim() || null }">Next →</a>
-                  } @else { <span class="page-disabled">Next →</span> }
-                </nav>
-              }
-            } @else if (loadError()) {
-              <div class="empty-state" role="alert">
-                <span class="empty-icon" aria-hidden="true">!</span>
-                <h2>Catalogue temporarily unavailable</h2>
-                <p>{{ loadError() }}</p>
-                <button class="reset-button" type="button" (click)="loadProducts(pagination().page, searchTerm())">Try again</button>
-              </div>
-            } @else {
-              <div class="empty-state">
-                <span class="empty-icon" aria-hidden="true">⌕</span>
-                <h2>{{ searchTerm().trim() ? 'No matching products found' : 'No products published yet' }}</h2>
-                <p>{{ searchTerm().trim() ? 'Try a different product name or clear your search to browse the catalogue.' : brandName + ' has not published products to this catalogue yet. Please check back later or contact the business.' }}</p>
-                @if (searchTerm().trim()) { <button class="reset-button" type="button" (click)="clearSearch()">Clear search</button> }
-                @if (activeFilterCount() || sort !== 'newest') { <button class="reset-button" type="button" (click)="clearAllFilters()">Clear all filters</button> }
-                <a class="contact-text-link" [routerLink]="['/store', data.business.business_slug, 'contact']">Contact the business <span aria-hidden="true">↗</span></a>
-              </div>
+      <section class="catalogue content-wrap" aria-labelledby="catalogue-heading">
+        <div class="catalogue-toolbar">
+          <div>
+            <p class="section-label">OUR CATALOGUE</p>
+            <h2 id="catalogue-heading">Find what you're looking for.</h2>
+          </div>
+          <form class="search-form" role="search" (submit)="submitSearch($event)">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input
+              id="storefront-product-search"
+              type="search"
+              aria-label="Search products"
+              [value]="searchTerm()"
+              (input)="updateSearch($event)"
+              placeholder="Search products..."
+              autocomplete="off"
+            />
+            @if (searchTerm()) {
+              <button
+                class="clear-search"
+                type="button"
+                aria-label="Clear search"
+                (click)="clearSearch()"
+              >
+                ×
+              </button>
             }
-          </section>
+            <button class="search-button" type="submit" [disabled]="loading()">Search</button>
+          </form>
+          <div class="catalogue-tools">
+            <label class="sort-control"
+              ><span>Sort by</span>
+              <select name="store-sort" [ngModel]="sort" (ngModelChange)="sortChanged($event)">
+                <option value="newest">Newly added</option>
+                <option value="popular">Most popular</option>
+                <option value="nearby">Nearby first</option>
+                <option value="price_low">Price: low to high</option>
+                <option value="price_high">Price: high to low</option>
+                <option value="name">Name: A to Z</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        @if (activeFilterChips().length) {
+          <div class="active-filters" aria-label="Applied filters">
+            <span class="active-filter-caption">Applied filters</span>
+            @for (chip of activeFilterChips(); track chip.key) {
+              <button class="filter-chip" type="button" (click)="removeFilter(chip.key)">
+                {{ chip.label }} <span aria-hidden="true">×</span>
+              </button>
+            }
+            <button class="clear-active-filters" type="button" (click)="clearFilters()">
+              Clear all
+            </button>
+          </div>
         }
 
-        @if (section === 'about') {
-          <section class="page-hero about-hero" aria-labelledby="page-title">
-            @if (data.business.cover_image_path) { <img class="about-cover" [src]="data.business.cover_image_path" [alt]="brandName + ' business cover image'" /> }
-            <div class="about-shade"></div>
-            <div class="hero-inner">
-              <p class="eyebrow"><span>GET TO KNOW US</span><i></i> {{ data.business.category_name || 'OUR BUSINESS' }}</p>
-              <h1 id="page-title">About <span>{{ brandName }}</span><b>.</b></h1>
-              <p>{{ data.storefront.description || data.business.business_description || 'Learn more about the business and find out how to get in touch.' }}</p>
+        <app-filter-drawer
+          [open]="filtersOpen()"
+          [activeCount]="activeFilterCount()"
+          (openChange)="setFiltersOpen($event)"
+          (apply)="applyFilters()"
+          (reset)="resetDraftFilters()"
+        >
+          <form class="drawer-filters" aria-label="Advanced product filters">
+            @if (filterNotice()) {
+              <p class="drawer-notice" role="alert">{{ filterNotice() }}</p>
+            }
+            <div class="filter-field">
+              <label for="store-product-category">Category</label>
+              <select
+                id="store-product-category"
+                name="category"
+                [(ngModel)]="draftFilters.categoryId"
+              >
+                <option value="">All product categories</option>
+                @for (category of categories(); track category.id) {
+                  <option [value]="category.id">{{ category.category_name }}</option>
+                }
+              </select>
             </div>
-          </section>
+            <div class="filter-field">
+              <label for="store-product-brand">Brand</label
+              ><input
+                id="store-product-brand"
+                name="brand"
+                [(ngModel)]="draftFilters.brand"
+                placeholder="Any brand"
+              />
+            </div>
+            <div class="filter-field">
+              <label for="store-product-city">City</label
+              ><input
+                id="store-product-city"
+                name="city"
+                [(ngModel)]="draftFilters.city"
+                placeholder="Any city"
+              />
+            </div>
+            <div class="filter-field">
+              <label for="store-product-state">State</label
+              ><input
+                id="store-product-state"
+                name="state"
+                [(ngModel)]="draftFilters.state"
+                placeholder="Any state"
+              />
+            </div>
+            <div class="filter-field">
+              <label for="store-product-min-price">Minimum price (₹)</label
+              ><input
+                id="store-product-min-price"
+                name="minPrice"
+                type="number"
+                min="0"
+                step="0.01"
+                [(ngModel)]="draftFilters.minPrice"
+                placeholder="No minimum"
+              />
+            </div>
+            <div class="filter-field">
+              <label for="store-product-max-price">Maximum price (₹)</label
+              ><input
+                id="store-product-max-price"
+                name="maxPrice"
+                type="number"
+                min="0"
+                step="0.01"
+                [(ngModel)]="draftFilters.maxPrice"
+                placeholder="No maximum"
+              />
+            </div>
+            <label class="check-field"
+              ><input
+                type="checkbox"
+                name="onlineOnly"
+                [(ngModel)]="draftFilters.onlineOnly"
+              /><span>BCN accredited businesses only</span></label
+            >
+            <label class="check-field"
+              ><input
+                type="checkbox"
+                name="variantsOnly"
+                [(ngModel)]="draftFilters.variantsOnly"
+              /><span>Variant products only</span></label
+            >
+            <label class="check-field"
+              ><input
+                type="checkbox"
+                name="withImages"
+                [(ngModel)]="draftFilters.withImages"
+              /><span>Products with images</span></label
+            >
+          </form>
+        </app-filter-drawer>
 
-          <section class="about-content content-wrap">
-            <div class="about-main">
-              <p class="section-label">OUR BUSINESS</p>
-              <div class="business-identity">
-                @if (data.business.logo_path) { <img [src]="data.business.logo_path" [alt]="brandName + ' logo'" /> }
-                @else { <span class="identity-mark">{{ brandName.slice(0, 1).toUpperCase() }}</span> }
-                <div><h2>{{ brandName }}</h2><p>{{ data.business.category_name || 'Business on BBG' }}</p></div>
-              </div>
-              <h3>Who we are</h3>
-              <p class="business-description">{{ data.storefront.description || data.business.business_description || 'Business details have not been provided yet. Please contact the business for more information.' }}</p>
-              @if (data.business.city || data.business.state) {
-                <div class="location-note"><span aria-hidden="true">⌖</span><div><strong>Business location</strong><p>{{ data.business.city }}{{ data.business.city && data.business.state ? ', ' : '' }}{{ data.business.state }}{{ data.business.postal_code ? ' ' + data.business.postal_code : '' }}</p></div></div>
-              }
-            </div>
-            <aside class="about-aside">              <p class="section-label">STOREFRONT DETAILS</p>
-              <div class="detail-row"><span>Business category</span><strong>{{ data.business.category_name || 'Not specified' }}</strong></div>
-              <div class="detail-row"><span>Product catalogue</span><strong>Publicly browsable</strong></div>
-              <div class="detail-row"><span>Prices</span><strong>{{ data.storefront.show_prices ? 'Displayed on products' : 'Available on enquiry' }}</strong></div>
-              <div class="detail-row"><span>Online orders</span><strong>{{ data.storefront.accept_online_orders ? 'Available' : 'Contact business' }}</strong></div>
-              @if (data.business.business_phone) { <div class="detail-row"><span>Phone</span><strong>{{ data.business.business_phone }}</strong></div> }
-              <a class="aside-link" [routerLink]="['/store', data.business.business_slug, 'contact']">Contact {{ brandName }} <span aria-hidden="true">↗</span></a>
-            </aside>
-          </section>
-          <section class="about-cta">
-            <div class="cta-inner"><div><p class="section-label">LET'S CONNECT</p><h2>We'd be glad to hear from you.</h2><p>Reach out to the business for product questions and further information.</p></div><a class="cta-button" [routerLink]="['/store', data.business.business_slug, 'contact']">Get in touch <span aria-hidden="true">↗</span></a></div>
-          </section>
+        @if (filterNotice()) {
+          <p class="filter-notice" role="status">{{ filterNotice() }}</p>
         }
-
-        @if (section === 'contact') {
-          <section class="page-hero contact-hero" aria-labelledby="page-title">
-            <div class="hero-inner">
-              <p class="eyebrow"><span>WE'RE HERE TO HELP</span><i></i> {{ brandName }}</p>
-              <h1 id="page-title">Let's talk<span>.</span></h1>
-              <p>Have a question about a product or want to know more? Choose the best way to reach {{ brandName }} below.</p>
-            </div>
-          </section>
-
-          <section class="contact-content content-wrap">
-            <div class="contact-intro">
-              <p class="section-label">CONTACT INFORMATION</p>
-              <h2>Get in touch with <em>{{ brandName }}</em>.</h2>
-              <p>Use the published contact details below to connect with the business directly.</p>
-              @if (data.business.business_phone || data.business.business_email || (data.storefront.whatsapp_enabled && data.business.whatsapp_number)) {
-                <div class="contact-methods">
-                  @if (data.business.business_phone) {
-                    <a class="contact-card" [href]="'tel:' + data.business.business_phone"><span class="method-icon" aria-hidden="true">↗</span><span class="method-label">CALL US</span><strong>{{ data.business.business_phone }}</strong><small>Tap to call the business</small></a>
-                  }
-                  @if (data.business.business_email) {
-                    <a class="contact-card" [href]="'mailto:' + data.business.business_email"><span class="method-icon" aria-hidden="true">✉</span><span class="method-label">EMAIL US</span><strong>{{ data.business.business_email }}</strong><small>Send an email enquiry</small></a>
-                  }
-                  @if (data.storefront.whatsapp_enabled && data.business.whatsapp_number) {
-                    <a class="contact-card" [href]="whatsappUrl(data.business.whatsapp_number)" target="_blank" rel="noopener noreferrer"><span class="method-icon" aria-hidden="true">◉</span><span class="method-label">WHATSAPP</span><strong>Message the business</strong><small>Continue the conversation on WhatsApp ↗</small></a>
-                  }
-                </div>
+        @if (loading()) {
+          <div class="catalogue-grid" aria-label="Loading products">
+            @for (item of skeletons; track item) {
+              <div class="product-skeleton"><span></span><i></i><i></i><b></b></div>
+            }
+          </div>
+        } @else if (products().length) {
+          <p class="results-summary" aria-live="polite">
+            Showing {{ resultStart }}–{{ resultEnd }} of {{ pagination().total }}
+            {{ pagination().total === 1 ? 'result' : 'results' }}
+            @if (searchTerm().trim()) {
+              <span>for “{{ searchTerm().trim() }}”</span>
+            }
+            @if (sort === 'nearby') {
+              <span> · sorted by distance</span>
+            }
+          </p>
+          <div class="catalogue-grid">
+            @for (product of productCards(); track product.id) {
+              <app-product-card
+                [product]="product"
+                [showPrice]="data.storefront.show_prices"
+                [currency]="data.storefront.currency || ''"
+                [actionLabel]="'View Details'"
+                (selected)="openProduct($event, data.business.business_slug)"
+                (businessSelected)="openBusiness($event)"
+              />
+            }
+          </div>
+          @if (totalPages > 1) {
+            <nav class="pagination" aria-label="Product pages">
+              @if (pagination().page > 1) {
+                <a
+                  [routerLink]="[]"
+                  [queryParams]="{ page: pagination().page - 1, q: searchTerm().trim() || null }"
+                  >← Previous</a
+                >
               } @else {
-                <div class="no-contact"><strong>Direct contact details are not published.</strong><p>This business has not made a phone number, email address, or WhatsApp contact available on its storefront.</p></div>
+                <span class="page-disabled">← Previous</span>
               }
-            </div>
-            <aside class="address-panel">
-              <div class="address-panel-top"><span class="address-icon" aria-hidden="true">⌖</span><p class="section-label">VISIT US</p></div>
-              <h2>Business address</h2>
-              @if (data.business.address; as address) {
-                <address>
-                  @if (address.address_line_1) { <span>{{ address.address_line_1 }}</span> }
-                  @if (address.address_line_2) { <span>{{ address.address_line_2 }}</span> }
-                  @if (address.city) { <span>{{ address.city }}</span> }
-                  @if (address.state) { <span>{{ address.state }}</span> }
-                  @if (address.postal_code) { <span>{{ address.postal_code }}</span> }
-                  @if (address.country_code) { <span>{{ address.country_code }}</span> }
-                </address>
-                <a class="directions-link" [href]="mapsUrl(data)" target="_blank" rel="noopener noreferrer">Open directions <span aria-hidden="true">↗</span></a>
+              <span
+                >Page <strong>{{ pagination().page }}</strong> of {{ totalPages }}</span
+              >
+              @if (pagination().page < totalPages) {
+                <a
+                  [routerLink]="[]"
+                  [queryParams]="{ page: pagination().page + 1, q: searchTerm().trim() || null }"
+                  >Next →</a
+                >
               } @else {
-                <p class="address-unavailable">A public business address has not been provided.</p>
+                <span class="page-disabled">Next →</span>
               }
-              @if (data.business.city || data.business.state) { <div class="address-location">{{ data.business.city }}{{ data.business.city && data.business.state ? ', ' : '' }}{{ data.business.state }}</div> }
-            </aside>
-          </section>
-          <section class="contact-bottom"><div class="bottom-inner"><div><p class="section-label">EXPLORE MORE</p><h2>Looking for something specific?</h2><p>Browse the published catalogue or learn more about the business.</p></div><div class="bottom-actions"><a [routerLink]="['/store', data.business.business_slug, 'products']">Browse products <span aria-hidden="true">↗</span></a><a [routerLink]="['/store', data.business.business_slug, 'about']">About the business <span aria-hidden="true">↗</span></a></div></div></section>
+            </nav>
+          }
+        } @else if (loadError()) {
+          <div class="empty-state" role="alert">
+            <span class="empty-icon" aria-hidden="true">!</span>
+            <h2>Catalogue temporarily unavailable</h2>
+            <p>{{ loadError() }}</p>
+            <button
+              class="reset-button"
+              type="button"
+              (click)="loadProducts(pagination().page, searchTerm())"
+            >
+              Try again
+            </button>
+          </div>
+        } @else {
+          <div class="empty-state">
+            <span class="empty-icon" aria-hidden="true">⌕</span>
+            <h2>
+              {{ searchTerm().trim() ? 'No matching products found' : 'No products published yet' }}
+            </h2>
+            <p>
+              {{
+                searchTerm().trim()
+                  ? 'Try a different product name or clear your search to browse the catalogue.'
+                  : brandName +
+                    ' has not published products to this catalogue yet. Please check back later or contact the business.'
+              }}
+            </p>
+            @if (searchTerm().trim()) {
+              <button class="reset-button" type="button" (click)="clearSearch()">
+                Clear search
+              </button>
+            }
+            @if (activeFilterCount() || sort !== 'newest') {
+              <button class="reset-button" type="button" (click)="clearAllFilters()">
+                Clear all filters
+              </button>
+            }
+            <a
+              class="contact-text-link"
+              [routerLink]="['/store', data.business.business_slug, 'contact']"
+              >Contact the business <span aria-hidden="true">↗</span></a
+            >
+          </div>
         }
-      </main>
+      </section>
     }
-  
+
+    @if (section === 'about') {
+      <section class="page-hero about-hero" aria-labelledby="page-title">
+        @if (data.business.cover_image_path) {
+          <img
+            class="about-cover"
+            [src]="data.business.cover_image_path"
+            [alt]="brandName + ' business cover image'"
+          />
+        }
+        <div class="about-shade"></div>
+        <div class="hero-inner">
+          <p class="eyebrow">
+            <span>GET TO KNOW US</span><i></i> {{ data.business.category_name || 'OUR BUSINESS' }}
+          </p>
+          <h1 id="page-title">
+            About <span>{{ brandName }}</span
+            ><b>.</b>
+          </h1>
+          <p>
+            {{
+              data.storefront.description ||
+                data.business.business_description ||
+                'Learn more about the business and find out how to get in touch.'
+            }}
+          </p>
+        </div>
+      </section>
+
+      <section class="about-content content-wrap">
+        <div class="about-main">
+          <p class="section-label">OUR BUSINESS</p>
+          <div class="business-identity">
+            @if (data.business.logo_path) {
+              <img [src]="data.business.logo_path" [alt]="brandName + ' logo'" />
+            } @else {
+              <span class="identity-mark">{{ brandName.slice(0, 1).toUpperCase() }}</span>
+            }
+            <div>
+              <h2>{{ brandName }}</h2>
+              <p>{{ data.business.category_name || 'Business on BBG' }}</p>
+            </div>
+          </div>
+          <h3>Who we are</h3>
+          <p class="business-description">
+            {{
+              data.storefront.description ||
+                data.business.business_description ||
+                'Business details have not been provided yet. Please contact the business for more information.'
+            }}
+          </p>
+          @if (data.business.city || data.business.state) {
+            <div class="location-note">
+              <span aria-hidden="true">⌖</span>
+              <div>
+                <strong>Business location</strong>
+                <p>
+                  {{ data.business.city }}{{ data.business.city && data.business.state ? ', ' : ''
+                  }}{{ data.business.state
+                  }}{{ data.business.postal_code ? ' ' + data.business.postal_code : '' }}
+                </p>
+              </div>
+            </div>
+          }
+        </div>
+        <aside class="about-aside">
+          <p class="section-label">STOREFRONT DETAILS</p>
+          <div class="detail-row">
+            <span>Business category</span
+            ><strong>{{ data.business.category_name || 'Not specified' }}</strong>
+          </div>
+          <div class="detail-row">
+            <span>Product catalogue</span><strong>Publicly browsable</strong>
+          </div>
+          <div class="detail-row">
+            <span>Prices</span
+            ><strong>{{
+              data.storefront.show_prices ? 'Displayed on products' : 'Available on enquiry'
+            }}</strong>
+          </div>
+          <div class="detail-row">
+            <span>BCN Accreditation</span>
+            <strong>Verified Merchant</strong>
+          </div>
+          @if (data.business.business_phone) {
+            <div class="detail-row">
+              <span>Phone</span><strong>{{ data.business.business_phone }}</strong>
+            </div>
+          }
+          <a class="aside-link" [routerLink]="['/store', data.business.business_slug, 'contact']"
+            >Contact {{ brandName }} <span aria-hidden="true">↗</span></a
+          >
+        </aside>
+      </section>
+      <section class="about-cta">
+        <div class="cta-inner">
+          <div>
+            <p class="section-label">LET'S CONNECT</p>
+            <h2>We'd be glad to hear from you.</h2>
+            <p>Reach out to the business for product questions and further information.</p>
+          </div>
+          <a class="cta-button" [routerLink]="['/store', data.business.business_slug, 'contact']"
+            >Get in touch <span aria-hidden="true">↗</span></a
+          >
+        </div>
+      </section>
+    }
+
+    @if (section === 'contact') {
+      <section class="page-hero contact-hero" aria-labelledby="page-title">
+        <div class="hero-inner">
+          <p class="eyebrow"><span>WE'RE HERE TO HELP</span><i></i> {{ brandName }}</p>
+          <h1 id="page-title">Let's talk<span>.</span></h1>
+          <p>
+            Have a question about a product or want to know more? Choose the best way to reach
+            {{ brandName }} below.
+          </p>
+        </div>
+      </section>
+
+      <section class="contact-content content-wrap">
+        <div class="contact-intro">
+          <p class="section-label">CONTACT INFORMATION</p>
+          <h2>
+            Get in touch with <em>{{ brandName }}</em
+            >.
+          </h2>
+          <p>Use the published contact details below to connect with the business directly.</p>
+          @if (
+            data.business.business_phone ||
+            data.business.business_email ||
+            isWhatsAppAvailable(data)
+          ) {
+            <div class="contact-methods">
+              @if (data.business.business_phone) {
+                <a class="contact-card" [href]="'tel:' + data.business.business_phone"
+                  ><span class="method-icon" aria-hidden="true">↗</span
+                  ><span class="method-label">CALL US</span
+                  ><strong>{{ data.business.business_phone }}</strong
+                  ><small>Tap to call the business</small></a
+                >
+              }
+              @if (data.business.business_email) {
+                <a class="contact-card" [href]="'mailto:' + data.business.business_email"
+                  ><span class="method-icon" aria-hidden="true">✉</span
+                  ><span class="method-label">EMAIL US</span
+                  ><strong>{{ data.business.business_email }}</strong
+                  ><small>Send an email enquiry</small></a
+                >
+              }
+              @if (isWhatsAppAvailable(data) && whatsappUrl(data); as waHref) {
+                <a class="contact-card" [href]="waHref" target="_blank" rel="noopener noreferrer"
+                  ><span class="method-icon" aria-hidden="true">◉</span
+                  ><span class="method-label">WHATSAPP</span><strong>Message the business</strong
+                  ><small>Continue the conversation on WhatsApp ↗</small></a
+                >
+              }
+            </div>
+          } @else {
+            <div class="no-contact">
+              <strong>Direct contact details are not published.</strong>
+              <p>
+                This business has not made a phone number, email address, or WhatsApp contact
+                available on its storefront.
+              </p>
+            </div>
+          }
+        </div>
+        <aside class="address-panel">
+          <div class="address-panel-top">
+            <span class="address-icon" aria-hidden="true">⌖</span>
+            <p class="section-label">VISIT US</p>
+          </div>
+          <h2>Business address</h2>
+          @if (data.business.address; as address) {
+            <address>
+              @if (address.address_line_1) {
+                <span>{{ address.address_line_1 }}</span>
+              }
+              @if (address.address_line_2) {
+                <span>{{ address.address_line_2 }}</span>
+              }
+              @if (address.city) {
+                <span>{{ address.city }}</span>
+              }
+              @if (address.state) {
+                <span>{{ address.state }}</span>
+              }
+              @if (address.postal_code) {
+                <span>{{ address.postal_code }}</span>
+              }
+              @if (address.country_code) {
+                <span>{{ address.country_code }}</span>
+              }
+            </address>
+            <a
+              class="directions-link"
+              [href]="mapsUrl(data)"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Open directions <span aria-hidden="true">↗</span></a
+            >
+          } @else {
+            <p class="address-unavailable">A public business address has not been provided.</p>
+          }
+          @if (data.business.city || data.business.state) {
+            <div class="address-location">
+              {{ data.business.city }}{{ data.business.city && data.business.state ? ', ' : ''
+              }}{{ data.business.state }}
+            </div>
+          }
+        </aside>
+      </section>
+      <section class="contact-bottom">
+        <div class="bottom-inner">
+          <div>
+            <p class="section-label">EXPLORE MORE</p>
+            <h2>Looking for something specific?</h2>
+            <p>Browse the published catalogue or learn more about the business.</p>
+          </div>
+          <div class="bottom-actions">
+            <a [routerLink]="['/store', data.business.business_slug, 'products']"
+              >Browse products <span aria-hidden="true">↗</span></a
+            ><a [routerLink]="['/store', data.business.business_slug, 'about']"
+              >About the business <span aria-hidden="true">↗</span></a
+            >
+          </div>
+        </div>
+      </section>
+    }
+  </main>
+}

@@ -1,12 +1,27 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MarketplaceApiService, MarketplaceCategory, MarketplaceProduct } from '../../../core/marketplace/marketplace-api.service';
+import {
+  MarketplaceApiService,
+  MarketplaceCategory,
+  MarketplaceProduct,
+} from '../../../core/marketplace/marketplace-api.service';
 import { FilterDrawer } from '../../../shared/filter-drawer/filter-drawer';
 import { ProductCard } from '../../../shared/components/product-card/product-card';
 import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
 import { SkeletonLoaderComponent } from '../../../shared/components/skeleton-loader/skeleton-loader.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
+import {
+  buildProductRouteSlug,
+  mapMarketplaceProductToCardModel,
+} from '../../../shared/models/marketplace-card.mappers';
 import type { ProductCardModel } from '../../../shared/models/marketplace-card.models';
 
 type ProductSort = 'newest' | 'popular' | 'nearby' | 'price_low' | 'price_high' | 'name';
@@ -26,34 +41,16 @@ type ProductFilterKey = keyof ProductFilterValues;
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-product-directory',
-  imports: [FormsModule, FilterDrawer, ProductCard, PaginationComponent, SkeletonLoaderComponent, EmptyStateComponent],
+  imports: [
+    FormsModule,
+    FilterDrawer,
+    ProductCard,
+    PaginationComponent,
+    SkeletonLoaderComponent,
+    EmptyStateComponent,
+  ],
   templateUrl: './product-directory.html',
-  styles: [`
-    :host{display:block}.page{min-height:65vh;padding:0 0 120px;background:var(--surface-page)}
-    .intro{position:relative;isolation:isolate;overflow:hidden;padding:76px max(24px,calc((100vw - 1180px)/2)) 64px;color:#fff;background:radial-gradient(ellipse at 88% 12%,rgba(245,217,40,.22),transparent 27%),radial-gradient(ellipse at 8% 100%,rgba(107,174,126,.28),transparent 38%),linear-gradient(120deg,#0d3425,#174d35 58%,#246747);border-radius:0 0 26px 26px;box-shadow:0 18px 48px rgba(17,64,43,.12)}
-    .intro:before{position:absolute;z-index:-1;top:-150px;right:7%;width:360px;height:360px;border:1px solid rgba(255,255,255,.17);border-radius:50%;box-shadow:0 0 0 34px rgba(255,255,255,.035),0 0 0 72px rgba(255,255,255,.025);content:""}.intro:after{position:absolute;z-index:-1;right:19%;bottom:-105px;width:190px;height:190px;background:rgba(245,217,40,.13);border-radius:50%;filter:blur(2px);content:""}.intro>*{position:relative;z-index:1}
-    .eyebrow{margin:0 0 12px;color:#789987;font-size:.68rem;font-weight:800;letter-spacing:.16em}.intro .eyebrow{color:#c5d9ce}
-    h1{max-width:850px;margin:0;font-size:clamp(2.8rem,6.5vw,5rem);font-weight:820;letter-spacing:-.075em;line-height:.99;text-wrap:balance}h1 span{color:#f5d928}
-    .lead{max-width:680px;margin:20px 0 20px;color:rgba(255,255,255,.86);font-size:1.02rem;line-height:1.7}.intro-meta{display:flex;align-items:center;gap:12px;color:#d5e5db;font-size:.76rem}.intro-meta i{width:4px;height:4px;background:#f5d928;border-radius:50%}
-    .results{width:min(1180px,calc(100% - 40px));margin:38px auto 0}.heading{display:flex;align-items:end;justify-content:space-between;gap:16px;margin-bottom:18px}.heading .eyebrow{margin-bottom:6px}.heading h2{margin:0;color:var(--text-primary);font-size:1.65rem;letter-spacing:-.04em}.heading>span{color:var(--text-secondary);font-size:.8rem}
-    .toolbar{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,230px) auto;align-items:end;gap:12px;margin:0 0 14px;padding:16px;background:var(--surface-card);border:1px solid var(--border);border-radius:15px;box-shadow:0 8px 24px rgba(20,35,27,.045)}
-    .search-submit{height:42px;padding:0 20px;color:#17231b;background:#f5d928;border:1px solid #f5d928;border-radius:8px;font-size:.78rem;font-weight:800;cursor:pointer}
-    .active-filters{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 22px}.active-filter-caption{color:var(--text-secondary);font-size:.72rem;font-weight:750}.filter-chip{display:inline-flex;align-items:center;gap:7px;min-height:30px;padding:5px 10px;color:#315d47;background:#edf4ef;border:1px solid #d8e7dc;border-radius:999px;font-size:.7rem;font-weight:700;cursor:pointer}.filter-chip span{font-size:1rem;line-height:1}.clear-active-filters{padding:5px 7px;color:var(--text-secondary);background:transparent;border:0;font-size:.72rem;font-weight:750;cursor:pointer}
-    .drawer-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:15px}.drawer-filters .check-field{grid-column:span 2}.drawer-filters .filter-field input,.drawer-filters .filter-field select{height:44px}.drawer-notice{grid-column:1/-1;margin:0;padding:10px 12px;color:#765b12;background:#fff8dc;border:1px solid #f0e2a9;border-radius:8px;font-size:.75rem;line-height:1.45}
-    .filter-field{display:grid;gap:7px;min-width:0}.filter-field label{color:var(--text-secondary);font-size:.72rem;font-weight:750}.filter-field input,.filter-field select{width:100%;min-width:0;height:42px;padding:0 11px;color:var(--text-primary);background:var(--surface-page);border:1px solid var(--border);border-radius:8px;font:inherit;font-size:.82rem;outline:none}.filter-field input:focus,.filter-field select:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 14%,transparent)}
-    .check-field{display:flex;align-items:center;gap:9px;min-height:42px;color:var(--text-secondary);font-size:.76rem;font-weight:650}.check-field input{width:16px;height:16px;accent-color:#174d35}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:16px}.card{display:flex;min-width:0;flex-direction:column;padding:20px;background:var(--surface-card);border:1px solid var(--border);border-radius:15px;transition:transform .18s ease,border-color .18s ease}.card:hover{transform:translateY(-3px);border-color:#9bb9a5}
-    .card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px}.product-mark{display:grid;width:44px;height:44px;place-items:center;color:#174d35;background:#e8f1eb;border-radius:13px;font-size:.7rem;font-weight:900;letter-spacing:.04em}.tag{padding:6px 9px;color:#315d47;background:#eaf2ec;border-radius:999px;font-size:.68rem;font-weight:700}
-    .card h3{margin:0 0 5px;color:var(--text-primary);font-size:1rem;line-height:1.35}.brand{margin:0;color:#648071;font-size:.76rem;font-weight:700}.description{display:-webkit-box;min-height:3.7em;margin:12px 0;overflow:hidden;color:var(--text-secondary);font-size:.8rem;line-height:1.55;-webkit-line-clamp:3;-webkit-box-orient:vertical}
-    .price{margin:4px 0 13px;color:var(--text-primary);font-size:1.12rem;font-weight:850}.price span{color:var(--text-secondary);font-size:.72rem;font-weight:550}.price-unavailable{margin:4px 0 13px;color:var(--text-secondary);font-size:.8rem}
-    .seller{display:grid;gap:3px;margin-top:auto;padding-top:12px;color:var(--text-secondary);font-size:.72rem;border-top:1px solid var(--border)}.seller-name{color:var(--text-primary);font-size:.78rem;font-weight:750}.distance,.popularity{margin-top:9px;color:#54765f;font-size:.7rem;font-weight:700}
-    .card-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.card-actions a{display:flex;align-items:center;justify-content:center;gap:5px;min-height:38px;padding:8px 9px;border-radius:8px;font-size:.72rem;font-weight:750;text-align:center;text-decoration:none}.primary-action{color:#17231b;background:#f5d928;border:1px solid #f5d928}.secondary-action{color:#315d47;background:#edf4ef;border:1px solid #d8e7dc}
-    .state,.empty{padding:30px;text-align:center;color:var(--text-secondary);background:var(--surface-subtle);border:1px solid var(--border);border-radius:14px}.state button,.empty button{margin-left:8px;padding:9px 13px;color:#17231b;background:#f5d928;border:0;border-radius:8px;font-weight:750;cursor:pointer}.error{color:#a33}.empty{padding:44px 20px}.empty-mark{font-size:2.5rem;color:var(--brand)}.empty h3{margin:8px 0;color:var(--text-primary)}.empty p{margin:0 0 18px;font-size:.85rem}
-    .pagination{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:24px;color:var(--text-secondary);font-size:.8rem}.pagination button{padding:9px 14px;color:var(--brand);background:var(--surface-card);border:1px solid var(--border);border-radius:8px;cursor:pointer}.pagination button:disabled{opacity:.4;cursor:not-allowed}
-    .notice{margin:0 0 16px;padding:10px 13px;color:#765b12;background:#fff8dc;border:1px solid #f0e2a9;border-radius:8px;font-size:.78rem}.data-note{margin:18px 0 0;color:var(--text-secondary);font-size:.72rem;line-height:1.5}
-    @media(max-width:900px){.toolbar{grid-template-columns:minmax(0,1fr) minmax(180px,220px)}.search-submit{grid-column:span 2}}
-    @media(max-width:600px){.intro{padding:45px 20px}.heading{align-items:flex-start;flex-direction:column}.toolbar{grid-template-columns:1fr;padding:14px}.search-submit{grid-column:auto}.drawer-filters{grid-template-columns:1fr}.drawer-filters .check-field{grid-column:auto}.card-actions{grid-template-columns:1fr}}
-  `],
+  styleUrl: './product-directory.scss',
 })
 export class ProductDirectory implements OnInit {
   private readonly api = inject(MarketplaceApiService);
@@ -61,16 +58,12 @@ export class ProductDirectory implements OnInit {
   private readonly router = inject(Router);
 
   protected openProduct(product: ProductCardModel): void {
-    const productId = (product.slug || this.slugifyProduct(product.product_name)) + '-' + (product.public_id || product.id);
+    const productId = buildProductRouteSlug(product);
     void this.router.navigate(['/store', product.business.business_slug, 'products', productId]);
   }
 
   protected openBusiness(businessSlug: string): void {
     void this.router.navigate(['/store', businessSlug]);
-  }
-
-  protected slugifyProduct(value: string): string {
-    return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
   }
 
   protected query = '';
@@ -88,9 +81,11 @@ export class ProductDirectory implements OnInit {
     if (filters.brand.trim()) chips.push({ key: 'brand', label: 'Brand: ' + filters.brand.trim() });
     if (filters.city.trim()) chips.push({ key: 'city', label: 'City: ' + filters.city.trim() });
     if (filters.state.trim()) chips.push({ key: 'state', label: 'State: ' + filters.state.trim() });
-    if (filters.minPrice !== null) chips.push({ key: 'minPrice', label: 'Min: ' + this.formatPrice(filters.minPrice) });
-    if (filters.maxPrice !== null) chips.push({ key: 'maxPrice', label: 'Max: ' + this.formatPrice(filters.maxPrice) });
-    if (filters.onlineOnly) chips.push({ key: 'onlineOnly', label: 'Online orders' });
+    if (filters.minPrice !== null)
+      chips.push({ key: 'minPrice', label: 'Min: ' + this.formatPrice(filters.minPrice) });
+    if (filters.maxPrice !== null)
+      chips.push({ key: 'maxPrice', label: 'Max: ' + this.formatPrice(filters.maxPrice) });
+    if (filters.onlineOnly) chips.push({ key: 'onlineOnly', label: 'BCN accredited' });
     if (filters.variantsOnly) chips.push({ key: 'variantsOnly', label: 'Variants' });
     if (filters.withImages) chips.push({ key: 'withImages', label: 'With images' });
     return chips;
@@ -98,12 +93,15 @@ export class ProductDirectory implements OnInit {
   protected readonly activeFilterCount = computed(() => this.activeFilterChips().length);
   protected readonly categories = signal<MarketplaceCategory[]>([]);
   protected readonly products = signal<MarketplaceProduct[]>([]);
+  protected readonly productCards = computed<ProductCardModel[]>(() =>
+    this.products().map((product) => mapMarketplaceProductToCardModel(product)),
+  );
   protected readonly loading = signal(true);
   protected readonly error = signal('');
   protected readonly filterNotice = signal('');
   protected readonly total = signal(0);
   protected readonly page = signal(1);
-  protected readonly pageSize = 16;
+  protected readonly pageSize = 3;
   protected readonly pages = signal(1);
   private latitude: number | undefined;
   private longitude: number | undefined;
@@ -141,8 +139,11 @@ export class ProductDirectory implements OnInit {
   }
 
   protected applyFilters(): void {
-    if (this.draftFilters.minPrice !== null && this.draftFilters.maxPrice !== null
-      && this.draftFilters.minPrice > this.draftFilters.maxPrice) {
+    if (
+      this.draftFilters.minPrice !== null &&
+      this.draftFilters.maxPrice !== null &&
+      this.draftFilters.minPrice > this.draftFilters.maxPrice
+    ) {
       this.filterNotice.set('Minimum price cannot be greater than maximum price.');
       return;
     }
@@ -170,15 +171,33 @@ export class ProductDirectory implements OnInit {
   protected removeFilter(key: ProductFilterKey): void {
     const next = { ...this.appliedFilters() };
     switch (key) {
-      case 'categoryId': next.categoryId = ''; break;
-      case 'brand': next.brand = ''; break;
-      case 'city': next.city = ''; break;
-      case 'state': next.state = ''; break;
-      case 'minPrice': next.minPrice = null; break;
-      case 'maxPrice': next.maxPrice = null; break;
-      case 'onlineOnly': next.onlineOnly = false; break;
-      case 'variantsOnly': next.variantsOnly = false; break;
-      case 'withImages': next.withImages = false; break;
+      case 'categoryId':
+        next.categoryId = '';
+        break;
+      case 'brand':
+        next.brand = '';
+        break;
+      case 'city':
+        next.city = '';
+        break;
+      case 'state':
+        next.state = '';
+        break;
+      case 'minPrice':
+        next.minPrice = null;
+        break;
+      case 'maxPrice':
+        next.maxPrice = null;
+        break;
+      case 'onlineOnly':
+        next.onlineOnly = false;
+        break;
+      case 'variantsOnly':
+        next.variantsOnly = false;
+        break;
+      case 'withImages':
+        next.withImages = false;
+        break;
     }
     this.appliedFilters.set(next);
     this.draftFilters = { ...next };
@@ -257,7 +276,9 @@ export class ProductDirectory implements OnInit {
     this.api.listProducts(filters, this.page(), this.pageSize).subscribe({
       next: (response) => {
         if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
-          this.error.set(response.msgArr?.join(' ') || 'Product listings are currently unavailable.');
+          this.error.set(
+            response.msgArr?.join(' ') || 'Product listings are currently unavailable.',
+          );
           this.products.set([]);
           this.total.set(0);
           this.pages.set(1);
@@ -265,7 +286,9 @@ export class ProductDirectory implements OnInit {
           const data = response.data;
           this.products.set(data.items ?? []);
           this.total.set(data.pagination?.total ?? data.items?.length ?? 0);
-          this.pages.set(Math.max(1, Math.ceil(this.total() / (data.pagination?.page_size || this.pageSize))));
+          this.pages.set(
+            Math.max(1, Math.ceil(this.total() / (data.pagination?.page_size || this.pageSize))),
+          );
         }
         this.loading.set(false);
       },
@@ -278,13 +301,21 @@ export class ProductDirectory implements OnInit {
 
   protected formatPrice(value: number | string): string {
     const amount = Number(value);
-    return Number.isFinite(amount) ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount) : 'Price unavailable';
+    return Number.isFinite(amount)
+      ? new Intl.NumberFormat('en-IN', {
+          style: 'currency',
+          currency: 'INR',
+          maximumFractionDigits: 2,
+        }).format(amount)
+      : 'Price unavailable';
   }
 
   private requestLocation(): void {
     if (!navigator.geolocation) {
       this.sort = 'newest';
-      this.filterNotice.set('Your browser does not support location access. Showing newly added products instead.');
+      this.filterNotice.set(
+        'Your browser does not support location access. Showing newly added products instead.',
+      );
       this.load();
       return;
     }
@@ -294,18 +325,21 @@ export class ProductDirectory implements OnInit {
       (position) => {
         this.latitude = position.coords.latitude;
         this.longitude = position.coords.longitude;
-        this.filterNotice.set('Showing products nearest to your current location. Location is used only for this search.');
+        this.filterNotice.set(
+          'Showing products nearest to your current location. Location is used only for this search.',
+        );
         this.load();
       },
       () => {
         this.sort = 'newest';
         this.latitude = undefined;
         this.longitude = undefined;
-        this.filterNotice.set('Location access was unavailable. Showing newly added products; you can still filter by city or state.');
+        this.filterNotice.set(
+          'Location access was unavailable. Showing newly added products; you can still filter by city or state.',
+        );
         this.load();
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
     );
   }
 }
-

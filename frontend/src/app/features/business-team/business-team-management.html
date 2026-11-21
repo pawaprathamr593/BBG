@@ -1,0 +1,207 @@
+<main class="team-page">
+  <section class="team-card">
+    <a class="back-link" routerLink="/workspace">← Back to your businesses</a>
+    <p class="eyebrow">BUSINESS WORKSPACE</p>
+    <h1>Team &amp; Access</h1>
+    <p class="intro">
+      Add an existing BBG user or create an invitation link for a new team member.
+    </p>
+
+    @if (error()) {
+      <div class="notice error" role="alert">{{ error() }}</div>
+    }
+    @if (notice()) {
+      <div class="notice success" role="status">{{ notice() }}</div>
+    }
+
+    <section class="add-member">
+      <div class="section-heading">
+        <div>
+          <h2>Add a team member</h2>
+          <p>Search by the exact email address linked to their BBG account.</p>
+        </div>
+        <span class="role-badge">Business Operations Manager</span>
+      </div>
+      <div class="search-row">
+        <label>
+          <span>Email address</span>
+          <input
+            type="email"
+            [value]="email()"
+            (input)="email.set(inputValue($event))"
+            placeholder="colleague@company.com"
+          />
+        </label>
+        <button type="button" class="primary-button" (click)="searchUsers()" [disabled]="busy()">
+          {{ searching() ? 'Searching…' : 'Search user' }}
+        </button>
+      </div>
+
+      @if (searchResults().length) {
+        <div class="search-results">
+          @for (user of searchResults(); track user.user_id) {
+            <article class="search-result">
+              <div>
+                <strong>{{ user.full_name }}</strong>
+                <span>{{ user.email }}</span>
+              </div>
+              <button
+                type="button"
+                class="secondary-button"
+                (click)="addUser(user)"
+                [disabled]="busy()"
+              >
+                Add to business
+              </button>
+            </article>
+          }
+        </div>
+      } @else if (searched() && !searching()) {
+        <div class="empty-search">
+          <p>No eligible active BBG account was found for this email.</p>
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="createInvite()"
+            [disabled]="busy()"
+          >
+            Create invitation link
+          </button>
+        </div>
+      }
+
+      @if (invitationLink()) {
+        <div class="invitation-box">
+          <div>
+            <strong>Invitation link created</strong>
+            <span>Expires {{ invitationExpiresOn() }}</span>
+            <input readonly [value]="invitationLink()" aria-label="Invitation link" />
+          </div>
+          <button type="button" class="secondary-button" (click)="copyInvitationLink()">
+            Copy link
+          </button>
+        </div>
+      }
+
+      <p class="role-note">
+        This workflow assigns the business operations manager tenant role. Tenant owners and
+        platform roles cannot be assigned here. Invitees must register or sign in using the invited
+        email address.
+      </p>
+    </section>
+
+    <section class="member-list">
+      <div class="section-heading">
+        <div>
+          <h2>Current team directory</h2>
+          <p>People who can access this business workspace and manage operations.</p>
+        </div>
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="loadMembers()"
+          [disabled]="loading()"
+        >
+          Refresh
+        </button>
+      </div>
+
+      @if (loading()) {
+        <div style="padding: 12px 0">
+          <app-skeleton-loader variant="table-row" [count]="3" />
+        </div>
+      } @else if (!members().length) {
+        <app-empty-state
+          title="No team members listed"
+          description="Search an existing user or generate an invitation link to assign team members to this workspace."
+          icon="👥"
+        />
+      } @else {
+        <div class="members-directory">
+          @for (member of members(); track member.user_id) {
+            <article class="member-item">
+              <div class="member-identity">
+                <span class="member-avatar">{{ initials(member.full_name) }}</span>
+                <div class="member-info">
+                  <strong>{{ member.full_name }}</strong>
+                  <span>{{ member.email }}</span>
+                </div>
+              </div>
+              <div class="member-actions">
+                <app-status-badge
+                  status="active"
+                  [label]="member.role_codes || 'Order Manager'"
+                  size="sm"
+                />
+                <button type="button" class="inspect-btn" (click)="openPermissionPanel(member)">
+                  Permissions
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </section>
+</main>
+
+<app-workspace-drawer
+  [open]="permissionDrawerOpen()"
+  title="Role & Permissions"
+  description="Review tenant role assignment and access scope for this member."
+  (closed)="permissionDrawerOpen.set(false)"
+>
+  @if (selectedMember(); as member) {
+    <div class="permission-panel-content">
+      <div class="panel-section">
+        <h3>Member Details</h3>
+        <div class="panel-info-card">
+          <strong>{{ member.full_name }}</strong>
+          <span>{{ member.email }}</span>
+          <span style="margin-top: 4px">
+            <app-status-badge
+              status="active"
+              [label]="member.role_codes || 'TENANT_ORDER_MANAGER'"
+              size="sm"
+            />
+          </span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Assigned Entitlements</h3>
+        <div class="permissions-list">
+          <div class="perm-item">
+            <span class="perm-icon">✓</span>
+            <div>
+              <strong>Order Management</strong>
+              <p>
+                View customer orders, update fulfillment statuses, and record delivery milestones.
+              </p>
+            </div>
+          </div>
+          <div class="perm-item">
+            <span class="perm-icon">✓</span>
+            <div>
+              <strong>Catalogue Access</strong>
+              <p>Inspect workspace product catalogue, pricing, and category taxonomy.</p>
+            </div>
+          </div>
+          <div class="perm-item">
+            <span class="perm-icon">✓</span>
+            <div>
+              <strong>Storefront Visibility</strong>
+              <p>Review customer-facing storefront presentation and public publication state.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-role-guard">
+        <strong>Strict Tenant Isolation:</strong> Permissions are restricted to the current business
+        tenant workspace. Access to billing settings, plan modifications, and platform
+        administration is restricted to Tenant Owners and Platform Admins.
+      </div>
+    </div>
+  }
+</app-workspace-drawer>

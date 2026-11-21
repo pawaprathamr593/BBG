@@ -88,7 +88,7 @@ final readonly class MarketplaceDao
                     bp.business_description, bp.primary_category_id,
                     c.category_name, bp.business_phone, bp.whatsapp_number,
                     bp.business_email, bp.logo_path, bp.cover_image_path,
-                    bp.city, bp.state, bp.postal_code,
+                    bp.city, bp.state, bp.postal_code, bp.country_code,
                     ss.show_prices, ss.accept_online_orders, ss.whatsapp_enabled
              FROM BUSINESS_PROFILES bp
              JOIN TENANTS t ON t.id = bp.tenant_id
@@ -143,7 +143,7 @@ final readonly class MarketplaceDao
                     bp.business_description, bp.primary_category_id,
                     c.category_name, bp.business_phone, bp.whatsapp_number,
                     bp.business_email, bp.logo_path, bp.cover_image_path,
-                    bp.city, bp.state, bp.postal_code, bp.created_on,
+                    bp.city, bp.state, bp.postal_code, bp.country_code, bp.created_on,
                     ss.show_prices, ss.accept_online_orders, ss.whatsapp_enabled,
                     COALESCE(v.view_count, 0) AS view_count,
                     COALESCE(e.enquiry_count, 0) AS enquiry_count,
@@ -235,7 +235,7 @@ final readonly class MarketplaceDao
                     bp.business_description, bp.primary_category_id,
                     c.category_name, bp.business_phone, bp.whatsapp_number,
                     bp.business_email, bp.logo_path, bp.cover_image_path,
-                    bp.city, bp.state, bp.postal_code, bp.created_on,
+                    bp.city, bp.state, bp.postal_code, bp.country_code, bp.created_on,
                     ss.show_prices, ss.accept_online_orders, ss.whatsapp_enabled
              FROM BUSINESS_PROFILES bp
              JOIN TENANTS t ON t.id = bp.tenant_id
@@ -313,7 +313,9 @@ final readonly class MarketplaceDao
                     p.category_id, pc.category_name, p.brand_name, p.barcode,
                     p.selling_price, p.base_unit_id, u.unit_name, u.unit_symbol,
                     u.quantity_precision, u.is_fraction_allowed,
-                    p.is_variant_product, ss.show_prices
+                    p.is_variant_product, ss.show_prices,
+                    bp.business_name, bp.business_slug, bp.logo_path AS business_logo_path,
+                    bp.city, bp.state, bp.country_code, bp.whatsapp_number, ss.whatsapp_enabled
              FROM PRODUCTS p
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
                 AND bp.business_slug = :slug
@@ -396,7 +398,8 @@ final readonly class MarketplaceDao
                     p.selling_price, p.base_unit_id, u.unit_name, u.unit_symbol,
                     u.quantity_precision, u.is_fraction_allowed,
                     p.is_variant_product, p.created_on, ss.show_prices,
-                    bp.business_name, bp.business_slug, bp.logo_path AS business_logo_path
+                    bp.business_name, bp.business_slug, bp.logo_path AS business_logo_path,
+                    bp.city, bp.state, bp.country_code, bp.whatsapp_number, ss.whatsapp_enabled
              FROM PRODUCTS p
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
                 AND bp.approval_status = 'APPROVED'
@@ -493,7 +496,8 @@ final readonly class MarketplaceDao
                     u.unit_name, u.unit_symbol, u.quantity_precision, u.is_fraction_allowed,
                     p.is_variant_product, p.created_on, ss.show_prices,
                     bp.business_name, bp.business_slug, bp.logo_path AS business_logo_path,
-                    bp.city, bp.state, bp.latitude, bp.longitude,
+                    bp.city, bp.state, bp.country_code, bp.whatsapp_number, ss.whatsapp_enabled,
+                    bp.latitude, bp.longitude,
                     COALESCE(pv.view_count, 0) AS view_count,
                     COALESCE(pl.like_count, 0) AS like_count,
                     (COALESCE(pv.view_count, 0) + COALESCE(pl.like_count, 0)) AS popularity_count,
@@ -628,7 +632,9 @@ final readonly class MarketplaceDao
                     p.category_id, pc.category_name, p.brand_name, p.barcode,
                     p.selling_price, p.base_unit_id, u.unit_name, u.unit_symbol,
                     u.quantity_precision, u.is_fraction_allowed,
-                    p.is_variant_product, ss.show_prices
+                    p.is_variant_product, ss.show_prices,
+                    bp.business_name, bp.business_slug, bp.logo_path AS business_logo_path,
+                    bp.city, bp.state, bp.country_code, bp.whatsapp_number, ss.whatsapp_enabled
              FROM PRODUCTS p
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = p.tenant_id
                 AND bp.business_slug = :slug
@@ -705,7 +711,8 @@ final readonly class MarketplaceDao
         return $this->many(
             $db,
             "SELECT pp.id, pp.tenant_id, pp.post_title, pp.post_content, pp.published_on,
-                    pp.valid_until, bp.business_name, bp.business_slug, bp.logo_path
+                    pp.valid_until, bp.business_name, bp.business_slug, bp.logo_path,
+                    bp.city, bp.state, c.category_name
              FROM PROMOTIONAL_POSTS pp
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = pp.tenant_id
                 AND bp.approval_status = 'APPROVED'
@@ -717,6 +724,7 @@ final readonly class MarketplaceDao
                             AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
+             LEFT JOIN CATEGORIES c ON c.id = bp.primary_category_id AND c.status = 'A'
              JOIN TENANTS t ON t.id = pp.tenant_id
                 AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
              JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = pp.tenant_id
@@ -774,7 +782,8 @@ final readonly class MarketplaceDao
         return $this->one(
             $db,
             "SELECT pp.id, pp.tenant_id, pp.post_title, pp.post_content, pp.published_on,
-                    pp.valid_until, bp.business_name, bp.business_slug, bp.logo_path
+                    pp.valid_until, bp.business_name, bp.business_slug, bp.logo_path,
+                    bp.city, bp.state, c.category_name
              FROM PROMOTIONAL_POSTS pp
              JOIN BUSINESS_PROFILES bp ON bp.tenant_id = pp.tenant_id
                 AND bp.approval_status = 'APPROVED'
@@ -786,6 +795,7 @@ final readonly class MarketplaceDao
                             AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
+             LEFT JOIN CATEGORIES c ON c.id = bp.primary_category_id AND c.status = 'A'
              JOIN TENANTS t ON t.id = pp.tenant_id
                 AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
              JOIN STOREFRONT_SETTINGS ss ON ss.tenant_id = pp.tenant_id

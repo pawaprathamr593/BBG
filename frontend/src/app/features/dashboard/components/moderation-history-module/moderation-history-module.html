@@ -1,15 +1,32 @@
 <section class="moderation-history" aria-labelledby="moderation-history-heading">
   <header class="section-title">
-    <div><p class="eyebrow">AUDIT TRAIL</p><h2 id="moderation-history-heading">Moderation history</h2></div>
-    <span class="record-count">{{ items().length }} records</span>
+    <div class="title-meta">
+      <span class="eyebrow">AUDIT TRAIL</span>
+      <h2 id="moderation-history-heading">Moderation History</h2>
+    </div>
+    <span class="record-count-badge">
+      <span class="count-num">{{ items().length }}</span> audit records
+    </span>
   </header>
+
   <div class="history-list">
     @for (item of items(); track item.id) {
       <article class="history-card">
-        <div class="history-heading"><div><strong>{{ item.title }}</strong><span>{{ item.subtitle }}</span></div>@if (item.status) { <span class="status-chip" [class]="item.statusClass">{{ item.status }}</span> }</div>
+        <div class="history-heading">
+          <div class="history-meta">
+            <strong class="history-title">{{ item.title }}</strong>
+            <span class="history-subtitle">{{ item.subtitle }}</span>
+          </div>
+          @if (item.status) {
+            <app-status-badge [status]="item.status" size="sm" />
+          }
+        </div>
         <div class="history-fields">
           @for (field of item.fields; track field.key) {
-            <div><span>{{ field.label }}</span><strong>{{ field.value }}</strong></div>
+            <div class="field-item">
+              <span class="field-label">{{ field.label }}</span>
+              <strong class="field-value">{{ field.value }}</strong>
+            </div>
           }
         </div>
       </article>

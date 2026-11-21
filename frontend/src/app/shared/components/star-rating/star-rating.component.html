@@ -1,0 +1,42 @@
+<div
+  class="star-rating-container"
+  [class.size-sm]="size() === 'sm'"
+  [class.size-md]="size() === 'md'"
+  [class.size-lg]="size() === 'lg'"
+  [class.interactive]="interactive()"
+  [attr.role]="interactive() ? 'radiogroup' : 'img'"
+  [attr.aria-label]="'Rating: ' + displayRating() + ' out of ' + maxRating() + ' stars'"
+  (mouseleave)="clearHover()"
+>
+  @for (star of stars(); track star) {
+    <button
+      type="button"
+      class="star-btn"
+      [class.active]="star <= displayRating()"
+      [disabled]="!interactive()"
+      [attr.tabindex]="
+        interactive()
+          ? star === Math.round(displayRating()) || (displayRating() === 0 && star === 1)
+            ? 0
+            : -1
+          : -1
+      "
+      [attr.role]="interactive() ? 'radio' : null"
+      [attr.aria-checked]="interactive() ? star === Math.round(displayRating()) : null"
+      [attr.aria-label]="star + ' star' + (star > 1 ? 's' : '')"
+      (mouseenter)="setHover(star)"
+      (click)="selectStar(star)"
+      (keydown)="onKeyDown($event, star)"
+    >
+      <svg viewBox="0 0 24 24" fill="currentColor" class="star-icon" aria-hidden="true">
+        <path
+          d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+        />
+      </svg>
+    </button>
+  }
+
+  @if (showValue()) {
+    <span class="rating-value-label">{{ displayRating() | number: '1.1-1' }}</span>
+  }
+</div>

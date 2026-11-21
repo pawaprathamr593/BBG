@@ -1,16 +1,149 @@
-:host{display:block}
-.moderation-history{margin:0 0 24px}
-.section-title{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:30px 0 15px}
-.eyebrow{margin:0 0 5px;color:var(--brand);font-size:.67rem;font-weight:850;letter-spacing:.14em}
-h2{margin:0;font-size:1.25rem;letter-spacing:-.03em}
-.record-count{padding:7px 10px;color:var(--text-secondary);background:var(--surface-subtle);border:1px solid var(--border);border-radius:8px;font-size:.7rem;font-weight:750}
-.history-list{display:grid;gap:12px}
-.history-card{padding:18px 20px;background:var(--surface-card);border:1px solid var(--border);border-radius:13px}
-.history-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
-.history-heading>div{display:grid;gap:5px;min-width:0}.history-heading strong{font-size:.93rem}.history-heading span{color:var(--text-secondary);font-size:.72rem}
-.status-chip{flex:0 0 auto;padding:6px 9px;color:var(--text-secondary);background:var(--surface-subtle);border-radius:7px;font-size:.65rem;font-weight:800}
-.status-chip.good{color:#168253;background:#e9f7ef}.status-chip.warn{color:#98691a;background:#fff5df}.status-chip.bad{color:#b34840;background:#fff0ee}
-.history-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
-.history-fields>div{display:grid;gap:5px;min-width:0}.history-fields span{color:var(--text-secondary);font-size:.68rem;font-weight:700}.history-fields strong{overflow-wrap:anywhere;font-size:.76rem}
-@media(max-width:900px){.history-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){.history-card{padding:15px}.history-fields{grid-template-columns:1fr 1fr}}
+:host {
+  display: block;
+}
+
+.moderation-history {
+  margin: 0 0 1.5rem;
+}
+
+.section-title {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.75rem 0 1rem;
+  flex-wrap: wrap;
+}
+
+.title-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--bbg-brand-primary, #174d35);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.record-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.375rem 0.75rem;
+  color: var(--text-secondary);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--bbg-radius-md, 8px);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.count-num {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.history-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.history-card {
+  padding: 1.25rem 1.5rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: var(--bbg-radius-lg, 12px);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--bbg-transition-fast, 150ms ease-in-out);
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--bbg-brand-primary, #174d35) 30%, var(--border));
+    box-shadow: var(--shadow-md);
+  }
+}
+
+.history-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.history-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.history-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.history-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+.history-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.field-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.field-label {
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.field-value {
+  overflow-wrap: anywhere;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .history-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .history-card {
+    padding: 1rem;
+  }
+
+  .history-fields {
+    grid-template-columns: 1fr;
+  }
+}

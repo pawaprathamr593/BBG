@@ -1,13 +1,22 @@
 <section class="platform-analytics" aria-labelledby="platform-trends-heading">
   <header class="section-title">
-    <div><p class="eyebrow">LAST 30 DAYS</p><h2 id="platform-trends-heading">Platform trends</h2></div>
-    <span class="record-count">{{ points().length }} data points</span>
+    <div class="title-meta">
+      <span class="eyebrow">LAST 30 DAYS</span>
+      <h2 id="platform-trends-heading">Platform Trends &amp; Activity</h2>
+    </div>
+    <span class="record-count-badge">
+      <span class="count-num">{{ points().length }}</span> data points
+    </span>
   </header>
+
   <div class="trend-list">
     @for (point of points(); track pointId(point, $index)) {
       <article class="trend-card">
         @for (field of fields(point); track field.key) {
-          <div><span>{{ field.label }}</span><strong>{{ field.value }}</strong></div>
+          <div class="trend-field">
+            <span class="field-label">{{ field.label }}</span>
+            <strong class="field-value">{{ field.value }}</strong>
+          </div>
         }
       </article>
     }

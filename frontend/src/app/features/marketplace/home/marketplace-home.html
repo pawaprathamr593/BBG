@@ -1,189 +1,367 @@
-    <main class="marketplace-home">
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <p class="eyebrow">BUSINESS MANAGEMENT &amp; MARKETPLACE PLATFORM</p>
-          <h1 id="hero-title">Discover businesses.<br /><span>Find opportunities.</span></h1>
-          <p class="hero-description">Explore products and connect with businesses on BBG.</p>
+<main class="marketplace-home">
+  <!-- ENTERPRISE DISCOVERY HERO -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <div class="hero-network-badge">
+        <span class="badge-dot"></span>
+        <span>Bharat Business Network • Verified Merchant Ecosystem</span>
+      </div>
 
-          <form class="marketplace-search" role="search" (submit)="submitSearch($event)">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.5 4.5"></path></svg>
-            <label class="sr-only" for="marketplace-query">Search businesses or products</label>
-            <input id="marketplace-query" name="query" type="search" placeholder="Search businesses or products..." autocomplete="off" />
-            <button type="submit" aria-label="Search marketplace">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12h14M12.5 5.5 19 12l-6.5 6.5"></path></svg>
-            </button>
-          </form>
-          <button class="business-register-button" type="button" (click)="startBusinessRegistration($event)">Register your business <span aria-hidden="true">→</span></button>
-          <div class="hero-links" aria-label="Quick links">
-            <span>Start exploring</span>
-            <a routerLink="/products">Products</a>
-            <i aria-hidden="true"></i>
-            <a href="#businesses">Businesses</a>
-            <i aria-hidden="true"></i>
-            <a href="#promotions">Promotions</a>
+      <h1 id="hero-title">
+        Discover verified enterprises.<br />
+        <span>Source direct from Bharat.</span>
+      </h1>
+
+      <p class="hero-description">
+        Connect with verified manufacturers, suppliers, and local merchants across India with BCN
+        accreditation and zero intermediary markups.
+      </p>
+
+      <form class="marketplace-search" role="search" (submit)="submitSearch($event)">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="10.8" cy="10.8" r="6.8"></circle>
+          <path d="m16 16 4.5 4.5"></path>
+        </svg>
+        <label class="sr-only" for="marketplace-query"
+          >Search verified businesses, services or products</label
+        >
+        <input
+          id="marketplace-query"
+          name="query"
+          type="search"
+          placeholder="Search by business name, category, or product..."
+          autocomplete="off"
+        />
+        <button type="submit" aria-label="Search marketplace">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4.5 12h14M12.5 5.5 19 12l-6.5 6.5"></path>
+          </svg>
+        </button>
+      </form>
+
+      <div class="hero-actions-row">
+        <button
+          class="business-register-button"
+          type="button"
+          (click)="startBusinessRegistration($event)"
+        >
+          <span>Register your business</span>
+          <span aria-hidden="true">→</span>
+        </button>
+        <a class="hero-browse-link" routerLink="/products">
+          <span>Explore All Products</span>
+          <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+
+      <div class="hero-quick-chips" aria-label="Popular search shortcuts">
+        <span class="chips-label">Popular:</span>
+        <a routerLink="/products">All Products</a>
+        <a href="#categories">Categories</a>
+        <a href="#businesses">Top Businesses</a>
+        <a href="#promotions">Promotions</a>
+      </div>
+    </div>
+
+    <!-- ENTERPRISE HERO RIGHT GLASS PANEL -->
+    <div class="hero-visual-enterprise" aria-hidden="true">
+      <div class="enterprise-trust-card">
+        <div class="trust-card-header">
+          <span class="seal-icon">🛡️</span>
+          <div>
+            <strong>Verified Bharat Merchant</strong>
+            <p>Official BCN Accreditation</p>
           </div>
         </div>
-
-        <div class="hero-visual" aria-hidden="true">
-          <div class="visual-glow"></div>
-          <div class="visual-sun"></div>
-          <div class="city city-back">
-            <span></span><span></span><span></span><span></span>
+        <div class="trust-perks-list">
+          <div class="trust-perk-item">
+            <span class="check-icon">✓</span>
+            <span>Direct WhatsApp order & enquiry routing</span>
           </div>
-          <div class="city city-front">
-            <span></span><span></span><span></span><span></span><span></span>
+          <div class="trust-perk-item">
+            <span class="check-icon">✓</span>
+            <span>0% commission on direct buyer transactions</span>
           </div>
-          <div class="visual-ground"></div>
-          <div class="visual-leaf leaf-one"></div>
-          <div class="visual-leaf leaf-two"></div>
+          <div class="trust-perk-item">
+            <span class="check-icon">✓</span>
+            <span>Verified merchant storefront & digital catalogue</span>
+          </div>
         </div>
-        <div class="hero-stripe stripe-one" aria-hidden="true"></div>
-        <div class="hero-stripe stripe-two" aria-hidden="true"></div>
-      </section>
+        <div class="trust-card-footer">
+          <span>Strict Tenant Security & Data Isolation</span>
+        </div>
+      </div>
+      <div class="hero-ambient-glow"></div>
+    </div>
+  </section>
 
-      <section class="marketplace-stats" aria-label="Live BBG marketplace statistics">
-          <div class="hero-stats" aria-label="Live BBG marketplace statistics">
-            @if (homeStats(); as stats) {
-              <div class="hero-stat"><strong>{{ formatCount(stats.businesses_registered) }}</strong><span>Public businesses</span></div>
-              <div class="hero-stat"><strong>{{ formatCount(stats.platform_users) }}</strong><span>Platform users</span></div>
-              <div class="hero-stat"><strong>{{ formatCount(stats.products_listed) }}</strong><span>Products listed</span></div>
-              <div class="hero-stat"><strong>{{ formatCount(stats.orders_completed) }}</strong><span>Orders completed</span></div>
-            } @else {
-              @for (label of statLabels; track label) {
-                <div class="hero-stat hero-stat-loading"><strong>—</strong><span>{{ label }}</span></div>
+  <!-- LIVE MARKETPLACE METRICS STRIP -->
+  <section class="marketplace-stats" aria-label="Live BBG marketplace statistics">
+    <div class="hero-stats">
+      @if (homeStats(); as stats) {
+        <div class="hero-stat">
+          <strong>{{ formatCount(stats.businesses_registered) }}</strong>
+          <span>Verified Businesses</span>
+        </div>
+        <div class="hero-stat">
+          <strong>{{ formatCount(stats.platform_users) }}</strong>
+          <span>Platform Users</span>
+        </div>
+        <div class="hero-stat">
+          <strong>{{ formatCount(stats.products_listed) }}</strong>
+          <span>Products Listed</span>
+        </div>
+        <div class="hero-stat">
+          <strong>{{ formatCount(stats.orders_completed) }}</strong>
+          <span>Orders Completed</span>
+        </div>
+      } @else {
+        @for (label of statLabels; track label) {
+          <div class="hero-stat hero-stat-loading">
+            <strong>—</strong><span>{{ label }}</span>
+          </div>
+        }
+      }
+    </div>
+  </section>
+
+  <!-- VALUE PROPOSITION STRIP -->
+  <section class="value-prop-strip" aria-label="Platform Highlights">
+    <div class="value-prop-item">
+      <span class="prop-icon" aria-hidden="true">🏛️</span>
+      <div class="prop-text">
+        <strong>Direct Merchant Sourcing</strong>
+        <span
+          >Source directly from verified enterprises with zero platform commission markups.</span
+        >
+      </div>
+    </div>
+    <div class="value-prop-item">
+      <span class="prop-icon" aria-hidden="true">🏅</span>
+      <div class="prop-text">
+        <strong>BCN Verified Identification</strong>
+        <span>Every approved business holds a unique Bharat Contribution Number seal.</span>
+      </div>
+    </div>
+    <div class="value-prop-item">
+      <span class="prop-icon" aria-hidden="true">💬</span>
+      <div class="prop-text">
+        <strong>Instant WhatsApp Routing</strong>
+        <span>Connect instantly with suppliers for quotations, stock details, and delivery.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUCT CATEGORIES -->
+  <section
+    class="content-section categories-section"
+    id="categories"
+    aria-labelledby="categories-title"
+  >
+    <div class="section-heading">
+      <div>
+        <p class="section-kicker">CURATED DIRECTORIES</p>
+        <h2 id="categories-title">Browse product categories</h2>
+      </div>
+      <div class="section-heading-actions">
+        <span class="section-note">Explore products across verified industry sectors</span>
+        @if (categories().length > 3) {
+          <a class="section-view-all" routerLink="/products"
+            >View all ({{ categories().length }}) <span aria-hidden="true">→</span></a
+          >
+        }
+      </div>
+    </div>
+
+    @if (loading()) {
+      <p class="state-message" role="status">Loading marketplace categories…</p>
+    } @else if (loadError()) {
+      <p class="state-message state-error" role="alert">{{ loadError() }}</p>
+    } @else if (visibleCategories().length) {
+      <div class="category-grid">
+        @for (category of visibleCategories(); track category.id) {
+          <a
+            class="category-card"
+            [routerLink]="['/products']"
+            [queryParams]="{ category_id: category.id }"
+          >
+            <span class="category-mark" aria-hidden="true">
+              {{ category.category_name.slice(0, 1).toUpperCase() }}
+            </span>
+            <div class="category-info">
+              <span class="category-name">{{ category.category_name }}</span>
+              @if (category.description) {
+                <span class="category-description">{{ category.description }}</span>
               }
-            }
-          </div>
-      </section>
-
-      <section class="content-section categories-section" id="categories" aria-labelledby="categories-title">
-        <div class="section-heading">
-          <div>
-            <p class="section-kicker">FIND YOUR SPACE</p>
-            <h2 id="categories-title">Browse product categories</h2>
-          </div>
-          <span class="section-note">Browse the BBG marketplace</span>
-        </div>
-        @if (loading()) {
-          <p class="state-message" role="status">Loading marketplace categories…</p>
-        } @else if (loadError()) {
-          <p class="state-message state-error" role="alert">{{ loadError() }}</p>
-        } @else if (categories().length) {
-          <div class="category-grid">
-            @for (category of categories(); track category.id) {
-              <a class="category-card" [routerLink]="['/products']" [queryParams]="{ category_id: category.id }">
-                <span class="category-mark" aria-hidden="true">{{ category.category_name.slice(0, 1).toUpperCase() }}</span>
-                <span class="category-name">{{ category.category_name }}</span>
-                @if (category.description) { <span class="category-description">{{ category.description }}</span> }
-              </a>
-            }
-          </div>
-        } @else {
-          <div class="category-empty">
-            <div class="category-empty-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><path d="M4 19V8.5L12 4l8 4.5V19M8 19v-5h8v5M8 9h.01M12 9h.01M16 9h.01"></path></svg>
             </div>
-            <div><h3>No public categories yet</h3><p>Business categories published on BBG will appear here.</p></div>
-          </div>
+          </a>
         }
-      </section>
-
-      <section class="content-section businesses-section" id="businesses" aria-labelledby="businesses-title">
-        <div class="section-heading">
-          <div>
-            <p class="section-kicker">MEET THE COMMUNITY</p>
-            <h2 id="businesses-title">{{ businessesHeading() }}</h2>
-          </div>
-          <span class="section-note">{{ businessesNote() }}</span>
-        </div>
-        @if (searchLoading()) {
-          <p class="state-message" role="status">Searching published businesses…</p>
-        } @else if (searchError()) {
-          <p class="state-message state-error" role="alert">{{ searchError() }}</p>
-        } @else if (businesses().length) {
-          <div class="business-grid">
-            @for (business of businesses(); track business.id) {
-              <app-business-card [business]="business" [showMetrics]="!searchActive()" (selected)="openBusiness($event)" />
-            }
-          </div>
-        } @else {
-          <div class="category-empty">
-            <div class="category-empty-icon" aria-hidden="true">⌕</div>
-            <div><h3>No published businesses found</h3><p>Try another search, or check back as more businesses publish their storefronts.</p></div>
-          </div>
-        }
-      </section>
-
-      <section class="content-section" id="recent-businesses" aria-labelledby="recent-businesses-title">
-        <div class="section-heading">
-          <div>
-            <p class="section-kicker">NEW TO THE MARKETPLACE</p>
-            <h2 id="recent-businesses-title">Recently published businesses</h2>
-          </div>
-          <span class="section-note">Newest published storefronts</span>
-        </div>
-        @if (loading()) {
-          <p class="state-message" role="status">Loading recently published businesses…</p>
-        } @else if (recentBusinesses().length) {
-          <div class="business-grid">
-            @for (business of recentBusinesses(); track business.id) {
-              <app-business-card [business]="business" [showCreated]="true" (selected)="openBusiness($event)" />
-            }
-          </div>
-          <p class="data-note">Only approved, published storefronts are shown. Ordering currently uses profile creation time because the business schema does not yet store a separate publication timestamp.</p>
-        } @else {
-          <p class="state-message">No recently published businesses are available yet.</p>
-        }
-      </section>
-
-      <section class="content-section" id="recent-products" aria-labelledby="recent-products-title">
-        <div class="section-heading">
-          <div>
-            <p class="section-kicker">FRESH FINDS</p>
-            <h2 id="recent-products-title">Recently published products</h2>
-          </div>
-          <span class="section-note">Products from published BBG storefronts</span>
-        </div>
-        @if (loading()) {
-          <p class="state-message" role="status">Loading recently published products…</p>
-        } @else if (recentProducts().length) {
-          <div class="product-grid">
-            @for (product of recentProducts(); track product.id) {
-              <app-product-card [product]="product" [showCreated]="true" [showPrice]="true" currency="₹ " actionLabel="View product" (selected)="openProduct($event)" (businessSelected)="openBusinessSlug($event)" />
-            }
-          </div>
-          <p class="data-note">Only active products from approved, published storefronts are shown. Ordering currently uses product creation time because the product schema does not yet store a separate publication timestamp.</p>
-        } @else {
-          <p class="state-message">No recently published products are available yet.</p>
-        }
-      </section>
-
-      <section class="promotion-banner" id="promotions" aria-labelledby="promotions-title">
-        <div class="promotion-copy">
-          <p class="section-kicker">GROW TOGETHER</p>
-          <h2 id="promotions-title">Latest business promotions</h2>
-          <p>Current public promotions published by businesses on BBG.</p>
-        </div>
-        @if (loading()) {
-          <p class="promotion-state" role="status">Loading promotions…</p>
-        } @else if (promotions().length) {
-          <div class="promotion-grid">
-            @for (promotion of promotions(); track promotion.id) {
-              <app-promotion-card [promotion]="promotion" (selected)="openPromotion($event)" />
-            }
-          </div>
-        } @else {
-          <p class="promotion-state">There are no active public promotions right now.</p>
-        }
-      </section>
-
-      <section class="entrepreneur-callout" aria-labelledby="entrepreneur-title">
+      </div>
+    } @else {
+      <div class="category-empty">
+        <div class="category-empty-icon" aria-hidden="true">⌑</div>
         <div>
-          <p class="section-kicker">BUILT FOR BUSINESS</p>
-          <h2 id="entrepreneur-title">Have a business to grow?</h2>
-          <p>Create your business presence and connect with the BBG community.</p>
+          <h3>No public categories available</h3>
+          <p>Product categories published by verified businesses will appear here.</p>
         </div>
-        <button class="entrepreneur-register-button" type="button" (click)="startBusinessRegistration($event)">Register your business <span aria-hidden="true">→</span></button>
-      </section>
-    </main>
-  
+      </div>
+    }
+  </section>
+
+  <!-- POPULAR / SEARCHED BUSINESSES -->
+  <section
+    class="content-section businesses-section"
+    id="businesses"
+    aria-labelledby="businesses-title"
+  >
+    <div class="section-heading">
+      <div>
+        <p class="section-kicker">VERIFIED BHARAT ENTERPRISES</p>
+        <h2 id="businesses-title">{{ businessesHeading() }}</h2>
+      </div>
+      <div class="section-heading-actions">
+        <span class="section-note">{{ businessesNote() }}</span>
+        <a class="section-view-all" routerLink="/businesses"
+          >View all businesses <span aria-hidden="true">→</span></a
+        >
+      </div>
+    </div>
+
+    @if (searchLoading()) {
+      <p class="state-message" role="status">Searching published businesses…</p>
+    } @else if (searchError()) {
+      <p class="state-message state-error" role="alert">{{ searchError() }}</p>
+    } @else if (businessCards().length) {
+      <div class="business-grid">
+        @for (business of businessCards(); track business.id) {
+          <app-business-card
+            [business]="business"
+            [showMetrics]="!searchActive()"
+            (selected)="openBusiness($event)"
+          />
+        }
+      </div>
+    } @else {
+      <div class="category-empty">
+        <div class="category-empty-icon" aria-hidden="true">⌕</div>
+        <div>
+          <h3>No matching businesses found</h3>
+          <p>
+            Try searching for a different keyword or check back as more merchants publish their
+            storefronts.
+          </p>
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- RECENTLY PUBLISHED BUSINESSES -->
+  <section class="content-section" id="recent-businesses" aria-labelledby="recent-businesses-title">
+    <div class="section-heading">
+      <div>
+        <p class="section-kicker">NEW ON BBG</p>
+        <h2 id="recent-businesses-title">Recently published businesses</h2>
+      </div>
+      <div class="section-heading-actions">
+        <span class="section-note">Newest verified storefronts joining our network</span>
+        <a class="section-view-all" routerLink="/businesses"
+          >View all businesses <span aria-hidden="true">→</span></a
+        >
+      </div>
+    </div>
+
+    @if (loading()) {
+      <p class="state-message" role="status">Loading recently published businesses…</p>
+    } @else if (recentBusinessCards().length) {
+      <div class="business-grid">
+        @for (business of recentBusinessCards(); track business.id) {
+          <app-business-card
+            [business]="business"
+            [showCreated]="true"
+            (selected)="openBusiness($event)"
+          />
+        }
+      </div>
+    } @else {
+      <p class="state-message">No recently published businesses are available yet.</p>
+    }
+  </section>
+
+  <!-- RECENTLY PUBLISHED PRODUCTS -->
+  <section class="content-section" id="recent-products" aria-labelledby="recent-products-title">
+    <div class="section-heading">
+      <div>
+        <p class="section-kicker">FRESH PRODUCTS</p>
+        <h2 id="recent-products-title">Featured &amp; recent products</h2>
+      </div>
+      <div class="section-heading-actions">
+        <span class="section-note">Direct from verified storefront catalogues</span>
+        <a class="section-view-all" routerLink="/products"
+          >View all products <span aria-hidden="true">→</span></a
+        >
+      </div>
+    </div>
+
+    @if (loading()) {
+      <p class="state-message" role="status">Loading featured products…</p>
+    } @else if (recentProductCards().length) {
+      <div class="product-grid">
+        @for (product of recentProductCards(); track product.id) {
+          <app-product-card
+            [product]="product"
+            [showCreated]="true"
+            [showPrice]="true"
+            currency="₹ "
+            actionLabel="View Details"
+            (selected)="openProduct($event)"
+            (businessSelected)="openBusinessSlug($event)"
+          />
+        }
+      </div>
+    } @else {
+      <p class="state-message">No featured products are currently listed.</p>
+    }
+  </section>
+
+  <!-- PROMOTIONS BANNER -->
+  @if (visiblePromotions().length) {
+    <section class="promotion-banner" id="promotions" aria-labelledby="promotions-title">
+      <div class="promotion-copy">
+        <div>
+          <p class="section-kicker">EXCLUSIVE OFFERS</p>
+          <h2 id="promotions-title">Latest merchant promotions</h2>
+          <p>Special promotional deals directly offered by active BBG storefronts.</p>
+        </div>
+        <a class="promotion-view-all" routerLink="/promotions"
+          >View all promotions <span aria-hidden="true">→</span></a
+        >
+      </div>
+
+      <div class="promotion-grid">
+        @for (promotion of visiblePromotions(); track promotion.id) {
+          <app-promotion-card [promotion]="promotion" (selected)="openPromotion($event)" />
+        }
+      </div>
+    </section>
+  }
+
+  <!-- ENTREPRENEUR CALLOUT BANNER -->
+  <section class="entrepreneur-callout" aria-labelledby="entrepreneur-title">
+    <div class="callout-content">
+      <p class="section-kicker">EXPAND YOUR REACH</p>
+      <h2 id="entrepreneur-title">Have a business to grow?</h2>
+      <p>
+        Register your enterprise on Bharat Business Group. Get an official BCN ID, dedicated
+        storefront URL, digital catalogue, and direct customer connectivity.
+      </p>
+    </div>
+    <button
+      class="entrepreneur-register-button"
+      type="button"
+      (click)="startBusinessRegistration($event)"
+    >
+      <span>Register your business</span>
+      <span aria-hidden="true">→</span>
+    </button>
+  </section>
+</main>

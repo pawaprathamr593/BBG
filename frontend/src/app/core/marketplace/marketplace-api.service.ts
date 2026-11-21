@@ -27,7 +27,9 @@ export interface MarketplaceBusiness {
   city: string | null;
   state: string | null;
   postal_code: string | null;
+  country_code?: string | null;
   whatsapp_enabled: boolean;
+  whatsapp_number?: string | null;
   accept_online_orders: boolean;
   rank?: number;
   popularity?: {
@@ -82,6 +84,9 @@ export interface MarketplaceProduct {
     logo_path: string | null;
     city?: string | null;
     state?: string | null;
+    country_code?: string | null;
+    whatsapp_enabled?: boolean;
+    whatsapp_number?: string | null;
   };
   distance_km?: number;
   popularity?: { views: number; likes: number; engagements: number };
@@ -98,7 +103,14 @@ export interface MarketplaceStorefront {
 }
 export interface MarketplaceBusinessDetail {
   business: MarketplaceBusiness & {
-    address?: { address_line_1: string | null; address_line_2: string | null; city: string | null; state: string | null; postal_code: string | null; country_code: string | null };
+    address?: {
+      address_line_1: string | null;
+      address_line_2: string | null;
+      city: string | null;
+      state: string | null;
+      postal_code: string | null;
+      country_code: string | null;
+    };
     whatsapp_number?: string | null;
     location?: { latitude: number | null; longitude: number | null };
   };
@@ -106,7 +118,18 @@ export interface MarketplaceBusinessDetail {
 }
 export interface MarketplaceProductDetail {
   product: MarketplaceProduct & { media: MarketplaceMedia[] };
-  variants: Array<{ id: number; variant_code: string; variant_name: string; barcode: string | null; selling_price?: number | string; unit_id: number | null; unit_name: string | null; unit_symbol: string | null; quantity_precision?: number; is_fraction_allowed?: boolean }>;
+  variants: Array<{
+    id: number;
+    variant_code: string;
+    variant_name: string;
+    barcode: string | null;
+    selling_price?: number | string;
+    unit_id: number | null;
+    unit_name: string | null;
+    unit_symbol: string | null;
+    quantity_precision?: number;
+    is_fraction_allowed?: boolean;
+  }>;
 }
 export interface MarketplacePromotion {
   id: number;
@@ -118,6 +141,9 @@ export interface MarketplacePromotion {
   business_name: string;
   business_slug: string;
   logo_path: string | null;
+  city?: string | null;
+  state?: string | null;
+  category_name?: string | null;
   media?: MarketplaceMedia[];
 }
 
@@ -204,38 +230,82 @@ export class MarketplaceApiService {
       latitude?: number;
       longitude?: number;
     } = {},
-  ): Observable<MarketplaceApiResponse<{
-    business_slug: string; items: MarketplaceProduct[];
-    sort?: string; sort_basis?: string; timestamp_note?: string;
-    pagination: { page: number; page_size: number; total: number };
-  }>> {
-    return this.http.post<MarketplaceApiResponse<{
-      business_slug: string; items: MarketplaceProduct[];
-      sort?: string; sort_basis?: string; timestamp_note?: string;
+  ): Observable<
+    MarketplaceApiResponse<{
+      business_slug: string;
+      items: MarketplaceProduct[];
+      sort?: string;
+      sort_basis?: string;
+      timestamp_note?: string;
       pagination: { page: number; page_size: number; total: number };
-    }>>(
-      `${this.apiBaseUrl}/api/v1/marketplace/products/list`,
-      { marketplaceParam: { actionData: { business_slug: businessSlug, ...filters, page, page_size: pageSize, search } } },
-    );
+    }>
+  > {
+    return this.http.post<
+      MarketplaceApiResponse<{
+        business_slug: string;
+        items: MarketplaceProduct[];
+        sort?: string;
+        sort_basis?: string;
+        timestamp_note?: string;
+        pagination: { page: number; page_size: number; total: number };
+      }>
+    >(`${this.apiBaseUrl}/api/v1/marketplace/products/list`, {
+      marketplaceParam: {
+        actionData: { business_slug: businessSlug, ...filters, page, page_size: pageSize, search },
+      },
+    });
   }
 
-  getStorefrontPromotions(businessSlug: string, page = 1, pageSize = 5): Observable<MarketplaceApiResponse<{
-    items: MarketplacePromotion[];
-    pagination: { page: number; page_size: number; total: number };
-  }>> {
-    return this.http.post<MarketplaceApiResponse<{
+  getStorefrontPromotions(
+    businessSlug: string,
+    page = 1,
+    pageSize = 3,
+  ): Observable<
+    MarketplaceApiResponse<{
       items: MarketplacePromotion[];
       pagination: { page: number; page_size: number; total: number };
-    }>>(
-      `${this.apiBaseUrl}/api/v1/marketplace/promotions/list`,
-      { marketplaceParam: { actionData: { business_slug: businessSlug, page, page_size: pageSize } } },
-    );
+    }>
+  > {
+    return this.http.post<
+      MarketplaceApiResponse<{
+        items: MarketplacePromotion[];
+        pagination: { page: number; page_size: number; total: number };
+      }>
+    >(`${this.apiBaseUrl}/api/v1/marketplace/promotions/list`, {
+      marketplaceParam: { actionData: { business_slug: businessSlug, page, page_size: pageSize } },
+    });
   }
 
-  getStorefrontProduct(businessSlug: string, publicProductId: string): Observable<MarketplaceApiResponse<MarketplaceProductDetail>> {
+  listPublicPromotions(
+    page = 1,
+    pageSize = 3,
+  ): Observable<
+    MarketplaceApiResponse<{
+      items: MarketplacePromotion[];
+      pagination: { page: number; page_size: number; total: number };
+    }>
+  > {
+    return this.http.post<
+      MarketplaceApiResponse<{
+        items: MarketplacePromotion[];
+        pagination: { page: number; page_size: number; total: number };
+      }>
+    >(`${this.apiBaseUrl}/api/v1/marketplace/promotions/list`, {
+      marketplaceParam: { actionData: { page, page_size: pageSize } },
+    });
+  }
+
+  getStorefrontProduct(
+    businessSlug: string,
+    publicProductId: string,
+  ): Observable<MarketplaceApiResponse<MarketplaceProductDetail>> {
     return this.http.post<MarketplaceApiResponse<MarketplaceProductDetail>>(
       `${this.apiBaseUrl}/api/v1/marketplace/products/detail`,
-      { marketplaceParam: { actionData: { business_slug: businessSlug, product_id: publicProductId } } },
+      {
+        marketplaceParam: {
+          actionData: { business_slug: businessSlug, product_id: publicProductId },
+        },
+      },
     );
   }
 
@@ -246,7 +316,6 @@ export class MarketplaceApiService {
     );
   }
 
-
   listPublicCategories(): Observable<MarketplaceApiResponse<{ items: MarketplaceCategory[] }>> {
     return this.http.post<MarketplaceApiResponse<{ items: MarketplaceCategory[] }>>(
       `${this.apiBaseUrl}/api/v1/marketplace/categories/list`,
@@ -254,7 +323,9 @@ export class MarketplaceApiService {
     );
   }
 
-  listPublicProductCategories(): Observable<MarketplaceApiResponse<{ items: MarketplaceCategory[] }>> {
+  listPublicProductCategories(): Observable<
+    MarketplaceApiResponse<{ items: MarketplaceCategory[] }>
+  > {
     return this.http.post<MarketplaceApiResponse<{ items: MarketplaceCategory[] }>>(
       `${this.apiBaseUrl}/api/v1/marketplace/products/categories`,
       { marketplaceParam: { actionData: {} } },
@@ -286,28 +357,40 @@ export class MarketplaceApiService {
     );
   }
 
-  listPopularBusinesses(page = 1, pageSize = 8): Observable<MarketplaceApiResponse<MarketplaceBusinessListData>> {
+  listPopularBusinesses(
+    page = 1,
+    pageSize = 8,
+  ): Observable<MarketplaceApiResponse<MarketplaceBusinessListData>> {
     return this.http.post<MarketplaceApiResponse<MarketplaceBusinessListData>>(
       `${this.apiBaseUrl}/api/v1/marketplace/businesses/popular`,
       { marketplaceParam: { actionData: { page, page_size: pageSize } } },
     );
   }
 
-  listRecentBusinesses(page = 1, pageSize = 8): Observable<MarketplaceApiResponse<MarketplaceBusinessListData>> {
+  listRecentBusinesses(
+    page = 1,
+    pageSize = 8,
+  ): Observable<MarketplaceApiResponse<MarketplaceBusinessListData>> {
     return this.http.post<MarketplaceApiResponse<MarketplaceBusinessListData>>(
       `${this.apiBaseUrl}/api/v1/marketplace/businesses/recent`,
       { marketplaceParam: { actionData: { page, page_size: pageSize } } },
     );
   }
 
-  listRecentProducts(page = 1, pageSize = 8): Observable<MarketplaceApiResponse<MarketplaceProductListData>> {
+  listRecentProducts(
+    page = 1,
+    pageSize = 8,
+  ): Observable<MarketplaceApiResponse<MarketplaceProductListData>> {
     return this.http.post<MarketplaceApiResponse<MarketplaceProductListData>>(
       `${this.apiBaseUrl}/api/v1/marketplace/products/recent`,
       { marketplaceParam: { actionData: { page, page_size: pageSize } } },
     );
   }
 
-  recordProductView(productId: number, visitorKey: string): Observable<MarketplaceApiResponse<{ recorded: boolean }>> {
+  recordProductView(
+    productId: number,
+    visitorKey: string,
+  ): Observable<MarketplaceApiResponse<{ recorded: boolean }>> {
     return this.http.post<MarketplaceApiResponse<{ recorded: boolean }>>(
       `${this.apiBaseUrl}/api/v1/engagement/views/record`,
       {
@@ -322,7 +405,10 @@ export class MarketplaceApiService {
     );
   }
 
-  recordBusinessView(businessId: number, visitorKey: string): Observable<MarketplaceApiResponse<{ recorded: boolean }>> {
+  recordBusinessView(
+    businessId: number,
+    visitorKey: string,
+  ): Observable<MarketplaceApiResponse<{ recorded: boolean }>> {
     return this.http.post<MarketplaceApiResponse<{ recorded: boolean }>>(
       `${this.apiBaseUrl}/api/v1/engagement/views/record`,
       {

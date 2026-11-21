@@ -39,10 +39,15 @@ final class EngagementController
         bool $manage,
     ): ResponseInterface {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $getActions = ['/api/v1/engagement/comments/list' => 'listContentComments'];
+        $getActions = [
+            '/api/v1/engagement/comments/list' => 'listContentComments',
+            '/api/v1/engagement/summary' => 'getEngagementSummary',
+        ];
         $manageActions = [
             '/api/v1/engagement/likes/toggle' => 'toggleContentLike',
             '/api/v1/engagement/comments/create' => 'createContentComment',
+            '/api/v1/engagement/comments/update' => 'updateContentComment',
+            '/api/v1/engagement/comments/delete' => 'deleteContentComment',
             '/api/v1/engagement/reports/create' => 'reportContent',
             '/api/v1/engagement/views/record' => 'recordContentView',
         ];

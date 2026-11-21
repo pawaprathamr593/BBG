@@ -1,6 +1,7 @@
 # Authentication Feature
 
 ## Implemented
+
 - Password login at `/login` and registration at `/register` (extend shared auth experience).
 - Shared auth popup via `AuthDialogService` / `AuthPopupComponent`.
 - Storefront-scoped login at `/store/:businessSlug/login`.
@@ -10,6 +11,7 @@
 - Session restore on bootstrap via refresh cookie; Bearer access token stays in memory.
 
 ## Notes
+
 - Registration accepts email, mobile, or both; at least one identifier is required for password signup.
 - Failed API requests surface backend `msgArr` diagnostics where available.
 - Core auth implementation lives in `src/app/core/auth`.

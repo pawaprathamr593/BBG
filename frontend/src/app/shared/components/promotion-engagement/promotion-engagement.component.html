@@ -1,0 +1,432 @@
+<section class="promotion-engagement-container" aria-label="Post Engagement & Comments">
+  <!-- Engagement Metrics Summary Row -->
+  @if (summary().total_likes > 0 || summary().total_comments > 0 || summary().total_views > 0) {
+    <div class="engagement-metrics-summary">
+      <div class="metrics-left">
+        @if (summary().total_likes > 0) {
+          <div class="reaction-stack" [attr.aria-label]="summary().total_likes + ' reactions'">
+            <span class="emoji-cluster" aria-hidden="true">
+              @for (emoji of topReactionIcons(); track $index) {
+                <span class="reaction-bubble" [style.z-index]="3 - $index">{{ emoji }}</span>
+              }
+            </span>
+            <span class="metrics-count">{{ summary().total_likes }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="metrics-right">
+        @if (summary().total_comments > 0) {
+          <button
+            type="button"
+            class="comments-count-btn"
+            (click)="toggleComments()"
+            [attr.aria-expanded]="commentsExpanded()"
+            aria-label="View comments"
+          >
+            {{ summary().total_comments }}
+            {{ summary().total_comments === 1 ? 'comment' : 'comments' }}
+          </button>
+        }
+        @if (summary().total_views > 0) {
+          <span class="views-count">{{ summary().total_views }} views</span>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Unified Single Main Action Row (Like / Comment / Share) -->
+  <div class="engagement-action-bar">
+    <div
+      class="reaction-button-wrapper"
+      (mouseenter)="openReactionPicker()"
+      (mouseleave)="closeReactionPicker()"
+    >
+      @if (showReactionPicker()) {
+        <div class="reaction-picker-popup" role="toolbar" aria-label="Choose a reaction">
+          @for (rc of reactionConfigs; track rc.type) {
+            <button
+              type="button"
+              class="reaction-choice-btn"
+              [class.active]="summary().user_reaction === rc.type"
+              (click)="selectReaction(rc.type)"
+              [attr.aria-label]="rc.label"
+            >
+              <span class="choice-emoji" aria-hidden="true">{{ rc.emoji }}</span>
+              <span class="choice-tooltip">{{ rc.label }}</span>
+            </button>
+          }
+        </div>
+      }
+
+      <button
+        type="button"
+        class="btn-engagement-action btn-reaction"
+        [class.reacted]="summary().user_reaction !== null"
+        [style.--reaction-color]="currentReactionConfig()?.color || 'var(--bbg-brand-primary)'"
+        [disabled]="inFlightReaction()"
+        (click)="onQuickLikeClick($event)"
+        [attr.aria-pressed]="summary().user_reaction !== null"
+        [attr.aria-label]="
+          (currentReactionConfig()?.activeLabel || 'Like') +
+          ' post. Total ' +
+          summary().total_likes +
+          ' reactions'
+        "
+      >
+        <span class="action-icon" aria-hidden="true">
+          {{ currentReactionConfig()?.emoji || '👍' }}
+        </span>
+        <span class="action-label">
+          {{ currentReactionConfig()?.activeLabel || 'Like' }}
+        </span>
+      </button>
+    </div>
+
+    <button
+      type="button"
+      class="btn-engagement-action btn-comment"
+      [class.active]="commentsExpanded()"
+      (click)="toggleComments()"
+      [attr.aria-expanded]="commentsExpanded()"
+      aria-label="Toggle comments"
+    >
+      <span class="action-icon" aria-hidden="true">💬</span>
+      <span class="action-label">Comment</span>
+    </button>
+
+    <button
+      type="button"
+      class="btn-engagement-action btn-share"
+      (click)="sharePost()"
+      aria-label="Share this promotion"
+    >
+      <span class="action-icon" aria-hidden="true">🔗</span>
+      <span class="action-label">Share</span>
+    </button>
+  </div>
+
+  <!-- Share Feedback Toast -->
+  @if (shareFeedback()) {
+    <div class="share-toast" role="status">
+      <span>{{ shareFeedback() }}</span>
+    </div>
+  }
+
+  <!-- Expandable Comments Section -->
+  @if (commentsExpanded()) {
+    <div class="expanded-comments-drawer" role="region" aria-label="Comments Section">
+      <div class="comments-drawer-header">
+        <h4 class="drawer-heading">
+          Comments
+          <span class="heading-count">({{ summary().total_comments }})</span>
+        </h4>
+        <button
+          type="button"
+          class="btn-collapse-drawer"
+          (click)="toggleComments()"
+          aria-label="Collapse comments drawer"
+        >
+          ▲ Collapse
+        </button>
+      </div>
+
+      <div class="comments-list-viewport">
+        @if (loadingComments()) {
+          <div class="comments-loading">
+            <app-skeleton-loader [count]="3" />
+          </div>
+        } @else if (topLevelComments().length === 0) {
+          <div class="comments-empty-state">
+            <span class="empty-icon" aria-hidden="true">💬</span>
+            <p class="empty-text">No comments yet. Be the first to start the conversation!</p>
+          </div>
+        } @else {
+          <div class="comments-feed">
+            @for (comment of topLevelComments(); track comment.id) {
+              <div class="comment-thread">
+                <div class="comment-item">
+                  <div class="comment-avatar" aria-hidden="true">
+                    {{ getAuthorMonogram(comment.author_name) }}
+                  </div>
+                  <div class="comment-content-wrapper">
+                    <div class="comment-bubble">
+                      <div class="comment-bubble-header">
+                        <span class="comment-author-name">{{ comment.author_name }}</span>
+                        <time class="comment-timestamp" [attr.datetime]="comment.commented_on">
+                          {{ comment.commented_on | date: 'shortDate' }}
+                        </time>
+                      </div>
+
+                      @if (editingCommentId() === comment.id) {
+                        <div class="comment-edit-form">
+                          <textarea
+                            class="comment-edit-input"
+                            rows="2"
+                            aria-label="Edit comment text"
+                            [ngModel]="editText()"
+                            (ngModelChange)="editText.set($event)"
+                          ></textarea>
+                          <div class="edit-buttons-row">
+                            <button
+                              type="button"
+                              class="btn-cancel-comment-edit"
+                              (click)="cancelEditComment()"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              class="btn-save-comment-edit"
+                              [disabled]="submittingEdit() || !editText().trim()"
+                              (click)="saveEditComment(comment.id)"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      } @else {
+                        <p class="comment-body-text">{{ comment.comment_text }}</p>
+                      }
+                    </div>
+
+                    @if (editingCommentId() !== comment.id) {
+                      <div class="comment-actions-row">
+                        <button
+                          type="button"
+                          class="btn-comment-action btn-like-comment"
+                          [class.liked]="comment.user_liked"
+                          [disabled]="isCommentLikePending(comment.id)"
+                          (click)="toggleCommentLike(comment, $event)"
+                          [attr.aria-pressed]="!!comment.user_liked"
+                          [attr.aria-label]="
+                            (comment.user_liked ? 'Unlike' : 'Like') +
+                            ' comment by ' +
+                            comment.author_name
+                          "
+                        >
+                          {{ comment.user_liked ? 'Liked' : 'Like' }}
+                          @if ((comment.like_count ?? 0) > 0) {
+                            <span>({{ comment.like_count }})</span>
+                          }
+                        </button>
+                        <span class="action-divider" aria-hidden="true">·</span>
+                        <button
+                          type="button"
+                          class="btn-comment-action btn-reply-comment"
+                          (click)="startReply(comment)"
+                          [attr.aria-label]="'Reply to ' + comment.author_name"
+                        >
+                          Reply
+                        </button>
+                        @if (comment.is_author) {
+                          <span class="action-divider" aria-hidden="true">·</span>
+                          <button
+                            type="button"
+                            class="btn-comment-action"
+                            (click)="startEditComment(comment)"
+                          >
+                            Edit
+                          </button>
+                          <span class="action-divider" aria-hidden="true">·</span>
+                          <button
+                            type="button"
+                            class="btn-comment-action btn-delete-comment"
+                            (click)="deleteComment(comment.id)"
+                          >
+                            Delete
+                          </button>
+                        } @else {
+                          <span class="action-divider" aria-hidden="true">·</span>
+                          <button
+                            type="button"
+                            class="btn-comment-action btn-report-comment"
+                            [disabled]="isCommentReported(comment.id)"
+                            (click)="reportComment(comment, $event)"
+                          >
+                            {{ isCommentReported(comment.id) ? 'Reported' : 'Report' }}
+                          </button>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Nested Replies -->
+                @if (getRepliesFor(comment.id).length > 0) {
+                  <div class="replies-list" role="list" aria-label="Replies">
+                    @for (reply of getRepliesFor(comment.id); track reply.id) {
+                      <div class="comment-item reply-item" role="listitem">
+                        <div class="comment-avatar reply-avatar" aria-hidden="true">
+                          {{ getAuthorMonogram(reply.author_name) }}
+                        </div>
+                        <div class="comment-content-wrapper">
+                          <div class="comment-bubble">
+                            <div class="comment-bubble-header">
+                              <span class="comment-author-name">{{ reply.author_name }}</span>
+                              <time class="comment-timestamp" [attr.datetime]="reply.commented_on">
+                                {{ reply.commented_on | date: 'shortDate' }}
+                              </time>
+                            </div>
+                            @if (editingCommentId() === reply.id) {
+                              <div class="comment-edit-form">
+                                <textarea
+                                  class="comment-edit-input"
+                                  rows="2"
+                                  aria-label="Edit reply text"
+                                  [ngModel]="editText()"
+                                  (ngModelChange)="editText.set($event)"
+                                ></textarea>
+                                <div class="edit-buttons-row">
+                                  <button
+                                    type="button"
+                                    class="btn-cancel-comment-edit"
+                                    (click)="cancelEditComment()"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    class="btn-save-comment-edit"
+                                    [disabled]="submittingEdit() || !editText().trim()"
+                                    (click)="saveEditComment(reply.id)"
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              </div>
+                            } @else {
+                              <p class="comment-body-text">{{ reply.comment_text }}</p>
+                            }
+                          </div>
+
+                          @if (editingCommentId() !== reply.id) {
+                            <div class="comment-actions-row">
+                              <button
+                                type="button"
+                                class="btn-comment-action btn-like-comment"
+                                [class.liked]="reply.user_liked"
+                                [disabled]="isCommentLikePending(reply.id)"
+                                (click)="toggleCommentLike(reply, $event)"
+                                [attr.aria-pressed]="!!reply.user_liked"
+                                [attr.aria-label]="
+                                  (reply.user_liked ? 'Unlike' : 'Like') +
+                                  ' reply by ' +
+                                  reply.author_name
+                                "
+                              >
+                                {{ reply.user_liked ? 'Liked' : 'Like' }}
+                                @if ((reply.like_count ?? 0) > 0) {
+                                  <span>({{ reply.like_count }})</span>
+                                }
+                              </button>
+                              @if (reply.is_author) {
+                                <span class="action-divider" aria-hidden="true">·</span>
+                                <button
+                                  type="button"
+                                  class="btn-comment-action"
+                                  (click)="startEditComment(reply)"
+                                >
+                                  Edit
+                                </button>
+                                <span class="action-divider" aria-hidden="true">·</span>
+                                <button
+                                  type="button"
+                                  class="btn-comment-action btn-delete-comment"
+                                  (click)="deleteComment(reply.id)"
+                                >
+                                  Delete
+                                </button>
+                              } @else {
+                                <span class="action-divider" aria-hidden="true">·</span>
+                                <button
+                                  type="button"
+                                  class="btn-comment-action btn-report-comment"
+                                  [disabled]="isCommentReported(reply.id)"
+                                  (click)="reportComment(reply, $event)"
+                                >
+                                  {{ isCommentReported(reply.id) ? 'Reported' : 'Report' }}
+                                </button>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          @if (hasMoreComments()) {
+            <button
+              type="button"
+              class="btn-load-more-comments"
+              [disabled]="loadingMoreComments()"
+              (click)="loadMoreComments()"
+            >
+              {{ loadingMoreComments() ? 'Loading more…' : 'Load more comments' }}
+            </button>
+          }
+        }
+      </div>
+
+      <!-- Bottom Comment / Reply Composer -->
+      <div class="comment-composer-dock">
+        @if (replyingTo(); as target) {
+          <div class="replying-indicator" role="status">
+            <span
+              >Replying to <strong>{{ target.author_name }}</strong></span
+            >
+            <button
+              type="button"
+              class="btn-cancel-reply"
+              (click)="cancelReply()"
+              aria-label="Cancel reply"
+            >
+              ×
+            </button>
+          </div>
+        }
+        @if (commentActionFeedback()) {
+          <div class="share-toast" role="status">
+            <span>{{ commentActionFeedback() }}</span>
+          </div>
+        }
+        @if (commentError()) {
+          <div class="composer-error-alert" role="alert">
+            <span>{{ commentError() }}</span>
+          </div>
+        }
+        <div class="composer-input-row">
+          <input
+            #commentInput
+            type="text"
+            class="composer-text-input"
+            [placeholder]="replyingTo() ? 'Write a reply...' : 'Write a comment...'"
+            aria-label="Write a comment"
+            maxlength="3000"
+            [disabled]="submittingComment()"
+            [ngModel]="newCommentText()"
+            (ngModelChange)="newCommentText.set($event)"
+            (keydown.enter)="$event.preventDefault(); submitComment($event)"
+          />
+          <button
+            type="button"
+            class="btn-send-comment"
+            [disabled]="submittingComment() || !newCommentText().trim()"
+            (click)="submitComment($event)"
+            aria-label="Post comment"
+          >
+            @if (submittingComment()) {
+              <span class="spinner-tiny" aria-hidden="true"></span>
+            } @else {
+              <span aria-hidden="true">➤</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</section>

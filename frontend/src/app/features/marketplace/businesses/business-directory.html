@@ -1,76 +1,114 @@
-    <main class="page">
-      <section class="intro">
-        <p class="eyebrow">THE BBG COMMUNITY</p>
-        <h1>Discover <span>businesses</span></h1>
-        <p class="lead">Find businesses, explore what they offer and connect with the people behind them.</p>
-      </section>
-      <section class="results" aria-labelledby="results-title">
-        <div class="heading"><div><p class="eyebrow">EXPLORE</p><h2 id="results-title">{{ heading() }}</h2></div><span>{{ total() }} results</span></div>
-        <form class="toolbar" (ngSubmit)="search()" aria-label="Search businesses">
-          <div class="filter-field search-field">
-            <label for="business-search">Search businesses</label>
-            <input id="business-search" name="query" [(ngModel)]="query" placeholder="Business name or keyword" />
-          </div>
-          <button class="search-submit" type="submit">Search</button>
-        </form>
-        @if (activeFilterChips().length) {
-          <div class="active-filters" aria-label="Active filters">
-            <span class="active-filter-caption">Active filters</span>
-            @for (chip of activeFilterChips(); track chip.key) {
-              <button class="filter-chip" type="button" (click)="removeFilter(chip.key)" [attr.aria-label]="'Remove ' + chip.label + ' filter'">
-                {{ chip.label }} <span aria-hidden="true">×</span>
-              </button>
-            }
-            <button class="clear-active-filters" type="button" (click)="clearFilters()">Clear all</button>
-          </div>
+<main class="page">
+  <section class="intro">
+    <p class="eyebrow">THE BBG COMMUNITY</p>
+    <h1>Discover <span>businesses</span></h1>
+    <p class="lead">
+      Find businesses, explore what they offer and connect with the people behind them.
+    </p>
+  </section>
+  <section class="results" aria-labelledby="results-title">
+    <div class="heading">
+      <div>
+        <p class="eyebrow">EXPLORE</p>
+        <h2 id="results-title">{{ heading() }}</h2>
+      </div>
+      <span>{{ total() }} results</span>
+    </div>
+    <form class="toolbar" (ngSubmit)="search()" aria-label="Search businesses">
+      <div class="filter-field search-field">
+        <label for="business-search">Search businesses</label>
+        <input
+          id="business-search"
+          name="query"
+          [(ngModel)]="query"
+          placeholder="Business name or keyword"
+        />
+      </div>
+      <button class="search-submit" type="submit">Search</button>
+    </form>
+    @if (activeFilterChips().length) {
+      <div class="active-filters" aria-label="Active filters">
+        <span class="active-filter-caption">Active filters</span>
+        @for (chip of activeFilterChips(); track chip.key) {
+          <button
+            class="filter-chip"
+            type="button"
+            (click)="removeFilter(chip.key)"
+            [attr.aria-label]="'Remove ' + chip.label + ' filter'"
+          >
+            {{ chip.label }} <span aria-hidden="true">×</span>
+          </button>
         }
-        <app-filter-drawer
-          [open]="filtersOpen()"
-          [activeCount]="activeFilterCount()"
-          (openChange)="setFiltersOpen($event)"
-          (apply)="applyFilters()"
-          (reset)="resetDraftFilters()">
-          <div class="drawer-filters">
-            <div class="filter-field">
-              <label for="business-category">Category</label>
-              <select id="business-category" name="category" [(ngModel)]="draftFilters.categoryId">
-                <option value="">All categories</option>
-                @for (category of categories(); track category.id) {
-                  <option [value]="category.id">{{ category.category_name }}</option>
-                }
-              </select>
-            </div>
-            <div class="filter-field">
-              <label for="business-city">City</label>
-              <input id="business-city" name="city" [(ngModel)]="draftFilters.city" placeholder="Any city" />
-            </div>
-            <div class="filter-field">
-              <label for="business-state">State</label>
-              <input id="business-state" name="state" [(ngModel)]="draftFilters.state" placeholder="Any state" />
-            </div>
-          </div>
-        </app-filter-drawer>
-        @if (loading()) {
-          <div style="padding: 24px 0">
-            <app-skeleton-loader variant="card" [count]="6" />
-          </div>
-        } @else if (error()) {
-          <div class="state error" role="alert">{{ error() }} <button type="button" (click)="search()">Try again</button></div>
-        } @else if (businesses().length) {
-          <div class="grid">
-            @for (business of businesses(); track business.id) {
-              <app-business-card [business]="business" (selected)="openBusiness($event)" />
+        <button class="clear-active-filters" type="button" (click)="clearFilters()">
+          Clear all
+        </button>
+      </div>
+    }
+    <app-filter-drawer
+      [open]="filtersOpen()"
+      [activeCount]="activeFilterCount()"
+      (openChange)="setFiltersOpen($event)"
+      (apply)="applyFilters()"
+      (reset)="resetDraftFilters()"
+    >
+      <div class="drawer-filters">
+        <div class="filter-field">
+          <label for="business-category">Category</label>
+          <select id="business-category" name="category" [(ngModel)]="draftFilters.categoryId">
+            <option value="">All categories</option>
+            @for (category of categories(); track category.id) {
+              <option [value]="category.id">{{ category.category_name }}</option>
             }
-          </div>
-          <app-pagination [currentPage]="page()" [totalItems]="total()" [pageSize]="12" (pageChange)="changePage($event)" />
-        } @else {
-          <app-empty-state
-            icon="🏢"
-            title="No businesses found"
-            description="Try adjusting your search keywords or clearing active filters."
-            actionText="Clear all filters"
-            (actionClicked)="clearFilters()" />
+          </select>
+        </div>
+        <div class="filter-field">
+          <label for="business-city">City</label>
+          <input
+            id="business-city"
+            name="city"
+            [(ngModel)]="draftFilters.city"
+            placeholder="Any city"
+          />
+        </div>
+        <div class="filter-field">
+          <label for="business-state">State</label>
+          <input
+            id="business-state"
+            name="state"
+            [(ngModel)]="draftFilters.state"
+            placeholder="Any state"
+          />
+        </div>
+      </div>
+    </app-filter-drawer>
+    @if (loading()) {
+      <div style="padding: 24px 0">
+        <app-skeleton-loader variant="card" [count]="3" />
+      </div>
+    } @else if (error()) {
+      <div class="state error" role="alert">
+        {{ error() }} <button type="button" (click)="search()">Try again</button>
+      </div>
+    } @else if (businessCards().length) {
+      <div class="grid">
+        @for (business of businessCards(); track business.id) {
+          <app-business-card [business]="business" (selected)="openBusiness($event)" />
         }
-      </section>
-    </main>
-  
+      </div>
+      <app-pagination
+        [currentPage]="page()"
+        [totalItems]="total()"
+        [pageSize]="pageSize"
+        (pageChange)="changePage($event)"
+      />
+    } @else {
+      <app-empty-state
+        icon="🏢"
+        title="No businesses found"
+        description="Try adjusting your search keywords or clearing active filters."
+        actionText="Clear all filters"
+        (actionClicked)="clearFilters()"
+      />
+    }
+  </section>
+</main>

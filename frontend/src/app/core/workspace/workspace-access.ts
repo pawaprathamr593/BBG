@@ -8,8 +8,11 @@ export function hasWorkspacePermission(
   permissionCode: string,
 ): boolean {
   return permissions.some((permission) => {
-    const matchesScope = permission.scope_type === scope
-      || (scope === 'GLOBAL' && permission.scope_type === 'PLATFORM' && permission.role_code === 'CONSUMER');
+    const matchesScope =
+      permission.scope_type === scope ||
+      (scope === 'GLOBAL' &&
+        permission.scope_type === 'PLATFORM' &&
+        permission.role_code === 'CONSUMER');
     return matchesScope && permission.permission_code === permissionCode;
   });
 }

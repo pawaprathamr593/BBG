@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 
 @Component({
   selector: 'app-search-input',
@@ -14,69 +22,71 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, output, 
         class="search-field"
         aria-label="Search"
         (input)="onInput($event)"
-        (keydown.escape)="clear()" />
+        (keydown.escape)="clear()"
+      />
       @if (currentValue()) {
-        <button
-          type="button"
-          class="clear-btn"
-          aria-label="Clear search"
-          (click)="clear()">
+        <button type="button" class="clear-btn" aria-label="Clear search" (click)="clear()">
           ✕
         </button>
       }
     </div>
   `,
-  styles: [`
-    :host { display: block; width: 100%; }
-    .search-box {
-      position: relative;
-      display: flex;
-      align-items: center;
-      width: 100%;
-    }
-    .search-icon {
-      position: absolute;
-      left: 12px;
-      font-size: 0.85rem;
-      opacity: 0.6;
-      pointer-events: none;
-    }
-    .search-field {
-      width: 100%;
-      height: 42px;
-      padding: 8px 36px 8px 38px;
-      font-size: 0.875rem;
-      color: var(--bbg-text-primary);
-      background: var(--bbg-surface-card);
-      border: 1px solid var(--bbg-border-default);
-      border-radius: var(--bbg-radius-md);
-      transition: all 0.15s ease;
-      font-family: inherit;
-    }
-    .search-field:focus {
-      outline: none;
-      border-color: var(--bbg-border-focus);
-      box-shadow: var(--bbg-focus-ring);
-    }
-    .clear-btn {
-      position: absolute;
-      right: 10px;
-      display: grid;
-      place-items: center;
-      width: 22px;
-      height: 22px;
-      border: none;
-      border-radius: 50%;
-      background: var(--bbg-surface-subtle);
-      color: var(--bbg-text-secondary);
-      font-size: 0.75rem;
-      cursor: pointer;
-    }
-    .clear-btn:hover {
-      background: var(--bbg-border-strong);
-      color: var(--bbg-text-primary);
-    }
-  `]
+  styles: [
+    `
+      :host {
+        display: block;
+        width: 100%;
+      }
+      .search-box {
+        position: relative;
+        display: flex;
+        align-items: center;
+        width: 100%;
+      }
+      .search-icon {
+        position: absolute;
+        left: 12px;
+        font-size: 0.85rem;
+        opacity: 0.6;
+        pointer-events: none;
+      }
+      .search-field {
+        width: 100%;
+        height: 42px;
+        padding: 8px 36px 8px 38px;
+        font-size: 0.875rem;
+        color: var(--bbg-text-primary);
+        background: var(--bbg-surface-card);
+        border: 1px solid var(--bbg-border-default);
+        border-radius: var(--bbg-radius-md);
+        transition: all 0.15s ease;
+        font-family: inherit;
+      }
+      .search-field:focus {
+        outline: none;
+        border-color: var(--bbg-border-focus);
+        box-shadow: var(--bbg-focus-ring);
+      }
+      .clear-btn {
+        position: absolute;
+        right: 10px;
+        display: grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+        border: none;
+        border-radius: 50%;
+        background: var(--bbg-surface-subtle);
+        color: var(--bbg-text-secondary);
+        font-size: 0.75rem;
+        cursor: pointer;
+      }
+      .clear-btn:hover {
+        background: var(--bbg-border-strong);
+        color: var(--bbg-text-primary);
+      }
+    `,
+  ],
 })
 export class SearchInputComponent {
   readonly placeholder = input('Search...');

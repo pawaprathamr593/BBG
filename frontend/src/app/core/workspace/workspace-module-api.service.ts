@@ -4,7 +4,11 @@ import { firstValueFrom } from 'rxjs';
 import { API_BASE_URL } from '../config/api-base-url';
 import { WorkspaceContextService } from './workspace-context.service';
 
-interface ApiEnvelope<T> { status: 'SUCCESS' | 'FAILED' | 'EXCEPTION'; msgArr?: string[]; data?: T; }
+interface ApiEnvelope<T> {
+  status: 'SUCCESS' | 'FAILED' | 'EXCEPTION';
+  msgArr?: string[];
+  data?: T;
+}
 
 @Injectable({ providedIn: 'root' })
 export class WorkspaceModuleApiService {
@@ -12,16 +16,27 @@ export class WorkspaceModuleApiService {
   private readonly apiBaseUrl = inject(API_BASE_URL);
   private readonly workspace = inject(WorkspaceContextService);
 
-  async request<T>(path: string, actionType: string, actionData: Record<string, unknown>, envelopeKey: 'businessParam' | 'authParam' | 'adminParam' | 'customerParam' = 'businessParam'): Promise<T> {
+  async request<T>(
+    path: string,
+    actionType: string,
+    actionData: Record<string, unknown>,
+    envelopeKey: 'businessParam' | 'authParam' | 'adminParam' | 'customerParam' = 'businessParam',
+  ): Promise<T> {
     const tenantId = this.workspace.activeTenantId();
     const context = this.workspace.activeContext();
-    const response = await firstValueFrom(this.http.post<ApiEnvelope<T>>(
-      this.apiBaseUrl + path, { [envelopeKey]: { actionType, actionData } },
-    ));
-    if (tenantId !== this.workspace.activeTenantId() || context !== this.workspace.activeContext()) {
+    const response = await firstValueFrom(
+      this.http.post<ApiEnvelope<T>>(this.apiBaseUrl + path, {
+        [envelopeKey]: { actionType, actionData },
+      }),
+    );
+    if (
+      tenantId !== this.workspace.activeTenantId() ||
+      context !== this.workspace.activeContext()
+    ) {
       throw new Error('Your workspace changed. Refresh this section and try again.');
     }
-    if (response.status !== 'SUCCESS') throw new Error(response.msgArr?.join(' ') || 'The request could not be completed.');
+    if (response.status !== 'SUCCESS')
+      throw new Error(response.msgArr?.join(' ') || 'The request could not be completed.');
     return response.data as T;
   }
 }

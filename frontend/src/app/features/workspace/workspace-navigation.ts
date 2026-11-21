@@ -1,5 +1,8 @@
 import type { DashboardPermission } from '../../core/dashboard/dashboard-api.service';
-import { hasActiveEntitlement, hasWorkspacePermission } from '../../core/workspace/workspace-access';
+import {
+  hasActiveEntitlement,
+  hasWorkspacePermission,
+} from '../../core/workspace/workspace-access';
 import type { WorkspacePermissionScope } from '../../core/workspace/workspace-access';
 
 export type WorkspaceNavigationContext = 'PERSONAL' | 'BUSINESS' | 'PLATFORM';
@@ -50,15 +53,6 @@ const WORKSPACE_NAV_ITEMS: WorkspaceNavItem[] = [
     entitlement: null,
     icon: 'message-square',
     description: 'Respond to incoming customer enquiries.',
-  },
-  {
-    label: 'Orders',
-    route: '/dashboard/orders',
-    permission: 'order.view',
-    scope: 'TENANT',
-    entitlement: null,
-    icon: 'shopping-bag',
-    description: 'Review and process business orders.',
   },
   {
     label: 'Payments',
@@ -167,15 +161,6 @@ const WORKSPACE_NAV_ITEMS: WorkspaceNavItem[] = [
     entitlement: null,
     icon: 'activity',
     description: 'Review safe platform operational health.',
-  },
-  {
-    label: 'My Orders',
-    route: '/dashboard/orders',
-    permission: 'order.own.view',
-    scope: 'GLOBAL',
-    entitlement: null,
-    icon: 'receipt-text',
-    description: 'Track orders placed with BBG businesses.',
   },
   {
     label: 'My Enquiries',

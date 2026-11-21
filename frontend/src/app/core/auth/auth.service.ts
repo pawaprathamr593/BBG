@@ -18,8 +18,17 @@ interface GoogleCredentialResponse {
 }
 
 interface GoogleIdentityApi {
-  initialize(config: { client_id: string; nonce: string; callback: (response: GoogleCredentialResponse) => void }): void;
-  prompt(callback?: (notification: { isNotDisplayed?: () => boolean; isSkippedMoment?: () => boolean }) => void): void;
+  initialize(config: {
+    client_id: string;
+    nonce: string;
+    callback: (response: GoogleCredentialResponse) => void;
+  }): void;
+  prompt(
+    callback?: (notification: {
+      isNotDisplayed?: () => boolean;
+      isSkippedMoment?: () => boolean;
+    }) => void,
+  ): void;
 }
 
 interface FacebookAuthResponse {
@@ -38,7 +47,14 @@ interface AppleAuthResponse {
 
 interface AppleSdk {
   auth: {
-    init(config: { clientId: string; scope: string; redirectURI: string; state: string; nonce: string; usePopup: boolean }): void;
+    init(config: {
+      clientId: string;
+      scope: string;
+      redirectURI: string;
+      state: string;
+      nonce: string;
+      usePopup: boolean;
+    }): void;
     signIn(): Promise<AppleAuthResponse>;
   };
 }
@@ -63,11 +79,13 @@ export class AuthService {
   readonly socialConfig = this.socialConfigState.asReadonly();
 
   async register(payload: RegisterRequest): Promise<AuthUser> {
-    const registration = await firstValueFrom(this.http.post<ApiResponse<unknown>>(
-      `${this.apiBaseUrl}/api/v1/auth/register`,
-      { authParam: { actionType: 'manageAuth', actionData: { action: 'register', ...payload } } },
-      { withCredentials: true },
-    ));
+    const registration = await firstValueFrom(
+      this.http.post<ApiResponse<unknown>>(
+        `${this.apiBaseUrl}/api/v1/auth/register`,
+        { authParam: { actionType: 'manageAuth', actionData: { action: 'register', ...payload } } },
+        { withCredentials: true },
+      ),
+    );
     if (registration.status !== 'SUCCESS') {
       throw new Error(registration.msgArr?.join(' ') || 'Registration failed.');
     }
@@ -76,18 +94,20 @@ export class AuthService {
   }
 
   async login(payload: LoginRequest): Promise<AuthUser> {
-    const response = await firstValueFrom(this.http.post<ApiResponse<AuthResponseData>>(
-      `${this.apiBaseUrl}/api/v1/auth/login`,
-      { authParam: { actionType: 'manageAuth', actionData: { action: 'login', ...payload } } },
-      { withCredentials: true },
-    ));
+    const response = await firstValueFrom(
+      this.http.post<ApiResponse<AuthResponseData>>(
+        `${this.apiBaseUrl}/api/v1/auth/login`,
+        { authParam: { actionType: 'manageAuth', actionData: { action: 'login', ...payload } } },
+        { withCredentials: true },
+      ),
+    );
     return this.acceptAuthResponse(response);
   }
 
   async loadSocialConfig(): Promise<SocialAuthConfig> {
-    const response = await firstValueFrom(this.http.get<ApiResponse<SocialAuthConfig>>(
-      `${this.apiBaseUrl}/api/v1/auth/social/config`,
-    ));
+    const response = await firstValueFrom(
+      this.http.get<ApiResponse<SocialAuthConfig>>(`${this.apiBaseUrl}/api/v1/auth/social/config`),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
       throw new Error(response.msgArr?.join(' ') || 'Social sign-in options could not be loaded.');
     }
@@ -101,7 +121,7 @@ export class AuthService {
     intent: SocialAuthIntent,
     contact: { email?: string; mobile?: string; full_name?: string } = {},
   ): Promise<AuthUser> {
-    const config = this.socialConfigState() ?? await this.loadSocialConfig();
+    const config = this.socialConfigState() ?? (await this.loadSocialConfig());
     const providerConfig = config.providers?.[provider];
     if (!providerConfig?.enabled) {
       throw new Error(`${this.providerLabel(provider)} sign-in is not configured yet.`);
@@ -115,7 +135,9 @@ export class AuthService {
       case 'APPLE':
         return this.authenticateApple(providerConfig.client_id ?? '', intent, contact);
       case 'INSTAGRAM':
-        return new Promise<AuthUser>(() => this.startInstagramLogin(providerConfig.app_id ?? '', intent, contact));
+        return new Promise<AuthUser>(() =>
+          this.startInstagramLogin(providerConfig.app_id ?? '', intent, contact),
+        );
     }
   }
 
@@ -134,7 +156,12 @@ export class AuthService {
       throw new Error('Instagram sign-in could not be verified. Please start again.');
     }
     const redirectUri = `${window.location.origin}/auth/social/callback`;
-    return this.completeSocialCredential('INSTAGRAM', code, intent, { redirect_uri: redirectUri, full_name: fullName, email, mobile });
+    return this.completeSocialCredential('INSTAGRAM', code, intent, {
+      redirect_uri: redirectUri,
+      full_name: fullName,
+      email,
+      mobile,
+    });
   }
 
   async linkSocialProvider(
@@ -142,19 +169,21 @@ export class AuthService {
     credential: string,
     context: Record<string, string> = {},
   ): Promise<void> {
-    const response = await firstValueFrom(this.http.post<ApiResponse<unknown>>(
-      `${this.apiBaseUrl}/api/v1/auth/social/link`,
-      {
-        authParam: {
-          actionType: 'manageAuth',
-          actionData: { action: 'socialLink', provider, credential, ...context },
+    const response = await firstValueFrom(
+      this.http.post<ApiResponse<unknown>>(
+        `${this.apiBaseUrl}/api/v1/auth/social/link`,
+        {
+          authParam: {
+            actionType: 'manageAuth',
+            actionData: { action: 'socialLink', provider, credential, ...context },
+          },
         },
-      },
-      {
-        withCredentials: true,
-        headers: { Authorization: `Bearer ${this.accessTokenState() ?? ''}`, 'X-BBG-CSRF': '1' },
-      },
-    ));
+        {
+          withCredentials: true,
+          headers: { Authorization: `Bearer ${this.accessTokenState() ?? ''}`, 'X-BBG-CSRF': '1' },
+        },
+      ),
+    );
     if (response.status !== 'SUCCESS') {
       throw new Error(response.msgArr?.join(' ') || 'The provider could not be linked.');
     }
@@ -162,11 +191,13 @@ export class AuthService {
 
   async refreshSession(): Promise<boolean> {
     try {
-      const response = await firstValueFrom(this.http.post<ApiResponse<AuthResponseData>>(
-        `${this.apiBaseUrl}/api/v1/auth/refresh`,
-        { authParam: { actionType: 'manageAuth', actionData: { action: 'refresh' } } },
-        { withCredentials: true, headers: { 'X-BBG-CSRF': '1' } },
-      ));
+      const response = await firstValueFrom(
+        this.http.post<ApiResponse<AuthResponseData>>(
+          `${this.apiBaseUrl}/api/v1/auth/refresh`,
+          { authParam: { actionType: 'manageAuth', actionData: { action: 'refresh' } } },
+          { withCredentials: true, headers: { 'X-BBG-CSRF': '1' } },
+        ),
+      );
       this.acceptAuthResponse(response);
       return true;
     } catch {
@@ -181,11 +212,13 @@ export class AuthService {
   }
 
   async loadProfile(): Promise<AuthUser> {
-    const response = await firstValueFrom(this.http.post<ApiResponse<AuthUser>>(
-      `${this.apiBaseUrl}/api/v1/auth/profile`,
-      { authParam: { actionType: 'getAuth', actionData: { action: 'getProfile' } } },
-      { headers: { Authorization: `Bearer ${this.accessTokenState() ?? ''}` } },
-    ));
+    const response = await firstValueFrom(
+      this.http.post<ApiResponse<AuthUser>>(
+        `${this.apiBaseUrl}/api/v1/auth/profile`,
+        { authParam: { actionType: 'getAuth', actionData: { action: 'getProfile' } } },
+        { headers: { Authorization: `Bearer ${this.accessTokenState() ?? ''}` } },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
       throw new Error(response.msgArr?.join(' ') || 'Unable to load profile.');
     }
@@ -196,17 +229,23 @@ export class AuthService {
 
   async logout(): Promise<void> {
     try {
-      await firstValueFrom(this.http.post<ApiResponse<unknown>>(
-        `${this.apiBaseUrl}/api/v1/auth/logout`,
-        { authParam: { actionType: 'manageAuth', actionData: { action: 'logout' } } },
-        { withCredentials: true, headers: { 'X-BBG-CSRF': '1' } },
-      ));
+      await firstValueFrom(
+        this.http.post<ApiResponse<unknown>>(
+          `${this.apiBaseUrl}/api/v1/auth/logout`,
+          { authParam: { actionType: 'manageAuth', actionData: { action: 'logout' } } },
+          { withCredentials: true, headers: { 'X-BBG-CSRF': '1' } },
+        ),
+      );
     } finally {
       this.clearLocalSession();
     }
   }
 
-  private async authenticateGoogle(clientId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string; full_name?: string }): Promise<AuthUser> {
+  private async authenticateGoogle(
+    clientId: string,
+    intent: SocialAuthIntent,
+    contact: { email?: string; mobile?: string; full_name?: string },
+  ): Promise<AuthUser> {
     await this.loadScript('https://accounts.google.com/gsi/client');
     const google = window.google?.accounts?.id;
     if (!google) throw new Error('Google sign-in could not be initialized. Please try again.');
@@ -227,7 +266,12 @@ export class AuthService {
           completed = true;
           window.clearTimeout(timeout);
           try {
-            resolve(await this.completeSocialCredential('GOOGLE', credentialResponse.credential, intent, { nonce, ...contact }));
+            resolve(
+              await this.completeSocialCredential('GOOGLE', credentialResponse.credential, intent, {
+                nonce,
+                ...contact,
+              }),
+            );
           } catch (error) {
             reject(error);
           }
@@ -243,30 +287,43 @@ export class AuthService {
     });
   }
 
-  private async authenticateFacebook(appId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string; full_name?: string }): Promise<AuthUser> {
+  private async authenticateFacebook(
+    appId: string,
+    intent: SocialAuthIntent,
+    contact: { email?: string; mobile?: string; full_name?: string },
+  ): Promise<AuthUser> {
     await this.loadScript('https://connect.facebook.net/en_US/sdk.js');
     const facebook = window.FB;
     if (!facebook) throw new Error('Facebook sign-in could not be initialized. Please try again.');
     facebook.init({ appId, version: 'v27.0', xfbml: false });
 
     return new Promise<AuthUser>((resolve, reject) => {
-      facebook.login(async (result) => {
-        const token = result.authResponse?.accessToken;
-        if (!token) {
-          reject(new Error('Facebook sign-in was cancelled or did not return a token.'));
-          return;
-        }
-        try {
-          resolve(await this.completeSocialCredential('FACEBOOK', token, intent, contact));
-        } catch (error) {
-          reject(error);
-        }
-      }, { scope: 'email,public_profile' });
+      facebook.login(
+        async (result) => {
+          const token = result.authResponse?.accessToken;
+          if (!token) {
+            reject(new Error('Facebook sign-in was cancelled or did not return a token.'));
+            return;
+          }
+          try {
+            resolve(await this.completeSocialCredential('FACEBOOK', token, intent, contact));
+          } catch (error) {
+            reject(error);
+          }
+        },
+        { scope: 'email,public_profile' },
+      );
     });
   }
 
-  private async authenticateApple(clientId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string; full_name?: string }): Promise<AuthUser> {
-    await this.loadScript('https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js');
+  private async authenticateApple(
+    clientId: string,
+    intent: SocialAuthIntent,
+    contact: { email?: string; mobile?: string; full_name?: string },
+  ): Promise<AuthUser> {
+    await this.loadScript(
+      'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js',
+    );
     const apple = window.AppleID;
     if (!apple) throw new Error('Apple sign-in could not be initialized. Please try again.');
     const nonce = this.createNonce();
@@ -281,13 +338,25 @@ export class AuthService {
     });
     const result = await apple.auth.signIn();
     const authorizationCode = result.authorization?.code;
-    if (!authorizationCode || result.authorization?.state !== state) throw new Error('Apple sign-in could not be verified. Please try again.');
-    const fullName = [result.user?.name?.firstName, result.user?.name?.lastName].filter(Boolean).join(' ');
+    if (!authorizationCode || result.authorization?.state !== state)
+      throw new Error('Apple sign-in could not be verified. Please try again.');
+    const fullName = [result.user?.name?.firstName, result.user?.name?.lastName]
+      .filter(Boolean)
+      .join(' ');
     const redirectUri = `${window.location.origin}/auth/social/callback`;
-    return this.completeSocialCredential('APPLE', authorizationCode, intent, { ...contact, nonce, full_name: fullName || contact.full_name || '', redirect_uri: redirectUri });
+    return this.completeSocialCredential('APPLE', authorizationCode, intent, {
+      ...contact,
+      nonce,
+      full_name: fullName || contact.full_name || '',
+      redirect_uri: redirectUri,
+    });
   }
 
-  private startInstagramLogin(appId: string, intent: SocialAuthIntent, contact: { email?: string; mobile?: string; full_name?: string }): void {
+  private startInstagramLogin(
+    appId: string,
+    intent: SocialAuthIntent,
+    contact: { email?: string; mobile?: string; full_name?: string },
+  ): void {
     const state = this.createNonce();
     const redirectUri = `${window.location.origin}/auth/social/callback`;
     sessionStorage.setItem('bbg_instagram_state', state);
@@ -312,16 +381,18 @@ export class AuthService {
     intent: SocialAuthIntent,
     context: Record<string, string> = {},
   ): Promise<AuthUser> {
-    const response = await firstValueFrom(this.http.post<ApiResponse<AuthResponseData>>(
-      `${this.apiBaseUrl}/api/v1/auth/social/login`,
-      {
-        authParam: {
-          actionType: 'manageAuth',
-          actionData: { action: 'socialLogin', provider, credential, intent, ...context },
+    const response = await firstValueFrom(
+      this.http.post<ApiResponse<AuthResponseData>>(
+        `${this.apiBaseUrl}/api/v1/auth/social/login`,
+        {
+          authParam: {
+            actionType: 'manageAuth',
+            actionData: { action: 'socialLogin', provider, credential, intent, ...context },
+          },
         },
-      },
-      { withCredentials: true },
-    ));
+        { withCredentials: true },
+      ),
+    );
     return this.acceptAuthResponse(response);
   }
 
@@ -331,7 +402,11 @@ export class AuthService {
     if (existing) {
       return new Promise((resolve, reject) => {
         existing.addEventListener('load', () => resolve(), { once: true });
-        existing.addEventListener('error', () => reject(new Error('The sign-in provider script could not be loaded.')), { once: true });
+        existing.addEventListener(
+          'error',
+          () => reject(new Error('The sign-in provider script could not be loaded.')),
+          { once: true },
+        );
       });
     }
     return new Promise((resolve, reject) => {

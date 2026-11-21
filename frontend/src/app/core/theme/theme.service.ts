@@ -48,9 +48,12 @@ export class ThemeService {
   }
 
   private applyResolvedTheme(): void {
-    const resolved: ResolvedTheme = this.mode() === 'system'
-      ? (this.mediaQuery?.matches ? 'dark' : 'light')
-      : this.mode() as ResolvedTheme;
+    const resolved: ResolvedTheme =
+      this.mode() === 'system'
+        ? this.mediaQuery?.matches
+          ? 'dark'
+          : 'light'
+        : (this.mode() as ResolvedTheme);
     this.resolvedMode.set(resolved);
     this.document.documentElement.setAttribute('data-theme', resolved);
   }

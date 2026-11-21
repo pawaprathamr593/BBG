@@ -84,3 +84,13 @@ Adds versioned Platform Admin UPI QR configuration, immutable per-subscription p
 - The payment-backed admin queue is the existing subscription review queue. Approval continues through the existing admin subscription decision path, which also approves the business profile and activates its tenant.
 - Team management uses only the already-seeded `TENANT_ORDER_MANAGER` role with `TENANT` scope. No new roles or permission codes are introduced. Tenant owners cannot assign `TENANT_OWNER` or any `PLATFORM` role.
 - Before applying either migration to a real database, verify the live schema and take a backup. CI validates these scripts against a clean MySQL 8.4 test database; that does not replace staging/production schema verification.
+
+## 20261120_001 — Product reviews, helpful voting, reporting and promotional post reactions
+File: `20261120_001_product_reviews_and_reactions.sql`
+
+- Extends `CONTENT_LIKES` to add `reaction_type VARCHAR(20) NOT NULL DEFAULT 'LIKE'` to support rich reactions (`LIKE`, `LOVE`, `HAHA`, `WOW`, `SAD`, `ANGRY`) on promotional posts.
+- Creates `PRODUCT_REVIEWS` to store 1–5 star ratings, review titles, review text, review moderation status, and timestamps for individual products (zero cart/order dependencies, `is_verified_purchase = 0`).
+- Creates `PRODUCT_REVIEW_MEDIA` to store optional image attachments.
+- Creates `PRODUCT_REVIEW_VOTES` to track helpful votes by authenticated users.
+- Creates `PRODUCT_REVIEW_REPORTS` to enable users to report inappropriate reviews for moderation.
+- All tables strictly enforce the five mandatory BBG audit and soft-delete fields (`status`, `created_by`, `created_on`, `updated_by`, `updated_on`) and `tenant_id`.

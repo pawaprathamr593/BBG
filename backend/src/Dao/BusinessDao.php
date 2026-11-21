@@ -184,7 +184,8 @@ final readonly class BusinessDao
             $db,
             "SELECT bp.id AS business_id, bp.tenant_id, bp.business_name, bp.business_slug,
                     bp.business_description, bp.primary_category_id, bp.business_phone,
-                    bp.whatsapp_number, bp.business_email, bp.address_line_1, bp.address_line_2,
+                    bp.whatsapp_number, bp.business_email, bp.logo_path, bp.cover_image_path,
+                    bp.address_line_1, bp.address_line_2,
                     bp.city, bp.state, bp.postal_code, bp.country_code, bp.latitude, bp.longitude, bp.approval_status,
                     bp.approved_by, bp.approved_on, bp.rejection_reason, bp.publication_status,
                     t.tenant_name, t.tenant_status
@@ -214,7 +215,8 @@ final readonly class BusinessDao
             $db,
             "SELECT bp.id AS business_id, bp.tenant_id, bp.business_name, bp.business_slug,
                     bp.business_description, bp.primary_category_id, bp.business_phone,
-                    bp.whatsapp_number, bp.business_email, bp.address_line_1, bp.address_line_2,
+                    bp.whatsapp_number, bp.business_email, bp.logo_path, bp.cover_image_path,
+                    bp.address_line_1, bp.address_line_2,
                     bp.city, bp.state, bp.postal_code, bp.country_code, bp.latitude, bp.longitude,
                     bp.approval_status, bp.approved_by, bp.approved_on, bp.rejection_reason,
                     bp.publication_status, t.tenant_name, t.tenant_status
@@ -242,7 +244,8 @@ final readonly class BusinessDao
             $db,
             "SELECT bp.id AS business_id, bp.tenant_id, bp.business_name, bp.business_slug,
                     bp.business_description, bp.primary_category_id, bp.business_phone,
-                    bp.whatsapp_number, bp.business_email, bp.address_line_1, bp.address_line_2,
+                    bp.whatsapp_number, bp.business_email, bp.logo_path, bp.cover_image_path,
+                    bp.address_line_1, bp.address_line_2,
                     bp.city, bp.state, bp.postal_code, bp.country_code, bp.latitude, bp.longitude,
                     bp.approval_status, bp.approved_on, bp.rejection_reason, bp.publication_status,
                     t.tenant_name, t.tenant_status
@@ -436,26 +439,54 @@ final readonly class BusinessDao
         string $city,
         string $state,
         string $postalCode,
+        ?string $logoPath = null,
+        ?string $coverImagePath = null,
     ): array {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         try {
-            $affected = $db->createCommand(
-                "UPDATE BUSINESS_PROFILES
-                 SET business_name = :business_name, business_description = :description,
-                     business_phone = :phone, whatsapp_number = :whatsapp, business_email = :email,
-                     address_line_1 = :address1, address_line_2 = :address2,
-                     city = :city, state = :state, postal_code = :postal,
-                     updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
-                 WHERE id = :business_id AND tenant_id = :tenant_id
-                    AND approval_status = 'APPROVED' AND status = 'A'",
-                [
-                    ':business_name' => $businessName, ':description' => $businessDescription,
-                    ':phone' => $businessPhone, ':whatsapp' => $whatsappNumber, ':email' => $businessEmail,
-                    ':address1' => $addressLine1, ':address2' => $addressLine2,
-                    ':city' => $city, ':state' => $state, ':postal' => $postalCode,
-                    ':user_id' => $userId, ':business_id' => $businessId, ':tenant_id' => $tenantId,
-                ],
-            )->execute();
+            $updateFields = [
+                'business_name = :business_name',
+                'business_description = :description',
+                'business_phone = :phone',
+                'whatsapp_number = :whatsapp',
+                'business_email = :email',
+                'address_line_1 = :address1',
+                'address_line_2 = :address2',
+                'city = :city',
+                'state = :state',
+                'postal_code = :postal',
+                'updated_by = :user_id',
+                'updated_on = CURRENT_TIMESTAMP',
+            ];
+            $params = [
+                ':business_name' => $businessName,
+                ':description' => $businessDescription,
+                ':phone' => $businessPhone,
+                ':whatsapp' => $whatsappNumber,
+                ':email' => $businessEmail,
+                ':address1' => $addressLine1,
+                ':address2' => $addressLine2,
+                ':city' => $city,
+                ':state' => $state,
+                ':postal' => $postalCode,
+                ':user_id' => $userId,
+                ':business_id' => $businessId,
+                ':tenant_id' => $tenantId,
+            ];
+
+            if ($logoPath !== null) {
+                $updateFields[] = 'logo_path = :logo_path';
+                $params[':logo_path'] = $logoPath !== '' ? $logoPath : null;
+            }
+            if ($coverImagePath !== null) {
+                $updateFields[] = 'cover_image_path = :cover_image_path';
+                $params[':cover_image_path'] = $coverImagePath !== '' ? $coverImagePath : null;
+            }
+
+            $sql = 'UPDATE BUSINESS_PROFILES SET ' . implode(', ', $updateFields) .
+                   " WHERE id = :business_id AND tenant_id = :tenant_id AND approval_status = 'APPROVED' AND status = 'A'";
+
+            $affected = $db->createCommand($sql, $params)->execute();
             if ($affected !== 1) {
                 $resArr['msgArr'][] = 'Approved business profile was not found.';
                 return $resArr;

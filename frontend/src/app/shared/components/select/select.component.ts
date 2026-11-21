@@ -14,7 +14,9 @@ export interface SelectOption {
       @if (label()) {
         <label [for]="id()" class="bbg-label">
           {{ label() }}
-          @if (required()) { <span class="required-mark" aria-hidden="true">*</span> }
+          @if (required()) {
+            <span class="required-mark" aria-hidden="true">*</span>
+          }
         </label>
       }
       <div class="select-wrapper">
@@ -27,7 +29,8 @@ export interface SelectOption {
           [attr.aria-invalid]="!!error()"
           [attr.aria-describedby]="error() ? id() + '-error' : null"
           class="bbg-select"
-          (change)="onChange($event)">
+          (change)="onChange($event)"
+        >
           @if (placeholder()) {
             <option value="" disabled [selected]="!value()">{{ placeholder() }}</option>
           }
@@ -46,60 +49,81 @@ export interface SelectOption {
       }
     </div>
   `,
-  styles: [`
-    :host { display: block; width: 100%; }
-    .bbg-form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 16px;
-    }
-    .bbg-label {
-      font-size: 0.84rem;
-      font-weight: 600;
-      color: var(--bbg-text-primary);
-    }
-    .required-mark { color: var(--bbg-danger); margin-left: 2px; }
-    .select-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-    .bbg-select {
-      width: 100%;
-      height: 42px;
-      padding: 8px 36px 8px 12px;
-      font-size: 0.875rem;
-      color: var(--bbg-text-primary);
-      background: var(--bbg-surface-card);
-      border: 1px solid var(--bbg-border-default);
-      border-radius: var(--bbg-radius-md);
-      appearance: none;
-      transition: border-color 0.15s ease, box-shadow 0.15s ease;
-      font-family: inherit;
-      cursor: pointer;
-    }
-    .bbg-select:focus {
-      outline: none;
-      border-color: var(--bbg-border-focus);
-      box-shadow: var(--bbg-focus-ring);
-    }
-    .bbg-select:disabled {
-      background: var(--bbg-surface-subtle);
-      color: var(--bbg-text-muted);
-      cursor: not-allowed;
-    }
-    .select-arrow {
-      position: absolute;
-      right: 12px;
-      pointer-events: none;
-      color: var(--bbg-text-secondary);
-      font-size: 0.9rem;
-    }
-    .has-error .bbg-select { border-color: var(--bbg-danger); }
-    .bbg-error-msg { margin: 0; font-size: 0.75rem; color: var(--bbg-danger); font-weight: 500; }
-    .bbg-hint-msg { margin: 0; font-size: 0.75rem; color: var(--bbg-text-muted); }
-  `]
+  styles: [
+    `
+      :host {
+        display: block;
+        width: 100%;
+      }
+      .bbg-form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+      .bbg-label {
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: var(--bbg-text-primary);
+      }
+      .required-mark {
+        color: var(--bbg-danger);
+        margin-left: 2px;
+      }
+      .select-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .bbg-select {
+        width: 100%;
+        height: 42px;
+        padding: 8px 36px 8px 12px;
+        font-size: 0.875rem;
+        color: var(--bbg-text-primary);
+        background: var(--bbg-surface-card);
+        border: 1px solid var(--bbg-border-default);
+        border-radius: var(--bbg-radius-md);
+        appearance: none;
+        transition:
+          border-color 0.15s ease,
+          box-shadow 0.15s ease;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      .bbg-select:focus {
+        outline: none;
+        border-color: var(--bbg-border-focus);
+        box-shadow: var(--bbg-focus-ring);
+      }
+      .bbg-select:disabled {
+        background: var(--bbg-surface-subtle);
+        color: var(--bbg-text-muted);
+        cursor: not-allowed;
+      }
+      .select-arrow {
+        position: absolute;
+        right: 12px;
+        pointer-events: none;
+        color: var(--bbg-text-secondary);
+        font-size: 0.9rem;
+      }
+      .has-error .bbg-select {
+        border-color: var(--bbg-danger);
+      }
+      .bbg-error-msg {
+        margin: 0;
+        font-size: 0.75rem;
+        color: var(--bbg-danger);
+        font-weight: 500;
+      }
+      .bbg-hint-msg {
+        margin: 0;
+        font-size: 0.75rem;
+        color: var(--bbg-text-muted);
+      }
+    `,
+  ],
 })
 export class SelectComponent {
   readonly id = input.required<string>();

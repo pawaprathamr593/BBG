@@ -1,13 +1,36 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { AuthDialogService } from '../../../core/auth/auth-dialog.service';
 import { BusinessRegistrationApiService } from '../../../core/business/business-registration-api.service';
-import { MarketplaceApiService, MarketplaceBusiness, MarketplaceCategory, MarketplaceProduct, MarketplacePromotion, MarketplaceHomeStats } from '../../../core/marketplace/marketplace-api.service';
+import {
+  MarketplaceApiService,
+  MarketplaceBusiness,
+  MarketplaceCategory,
+  MarketplaceProduct,
+  MarketplacePromotion,
+  MarketplaceHomeStats,
+} from '../../../core/marketplace/marketplace-api.service';
 import { BusinessCard } from '../../../shared/components/business-card/business-card';
 import { ProductCard } from '../../../shared/components/product-card/product-card';
 import { PromotionCard } from '../../../shared/components/promotion-card/promotion-card';
-import type { BusinessCardModel, ProductCardModel, PromotionCardModel } from '../../../shared/models/marketplace-card.models';
+import {
+  buildProductRouteSlug,
+  mapMarketplaceBusinessToCardModel,
+  mapMarketplaceProductToCardModel,
+} from '../../../shared/models/marketplace-card.mappers';
+import type {
+  BusinessCardModel,
+  ProductCardModel,
+  PromotionCardModel,
+} from '../../../shared/models/marketplace-card.models';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,12 +52,38 @@ export class MarketplaceHome implements OnInit {
   protected readonly searchError = signal('');
   protected readonly searchActive = signal(false);
   protected readonly categories = signal<MarketplaceCategory[]>([]);
+  protected readonly visibleCategories = computed<MarketplaceCategory[]>(() =>
+    this.categories().slice(0, 3),
+  );
   protected readonly businesses = signal<MarketplaceBusiness[]>([]);
+  protected readonly businessCards = computed<BusinessCardModel[]>(() =>
+    this.businesses()
+      .slice(0, 3)
+      .map((business) => mapMarketplaceBusinessToCardModel(business)),
+  );
   protected readonly recentBusinesses = signal<MarketplaceBusiness[]>([]);
+  protected readonly recentBusinessCards = computed<BusinessCardModel[]>(() =>
+    this.recentBusinesses()
+      .slice(0, 3)
+      .map((business) => mapMarketplaceBusinessToCardModel(business)),
+  );
   protected readonly recentProducts = signal<MarketplaceProduct[]>([]);
+  protected readonly recentProductCards = computed<ProductCardModel[]>(() =>
+    this.recentProducts()
+      .slice(0, 3)
+      .map((product) => mapMarketplaceProductToCardModel(product)),
+  );
   protected readonly promotions = signal<MarketplacePromotion[]>([]);
+  protected readonly visiblePromotions = computed<MarketplacePromotion[]>(() =>
+    this.promotions().slice(0, 3),
+  );
   protected readonly homeStats = signal<MarketplaceHomeStats | null>(null);
-  protected readonly statLabels = ['Public businesses', 'Platform users', 'Products listed', 'Orders completed'];
+  protected readonly statLabels = [
+    'Public businesses',
+    'Platform users',
+    'Products listed',
+    'Orders completed',
+  ];
 
   protected async startBusinessRegistration(event: Event): Promise<void> {
     const anchor = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
@@ -56,16 +105,12 @@ export class MarketplaceHome implements OnInit {
     await this.router.navigate([application ? '/workspace' : '/business/register']);
   }
 
-  protected slugifyProduct(value: string): string {
-    return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
-  }
-
   protected openBusiness(business: BusinessCardModel): void {
     void this.router.navigate(['/store', business.business_slug]);
   }
 
   protected openProduct(product: ProductCardModel): void {
-    const slug = (product.slug || this.slugifyProduct(product.product_name)) + '-' + (product.public_id || product.id);
+    const slug = buildProductRouteSlug(product);
     void this.router.navigate(['/store', product.business.business_slug, 'products', slug]);
   }
 
@@ -98,7 +143,9 @@ export class MarketplaceHome implements OnInit {
     this.marketplaceApi.listBusinesses({ search: query }).subscribe({
       next: (response) => {
         if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
-          this.searchError.set(response.msgArr?.join(' ') || 'Unable to search businesses right now.');
+          this.searchError.set(
+            response.msgArr?.join(' ') || 'Unable to search businesses right now.',
+          );
           this.businesses.set([]);
         } else {
           this.businesses.set(response.data.items ?? []);
@@ -117,7 +164,9 @@ export class MarketplaceHome implements OnInit {
   }
 
   protected businessesNote(): string {
-    return this.searchActive() ? 'Matching published storefronts' : 'Ranked using recorded profile views and enquiries';
+    return this.searchActive()
+      ? 'Matching published storefronts'
+      : 'Ranked using recorded profile views and enquiries';
   }
 
   protected formatCount(value: number): string {
@@ -127,7 +176,11 @@ export class MarketplaceHome implements OnInit {
   protected formatPrice(value: number | string): string {
     const amount = Number(value);
     return Number.isFinite(amount)
-      ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount)
+      ? new Intl.NumberFormat('en-IN', {
+          style: 'currency',
+          currency: 'INR',
+          maximumFractionDigits: 2,
+        }).format(amount)
       : String(value);
   }
 
@@ -139,7 +192,11 @@ export class MarketplaceHome implements OnInit {
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? value
-      : new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+      : new Intl.DateTimeFormat('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        }).format(date);
   }
 
   private loadProductCategories(): void {
@@ -163,7 +220,9 @@ export class MarketplaceHome implements OnInit {
     this.marketplaceApi.getHomeSummary().subscribe({
       next: (response) => {
         if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
-          this.loadError.set(response.msgArr?.join(' ') || 'Marketplace data is currently unavailable.');
+          this.loadError.set(
+            response.msgArr?.join(' ') || 'Marketplace data is currently unavailable.',
+          );
           this.homeStats.set(null);
           this.categories.set([]);
           this.businesses.set([]);
@@ -182,10 +241,11 @@ export class MarketplaceHome implements OnInit {
         this.searchLoading.set(false);
       },
       error: () => {
-        this.loadError.set('We could not load marketplace data. Please refresh the page to try again.');
+        this.loadError.set(
+          'We could not load marketplace data. Please refresh the page to try again.',
+        );
         this.loading.set(false);
       },
     });
   }
 }
-

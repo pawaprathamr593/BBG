@@ -1,32 +1,115 @@
-    <main class="page">
-      <section class="hero"><p class="eyebrow">ABOUT BBG</p><h1>Build. Grow. <span>Connect.</span></h1><p class="lead">A business management and marketplace platform designed to bring businesses, entrepreneurs and customers closer together.</p><a routerLink="/businesses" class="primary-link">Explore businesses <span aria-hidden="true">→</span></a><div class="orb orb-one"></div><div class="orb orb-two"></div></section>
-      <section class="story"><div><p class="eyebrow">OUR PURPOSE</p><h2>One place to discover and connect</h2></div><div class="story-copy"><p>BBG brings business discovery and marketplace experiences together. Visitors can explore business profiles, browse categories and keep up with public promotions.</p><p>For entrepreneurs, BBG provides a place to build a business presence and reach a wider community. The platform is designed to make discovery clearer and connections easier.</p></div></section>
-      <section class="values"><div class="value"><span>01</span><h3>Discover</h3><p>Explore businesses and offerings across marketplace categories.</p></div><div class="value"><span>02</span><h3>Grow</h3><p>Give businesses a digital presence and a way to share promotions.</p></div><div class="value"><span>03</span><h3>Connect</h3><p>Make it easier for people and businesses to find each other.</p></div></section>
-      <section class="plans-section" aria-labelledby="plans-title">
-        <div class="plans-heading"><p class="eyebrow">BBG PLANS</p><h2 id="plans-title">Choose the right plan for your business</h2><p>Explore the currently available plans and find the right fit as your business grows.</p></div>
-        @if (plansLoading()) {
-          <p class="plans-state" role="status">Loading available plans…</p>
-        } @else if (plansError()) {
-          <p class="plans-state" role="alert">{{ plansError() }}</p>
-        } @else if (plans().length) {
-          <div class="plans-grid">
-            @for (plan of plans(); track plan['plan_id'] ?? plan['id'] ?? plan['plan_code'] ?? $index) {
-              <article class="plan-card">
-                <p class="plan-label">{{ display(plan, ['plan_type','plan_code','billing_cycle']) || 'BUSINESS PLAN' }}</p>
-                <h3>{{ display(plan, ['plan_name','name']) || 'BBG Business Plan' }}</h3>
-                <p class="plan-price">{{ display(plan, ['currency']) }} {{ display(plan, ['price','amount']) || 'Contact us' }}<span>{{ display(plan, ['billing_period','billing_cycle']) ? ' / ' + display(plan, ['billing_period','billing_cycle']) : '' }}</span></p>
-                <p class="plan-description">{{ display(plan, ['description','plan_description']) || 'A plan to support your business on BBG.' }}</p>
-                @if (display(plan, ['features','feature_list'])) {
-                  <p class="plan-features">{{ display(plan, ['features','feature_list']) }}</p>
-                }
-                <a routerLink="/register" class="plan-link">Get started <span aria-hidden="true">→</span></a>
-              </article>
+<main class="page">
+  <section class="hero">
+    <p class="eyebrow">ABOUT BBG</p>
+    <h1>Build. Grow. <span>Connect.</span></h1>
+    <p class="lead">
+      A business management and marketplace platform designed to bring businesses, entrepreneurs and
+      customers closer together.
+    </p>
+    <a routerLink="/businesses" class="primary-link"
+      >Explore businesses <span aria-hidden="true">→</span></a
+    >
+    <div class="orb orb-one"></div>
+    <div class="orb orb-two"></div>
+  </section>
+  <section class="story">
+    <div>
+      <p class="eyebrow">OUR PURPOSE</p>
+      <h2>One place to discover and connect</h2>
+    </div>
+    <div class="story-copy">
+      <p>
+        BBG brings business discovery and marketplace experiences together. Visitors can explore
+        business profiles, browse categories and keep up with public promotions.
+      </p>
+      <p>
+        For entrepreneurs, BBG provides a place to build a business presence and reach a wider
+        community. The platform is designed to make discovery clearer and connections easier.
+      </p>
+    </div>
+  </section>
+  <section class="values">
+    <div class="value">
+      <span>01</span>
+      <h3>Discover</h3>
+      <p>Explore businesses and offerings across marketplace categories.</p>
+    </div>
+    <div class="value">
+      <span>02</span>
+      <h3>Grow</h3>
+      <p>Give businesses a digital presence and a way to share promotions.</p>
+    </div>
+    <div class="value">
+      <span>03</span>
+      <h3>Connect</h3>
+      <p>Make it easier for people and businesses to find each other.</p>
+    </div>
+  </section>
+  <section class="plans-section" aria-labelledby="plans-title">
+    <div class="plans-heading">
+      <p class="eyebrow">BBG PLANS</p>
+      <h2 id="plans-title">Choose the right plan for your business</h2>
+      <p>Explore the currently available plans and find the right fit as your business grows.</p>
+    </div>
+    @if (plansLoading()) {
+      <p class="plans-state" role="status">Loading available plans…</p>
+    } @else if (plansError()) {
+      <p class="plans-state" role="alert">{{ plansError() }}</p>
+    } @else if (plans().length) {
+      <div class="plans-grid">
+        @for (
+          plan of visiblePlans();
+          track plan['plan_id'] ?? plan['id'] ?? plan['plan_code'] ?? $index
+        ) {
+          <article class="plan-card">
+            <p class="plan-label">
+              {{ display(plan, ['plan_type', 'plan_code', 'billing_cycle']) || 'BUSINESS PLAN' }}
+            </p>
+            <h3>{{ display(plan, ['plan_name', 'name']) || 'BBG Business Plan' }}</h3>
+            <p class="plan-price">
+              {{ display(plan, ['currency']) }}
+              {{ display(plan, ['price', 'amount']) || 'Contact us'
+              }}<span>{{
+                display(plan, ['billing_period', 'billing_cycle'])
+                  ? ' / ' + display(plan, ['billing_period', 'billing_cycle'])
+                  : ''
+              }}</span>
+            </p>
+            <p class="plan-description">
+              {{
+                display(plan, ['description', 'plan_description']) ||
+                  'A plan to support your business on BBG.'
+              }}
+            </p>
+            @if (display(plan, ['features', 'feature_list'])) {
+              <p class="plan-features">{{ display(plan, ['features', 'feature_list']) }}</p>
             }
-          </div>
-        } @else {
-          <p class="plans-state">There are no active plans available right now. Please check back soon.</p>
+            <a routerLink="/register" class="plan-link"
+              >Get started <span aria-hidden="true">→</span></a
+            >
+          </article>
         }
-      </section>
-      <section class="closing"><div><p class="eyebrow">START EXPLORING</p><h2>Find your next business connection.</h2><p>Discover the BBG marketplace and see what's available.</p></div><a routerLink="/categories">Browse categories <span aria-hidden="true">→</span></a></section>
-    </main>
-  
+      </div>
+      @if (plans().length > planPageSize) {
+        <app-pagination
+          [currentPage]="planPage()"
+          [totalItems]="plans().length"
+          [pageSize]="planPageSize"
+          (pageChange)="planPage.set($event)"
+        />
+      }
+    } @else {
+      <p class="plans-state">
+        There are no active plans available right now. Please check back soon.
+      </p>
+    }
+  </section>
+  <section class="closing">
+    <div>
+      <p class="eyebrow">START EXPLORING</p>
+      <h2>Find your next business connection.</h2>
+      <p>Discover the BBG marketplace and see what's available.</p>
+    </div>
+    <a routerLink="/categories">Browse categories <span aria-hidden="true">→</span></a>
+  </section>
+</main>

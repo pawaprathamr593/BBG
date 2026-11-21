@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 
 export interface ModerationHistoryItem {
   id: number;
@@ -12,6 +13,7 @@ export interface ModerationHistoryItem {
 @Component({
   selector: 'app-moderation-history-module',
   standalone: true,
+  imports: [StatusBadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './moderation-history-module.html',
   styleUrl: './moderation-history-module.scss',

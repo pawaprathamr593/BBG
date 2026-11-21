@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
@@ -44,13 +52,18 @@ export class AuthExperienceComponent implements OnInit {
 
   ngOnInit(): void {
     this.activeMode.set(this.mode());
-    void this.auth.loadSocialConfig().then((config) => {
-      if (!Object.values(config.providers).some((provider) => provider.enabled)) {
-        this.providerNotice.set('Social sign-in is not configured yet. You can continue with email or phone.');
-      }
-    }).catch(() => {
-      this.providerNotice.set('Social sign-in options are temporarily unavailable.');
-    });
+    void this.auth
+      .loadSocialConfig()
+      .then((config) => {
+        if (!Object.values(config.providers).some((provider) => provider.enabled)) {
+          this.providerNotice.set(
+            'Social sign-in is not configured yet. You can continue with email or phone.',
+          );
+        }
+      })
+      .catch(() => {
+        this.providerNotice.set('Social sign-in options are temporarily unavailable.');
+      });
   }
 
   providerEnabled(provider: SocialProvider): boolean {
@@ -91,8 +104,15 @@ export class AuthExperienceComponent implements OnInit {
   async selectProvider(provider: SocialProvider): Promise<void> {
     if (this.busy()) return;
     const values = this.form.getRawValue();
-    if (provider === 'INSTAGRAM' && this.activeMode() === 'register' && !values.email.trim() && !values.mobile.trim()) {
-      this.error.set('Instagram registration currently requires an email address or mobile number. Choose email or phone to enter your details.');
+    if (
+      provider === 'INSTAGRAM' &&
+      this.activeMode() === 'register' &&
+      !values.email.trim() &&
+      !values.mobile.trim()
+    ) {
+      this.error.set(
+        'Instagram registration currently requires an email address or mobile number. Choose email or phone to enter your details.',
+      );
       this.emailFormVisible.set(true);
       return;
     }
@@ -171,7 +191,9 @@ export class AuthExperienceComponent implements OnInit {
   }
 
   showRecoveryNotice(): void {
-    this.recoveryNotice.set('Password recovery is not connected to the backend yet. No reset request has been sent.');
+    this.recoveryNotice.set(
+      'Password recovery is not connected to the backend yet. No reset request has been sent.',
+    );
   }
 
   private async onAuthenticated(): Promise<void> {
@@ -180,6 +202,8 @@ export class AuthExperienceComponent implements OnInit {
       return;
     }
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-    await this.router.navigateByUrl(returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/');
+    await this.router.navigateByUrl(
+      returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//') ? returnUrl : '/',
+    );
   }
 }

@@ -8,8 +8,11 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const isApiRequest = apiBaseUrl
     ? request.url.startsWith(apiBaseUrl)
     : request.url.startsWith('/api/');
-  const isPublicAuthRequest = ['/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/refresh']
-    .some((path) => request.url.endsWith(path));
+  const isPublicAuthRequest = [
+    '/api/v1/auth/login',
+    '/api/v1/auth/register',
+    '/api/v1/auth/refresh',
+  ].some((path) => request.url.endsWith(path));
   const token = inject(AuthService).accessToken();
 
   if (!isApiRequest || !token || isPublicAuthRequest) return next(request);

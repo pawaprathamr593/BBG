@@ -8,6 +8,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
   styleUrl: './promotion-composer-module.scss',
 })
 export class PromotionComposerModule {
+  readonly isEditing = input(false);
   readonly title = input('');
   readonly content = input('');
   readonly validUntil = input('');
@@ -29,12 +30,20 @@ export class PromotionComposerModule {
   readonly submit = output<void>();
 
   mediaLabel(mime: string): string {
-    return mime.startsWith('image/') ? 'IMAGE' : mime.startsWith('video/') ? 'VIDEO'
-      : mime.startsWith('audio/') ? 'AUDIO' : mime === 'application/pdf' ? 'PDF' : 'DOC';
+    return mime.startsWith('image/')
+      ? 'IMAGE'
+      : mime.startsWith('video/')
+        ? 'VIDEO'
+        : mime.startsWith('audio/')
+          ? 'AUDIO'
+          : mime === 'application/pdf'
+            ? 'PDF'
+            : 'DOC';
   }
 
   fileSize(bytes: number): string {
-    return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+    return bytes < 1024 * 1024
+      ? `${Math.max(1, Math.round(bytes / 1024))} KB`
       : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 }

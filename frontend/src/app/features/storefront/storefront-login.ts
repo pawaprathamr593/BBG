@@ -10,15 +10,28 @@ import { StorefrontSeoService } from './storefront-seo.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [AuthExperienceComponent],
   templateUrl: './storefront-login.html',
-  styles: [`
-    :host { display:block; min-height:100%; }
-    .storefront-auth { display:grid; min-height:65vh; place-items:center; padding:clamp(28px,5vw,56px) 16px; background:var(--surface-page); color:var(--text-primary); }
-  `],
+  styles: [
+    `
+      :host {
+        display: block;
+        min-height: 100%;
+      }
+      .storefront-auth {
+        display: grid;
+        min-height: 65vh;
+        place-items: center;
+        padding: clamp(28px, 5vw, 56px) 16px;
+        background: var(--surface-page);
+        color: var(--text-primary);
+      }
+    `,
+  ],
 })
 export class StorefrontLogin {
   private readonly context = inject(StorefrontContextService);
   private readonly seo = inject(StorefrontSeoService);
-  private readonly slug = inject(ActivatedRoute).parent?.snapshot.paramMap.get('businessSlug') || '';
+  private readonly slug =
+    inject(ActivatedRoute).parent?.snapshot.paramMap.get('businessSlug') || '';
 
   get brandName(): string {
     const detail = this.context.detail();
@@ -32,7 +45,13 @@ export class StorefrontLogin {
       const name = detail.storefront.title || detail.business.business_name;
       const title = 'Sign in | ' + name;
       const description = 'Sign in to your customer account at ' + name + '.';
-      this.seo.update(title, description, '/store/' + encodeURIComponent(this.slug) + '/login', undefined, 'noindex,follow');
+      this.seo.update(
+        title,
+        description,
+        '/store/' + encodeURIComponent(this.slug) + '/login',
+        undefined,
+        'noindex,follow',
+      );
     });
   }
 }

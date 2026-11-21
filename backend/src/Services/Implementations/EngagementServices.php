@@ -36,6 +36,8 @@ final readonly class EngagementServices implements IEngagementServices
         try {
             if (($engagementParam['actionType'] ?? '') === 'listContentComments') {
                 $resArr = $this->getContentComments($actionData);
+            } elseif (($engagementParam['actionType'] ?? '') === 'getEngagementSummary') {
+                $resArr = $this->getContentEngagementSummary($actionData);
             } else {
                 $resArr['msgArr'][] = 'Unsupported engagement read action.';
             }
@@ -69,6 +71,12 @@ final readonly class EngagementServices implements IEngagementServices
                 case 'createContentComment':
                     $resArr = $this->manageComment($actionData);
                     break;
+                case 'updateContentComment':
+                    $resArr = $this->manageUpdateComment($actionData);
+                    break;
+                case 'deleteContentComment':
+                    $resArr = $this->manageDeleteComment($actionData);
+                    break;
                 case 'reportContent':
                     $resArr = $this->manageReport($actionData);
                     break;
@@ -91,21 +99,82 @@ final readonly class EngagementServices implements IEngagementServices
     private function getContentComments(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $content = $this->resolvePublicContent($actionData);
+        $content = $this->resolvePublicContent($actionData, false);
         if ($content['status'] !== 'SUCCESS') {
             return $this->propagateFailure($content, 'EngagementServices::getContentComments');
         }
         $page = $this->positiveInt($actionData['page'] ?? 1) ?? 1;
         $pageSize = min(50, $this->positiveInt($actionData['page_size'] ?? 20) ?? 20);
+
+        $userId = null;
+        if (!empty($actionData['_accessToken'])) {
+            $principal = $this->principal($actionData);
+            if ($principal['status'] === 'SUCCESS') {
+                $userId = (int) $principal['data']['user_id'];
+            }
+        }
+
         $rows = $this->dao->getComments(
             $this->db, (int) $content['data']['tenant_id'], $content['data']['content_type'],
             (int) $content['data']['content_id'], $pageSize, ($page - 1) * $pageSize,
+            $userId,
         );
         if ($rows['status'] !== 'SUCCESS') {
             return $this->propagateFailure($rows, 'EngagementServices::getContentComments');
         }
         $resArr['status'] = 'SUCCESS';
-        $resArr['data'] = ['items' => $rows['data'], 'pagination' => ['page' => $page, 'page_size' => $pageSize]];
+        $resArr['data'] = [
+            'items' => $rows['data']['items'],
+            'pagination' => [
+                'page' => $page,
+                'page_size' => $pageSize,
+                'total_count' => $rows['data']['total_count'],
+            ],
+        ];
+        return $resArr;
+    }
+
+    private function getContentEngagementSummary(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $content = $this->resolvePublicContent($actionData, true);
+        if ($content['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($content, 'EngagementServices::getContentEngagementSummary');
+        }
+        $tenantId = (int) $content['data']['tenant_id'];
+        $contentType = $content['data']['content_type'];
+        $contentId = (int) $content['data']['content_id'];
+
+        $userId = null;
+        if (!empty($actionData['_accessToken'])) {
+            $principal = $this->principal($actionData);
+            if ($principal['status'] === 'SUCCESS') {
+                $userId = (int) $principal['data']['user_id'];
+            }
+        }
+
+        $reactionSummary = $this->dao->getReactionSummary($this->db, $tenantId, $contentType, $contentId, $userId);
+        if ($reactionSummary['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($reactionSummary, 'EngagementServices::getContentEngagementSummary');
+        }
+
+        $commentRow = $this->db->createCommand("SELECT COUNT(*) AS total_comments FROM COMMENTS
+            WHERE tenant_id = :tenant_id AND content_type = :content_type
+                AND content_id = :content_id AND moderation_status = 'VISIBLE' AND status = 'A'",
+            [':tenant_id' => $tenantId, ':content_type' => $contentType, ':content_id' => $contentId])->queryOne();
+        $commentCount = (int) ($commentRow['total_comments'] ?? 0);
+
+        $viewRow = $this->db->createCommand("SELECT COUNT(*) AS total_views FROM CONTENT_VIEWS
+            WHERE tenant_id = :tenant_id AND content_type = :content_type
+                AND content_id = :content_id AND status = 'A'",
+            [':tenant_id' => $tenantId, ':content_type' => $contentType, ':content_id' => $contentId])->queryOne();
+        $viewCount = (int) ($viewRow['total_views'] ?? 0);
+
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = array_merge($reactionSummary['data'], [
+            'total_comments' => $commentCount,
+            'total_views' => $viewCount,
+        ]);
         return $resArr;
     }
 
@@ -116,21 +185,95 @@ final readonly class EngagementServices implements IEngagementServices
         if ($principal['status'] !== 'SUCCESS') {
             return $this->propagateFailure($principal, 'EngagementServices::manageLike');
         }
-        $content = $this->resolvePublicContent($actionData);
+        $content = $this->resolvePublicContent($actionData, true);
         if ($content['status'] !== 'SUCCESS') {
             return $this->propagateFailure($content, 'EngagementServices::manageLike');
         }
         $tenantId = (int) $content['data']['tenant_id'];
         $userId = (int) $principal['data']['user_id'];
+
+        $requestedReaction = strtoupper($this->filterText($actionData['reaction_type'] ?? 'LIKE', 20));
+        if (!in_array($requestedReaction, ['LIKE', 'LOVE', 'HAHA', 'WOW', 'SAD', 'ANGRY'], true)) {
+            $requestedReaction = 'LIKE';
+        }
+
         $like = $this->dao->getLike($this->db, $tenantId, $userId, $content['data']['content_type'], (int) $content['data']['content_id']);
         if ($like['status'] !== 'SUCCESS') {
             return $this->propagateFailure($like, 'EngagementServices::manageLike');
         }
+
         if ($like['data'] === []) {
-            return $this->dao->insertLike($this->db, $tenantId, $userId, $content['data']['content_type'], (int) $content['data']['content_id']);
+            $insertRes = $this->dao->insertLike($this->db, $tenantId, $userId, $content['data']['content_type'], (int) $content['data']['content_id'], $requestedReaction);
+            if ($insertRes['status'] !== 'SUCCESS') {
+                return $insertRes;
+            }
+        } else {
+            $existingStatus = $like['data']['status'] ?? '';
+            $existingReaction = $like['data']['reaction_type'] ?? 'LIKE';
+
+            if ($existingStatus === 'A' && $existingReaction === $requestedReaction) {
+                // Same reaction toggled off (unlike/unreact)
+                $updateRes = $this->dao->updateLikeReaction($this->db, (int) $like['data']['id'], $userId, 'Z', null);
+            } else {
+                // Switching reaction or re-activating with new reaction
+                $updateRes = $this->dao->updateLikeReaction($this->db, (int) $like['data']['id'], $userId, 'A', $requestedReaction);
+            }
+            if ($updateRes['status'] !== 'SUCCESS') {
+                return $updateRes;
+            }
         }
-        return $this->dao->updateLikeStatus(
-            $this->db, (int) $like['data']['id'], $userId, ($like['data']['status'] ?? '') === 'A' ? 'Z' : 'A',
+
+        // Return updated reaction summary
+        return $this->dao->getReactionSummary($this->db, $tenantId, $content['data']['content_type'], (int) $content['data']['content_id'], $userId);
+    }
+
+    private function manageUpdateComment(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->principal($actionData);
+        if ($principal['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'EngagementServices::manageUpdateComment');
+        }
+        $content = $this->resolvePublicContent($actionData, false);
+        if ($content['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($content, 'EngagementServices::manageUpdateComment');
+        }
+        $commentId = $this->positiveInt($actionData['comment_id'] ?? null);
+        if ($commentId === null) {
+            $resArr['msgArr'][] = 'comment_id is required.';
+            return $resArr;
+        }
+        $commentText = $this->requiredText($actionData['comment_text'] ?? '', 3000);
+        if ($commentText === null) {
+            $resArr['msgArr'][] = 'comment_text is required and must not exceed 3000 characters.';
+            return $resArr;
+        }
+        return $this->dao->updateComment(
+            $this->db, (int) $content['data']['tenant_id'], $commentId,
+            (int) $principal['data']['user_id'], $commentText
+        );
+    }
+
+    private function manageDeleteComment(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->principal($actionData);
+        if ($principal['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'EngagementServices::manageDeleteComment');
+        }
+        $content = $this->resolvePublicContent($actionData, false);
+        if ($content['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($content, 'EngagementServices::manageDeleteComment');
+        }
+        $commentId = $this->positiveInt($actionData['comment_id'] ?? null);
+        if ($commentId === null) {
+            $resArr['msgArr'][] = 'comment_id is required.';
+            return $resArr;
+        }
+        $isAdmin = in_array('PLATFORM_ADMIN', is_array($principal['data']['roles'] ?? null) ? $principal['data']['roles'] : [], true);
+        return $this->dao->softDeleteComment(
+            $this->db, (int) $content['data']['tenant_id'], $commentId,
+            (int) $principal['data']['user_id'], $isAdmin
         );
     }
 
@@ -141,7 +284,7 @@ final readonly class EngagementServices implements IEngagementServices
         if ($principal['status'] !== 'SUCCESS') {
             return $this->propagateFailure($principal, 'EngagementServices::manageComment');
         }
-        $content = $this->resolvePublicContent($actionData);
+        $content = $this->resolvePublicContent($actionData, false);
         if ($content['status'] !== 'SUCCESS') {
             return $this->propagateFailure($content, 'EngagementServices::manageComment');
         }
@@ -173,7 +316,7 @@ final readonly class EngagementServices implements IEngagementServices
         if ($principal['status'] !== 'SUCCESS') {
             return $this->propagateFailure($principal, 'EngagementServices::manageReport');
         }
-        $content = $this->resolvePublicContent($actionData);
+        $content = $this->resolvePublicContent($actionData, true);
         if ($content['status'] !== 'SUCCESS') {
             return $this->propagateFailure($content, 'EngagementServices::manageReport');
         }
@@ -192,7 +335,7 @@ final readonly class EngagementServices implements IEngagementServices
     private function manageView(array $actionData): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        $content = $this->resolvePublicContent($actionData);
+        $content = $this->resolvePublicContent($actionData, false);
         if ($content['status'] !== 'SUCCESS') {
             return $this->propagateFailure($content, 'EngagementServices::manageView');
         }
@@ -215,13 +358,14 @@ final readonly class EngagementServices implements IEngagementServices
         );
     }
 
-    private function resolvePublicContent(array $actionData): array
+    private function resolvePublicContent(array $actionData, bool $allowComment = true): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         $contentType = strtoupper($this->filterText($actionData['content_type'] ?? '', 20));
         $contentId = $this->positiveInt($actionData['content_id'] ?? null);
-        if (!in_array($contentType, ['BUSINESS', 'PRODUCT', 'POST'], true) || $contentId === null) {
-            $resArr['msgArr'][] = 'content_type must be BUSINESS, PRODUCT or POST and content_id must be valid.';
+        $allowed = $allowComment ? ['BUSINESS', 'PRODUCT', 'POST', 'COMMENT'] : ['BUSINESS', 'PRODUCT', 'POST'];
+        if (!in_array($contentType, $allowed, true) || $contentId === null) {
+            $resArr['msgArr'][] = 'content_type must be ' . implode(', ', $allowed) . ' and content_id must be valid.';
             return $resArr;
         }
         $result = $this->dao->getPublicContentTenant($this->db, $contentType, $contentId);

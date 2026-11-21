@@ -66,6 +66,26 @@ final class AwsS3Storage
         }
     }
 
+    public function resolveDownloadUrl(?string $path): ?string
+    {
+        if ($path === null) {
+            return null;
+        }
+        $trimmed = trim($path);
+        if ($trimmed === '') {
+            return null;
+        }
+        if (str_starts_with($trimmed, 'http://') || str_starts_with($trimmed, 'https://')) {
+            return $trimmed;
+        }
+        try {
+            return $this->createDownloadUrl($trimmed);
+        } catch (\Throwable $exception) {
+            error_log('AwsS3Storage::resolveDownloadUrl failed for key [' . $trimmed . ']: ' . $exception->getMessage());
+            return null;
+        }
+    }
+
     public function headObject(string $key): array
     {
         try {
@@ -92,15 +112,17 @@ final class AwsS3Storage
         }
     }
 
-    public function deleteObject(string $key): void
+    public function deleteObject(string $key): bool
     {
         try {
             $this->client()->deleteObject([
                 'Bucket' => $this->bucket,
                 'Key' => $key,
             ]);
+            return true;
         } catch (AwsException $exception) {
-            throw new RuntimeException('Unable to delete S3 object.', 0, $exception);
+            error_log('Warning: Unable to delete S3 object [' . $key . ']: ' . $exception->getMessage());
+            return false;
         }
     }
 

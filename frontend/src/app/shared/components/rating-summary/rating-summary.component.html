@@ -1,0 +1,62 @@
+<section class="rating-summary-card" aria-label="Customer Rating Breakdown">
+  <!-- Overall Score Column -->
+  <div class="overall-score-col">
+    <div class="score-figure">{{ summary().average_rating | number: '1.1-1' }}</div>
+    <div class="stars-row">
+      <app-star-rating [rating]="summary().average_rating" [size]="'lg'" />
+    </div>
+    <p class="review-count-text">
+      @if (summary().total_reviews === 1) {
+        Based on 1 customer review
+      } @else if (summary().total_reviews > 1) {
+        Based on {{ summary().total_reviews }} customer reviews
+      } @else {
+        No reviews submitted yet
+      }
+    </p>
+    @if (selectedStar() !== null) {
+      <button type="button" class="clear-filter-btn" (click)="clearFilter()">
+        <span>Filtered: {{ selectedStar() }}★ reviews</span>
+        <span class="clear-icon" aria-hidden="true">✕</span>
+      </button>
+    }
+  </div>
+
+  <!-- Distribution Bars Column -->
+  <div class="distribution-bars-col">
+    @for (star of starLevels; track star) {
+      @let bucket = summary().distribution[star];
+      <button
+        type="button"
+        class="star-bar-row"
+        [class.selected]="selectedStar() === star"
+        [disabled]="summary().total_reviews === 0"
+        (click)="onSelectStar(star)"
+        [attr.aria-label]="
+          'Filter by ' +
+          star +
+          ' star reviews: ' +
+          bucket.count +
+          ' reviews, ' +
+          bucket.percentage +
+          '%'
+        "
+      >
+        <span class="bar-star-label">{{ star }}★</span>
+        <div
+          class="progress-track"
+          role="progressbar"
+          [attr.aria-valuenow]="bucket.percentage"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <div class="progress-fill" [style.width.%]="bucket.percentage"></div>
+        </div>
+        <span class="bar-count-label">
+          <span class="cnt-num">{{ bucket.count }}</span>
+          <span class="cnt-pct">({{ bucket.percentage }}%)</span>
+        </span>
+      </button>
+    }
+  </div>
+</section>

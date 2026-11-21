@@ -37,50 +37,105 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
       }
     </div>
   `,
-  styles: [`
-    :host { display: block; width: 100%; }
-    .skeleton-container { display: flex; flex-direction: column; gap: 12px; width: 100%; }
-    .skeleton-shimmer {
-      background: linear-gradient(
-        90deg,
-        var(--bbg-surface-subtle) 0%,
-        var(--bbg-border-default) 50%,
-        var(--bbg-surface-subtle) 100%
-      );
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: var(--bbg-radius-sm);
-    }
-    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  styles: [
+    `
+      :host {
+        display: block;
+        width: 100%;
+      }
+      .skeleton-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+      }
+      .skeleton-shimmer {
+        background: linear-gradient(
+          90deg,
+          var(--bbg-surface-subtle) 0%,
+          var(--bbg-border-default) 50%,
+          var(--bbg-surface-subtle) 100%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: var(--bbg-radius-sm);
+      }
+      @keyframes shimmer {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
 
-    .skeleton-card {
-      border: 1px solid var(--bbg-border-default);
-      border-radius: var(--bbg-radius-lg);
-      background: var(--bbg-surface-card);
-      overflow: hidden;
-    }
-    .skeleton-media { height: 140px; border-radius: 0; }
-    .skeleton-body { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
-    .skeleton-line { height: 16px; width: 100%; }
-    .skeleton-title { width: 70%; height: 20px; }
-    .skeleton-subtitle { width: 45%; }
-    .skeleton-detail { width: 90%; }
+      .skeleton-card {
+        border: 1px solid var(--bbg-border-default);
+        border-radius: var(--bbg-radius-lg);
+        background: var(--bbg-surface-card);
+        overflow: hidden;
+      }
+      .skeleton-media {
+        height: 140px;
+        border-radius: 0;
+      }
+      .skeleton-body {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .skeleton-line {
+        height: 16px;
+        width: 100%;
+      }
+      .skeleton-title {
+        width: 70%;
+        height: 20px;
+      }
+      .skeleton-subtitle {
+        width: 45%;
+      }
+      .skeleton-detail {
+        width: 90%;
+      }
 
-    .skeleton-table-row {
-      display: flex;
-      gap: 16px;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--bbg-border-default);
-      align-items: center;
-    }
-    .skeleton-cell { height: 16px; width: 120px; }
-    .cell-wide { flex: 1; }
-    .cell-sm { width: 60px; }
+      .skeleton-table-row {
+        display: flex;
+        gap: 16px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--bbg-border-default);
+        align-items: center;
+      }
+      .skeleton-cell {
+        height: 16px;
+        width: 120px;
+      }
+      .cell-wide {
+        flex: 1;
+      }
+      .cell-sm {
+        width: 60px;
+      }
 
-    .skeleton-avatar-wrap { display: flex; align-items: center; gap: 12px; }
-    .skeleton-avatar { width: 44px; height: 44px; border-radius: 50%; }
-    .skeleton-avatar-lines { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-  `]
+      .skeleton-avatar-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .skeleton-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+      }
+      .skeleton-avatar-lines {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+    `,
+  ],
 })
 export class SkeletonLoaderComponent {
   readonly variant = input<'card' | 'table-row' | 'text' | 'avatar'>('text');

@@ -1,36 +1,196 @@
 <section class="personal-account-card" aria-labelledby="personal-account-title">
   <header class="account-heading">
-    <div><p class="eyebrow">YOUR BBG ACCOUNT</p><h2 id="personal-account-title">Personal details</h2><p>These details belong to your BBG account and are used across your customer activity.</p></div>
-    <span class="profile-avatar">{{ initials() }}</span>
+    <div class="heading-content">
+      <span class="eyebrow">YOUR BBG ACCOUNT</span>
+      <h2 id="personal-account-title">Personal Details</h2>
+      <p class="heading-desc">
+        These details belong to your personal BBG account and are used across your platform
+        activity.
+      </p>
+    </div>
+    <div class="profile-avatar-wrap">
+      <span class="profile-avatar">{{ initials() }}</span>
+    </div>
   </header>
-  <div class="account-details">
-    <article><span>Full name</span><strong>{{ display('full_name') }}</strong></article>
-    <article><span>Email address</span><strong>{{ display('email') }}</strong></article>
-    <article><span>Mobile number</span><strong>{{ display('mobile') }}</strong></article>
+
+  <div class="account-details-grid">
+    <article class="detail-card">
+      <span class="detail-label">Full Name</span>
+      <strong class="detail-value">{{ display('full_name') }}</strong>
+    </article>
+    <article class="detail-card">
+      <span class="detail-label">Email Address</span>
+      <strong class="detail-value">{{ display('email') }}</strong>
+    </article>
+    <article class="detail-card">
+      <span class="detail-label">Mobile Number</span>
+      <strong class="detail-value">{{ display('mobile') }}</strong>
+    </article>
   </div>
-  <footer class="account-actions">
-    <div><strong>Account password</strong><p>{{ hasPassword() ? 'A password is already set for your account.' : 'You signed in without a password. You can set one to also sign in using your email or mobile number.' }}</p></div>
+
+  <footer class="account-actions-card">
+    <div class="security-info">
+      <div class="security-title-row">
+        <span class="lock-icon">🔒</span>
+        <strong>Account Password &amp; Security</strong>
+      </div>
+      <p>
+        {{
+          hasPassword()
+            ? 'A secure password is set for your account. You can sign in using your email or mobile with this password.'
+            : 'You signed in via one-time code or social auth. Set a password to enable password-based sign in.'
+        }}
+      </p>
+    </div>
     <div class="account-buttons">
-      @if (canEdit()) { <button type="button" (click)="edit()">Edit details</button><button type="button" class="secondary" (click)="openPassword()">{{ hasPassword()?'Change password':'Set password' }}</button> }
+      @if (canEdit()) {
+        <button type="button" class="btn-primary" (click)="edit()">
+          <span class="btn-icon">✎</span> Edit Details
+        </button>
+        <button type="button" class="btn-secondary" (click)="openPassword()">
+          {{ hasPassword() ? 'Change Password' : 'Set Password' }}
+        </button>
+      }
     </div>
   </footer>
-  @if (error()) { <p class="account-error" role="alert">{{ error() }}</p> }
+
+  @if (error()) {
+    <p class="account-error" role="alert">{{ error() }}</p>
+  }
 </section>
-<app-workspace-drawer [open]="profileDrawerOpen()" title="Edit personal details" description="Update your BBG account contact information." (closed)="profileDrawerOpen.set(false)">
+
+<app-workspace-drawer
+  [open]="profileDrawerOpen()"
+  title="Edit Personal Details"
+  description="Update your BBG account profile information."
+  eyebrow="ACCOUNT PROFILE"
+  (closed)="profileDrawerOpen.set(false)"
+>
   <form class="account-form" (ngSubmit)="saveProfile()">
-    <label>Full name<input name="fullName" [ngModel]="form().full_name" (ngModelChange)="updateField('full_name',$event)" maxlength="180" required></label>
-    <label>Email address<input type="email" name="email" [ngModel]="form().email" (ngModelChange)="updateField('email',$event)"></label>
-    <label>Mobile number<input type="tel" name="mobile" [ngModel]="form().mobile" (ngModelChange)="updateField('mobile',$event)"></label>
-    @if (error()) { <p class="account-error" role="alert">{{ error() }}</p> }
-    <footer><button type="button" (click)="profileDrawerOpen.set(false)" [disabled]="busy()">Cancel</button><button type="submit" class="primary" [disabled]="busy()||!form().full_name.trim()">{{ busy()?'Saving…':'Save details' }}</button></footer>
+    <label class="form-field">
+      <span class="field-label">Full Name <span class="required">*</span></span>
+      <input
+        type="text"
+        name="fullName"
+        [ngModel]="form().full_name"
+        (ngModelChange)="updateField('full_name', $event)"
+        maxlength="180"
+        required
+        class="form-input"
+        placeholder="Your full name"
+      />
+    </label>
+
+    <label class="form-field">
+      <span class="field-label">Email Address</span>
+      <input
+        type="email"
+        name="email"
+        [ngModel]="form().email"
+        (ngModelChange)="updateField('email', $event)"
+        class="form-input"
+        placeholder="name@example.com"
+      />
+    </label>
+
+    <label class="form-field">
+      <span class="field-label">Mobile Number</span>
+      <input
+        type="tel"
+        name="mobile"
+        [ngModel]="form().mobile"
+        (ngModelChange)="updateField('mobile', $event)"
+        class="form-input"
+        placeholder="+919876543210"
+      />
+    </label>
+
+    @if (error()) {
+      <p class="account-error" role="alert">{{ error() }}</p>
+    }
+
+    <footer class="drawer-footer">
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="profileDrawerOpen.set(false)"
+        [disabled]="busy()"
+      >
+        Cancel
+      </button>
+      <button type="submit" class="btn-primary" [disabled]="busy() || !form().full_name.trim()">
+        {{ busy() ? 'Saving…' : 'Save Details' }}
+      </button>
+    </footer>
   </form>
 </app-workspace-drawer>
-<app-workspace-drawer [open]="passwordDrawerOpen()" [title]="hasPassword()?'Change account password':'Set account password'" description="Use a secure password of at least eight characters." (closed)="closePassword()">
+
+<app-workspace-drawer
+  [open]="passwordDrawerOpen()"
+  [title]="hasPassword() ? 'Change Account Password' : 'Set Account Password'"
+  description="Use a strong password with at least eight characters."
+  eyebrow="SECURITY SETTINGS"
+  (closed)="closePassword()"
+>
   <form class="account-form" (ngSubmit)="updatePassword()">
-    @if (hasPassword()) { <label>Current password<input type="password" autocomplete="current-password" [value]="currentPassword()" (input)="currentPassword.set(inputValue($event))" required></label> }
-    <label>New password<input type="password" autocomplete="new-password" minlength="8" [value]="newPassword()" (input)="newPassword.set(inputValue($event))" required></label>
-    <label>Confirm new password<input type="password" autocomplete="new-password" minlength="8" [value]="confirmPassword()" (input)="confirmPassword.set(inputValue($event))" required></label>
-    @if (passwordError()) { <p class="account-error" role="alert">{{ passwordError() }}</p> }
-    <footer><button type="button" (click)="closePassword()" [disabled]="busy()">Cancel</button><button type="submit" class="primary" [disabled]="busy()">{{ busy()?'Saving…':(hasPassword()?'Update password':'Set password') }}</button></footer>
+    @if (hasPassword()) {
+      <label class="form-field">
+        <span class="field-label">Current Password <span class="required">*</span></span>
+        <input
+          type="password"
+          autocomplete="current-password"
+          [value]="currentPassword()"
+          (input)="currentPassword.set(inputValue($event))"
+          required
+          class="form-input"
+          placeholder="Enter current password"
+        />
+      </label>
+    }
+
+    <label class="form-field">
+      <span class="field-label">New Password <span class="required">*</span></span>
+      <input
+        type="password"
+        autocomplete="new-password"
+        [value]="newPassword()"
+        (input)="newPassword.set(inputValue($event))"
+        minlength="8"
+        required
+        class="form-input"
+        placeholder="At least 8 characters"
+      />
+    </label>
+
+    <label class="form-field">
+      <span class="field-label">Confirm New Password <span class="required">*</span></span>
+      <input
+        type="password"
+        autocomplete="new-password"
+        [value]="confirmPassword()"
+        (input)="confirmPassword.set(inputValue($event))"
+        minlength="8"
+        required
+        class="form-input"
+        placeholder="Repeat new password"
+      />
+    </label>
+
+    @if (error()) {
+      <p class="account-error" role="alert">{{ error() }}</p>
+    }
+
+    <footer class="drawer-footer">
+      <button type="button" class="btn-secondary" (click)="closePassword()" [disabled]="busy()">
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="btn-primary"
+        [disabled]="busy() || !newPassword().trim() || newPassword() !== confirmPassword()"
+      >
+        {{ busy() ? 'Updating…' : hasPassword() ? 'Update Password' : 'Set Password' }}
+      </button>
+    </footer>
   </form>
 </app-workspace-drawer>

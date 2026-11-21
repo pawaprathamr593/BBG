@@ -60,6 +60,7 @@ final class BusinessController
             '/api/v1/business/storefront/owner/publish' => 'publishOwnedStorefront',
             '/api/v1/business/storefront/unpublish' => 'unpublishMyStorefront',
             '/api/v1/business/storefront/owner/unpublish' => 'unpublishOwnedStorefront',
+            '/api/v1/business/media/upload-url' => 'generateBusinessMediaUploadUrl',
         ];
         $action = $manage ? ($manageActions[$path] ?? '') : ($getActions[$path] ?? '');
         if ($action === '') {

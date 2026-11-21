@@ -1,51 +1,156 @@
 <main class="status-page">
   @if (loading()) {
-    <section class="status-card loading"><span class="spinner"></span><div><strong>Loading your business applications</strong><p>Checking your registrations…</p></div></section>
+    <section class="status-card loading" role="status">
+      <span class="spinner"></span>
+      <div>
+        <strong>Loading your business applications</strong>
+        <p>Checking active registrations and review states…</p>
+      </div>
+    </section>
   } @else if (error()) {
-    <section class="status-card"><p class="eyebrow">BBG BUSINESS WORKSPACE</p><h1>We couldn’t load your registrations</h1><p>{{ error() }}</p><button type="button" (click)="load()">Try again</button></section>
+    <section class="status-card" role="alert">
+      <p class="eyebrow">BBG BUSINESS WORKSPACE</p>
+      <h1>We couldn’t load your registrations</h1>
+      <p>{{ error() }}</p>
+      <button class="market-button" type="button" (click)="load()">Try again</button>
+    </section>
   } @else {
     <section class="status-card">
       <p class="eyebrow">BBG BUSINESS WORKSPACE</p>
-      <div class="status-heading"><div><h1>Your businesses</h1><p>Manage your registrations and approved workspaces from one place.</p></div></div>
+      <div class="status-heading">
+        <div>
+          <h1>Your registered businesses</h1>
+          <p>
+            Review the approval status of your registrations, access active workspaces, or resume
+            drafts.
+          </p>
+        </div>
+      </div>
+
       <div class="application-list">
-        @for (business of applications(); track business.business_id) {
+        @for (business of visibleApplications(); track business.business_id) {
           <article class="application-card">
             <div class="application-heading">
-              <div><h2>{{ business.business_name }}</h2><p>{{ business.business_slug }}</p></div>
-              <app-status-badge [status]="business.approval_status" [label]="statusLabel(business.approval_status)" />
+              <div>
+                <h2>{{ business.business_name }}</h2>
+                <span class="slug-text">bbg.in/store/{{ business.business_slug }}</span>
+              </div>
+              <app-status-badge
+                [status]="business.approval_status"
+                [label]="statusLabel(business.approval_status)"
+              />
             </div>
+
             <div class="business-summary">
-              <span><small>Location</small><strong>{{ locationLabel(business) }}</strong></span>
-              <span><small>Registration status</small><strong>{{ statusLabel(business.approval_status) }}</strong></span>
-              <span><small>Storefront</small><strong>{{ business.publication_status || 'Not published' }}</strong></span>
+              <span>
+                <small>Location</small>
+                <strong>{{ locationLabel(business) }}</strong>
+              </span>
+              <span>
+                <small>Application Stage</small>
+                <strong>{{ statusLabel(business.approval_status) }}</strong>
+              </span>
+              <span>
+                <small>Storefront Publication</small>
+                <strong>{{ business.publication_status || 'Draft (Unpublished)' }}</strong>
+              </span>
             </div>
+
             @if (business.approval_status === 'APPROVED') {
               <div class="approved-actions">
-                <button class="market-button" type="button" (click)="openWorkspace(business)">Open business workspace <span aria-hidden="true">→</span></button>
-                <button class="market-button secondary-market-button" type="button" (click)="manageTeam(business)">Manage team</button>
-                <button class="market-button secondary-market-button" type="button" (click)="manageStorefront(business)">Configure storefront</button>
-                <button class="market-button secondary-market-button" type="button" (click)="manageSubscription(business)">Manage subscription</button>
+                <button class="market-button" type="button" (click)="openWorkspace(business)">
+                  <span>Open workspace dashboard</span>
+                  <span aria-hidden="true">→</span>
+                </button>
+                <button
+                  class="market-button secondary-market-button"
+                  type="button"
+                  (click)="manageTeam(business)"
+                >
+                  Manage team
+                </button>
+                <button
+                  class="market-button secondary-market-button"
+                  type="button"
+                  (click)="manageStorefront(business)"
+                >
+                  Configure storefront
+                </button>
+                <button
+                  class="market-button secondary-market-button"
+                  type="button"
+                  (click)="manageSubscription(business)"
+                >
+                  Subscriptions &amp; Billing
+                </button>
               </div>
             } @else if (business.approval_status === 'REJECTED') {
-              <p class="application-note">Your application needs attention. Check the review note or contact BBG support.</p>
-              @if (business.rejection_reason) { <div class="reason"><strong>Review note</strong><span>{{ business.rejection_reason }}</span></div> }
+              <p class="application-note">
+                Your application requires revisions. Please check the review note below or reach out
+                to BBG administration.
+              </p>
+              @if (business.rejection_reason) {
+                <div class="reason-box">
+                  <strong>Review Feedback</strong>
+                  <span>{{ business.rejection_reason }}</span>
+                </div>
+              }
             } @else if (business.approval_status === 'DRAFT') {
-              <p class="application-note">This application is saved as a draft. Continue where you left off.</p>
-              <button class="market-button" type="button" (click)="resumeDraft(business)">Continue application <span aria-hidden="true">→</span></button>
+              <p class="application-note">
+                This business registration has been saved as a draft. You can continue anytime.
+              </p>
+              <button class="market-button" type="button" (click)="resumeDraft(business)">
+                <span>Continue registration wizard</span>
+                <span aria-hidden="true">→</span>
+              </button>
             } @else {
               @if (rejectedPaymentBusinessIds().includes(business.business_id)) {
-                <p class="application-note">Your payment proof needs attention. {{ rejectedPaymentReasons()[business.business_id] || 'Upload a corrected receipt to send it for review again.' }}</p>
-                <button class="market-button" type="button" (click)="resumePayment(business)">Update payment receipt <span aria-hidden="true">→</span></button>
+                <p class="application-note">
+                  Your payment receipt was flagged for review.
+                  {{
+                    rejectedPaymentReasons()[business.business_id] ||
+                      'Please re-upload a clear receipt screenshot.'
+                  }}
+                </p>
+                <button class="market-button" type="button" (click)="resumePayment(business)">
+                  <span>Re-upload payment proof</span>
+                  <span aria-hidden="true">→</span>
+                </button>
               } @else {
-                <p class="application-note">Your business registration and payment are awaiting BBG review.</p>
+                <p class="application-note">
+                  Your application and payment proof have been received. BBG administrators will
+                  review and assign your BCN ID shortly.
+                </p>
               }
             }
           </article>
         }
       </div>
-      <div class="workspace-actions">
-        <button class="market-button" type="button" (click)="registerAnotherBusiness()">+ Register another business</button>
-        <button class="market-button secondary-market-button" type="button" (click)="visitMarketplace()">Visit marketplace <span aria-hidden="true">↗</span></button>
+
+      @if (applications().length > pageSize) {
+        <app-pagination
+          [currentPage]="currentPage()"
+          [totalItems]="applications().length"
+          [pageSize]="pageSize"
+          (pageChange)="onPageChange($event)"
+        />
+      }
+
+      <div class="workspace-footer-actions">
+        <button
+          class="market-button secondary-market-button"
+          type="button"
+          (click)="registerAnotherBusiness()"
+        >
+          + Register another business
+        </button>
+        <button
+          class="market-button secondary-market-button"
+          type="button"
+          (click)="visitMarketplace()"
+        >
+          Explore marketplace ↗
+        </button>
       </div>
     </section>
   }

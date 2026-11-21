@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Api\Shared\CorsMiddleware;
 use App\Api\Shared\ExceptionResponderFactory;
 use App\Api\Shared\NotFoundMiddleware;
 use Yiisoft\DataResponse\Formatter\JsonFormatter;
@@ -28,6 +29,7 @@ return [
                 'class' => MiddlewareDispatcher::class,
                 'withMiddlewares()' => [
                     [
+                        CorsMiddleware::class,
                         static fn() => new ContentNegotiatorDataResponseMiddleware(
                             formatters: [
                                 'application/xml' => new XmlFormatter(),

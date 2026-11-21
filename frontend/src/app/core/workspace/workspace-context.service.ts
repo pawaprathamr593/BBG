@@ -1,7 +1,11 @@
 import { DOCUMENT } from '@angular/common';
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
-import { DashboardApiService, DashboardPermission, DashboardTenant } from '../dashboard/dashboard-api.service';
+import {
+  DashboardApiService,
+  DashboardPermission,
+  DashboardTenant,
+} from '../dashboard/dashboard-api.service';
 
 const ACTIVE_WORKSPACE_KEY = 'bbg.activeWorkspaceId';
 const ACTIVE_CONTEXT_KEY = 'bbg.activeContext';
@@ -31,10 +35,11 @@ export class WorkspaceContextService {
 
       // Workspace permissions and tenant data belong to one authenticated
       // principal. Never carry them across logout or an account switch.
-      const principalChanged = this.authStateObserved
-        && userId !== null
-        && this.observedUserId !== null
-        && userId !== this.observedUserId;
+      const principalChanged =
+        this.authStateObserved &&
+        userId !== null &&
+        this.observedUserId !== null &&
+        userId !== this.observedUserId;
 
       if (!authenticated || principalChanged) {
         this.clear();
@@ -109,7 +114,8 @@ export class WorkspaceContextService {
     await this.initialize();
     const allPermissions = await this.api.getPermissions(0);
     const platformPermissions = allPermissions.filter(isPlatformAdministratorPermission);
-    if (!platformPermissions.length) throw new Error('You do not have Platform Administration access.');
+    if (!platformPermissions.length)
+      throw new Error('You do not have Platform Administration access.');
     this.platformPermissions.set(platformPermissions);
     this.activeTenantId.set(null);
     this.activeContext.set('PLATFORM');
@@ -156,28 +162,41 @@ export class WorkspaceContextService {
       this.platformPermissions.set(savedPermissions.filter(isPlatformAdministratorPermission));
 
       const savedId = this.readActiveWorkspace();
-      const restoredTenantId = savedId !== null && tenants.some((tenant) => tenant.id === savedId)
-        ? savedId
-        : null;
+      const restoredTenantId =
+        savedId !== null && tenants.some((tenant) => tenant.id === savedId) ? savedId : null;
       const savedLastId = this.readLastWorkspace();
-      const lastTenantId = restoredTenantId ?? (savedLastId !== null && tenants.some((tenant) => tenant.id === savedLastId) ? savedLastId : null);
+      const lastTenantId =
+        restoredTenantId ??
+        (savedLastId !== null && tenants.some((tenant) => tenant.id === savedLastId)
+          ? savedLastId
+          : null);
       this.lastActiveTenantId.set(lastTenantId);
       if (restoredTenantId !== null) this.persistLastWorkspace(restoredTenantId);
       const savedContext = this.readActiveContext();
       const hasPlatformAccess = savedPermissions.some(isPlatformAdministratorPermission);
-      const defaultScope = savedContext === 'PERSONAL'
-        ? 'GLOBAL'
-        : savedContext === 'PLATFORM' && hasPlatformAccess
-          ? 'PLATFORM'
-          : hasPlatformAccess ? 'PLATFORM' : 'GLOBAL';
-      const permissions = restoredTenantId === null
-        ? defaultScope === 'PLATFORM'
-          ? savedPermissions.filter(isPlatformAdministratorPermission)
-          : savedPermissions.filter(isPersonalPermission)
-        : await this.api.getPermissions(restoredTenantId);
+      const defaultScope =
+        savedContext === 'PERSONAL'
+          ? 'GLOBAL'
+          : savedContext === 'PLATFORM' && hasPlatformAccess
+            ? 'PLATFORM'
+            : hasPlatformAccess
+              ? 'PLATFORM'
+              : 'GLOBAL';
+      const permissions =
+        restoredTenantId === null
+          ? defaultScope === 'PLATFORM'
+            ? savedPermissions.filter(isPlatformAdministratorPermission)
+            : savedPermissions.filter(isPersonalPermission)
+          : await this.api.getPermissions(restoredTenantId);
 
       this.activeTenantId.set(restoredTenantId);
-      this.activeContext.set(restoredTenantId !== null ? 'BUSINESS' : defaultScope === 'PLATFORM' ? 'PLATFORM' : 'PERSONAL');
+      this.activeContext.set(
+        restoredTenantId !== null
+          ? 'BUSINESS'
+          : defaultScope === 'PLATFORM'
+            ? 'PLATFORM'
+            : 'PERSONAL',
+      );
       this.permissions.set(permissions);
       if (restoredTenantId !== savedId) this.persistActiveWorkspace(restoredTenantId);
     } catch (error) {
@@ -192,7 +211,9 @@ export class WorkspaceContextService {
     try {
       const userId = this.auth.user()?.user_id;
       if (!userId) return null;
-      const raw = this.document.defaultView?.sessionStorage.getItem(`${LAST_WORKSPACE_KEY}.${userId}`);
+      const raw = this.document.defaultView?.sessionStorage.getItem(
+        `${LAST_WORKSPACE_KEY}.${userId}`,
+      );
       if (!raw) return null;
       const value = Number(raw);
       return Number.isInteger(value) && value > 0 ? value : null;
@@ -218,7 +239,9 @@ export class WorkspaceContextService {
     try {
       const userId = this.auth.user()?.user_id;
       if (!userId) return null;
-      const value = this.document.defaultView?.sessionStorage.getItem(`${ACTIVE_CONTEXT_KEY}.${userId}`);
+      const value = this.document.defaultView?.sessionStorage.getItem(
+        `${ACTIVE_CONTEXT_KEY}.${userId}`,
+      );
       return value === 'PERSONAL' || value === 'PLATFORM' || value === 'BUSINESS' ? value : null;
     } catch {
       return null;
@@ -242,7 +265,9 @@ export class WorkspaceContextService {
     try {
       const userId = this.auth.user()?.user_id;
       if (!userId) return null;
-      const raw = this.document.defaultView?.sessionStorage.getItem(`${ACTIVE_WORKSPACE_KEY}.${userId}`);
+      const raw = this.document.defaultView?.sessionStorage.getItem(
+        `${ACTIVE_WORKSPACE_KEY}.${userId}`,
+      );
       if (!raw) return null;
       const value = Number(raw);
       return Number.isInteger(value) && value > 0 ? value : null;

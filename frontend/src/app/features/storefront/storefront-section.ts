@@ -1,18 +1,46 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { MarketplaceApiService, MarketplaceBusinessDetail, MarketplaceCategory, MarketplaceProduct } from '../../core/marketplace/marketplace-api.service';
+import {
+  MarketplaceApiService,
+  MarketplaceBusinessDetail,
+  MarketplaceCategory,
+  MarketplaceProduct,
+} from '../../core/marketplace/marketplace-api.service';
 import { FilterDrawer } from '../../shared/filter-drawer/filter-drawer';
 import { ProductCard } from '../../shared/components/product-card/product-card';
+import {
+  buildProductRouteSlug,
+  mapMarketplaceProductToCardModel,
+} from '../../shared/models/marketplace-card.mappers';
 import type { ProductCardModel } from '../../shared/models/marketplace-card.models';
 import { StorefrontContextService } from './storefront-context.service';
 import { StorefrontSeoService } from './storefront-seo.service';
+import { WhatsAppService } from '../../core/whatsapp/whatsapp.service';
 
 type Section = 'products' | 'about' | 'contact';
 type ProductSort = 'newest' | 'popular' | 'nearby' | 'price_low' | 'price_high' | 'name';
-type ProductFilterValues = { categoryId: string; brand: string; city: string; state: string; minPrice: number | null; maxPrice: number | null; onlineOnly: boolean; variantsOnly: boolean; withImages: boolean };
+type ProductFilterValues = {
+  categoryId: string;
+  brand: string;
+  city: string;
+  state: string;
+  minPrice: number | null;
+  maxPrice: number | null;
+  onlineOnly: boolean;
+  variantsOnly: boolean;
+  withImages: boolean;
+};
 type ProductFilterKey = keyof ProductFilterValues;
 
 @Component({
@@ -29,13 +57,18 @@ export class StorefrontSection {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly seo = inject(StorefrontSeoService);
+  private readonly whatsApp = inject(WhatsAppService);
 
   readonly section = this.route.snapshot.data['section'] as Section;
   readonly products = signal<MarketplaceProduct[]>([]);
+  readonly productCards = computed<ProductCardModel[]>(() => {
+    const detail = this.context.detail();
+    return this.products().map((product) => mapMarketplaceProductToCardModel(product, detail));
+  });
   readonly loading = signal(true);
   readonly searchTerm = signal('');
-  readonly pagination = signal({ page: 1, page_size: 12, total: 0 });
-  readonly skeletons = [1, 2, 3, 4, 5, 6, 7, 8];
+  readonly pagination = signal({ page: 1, page_size: 3, total: 0 });
+  readonly skeletons = [1, 2, 3];
   readonly loadError = signal('');
   readonly categories = signal<MarketplaceCategory[]>([]);
   readonly filtersOpen = signal(false);
@@ -53,9 +86,11 @@ export class StorefrontSection {
     if (filters.brand.trim()) chips.push({ key: 'brand', label: 'Brand: ' + filters.brand.trim() });
     if (filters.city.trim()) chips.push({ key: 'city', label: 'City: ' + filters.city.trim() });
     if (filters.state.trim()) chips.push({ key: 'state', label: 'State: ' + filters.state.trim() });
-    if (filters.minPrice !== null) chips.push({ key: 'minPrice', label: 'Min: ' + this.formatPrice(filters.minPrice) });
-    if (filters.maxPrice !== null) chips.push({ key: 'maxPrice', label: 'Max: ' + this.formatPrice(filters.maxPrice) });
-    if (filters.onlineOnly) chips.push({ key: 'onlineOnly', label: 'Online orders' });
+    if (filters.minPrice !== null)
+      chips.push({ key: 'minPrice', label: 'Min: ' + this.formatPrice(filters.minPrice) });
+    if (filters.maxPrice !== null)
+      chips.push({ key: 'maxPrice', label: 'Max: ' + this.formatPrice(filters.maxPrice) });
+    if (filters.onlineOnly) chips.push({ key: 'onlineOnly', label: 'BCN accredited' });
     if (filters.variantsOnly) chips.push({ key: 'variantsOnly', label: 'Variants' });
     if (filters.withImages) chips.push({ key: 'withImages', label: 'With images' });
     return chips;
@@ -72,11 +107,16 @@ export class StorefrontSection {
   }
 
   get totalPages(): number {
-    return Math.max(1, Math.ceil(this.pagination().total / Math.max(1, this.pagination().page_size)));
+    return Math.max(
+      1,
+      Math.ceil(this.pagination().total / Math.max(1, this.pagination().page_size)),
+    );
   }
 
   get resultStart(): number {
-    return this.pagination().total ? (this.pagination().page - 1) * this.pagination().page_size + 1 : 0;
+    return this.pagination().total
+      ? (this.pagination().page - 1) * this.pagination().page_size + 1
+      : 0;
   }
 
   get resultEnd(): number {
@@ -88,7 +128,8 @@ export class StorefrontSection {
   constructor() {
     this.api.listPublicProductCategories().subscribe({
       next: (response) => {
-        if (response.status === 'SUCCESS' && response.data && !Array.isArray(response.data)) this.categories.set(response.data.items ?? []);
+        if (response.status === 'SUCCESS' && response.data && !Array.isArray(response.data))
+          this.categories.set(response.data.items ?? []);
       },
       error: () => this.categories.set([]),
     });
@@ -123,7 +164,10 @@ export class StorefrontSection {
 
     if (this.section === 'products') {
       await this.loadProducts(this.queryPage, this.querySearch);
-      const description = 'Browse products published by ' + name + '. View product information and contact the business for details.';
+      const description =
+        'Browse products published by ' +
+        name +
+        '. View product information and contact the business for details.';
       const items = this.products().map((product, index) => ({
         '@type': 'ListItem',
         position: index + 1,
@@ -149,20 +193,37 @@ export class StorefrontSection {
     this.loading.set(false);
     const isAbout = this.section === 'about';
     const description = isAbout
-      ? (detail.storefront.description || detail.business.business_description || 'Learn more about ' + name + ' and its published business information.')
+      ? detail.storefront.description ||
+        detail.business.business_description ||
+        'Learn more about ' + name + ' and its published business information.'
       : 'Contact ' + name + ' using its published business contact details and business address.';
-    this.seo.update((isAbout ? 'About ' : 'Contact ') + name + ' | Official Storefront', description, path, {
-      '@context': 'https://schema.org',
-      '@type': isAbout ? 'AboutPage' : 'ContactPage',
-      name: (isAbout ? 'About ' : 'Contact ') + name,
+    this.seo.update(
+      (isAbout ? 'About ' : 'Contact ') + name + ' | Official Storefront',
       description,
-      url: canonicalUrl,
-      mainEntity: this.businessSchema(detail),
-    });
+      path,
+      {
+        '@context': 'https://schema.org',
+        '@type': isAbout ? 'AboutPage' : 'ContactPage',
+        name: (isAbout ? 'About ' : 'Contact ') + name,
+        description,
+        url: canonicalUrl,
+        mainEntity: this.businessSchema(detail),
+      },
+    );
   }
 
   private defaultFilters(): ProductFilterValues {
-    return { categoryId: '', brand: '', city: '', state: '', minPrice: null, maxPrice: null, onlineOnly: false, variantsOnly: false, withImages: false };
+    return {
+      categoryId: '',
+      brand: '',
+      city: '',
+      state: '',
+      minPrice: null,
+      maxPrice: null,
+      onlineOnly: false,
+      variantsOnly: false,
+      withImages: false,
+    };
   }
 
   setFiltersOpen(open: boolean): void {
@@ -172,8 +233,11 @@ export class StorefrontSection {
   }
 
   applyFilters(): void {
-    if (this.draftFilters.minPrice !== null && this.draftFilters.maxPrice !== null
-      && this.draftFilters.minPrice > this.draftFilters.maxPrice) {
+    if (
+      this.draftFilters.minPrice !== null &&
+      this.draftFilters.maxPrice !== null &&
+      this.draftFilters.minPrice > this.draftFilters.maxPrice
+    ) {
       this.filterNotice.set('Minimum price cannot be greater than maximum price.');
       return;
     }
@@ -181,7 +245,11 @@ export class StorefrontSection {
     this.appliedFilters.set({ ...this.draftFilters });
     this.filtersOpen.set(false);
     this.queryPage = 1;
-    void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1 }, queryParamsHandling: 'merge' });
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: 1 },
+      queryParamsHandling: 'merge',
+    });
     if (this.sort === 'nearby' && (this.latitude === undefined || this.longitude === undefined)) {
       this.requestLocation();
       return;
@@ -197,19 +265,42 @@ export class StorefrontSection {
   removeFilter(key: ProductFilterKey): void {
     const next = { ...this.appliedFilters() };
     switch (key) {
-      case 'categoryId': next.categoryId = ''; break;
-      case 'brand': next.brand = ''; break;
-      case 'city': next.city = ''; break;
-      case 'state': next.state = ''; break;
-      case 'minPrice': next.minPrice = null; break;
-      case 'maxPrice': next.maxPrice = null; break;
-      case 'onlineOnly': next.onlineOnly = false; break;
-      case 'variantsOnly': next.variantsOnly = false; break;
-      case 'withImages': next.withImages = false; break;
+      case 'categoryId':
+        next.categoryId = '';
+        break;
+      case 'brand':
+        next.brand = '';
+        break;
+      case 'city':
+        next.city = '';
+        break;
+      case 'state':
+        next.state = '';
+        break;
+      case 'minPrice':
+        next.minPrice = null;
+        break;
+      case 'maxPrice':
+        next.maxPrice = null;
+        break;
+      case 'onlineOnly':
+        next.onlineOnly = false;
+        break;
+      case 'variantsOnly':
+        next.variantsOnly = false;
+        break;
+      case 'withImages':
+        next.withImages = false;
+        break;
     }
-    this.appliedFilters.set(next);    this.draftFilters = { ...next };
+    this.appliedFilters.set(next);
+    this.draftFilters = { ...next };
     this.queryPage = 1;
-    void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1 }, queryParamsHandling: 'merge' });
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: 1 },
+      queryParamsHandling: 'merge',
+    });
     void this.loadProducts(1, this.searchTerm());
   }
 
@@ -218,7 +309,11 @@ export class StorefrontSection {
     this.draftFilters = this.defaultFilters();
     this.filterNotice.set('');
     this.queryPage = 1;
-    void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1 }, queryParamsHandling: 'merge' });
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: 1 },
+      queryParamsHandling: 'merge',
+    });
     void this.loadProducts(1, this.searchTerm());
   }
 
@@ -232,7 +327,11 @@ export class StorefrontSection {
     this.searchTerm.set('');
     this.queryPage = 1;
     this.querySearch = '';
-    void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1, q: null }, queryParamsHandling: 'merge' });
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: 1, q: null },
+      queryParamsHandling: 'merge',
+    });
     void this.loadProducts(1, '');
   }
 
@@ -240,7 +339,11 @@ export class StorefrontSection {
     this.sort = value;
     this.queryPage = 1;
     this.filterNotice.set('');
-    void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 1 }, queryParamsHandling: 'merge' });
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: 1 },
+      queryParamsHandling: 'merge',
+    });
     if (value === 'nearby') {
       this.requestLocation();
       return;
@@ -253,7 +356,9 @@ export class StorefrontSection {
   private requestLocation(): void {
     if (!navigator.geolocation) {
       this.sort = 'newest';
-      this.filterNotice.set('Your browser does not support location access. Showing newly added products instead.');
+      this.filterNotice.set(
+        'Your browser does not support location access. Showing newly added products instead.',
+      );
       void this.loadProducts(1, this.searchTerm());
       return;
     }
@@ -263,14 +368,18 @@ export class StorefrontSection {
       (position) => {
         this.latitude = position.coords.latitude;
         this.longitude = position.coords.longitude;
-        this.filterNotice.set('Showing products nearest to your current location. Location is used only for this search.');
+        this.filterNotice.set(
+          'Showing products nearest to your current location. Location is used only for this search.',
+        );
         void this.loadProducts(1, this.searchTerm());
       },
       () => {
         this.sort = 'newest';
         this.latitude = undefined;
         this.longitude = undefined;
-        this.filterNotice.set('Location access was unavailable. Showing newly added products; you can still filter by city or state.');
+        this.filterNotice.set(
+          'Location access was unavailable. Showing newly added products; you can still filter by city or state.',
+        );
         void this.loadProducts(1, this.searchTerm());
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
@@ -279,7 +388,13 @@ export class StorefrontSection {
 
   private formatPrice(value: number | string): string {
     const amount = Number(value);
-    return Number.isFinite(amount) ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(amount) : 'Price unavailable';
+    return Number.isFinite(amount)
+      ? new Intl.NumberFormat('en-IN', {
+          style: 'currency',
+          currency: 'INR',
+          maximumFractionDigits: 2,
+        }).format(amount)
+      : 'Price unavailable';
   }
 
   updateSearch(event: Event): void {
@@ -339,18 +454,27 @@ export class StorefrontSection {
           ? { latitude: this.latitude, longitude: this.longitude }
           : {}),
       };
-      const response = await firstValueFrom(this.api.listStorefrontProducts(slug, page, 12, search.trim(), filters));
+      const response = await firstValueFrom(
+        this.api.listStorefrontProducts(slug, page, 3, search.trim(), filters),
+      );
       if (response.status === 'SUCCESS' && !Array.isArray(response.data)) {
-        this.products.set(response.data.items || []);
-        this.pagination.set(response.data.pagination || { page, page_size: 12, total: (response.data.items || []).length });
+        const items = (response.data.items || []).slice(0, 3);
+        this.products.set(items);
+        this.pagination.set(
+          response.data.pagination || {
+            page,
+            page_size: 3,
+            total: items.length,
+          },
+        );
       } else {
         this.products.set([]);
-        this.pagination.set({ page: 1, page_size: 12, total: 0 });
+        this.pagination.set({ page: 1, page_size: 3, total: 0 });
         this.loadError.set('The product catalogue is currently unavailable. Please try again.');
       }
     } catch {
       this.products.set([]);
-      this.pagination.set({ page: 1, page_size: 12, total: 0 });
+      this.pagination.set({ page: 1, page_size: 3, total: 0 });
       this.loadError.set('We could not load the product catalogue. Please try again.');
     } finally {
       this.loading.set(false);
@@ -366,12 +490,22 @@ export class StorefrontSection {
   }
 
   productRoute(product: ProductCardModel): string {
-    const slug = product.slug || product.product_name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product';
-    return slug + '-' + (product.public_id || product.id);
+    return buildProductRouteSlug(product);
   }
 
-  whatsappUrl(phone: string): string {
-    return 'https://wa.me/' + phone.replace(/\D/g, '');
+  isWhatsAppAvailable(data: MarketplaceBusinessDetail): boolean {
+    const country = data.business.address?.country_code ?? data.business.country_code;
+    return this.whatsApp.isWhatsAppAvailable(
+      data.business.whatsapp_number,
+      data.storefront.whatsapp_enabled,
+      country,
+    );
+  }
+
+  whatsappUrl(data: MarketplaceBusinessDetail): string | null {
+    const name = data.business.business_name || this.brandName;
+    const country = data.business.address?.country_code ?? data.business.country_code;
+    return this.whatsApp.buildBusinessEnquiryUrl(name, data.business.whatsapp_number, country);
   }
 
   mapsUrl(data: MarketplaceBusinessDetail): string {
@@ -383,11 +517,19 @@ export class StorefrontSection {
       address?.state,
       address?.postal_code,
       address?.country_code,
-    ].filter(Boolean).join(', ');
+    ]
+      .filter(Boolean)
+      .join(', ');
     if (data.business.location?.latitude != null && data.business.location?.longitude != null) {
-      return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(data.business.location.latitude + ',' + data.business.location.longitude);
+      return (
+        'https://www.google.com/maps/search/?api=1&query=' +
+        encodeURIComponent(data.business.location.latitude + ',' + data.business.location.longitude)
+      );
     }
-    return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query || data.business.business_name);
+    return (
+      'https://www.google.com/maps/search/?api=1&query=' +
+      encodeURIComponent(query || data.business.business_name)
+    );
   }
 
   private businessSchema(data: MarketplaceBusinessDetail): Record<string, unknown> {
@@ -395,25 +537,41 @@ export class StorefrontSection {
     const location = data.business.location;
     return {
       '@type': address ? 'LocalBusiness' : 'Organization',
-      '@id': this.seo.canonicalUrl('/store/' + encodeURIComponent(data.business.business_slug)) + '#business',
+      '@id':
+        this.seo.canonicalUrl('/store/' + encodeURIComponent(data.business.business_slug)) +
+        '#business',
       name: data.storefront.title || data.business.business_name,
       url: this.seo.canonicalUrl('/store/' + encodeURIComponent(data.business.business_slug)),
       description: data.storefront.description || data.business.business_description || undefined,
       ...(data.business.business_phone ? { telephone: data.business.business_phone } : {}),
       ...(data.business.business_email ? { email: data.business.business_email } : {}),
-      ...(address ? {
-        address: {
-          '@type': 'PostalAddress',
-          ...(address.address_line_1 ? { streetAddress: [address.address_line_1, address.address_line_2].filter(Boolean).join(', ') } : {}),
-          ...(address.city ? { addressLocality: address.city } : {}),
-          ...(address.state ? { addressRegion: address.state } : {}),
-          ...(address.postal_code ? { postalCode: address.postal_code } : {}),
-          ...(address.country_code ? { addressCountry: address.country_code } : {}),
-        },
-      } : {}),
-      ...(location?.latitude != null && location?.longitude != null ? {
-        geo: { '@type': 'GeoCoordinates', latitude: location.latitude, longitude: location.longitude },
-      } : {}),
+      ...(address
+        ? {
+            address: {
+              '@type': 'PostalAddress',
+              ...(address.address_line_1
+                ? {
+                    streetAddress: [address.address_line_1, address.address_line_2]
+                      .filter(Boolean)
+                      .join(', '),
+                  }
+                : {}),
+              ...(address.city ? { addressLocality: address.city } : {}),
+              ...(address.state ? { addressRegion: address.state } : {}),
+              ...(address.postal_code ? { postalCode: address.postal_code } : {}),
+              ...(address.country_code ? { addressCountry: address.country_code } : {}),
+            },
+          }
+        : {}),
+      ...(location?.latitude != null && location?.longitude != null
+        ? {
+            geo: {
+              '@type': 'GeoCoordinates',
+              latitude: location.latitude,
+              longitude: location.longitude,
+            },
+          }
+        : {}),
     };
   }
 }

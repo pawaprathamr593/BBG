@@ -1,27 +1,45 @@
-    <main class="page">
-      <section class="intro"><p class="eyebrow">OFFERS FROM THE BBG COMMUNITY</p><h1>Discover <span>promotions</span></h1><p class="lead">Keep up with the latest public promotions shared by businesses on BBG.</p></section>
-      <section class="content">
-        <div class="heading"><div><p class="eyebrow">WHAT'S HAPPENING</p><h2>Latest promotions</h2></div><span>{{ promotions().length }} available</span></div>
-        @if (loading()) {
-          <div style="padding: 24px 0">
-            <app-skeleton-loader variant="card" [count]="6" />
-          </div>
+<main class="page">
+  <section class="intro">
+    <p class="eyebrow">OFFERS FROM THE BBG COMMUNITY</p>
+    <h1>Discover <span>promotions</span></h1>
+    <p class="lead">Keep up with the latest public promotions shared by businesses on BBG.</p>
+  </section>
+  <section class="content">
+    <div class="heading">
+      <div>
+        <p class="eyebrow">WHAT'S HAPPENING</p>
+        <h2>Latest promotions</h2>
+      </div>
+      <span>{{ total() }} available</span>
+    </div>
+    @if (loading()) {
+      <div style="padding: 24px 0">
+        <app-skeleton-loader variant="card" [count]="3" />
+      </div>
+    } @else if (error()) {
+      <div class="state error" role="alert">{{ error() }}</div>
+    } @else if (promotions().length) {
+      <div class="grid">
+        @for (promotion of promotions(); track promotion.id) {
+          <app-promotion-card [promotion]="promotion" (selected)="openBusiness($event)" />
         }
-        @else if (error()) { <div class="state error" role="alert">{{ error() }}</div> }
-        @else if (promotions().length) {
-          <div class="grid">
-            @for (promotion of promotions(); track promotion.id) {
-              <app-promotion-card [promotion]="promotion" (selected)="openBusiness($event)" />
-            }
-          </div>
-        } @else {
-          <app-empty-state
-            icon="🎁"
-            title="No active promotions right now"
-            description="When businesses publish special offers or seasonal discounts, they will appear here."
-            actionText="Explore products"
-            (actionClicked)="openBusiness({ business_slug: '' })" />
-        }
-      </section>
-    </main>
-  
+      </div>
+      @if (total() > pageSize) {
+        <app-pagination
+          [currentPage]="page()"
+          [totalItems]="total()"
+          [pageSize]="pageSize"
+          (pageChange)="changePage($event)"
+        />
+      }
+    } @else {
+      <app-empty-state
+        icon="🎁"
+        title="No active promotions right now"
+        description="When businesses publish special offers or seasonal discounts, they will appear here."
+        actionText="Explore products"
+        (actionClicked)="exploreProducts()"
+      />
+    }
+  </section>
+</main>

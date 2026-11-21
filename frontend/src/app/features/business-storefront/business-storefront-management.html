@@ -1,0 +1,199 @@
+<main class="storefront-config-page">
+  <div class="config-container">
+    <div class="top-nav-row">
+      <a class="back-link" routerLink="/workspace">← Back to your businesses</a>
+      <span class="context-tag">BBG Storefront Engine</span>
+    </div>
+
+    <header class="page-header-block">
+      <p class="eyebrow">BUSINESS WORKSPACE</p>
+      <h1>Storefront Configuration</h1>
+      <p class="intro">
+        Customize your business storefront appearance, contact channels, and public marketplace
+        publication settings.
+      </p>
+    </header>
+
+    @if (error()) {
+      <div class="notice error" role="alert">
+        <span aria-hidden="true">⚠️</span>
+        <span>{{ error() }}</span>
+      </div>
+    }
+    @if (notice()) {
+      <div class="notice success" role="status">
+        <span aria-hidden="true">✓</span>
+        <span>{{ notice() }}</span>
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="loading-state-box" role="status">
+        <div class="loader-spinner"></div>
+        <p>Loading storefront settings…</p>
+      </div>
+    } @else if (storefront(); as data) {
+      <!-- STOREFRONT STATUS BANNER -->
+      <section class="storefront-status-card">
+        <div class="status-summary-grid">
+          <div class="status-col">
+            <span class="col-label">Business Name</span>
+            <strong class="col-val">{{ data.business.business_name }}</strong>
+          </div>
+          <div class="status-col">
+            <span class="col-label">Publication</span>
+            <strong
+              class="col-val status-val"
+              [class.is-published]="data.storefront.publication_status === 'PUBLISHED'"
+            >
+              {{ data.storefront.publication_status || 'DRAFT' }}
+            </strong>
+          </div>
+          <div class="status-col">
+            <span class="col-label">Storefront Status</span>
+            <strong
+              class="col-val status-val"
+              [class.is-active]="data.storefront.storefront_status === 'ACTIVE'"
+            >
+              {{ data.storefront.storefront_status || 'INACTIVE' }}
+            </strong>
+          </div>
+        </div>
+
+        @if (publicUrl()) {
+          <div class="public-url-bar">
+            <div class="url-text-side">
+              <span class="url-label">Public Storefront Address:</span>
+              <a class="url-link" [href]="publicUrl()" target="_blank" rel="noopener noreferrer">
+                <span>{{ publicUrl() }}</span>
+                <span aria-hidden="true">↗</span>
+              </a>
+            </div>
+            <a class="btn-preview" [href]="publicUrl()" target="_blank" rel="noopener noreferrer">
+              Preview Storefront
+            </a>
+          </div>
+        }
+      </section>
+
+      <!-- CONFIGURATION FORM -->
+      <section class="settings-form-card">
+        <div class="card-section-head">
+          <h3>Storefront Presentation Details</h3>
+          <p>These details are displayed on your public storefront banner and search listings.</p>
+        </div>
+
+        <div class="form-fields-grid">
+          <label class="field full">
+            <span class="field-label">Storefront Display Title</span>
+            <input
+              [value]="title()"
+              (input)="title.set($any($event.target).value)"
+              maxlength="180"
+              placeholder="e.g. Acme Industrial Suppliers Official Storefront"
+            />
+            <span class="field-hint"
+              >The primary headline visible to customers on your storefront hero.</span
+            >
+          </label>
+
+          <label class="field full">
+            <span class="field-label">Storefront Description</span>
+            <textarea
+              [value]="description()"
+              (input)="description.set($any($event.target).value)"
+              rows="4"
+              maxlength="500"
+              placeholder="Briefly describe what customers can find in your storefront catalogue and product offerings."
+            ></textarea>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Theme Code</span>
+            <input
+              [value]="themeCode()"
+              (input)="themeCode.set($any($event.target).value)"
+              maxlength="50"
+              placeholder="default"
+            />
+          </label>
+
+          <label class="field">
+            <span class="field-label">WhatsApp Contact Number</span>
+            <input
+              [value]="whatsappNumber()"
+              (input)="whatsappNumber.set($any($event.target).value)"
+              maxlength="25"
+              placeholder="+91 98765 43210"
+            />
+          </label>
+
+          <div class="toggles-wrapper full">
+            <label class="toggle-control">
+              <input
+                type="checkbox"
+                [checked]="showPrices()"
+                (change)="showPrices.set($any($event.target).checked)"
+              />
+              <span class="toggle-label-text">
+                <strong>Show product prices publicly</strong>
+                <small
+                  >When disabled, products will display 'Contact for pricing / Quote on
+                  Request'.</small
+                >
+              </span>
+            </label>
+
+            <label class="toggle-control">
+              <input
+                type="checkbox"
+                [checked]="whatsappEnabled()"
+                (change)="whatsappEnabled.set($any($event.target).checked)"
+              />
+              <span class="toggle-label-text">
+                <strong>Enable direct WhatsApp communication</strong>
+                <small
+                  >Customers will see a 'Chat on WhatsApp' button on your storefront and product
+                  detail pages.</small
+                >
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-actions-bar">
+          <button class="btn-primary" type="button" (click)="save()" [disabled]="busy()">
+            {{ busy() ? 'Saving…' : 'Save storefront settings' }}
+          </button>
+        </div>
+      </section>
+
+      <!-- PUBLICATION LIFECYCLE SECTION -->
+      <section class="publication-card">
+        <div class="publication-copy">
+          <h3>Marketplace Publication</h3>
+          <p>
+            Publishing makes your storefront, catalogue items, and business profile discoverable on
+            the BBG marketplace. An active subscription tier and approved business application are
+            required.
+          </p>
+        </div>
+
+        <div class="publication-action">
+          @if (
+            storefront()?.storefront?.storefront_status === 'ACTIVE' &&
+            storefront()?.storefront?.publication_status === 'PUBLISHED'
+          ) {
+            <button class="btn-unpublish" type="button" (click)="unpublish()" [disabled]="busy()">
+              {{ busy() ? 'Processing…' : 'Unpublish storefront' }}
+            </button>
+          } @else {
+            <button class="btn-publish" type="button" (click)="publish()" [disabled]="busy()">
+              {{ busy() ? 'Publishing…' : 'Publish storefront to BBG' }}
+            </button>
+          }
+        </div>
+      </section>
+    }
+  </div>
+</main>

@@ -1,0 +1,314 @@
+<main class="subscription-page">
+  <div class="subscription-container">
+    <div class="top-nav-row">
+      <a class="back-link" routerLink="/workspace">← Back to your businesses</a>
+      <span class="context-tag">BBG Enterprise Subscriptions</span>
+    </div>
+
+    <header class="page-header-block">
+      <p class="eyebrow">BUSINESS WORKSPACE</p>
+      <h1>Subscriptions &amp; Billing</h1>
+      <p class="intro">
+        Manage your active subscription plan, review BCN allocation, request tier upgrades, or renew
+        your business registration.
+      </p>
+    </header>
+
+    @if (error()) {
+      <div class="notice error" role="alert">
+        <span aria-hidden="true">⚠️</span>
+        <span>{{ error() }}</span>
+      </div>
+    }
+    @if (notice()) {
+      <div class="notice success" role="status">
+        <span aria-hidden="true">✓</span>
+        <span>{{ notice() }}</span>
+      </div>
+    }
+
+    @if (loading()) {
+      <div class="loading-state-box" role="status">
+        <div class="loader-spinner"></div>
+        <p>Loading subscription details…</p>
+      </div>
+    } @else if (step() === 'overview') {
+      <!-- ACTIVE SUBSCRIPTION HERO CARD -->
+      @if (activeSubscription(); as active) {
+        <section class="current-plan-card">
+          <div class="plan-info">
+            <div class="plan-badge-line">
+              <span class="plan-kicker">ACTIVE PLAN</span>
+              <span class="status-pill active">● ACTIVE</span>
+            </div>
+            <h2>{{ active.plan_name }}</h2>
+            <div class="plan-cost-line">
+              <strong>{{ active.currency }} {{ active.amount }}</strong>
+              <span>/ {{ active.billing_cycle }}</span>
+            </div>
+            <div class="bcn-allocation-box">
+              <span class="bcn-label">Official BBG Contribution Number</span>
+              <div class="bcn-val-row">
+                <app-bcn-badge [bcn]="active.bcn || 'BCN-PENDING'" />
+              </div>
+            </div>
+          </div>
+
+          <div class="renew-action-side">
+            <p class="renew-note">Need to extend your active subscription period?</p>
+            <button
+              class="btn-secondary"
+              type="button"
+              (click)="requestRenewal(active)"
+              [disabled]="busy()"
+            >
+              {{ busy() ? 'Processing…' : 'Renew current plan' }}
+            </button>
+          </div>
+        </section>
+
+        <!-- UPGRADE PLANS GRID -->
+        <section class="upgrade-section">
+          <div class="section-title-row">
+            <div>
+              <h3>Upgrade your subscription tier</h3>
+              <p>
+                Your current plan remains active until your upgrade request and receipt are
+                approved.
+              </p>
+            </div>
+          </div>
+
+          <div class="plans-grid">
+            @for (plan of plans(); track plan.id) {
+              <article class="plan-card" [class.is-current]="plan.id === active.plan_id">
+                <div class="plan-card-top">
+                  <span class="plan-code">{{ plan.plan_code }}</span>
+                  <h4>{{ plan.plan_name }}</h4>
+                  <p class="plan-desc">
+                    {{
+                      plan.description ||
+                        'Verified enterprise subscription with storefront presence.'
+                    }}
+                  </p>
+                </div>
+
+                <div class="plan-price-block">
+                  <div class="price-row">
+                    <strong class="price-num">{{ plan.currency }} {{ plan.price }}</strong>
+                    <span class="price-cycle">/ {{ plan.billing_cycle }}</span>
+                  </div>
+                </div>
+
+                <button
+                  class="btn-plan-action"
+                  [class.btn-current]="plan.id === active.plan_id"
+                  type="button"
+                  (click)="requestUpgrade(plan)"
+                  [disabled]="busy() || plan.id === active.plan_id"
+                >
+                  {{ plan.id === active.plan_id ? 'Current Plan' : 'Upgrade to this Tier →' }}
+                </button>
+              </article>
+            }
+          </div>
+        </section>
+      } @else if (expiredSubscription(); as expired) {
+        <!-- EXPIRED SUBSCRIPTION HERO CARD -->
+        <section class="current-plan-card expired-plan">
+          <div class="plan-info">
+            <div class="plan-badge-line">
+              <span class="plan-kicker">PREVIOUS PLAN</span>
+              <span class="status-pill expired">EXPIRED</span>
+            </div>
+            <h2>{{ expired.plan_name }}</h2>
+            <div class="plan-cost-line">
+              <strong>{{ expired.currency }} {{ expired.amount }}</strong>
+              <span>/ {{ expired.billing_cycle }}</span>
+            </div>
+            <div class="bcn-allocation-box">
+              <span class="bcn-label">Allocated BCN ID</span>
+              <app-bcn-badge [bcn]="expired.bcn || 'BCN-RETAINED'" />
+            </div>
+          </div>
+
+          <div class="renew-action-side">
+            <p class="renew-note">
+              Renew this subscription to reactivate storefront and marketplace visibility.
+            </p>
+            <button
+              class="btn-primary"
+              type="button"
+              (click)="requestRenewal(expired)"
+              [disabled]="busy()"
+            >
+              {{ busy() ? 'Processing…' : 'Reactivate subscription' }}
+            </button>
+          </div>
+        </section>
+      } @else {
+        <div class="empty-subscription-state">
+          <p>No active or historical subscription found for this business.</p>
+        </div>
+      }
+
+      <!-- SUBSCRIPTION HISTORY -->
+      @if (subscriptions().length) {
+        <section class="history-card-section">
+          <h3>Subscription History &amp; Orders</h3>
+          <div class="history-list">
+            @for (item of subscriptions(); track item.id) {
+              <div class="history-item-row">
+                <div class="history-details">
+                  <strong>{{ item.plan_name }}</strong>
+                  <span class="history-date">Created on {{ item.created_on }}</span>
+                  @if (item.bcn) {
+                    <span class="history-bcn">BCN: {{ item.bcn }}</span>
+                  }
+                </div>
+                <div class="history-meta">
+                  <app-status-badge [status]="item.subscription_status" />
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+      }
+    }
+
+    <!-- PAYMENT & RECEIPT STEP -->
+    @else if (step() === 'payment') {
+      @if (payment(); as item) {
+        <section class="payment-step-card">
+          <div class="payment-card-header">
+            <h3>Complete Subscription Payment</h3>
+            <p>
+              Scan the official BBG QR code using any UPI app and upload your receipt screenshot or
+              PDF.
+            </p>
+          </div>
+
+          <div class="payment-summary-strip">
+            <div class="strip-item">
+              <span class="strip-label">Target Tier</span>
+              <strong class="strip-val">{{ item.plan_name }}</strong>
+            </div>
+            <div class="strip-item">
+              <span class="strip-label">Amount Payable</span>
+              <strong class="strip-val">{{ item.currency }} {{ item.amount }}</strong>
+            </div>
+            <div class="strip-item">
+              <span class="strip-label">Allocated BCN</span>
+              <strong class="strip-val">{{ item.bcn || 'Assigned on Verification' }}</strong>
+            </div>
+          </div>
+
+          @if (item.subscription_status === 'REJECTED' && item.rejection_reason) {
+            <div class="notice error">
+              <span>⚠️</span>
+              <span>Previous payment proof was rejected: {{ item.rejection_reason }}</span>
+            </div>
+          }
+
+          @if (item.payment_qr_url) {
+            <div class="qr-viewer-box">
+              <img [src]="item.payment_qr_url" alt="Official BBG subscription payment QR code" />
+              <span class="qr-instruction">Scan with GPay, PhonePe, Paytm, or BHIM</span>
+            </div>
+          }
+
+          @if (item.payment_payee_name) {
+            <div class="meta-row">
+              <span class="meta-key">Verified Payee:</span>
+              <strong class="meta-val">{{ item.payment_payee_name }}</strong>
+            </div>
+          }
+          @if (item.payment_upi_id) {
+            <div class="meta-row">
+              <span class="meta-key">Official UPI ID:</span>
+              <strong class="meta-val">{{ item.payment_upi_id }}</strong>
+            </div>
+          }
+          @if (item.payment_instructions) {
+            <div class="instructions-box">
+              {{ item.payment_instructions }}
+            </div>
+          }
+
+          <div class="proof-upload-form">
+            <label class="field">
+              <span class="field-label">Payment Reference / UTR Number (optional)</span>
+              <input
+                [value]="paymentReference()"
+                (input)="paymentReference.set($any($event.target).value)"
+                maxlength="120"
+                placeholder="e.g. 12-digit UPI transaction reference / UTR"
+              />
+            </label>
+
+            <div class="field">
+              <span class="field-label"
+                >Upload payment receipt <span class="required-mark">*</span></span
+              >
+              <label class="receipt-file-dropzone">
+                <div class="dropzone-inner">
+                  <span class="dropzone-icon" aria-hidden="true">📄</span>
+                  @if (proofFile(); as file) {
+                    <span class="dropzone-filename">{{ file.name }}</span>
+                    <span class="dropzone-hint">Click to replace receipt</span>
+                  } @else {
+                    <span class="dropzone-prompt">Choose payment screenshot or PDF</span>
+                    <span class="dropzone-hint"
+                      >Accepted formats: JPG, PNG, WEBP, or PDF (Max 10MB)</span
+                    >
+                  }
+                </div>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  (change)="onProofSelected($event)"
+                />
+              </label>
+            </div>
+
+            <div class="payment-action-buttons">
+              <button
+                class="btn-secondary"
+                type="button"
+                (click)="step.set('overview')"
+                [disabled]="busy()"
+              >
+                Cancel
+              </button>
+              <button
+                class="btn-primary"
+                type="button"
+                (click)="submitProof()"
+                [disabled]="busy() || !proofFile()"
+              >
+                <span>{{ busy() ? 'Submitting receipt…' : 'Submit payment proof' }}</span>
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      }
+    }
+
+    <!-- SUBMITTED CONFIRMATION STEP -->
+    @else {
+      <section class="submitted-confirmation-card">
+        <div class="confirmation-crest" aria-hidden="true">✓</div>
+        <h2>Payment proof submitted!</h2>
+        <p>
+          Your subscription request and transaction proof have been submitted to BBG administration
+          for review. Your current tier remains active until the new subscription is approved.
+        </p>
+        <button class="btn-primary" type="button" (click)="returnToOverview()">
+          <span>Back to Subscriptions Overview</span>
+          <span aria-hidden="true">→</span>
+        </button>
+      </section>
+    }
+  </div>
+</main>

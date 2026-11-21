@@ -1,12 +1,43 @@
 <section class="payment-qr-settings" aria-labelledby="payment-qr-heading">
   <header class="section-heading">
-    <div><p class="eyebrow">PLATFORM PAYMENT SETTINGS</p><h2 id="payment-qr-heading">UPI payment QR</h2><p>Changing the QR affects new subscription requests only. Existing requests retain their captured payment instructions.</p></div>
-    <button type="button" (click)="editRequested.emit()">Edit payment QR settings</button>
+    <div class="heading-content">
+      <span class="eyebrow">PLATFORM PAYMENT SETTINGS</span>
+      <h2 id="payment-qr-heading">UPI Payment QR Settings</h2>
+      <p class="heading-desc">
+        Configured QR codes and payee details apply to new business subscription requests. Existing
+        requests retain their captured payment instructions.
+      </p>
+    </div>
+    <button type="button" class="btn-edit" (click)="editRequested.emit()">
+      <span class="btn-icon">✎</span> Edit QR Settings
+    </button>
   </header>
-  @if (qrUrl()) { <img class="payment-qr-preview" [src]="qrUrl()" alt="Current BBG UPI payment QR"> }
-  <div class="details-grid">
-    <article><span>Payee name</span><strong>{{ display(payeeName(), 'Not configured') }}</strong></article>
-    <article><span>UPI ID</span><strong>{{ display(upiId(), 'Not configured') }}</strong></article>
-    <article class="wide"><span>Payment instructions</span><strong>{{ display(instructions(), 'No instructions') }}</strong></article>
+
+  <div class="qr-content-layout">
+    @if (qrUrl()) {
+      <div class="qr-preview-box">
+        <img class="payment-qr-preview" [src]="qrUrl()" alt="Current BBG UPI payment QR" />
+        <span class="qr-preview-label">Active UPI QR Code</span>
+      </div>
+    }
+
+    <div class="details-grid">
+      <article class="detail-card">
+        <span class="detail-label">Payee Name</span>
+        <strong class="detail-value">{{ display(payeeName(), 'Not configured') }}</strong>
+      </article>
+
+      <article class="detail-card">
+        <span class="detail-label">UPI ID</span>
+        <strong class="detail-value monospace">{{ display(upiId(), 'Not configured') }}</strong>
+      </article>
+
+      <article class="detail-card wide">
+        <span class="detail-label">Payment Instructions</span>
+        <strong class="detail-value">{{
+          display(instructions(), 'No instructions configured')
+        }}</strong>
+      </article>
+    </div>
   </div>
 </section>

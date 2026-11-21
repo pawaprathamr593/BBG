@@ -1,12 +1,29 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { WorkspaceContextService } from '../../../../core/workspace/workspace-context.service';
 import { WorkspaceModuleApiService } from '../../../../core/workspace/workspace-module-api.service';
 import { WorkspaceDrawer } from '../../../../shared/workspace-drawer/workspace-drawer';
 
-interface ProfileField { key: string; label: string; wide?: boolean; }
-interface ProfileFieldGroup { title: string; fields: ProfileField[]; }
+import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
+
+interface ProfileField {
+  key: string;
+  label: string;
+  wide?: boolean;
+}
+interface ProfileFieldGroup {
+  title: string;
+  fields: ProfileField[];
+}
 
 interface ProfileForm {
   business_name: string;
@@ -37,7 +54,7 @@ const emptyForm = (): ProfileForm => ({
 @Component({
   selector: 'app-business-profile-module',
   standalone: true,
-  imports: [FormsModule, WorkspaceDrawer],
+  imports: [FormsModule, WorkspaceDrawer, StatusBadgeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './business-profile-module.html',
   styleUrl: './business-profile-module.scss',
@@ -54,7 +71,11 @@ export class BusinessProfileModule {
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private alive = true;
-  constructor() { this.destroyRef.onDestroy(() => { this.alive = false; }); }
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      this.alive = false;
+    });
+  }
   private readonly workspace = inject(WorkspaceContextService);
   private readonly api = inject(WorkspaceModuleApiService);
 
@@ -136,7 +157,9 @@ export class BusinessProfileModule {
       return;
     }
     if (form.whatsapp_number.trim() && !/^\+?[0-9]{8,15}$/.test(form.whatsapp_number.trim())) {
-      this.error.set('Enter a valid WhatsApp number with 8 to 15 digits and an optional leading plus sign.');
+      this.error.set(
+        'Enter a valid WhatsApp number with 8 to 15 digits and an optional leading plus sign.',
+      );
       return;
     }
     if (this.saving()) return;
@@ -173,6 +196,10 @@ export class BusinessProfileModule {
   }
 
   status(): string {
-    return String(this.business()['approval_status'] ?? this.business()['business_approval_status'] ?? 'On record');
+    return String(
+      this.business()['approval_status'] ??
+        this.business()['business_approval_status'] ??
+        'On record',
+    );
   }
 }

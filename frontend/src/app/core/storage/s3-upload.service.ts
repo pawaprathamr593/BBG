@@ -13,19 +13,23 @@ export class S3UploadService {
     headers: Record<string, string>,
     onProgress?: (progress: number) => void,
   ): Promise<void> {
-    await lastValueFrom(this.http.put(this.resolveUploadUrl(uploadUrl), file, {
-      headers: new HttpHeaders(headers),
-      observe: 'events',
-      reportProgress: true,
-      responseType: 'text',
-    }).pipe(
-      tap((event) => {
-        if (event.type === HttpEventType.UploadProgress && event.total) {
-          onProgress?.(Math.round((event.loaded / event.total) * 100));
-        }
-      }),
-      filter((event): event is HttpResponse<string> => event.type === HttpEventType.Response),
-    ));
+    await lastValueFrom(
+      this.http
+        .put(this.resolveUploadUrl(uploadUrl), file, {
+          headers: new HttpHeaders(headers),
+          observe: 'events',
+          reportProgress: true,
+          responseType: 'text',
+        })
+        .pipe(
+          tap((event) => {
+            if (event.type === HttpEventType.UploadProgress && event.total) {
+              onProgress?.(Math.round((event.loaded / event.total) * 100));
+            }
+          }),
+          filter((event): event is HttpResponse<string> => event.type === HttpEventType.Response),
+        ),
+    );
   }
 
   private resolveUploadUrl(uploadUrl: string): string {

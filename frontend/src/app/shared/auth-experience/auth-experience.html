@@ -1,8 +1,14 @@
-<section class="auth-experience" [class.auth-page-mode]="presentation() === 'page'" [class.auth-popup-mode]="presentation() === 'popup'">
+<section
+  class="auth-experience"
+  [class.auth-page-mode]="presentation() === 'page'"
+  [class.auth-popup-mode]="presentation() === 'popup'"
+>
   @if (presentation() === 'popup' && !compactLoginView()) {
     <div class="popup-reason" role="note">
       <strong>Sign in required for this action</strong>
-      @if (reason()) { <span>{{ reason() }}</span> }
+      @if (reason()) {
+        <span>{{ reason() }}</span>
+      }
     </div>
   }
   @if (presentation() === 'popup' && compactLoginView()) {
@@ -12,92 +18,253 @@
     </div>
   }
   @if (presentation() !== 'popup' || !compactLoginView()) {
-  <div class="auth-heading">
-    @if (presentation() === 'page') {
-      <span class="auth-mark" aria-hidden="true">{{ brandName().slice(0, 1).toUpperCase() }}</span>
-      <p class="eyebrow">{{ activeMode() === 'login' ? 'WELCOME BACK' : 'JOIN THE COMMUNITY' }}</p>
-    }
-    <h1>{{ presentation() === 'popup' ? 'Continue with BBG' : (activeMode() === 'login' ? 'Sign in to ' + brandName() : 'Create your ' + brandName() + ' account') }}</h1>
-    @if (presentation() === 'page') {
-      <p class="intro">{{ reason() || (activeMode() === 'login' ? 'Continue discovering businesses, products and opportunities.' : 'One account to discover, connect and grow.') }}</p>
-    }
-  </div>
-
-  <div class="social-area">
-    @if (presentation() === 'page') {
-      <p class="section-label">{{ activeMode() === 'login' ? 'Continue with' : 'Create an account with' }}</p>
-    }
-    <div class="social-grid">
-      <button type="button" class="social-button" (click)="selectProvider('GOOGLE')" [disabled]="busy() || !providerEnabled('GOOGLE')" aria-label="Continue with Google">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.35 12.23c0-.72-.06-1.42-.18-2.09H12v3.96h5.24a4.48 4.48 0 0 1-1.94 2.94v2.45h3.14c1.84-1.7 2.91-4.2 2.91-7.26Z"/><path fill="#34A853" d="M12 21.6c2.63 0 4.84-.87 6.45-2.35l-3.14-2.45c-.87.58-1.98.93-3.31.93-2.54 0-4.7-1.71-5.47-4.02H3.29v2.53A9.74 9.74 0 0 0 12 21.6Z"/><path fill="#FBBC05" d="M6.53 13.71a5.85 5.85 0 0 1 0-3.42V7.76H3.29a9.73 9.73 0 0 0 0 8.48l3.24-2.53Z"/><path fill="#EA4335" d="M12 6.27c1.43 0 2.71.49 3.72 1.46l2.79-2.79C16.83 3.36 14.63 2.4 12 2.4a9.74 9.74 0 0 0-8.71 5.36l3.24 2.53C7.3 7.98 9.46 6.27 12 6.27Z"/></svg>
-        <span>Google</span>
-      </button>
-      <button type="button" class="social-button" (click)="selectProvider('INSTAGRAM')" [disabled]="busy() || !providerEnabled('INSTAGRAM')" aria-label="Continue with Instagram">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.2" y="3.2" width="17.6" height="17.6" rx="5.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4.1" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.7" cy="6.7" r="1.2" fill="currentColor"/></svg>
-        <span>Instagram</span>
-      </button>
-      <button type="button" class="social-button" (click)="selectProvider('FACEBOOK')" [disabled]="busy() || !providerEnabled('FACEBOOK')" aria-label="Continue with Facebook">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#1877F2" d="M13.5 21v-8.2h2.76l.41-3.2H13.5V7.56c0-.93.26-1.56 1.6-1.56h1.7V3.14c-.3-.04-1.34-.14-2.55-.14-2.52 0-4.25 1.54-4.25 4.37V9.6H7.14v3.2H10V21h3.5Z"/></svg>
-        <span>Facebook</span>
-      </button>
-      <button type="button" class="social-button" (click)="selectProvider('APPLE')" [disabled]="busy() || !providerEnabled('APPLE')" aria-label="Continue with Apple">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M16.7 12.8c0-2.1 1.7-3.1 1.8-3.2a4 4 0 0 0-3.1-1.7c-1.3-.1-2.5.8-3.2.8-.7 0-1.7-.8-2.8-.8a4.2 4.2 0 0 0-3.5 2.1c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.1 2.6 2.1 1 0 1.4-.7 2.7-.7s1.7.7 2.8.7 1.8-1 2.5-2c.8-1.1 1.1-2.2 1.1-2.2s-2-.8-2-3.6ZM14.6 6.5c.6-.8 1.1-1.8 1-2.9-.9 0-2 .6-2.6 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2-.5 2.6-1.3Z"/></svg>
-        <span>Apple</span>
-      </button>
+    <div class="auth-heading">
+      @if (presentation() === 'page') {
+        <span class="auth-mark" aria-hidden="true">{{
+          brandName().slice(0, 1).toUpperCase()
+        }}</span>
+        <p class="eyebrow">
+          {{ activeMode() === 'login' ? 'WELCOME BACK' : 'JOIN THE COMMUNITY' }}
+        </p>
+      }
+      <h1>
+        {{
+          presentation() === 'popup'
+            ? 'Continue with BBG'
+            : activeMode() === 'login'
+              ? 'Sign in to ' + brandName()
+              : 'Create your ' + brandName() + ' account'
+        }}
+      </h1>
+      @if (presentation() === 'page') {
+        <p class="intro">
+          {{
+            reason() ||
+              (activeMode() === 'login'
+                ? 'Continue discovering businesses, products and opportunities.'
+                : 'One account to discover, connect and grow.')
+          }}
+        </p>
+      }
     </div>
-    @if (providerNotice()) { <p class="muted-notice" role="status">{{ providerNotice() }}</p> }
-    @if (presentation() === 'page') {
-      <p class="provider-footnote">Instagram sign-in is available for supported Business and Creator accounts.</p>
-    }
-  </div>
 
-  <div class="separator"><span>OR</span></div>
-  <button class="email-entry" type="button" (click)="presentation() === 'popup' ? showPasswordLogin() : toggleEmailForm()" [attr.aria-expanded]="emailFormVisible()">
-    {{ presentation() === 'popup' ? 'Login with ID and password' : (emailFormVisible() ? 'Back to social sign-in' : (activeMode() === 'login' ? 'Or sign in with email or phone' : 'Or create an account with email or phone')) }}
-    <span aria-hidden="true">→</span>
-  </button>
+    <div class="social-area">
+      @if (presentation() === 'page') {
+        <p class="section-label">
+          {{ activeMode() === 'login' ? 'Continue with' : 'Create an account with' }}
+        </p>
+      }
+      <div class="social-grid">
+        <button
+          type="button"
+          class="social-button"
+          (click)="selectProvider('GOOGLE')"
+          [disabled]="busy() || !providerEnabled('GOOGLE')"
+          aria-label="Continue with Google"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="#4285F4"
+              d="M21.35 12.23c0-.72-.06-1.42-.18-2.09H12v3.96h5.24a4.48 4.48 0 0 1-1.94 2.94v2.45h3.14c1.84-1.7 2.91-4.2 2.91-7.26Z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 21.6c2.63 0 4.84-.87 6.45-2.35l-3.14-2.45c-.87.58-1.98.93-3.31.93-2.54 0-4.7-1.71-5.47-4.02H3.29v2.53A9.74 9.74 0 0 0 12 21.6Z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M6.53 13.71a5.85 5.85 0 0 1 0-3.42V7.76H3.29a9.73 9.73 0 0 0 0 8.48l3.24-2.53Z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 6.27c1.43 0 2.71.49 3.72 1.46l2.79-2.79C16.83 3.36 14.63 2.4 12 2.4a9.74 9.74 0 0 0-8.71 5.36l3.24 2.53C7.3 7.98 9.46 6.27 12 6.27Z"
+            />
+          </svg>
+          <span>Google</span>
+        </button>
+        <button
+          type="button"
+          class="social-button"
+          (click)="selectProvider('INSTAGRAM')"
+          [disabled]="busy() || !providerEnabled('INSTAGRAM')"
+          aria-label="Continue with Instagram"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect
+              x="3.2"
+              y="3.2"
+              width="17.6"
+              height="17.6"
+              rx="5.2"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            />
+            <circle cx="12" cy="12" r="4.1" fill="none" stroke="currentColor" stroke-width="2" />
+            <circle cx="17.7" cy="6.7" r="1.2" fill="currentColor" />
+          </svg>
+          <span>Instagram</span>
+        </button>
+        <button
+          type="button"
+          class="social-button"
+          (click)="selectProvider('FACEBOOK')"
+          [disabled]="busy() || !providerEnabled('FACEBOOK')"
+          aria-label="Continue with Facebook"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="#1877F2"
+              d="M13.5 21v-8.2h2.76l.41-3.2H13.5V7.56c0-.93.26-1.56 1.6-1.56h1.7V3.14c-.3-.04-1.34-.14-2.55-.14-2.52 0-4.25 1.54-4.25 4.37V9.6H7.14v3.2H10V21h3.5Z"
+            />
+          </svg>
+          <span>Facebook</span>
+        </button>
+        <button
+          type="button"
+          class="social-button"
+          (click)="selectProvider('APPLE')"
+          [disabled]="busy() || !providerEnabled('APPLE')"
+          aria-label="Continue with Apple"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M16.7 12.8c0-2.1 1.7-3.1 1.8-3.2a4 4 0 0 0-3.1-1.7c-1.3-.1-2.5.8-3.2.8-.7 0-1.7-.8-2.8-.8a4.2 4.2 0 0 0-3.5 2.1c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.1 2.6 2.1 1 0 1.4-.7 2.7-.7s1.7.7 2.8.7 1.8-1 2.5-2c.8-1.1 1.1-2.2 1.1-2.2s-2-.8-2-3.6ZM14.6 6.5c.6-.8 1.1-1.8 1-2.9-.9 0-2 .6-2.6 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2-.5 2.6-1.3Z"
+            />
+          </svg>
+          <span>Apple</span>
+        </button>
+      </div>
+      @if (providerNotice()) {
+        <p class="muted-notice" role="status">{{ providerNotice() }}</p>
+      }
+      @if (presentation() === 'page') {
+        <p class="provider-footnote">
+          Instagram sign-in is available for supported Business and Creator accounts.
+        </p>
+      }
+    </div>
+
+    <div class="separator"><span>OR</span></div>
+    <button
+      class="email-entry"
+      type="button"
+      (click)="presentation() === 'popup' ? showPasswordLogin() : toggleEmailForm()"
+      [attr.aria-expanded]="emailFormVisible()"
+    >
+      {{
+        presentation() === 'popup'
+          ? 'Login with ID and password'
+          : emailFormVisible()
+            ? 'Back to social sign-in'
+            : activeMode() === 'login'
+              ? 'Or sign in with email or phone'
+              : 'Or create an account with email or phone'
+      }}
+      <span aria-hidden="true">→</span>
+    </button>
   }
 
   @if (emailFormVisible()) {
-    @if (error()) { <p class="form-error" role="alert">{{ error() }}</p> }
+    @if (error()) {
+      <p class="form-error" role="alert">{{ error() }}</p>
+    }
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
       @if (activeMode() === 'register') {
         <label for="auth-full-name">Full name</label>
-        <input id="auth-full-name" type="text" autocomplete="name" formControlName="full_name" placeholder="Your full name" required>
+        <input
+          id="auth-full-name"
+          type="text"
+          autocomplete="name"
+          formControlName="full_name"
+          placeholder="Your full name"
+          required
+        />
         <div class="contact-fields">
           <div>
             <label for="auth-email">Email address</label>
-            <input id="auth-email" type="email" autocomplete="email" formControlName="email" placeholder="you@example.com">
+            <input
+              id="auth-email"
+              type="email"
+              autocomplete="email"
+              formControlName="email"
+              placeholder="you@example.com"
+            />
           </div>
           <div>
             <label for="auth-mobile">Mobile number</label>
-            <input id="auth-mobile" type="tel" autocomplete="tel" formControlName="mobile" placeholder="+91 mobile">
+            <input
+              id="auth-mobile"
+              type="tel"
+              autocomplete="tel"
+              formControlName="mobile"
+              placeholder="+91 mobile"
+            />
           </div>
         </div>
         <p class="field-hint">Enter at least one contact method: email or mobile.</p>
       } @else {
         <label for="auth-identifier">Email or mobile number</label>
-        <input id="auth-identifier" type="text" autocomplete="username" formControlName="identifier" placeholder="Email address or mobile number" required>
+        <input
+          id="auth-identifier"
+          type="text"
+          autocomplete="username"
+          formControlName="identifier"
+          placeholder="Email address or mobile number"
+          required
+        />
       }
 
-      <label for="auth-password">{{ activeMode() === 'login' ? 'Password' : 'Create password' }}</label>
+      <label for="auth-password">{{
+        activeMode() === 'login' ? 'Password' : 'Create password'
+      }}</label>
       <div class="password-field">
-        <input id="auth-password" [type]="passwordVisible() ? 'text' : 'password'" [autocomplete]="activeMode() === 'login' ? 'current-password' : 'new-password'" formControlName="password" placeholder="At least 8 characters" required>
-        <button type="button" class="password-toggle" (click)="togglePasswordVisibility()" [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'">{{ passwordVisible() ? 'Hide' : 'Show' }}</button>
+        <input
+          id="auth-password"
+          [type]="passwordVisible() ? 'text' : 'password'"
+          [autocomplete]="activeMode() === 'login' ? 'current-password' : 'new-password'"
+          formControlName="password"
+          placeholder="At least 8 characters"
+          required
+        />
+        <button
+          type="button"
+          class="password-toggle"
+          (click)="togglePasswordVisibility()"
+          [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+        >
+          {{ passwordVisible() ? 'Hide' : 'Show' }}
+        </button>
       </div>
       @if (activeMode() === 'login') {
-        <button type="button" class="forgot-link" (click)="showRecoveryNotice()">Forgot password?</button>
-        @if (recoveryNotice()) { <p class="muted-notice" role="status">{{ recoveryNotice() }}</p> }
+        <button type="button" class="forgot-link" (click)="showRecoveryNotice()">
+          Forgot password?
+        </button>
+        @if (recoveryNotice()) {
+          <p class="muted-notice" role="status">{{ recoveryNotice() }}</p>
+        }
       }
       <button class="submit-button" type="submit" [disabled]="busy()">
-        {{ busy() ? (activeMode() === 'login' ? 'Signing in…' : 'Creating account…') : (activeMode() === 'login' ? 'Sign in' : 'Create account') }}
+        {{
+          busy()
+            ? activeMode() === 'login'
+              ? 'Signing in…'
+              : 'Creating account…'
+            : activeMode() === 'login'
+              ? 'Sign in'
+              : 'Create account'
+        }}
       </button>
     </form>
   }
 
   <p class="mode-switch">
     @if (activeMode() === 'login') {
-      {{ presentation() === 'popup' ? 'Not registered?' : 'New here?' }} <button type="button" (click)="switchMode('register')">{{ presentation() === 'popup' ? 'Register here' : 'Create an account' }}</button>
+      {{ presentation() === 'popup' ? 'Not registered?' : 'New here?' }}
+      <button type="button" (click)="switchMode('register')">
+        {{ presentation() === 'popup' ? 'Register here' : 'Create an account' }}
+      </button>
     } @else {
       Already have an account? <button type="button" (click)="switchMode('login')">Sign in</button>
     }

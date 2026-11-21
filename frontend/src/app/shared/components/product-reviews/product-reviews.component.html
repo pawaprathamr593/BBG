@@ -1,0 +1,552 @@
+<section class="product-reviews-section" aria-labelledby="product-reviews-heading">
+  <!-- Section Header -->
+  <div class="reviews-section-header">
+    <div class="header-titles">
+      <h2 id="product-reviews-heading" class="section-title">Customer Ratings &amp; Reviews</h2>
+      <p class="section-subtitle">
+        Authentic feedback from verified buyers and community members on {{ productName() }}.
+      </p>
+    </div>
+    @if (!showWriteForm()) {
+      <button type="button" class="btn-write-review" (click)="openWriteForm($event)">
+        <span aria-hidden="true">✍️</span>
+        <span>Write a Review</span>
+      </button>
+    }
+  </div>
+
+  <!-- Global Success Notification -->
+  @if (submitSuccess()) {
+    <div class="alert-success" role="status">
+      <span class="alert-icon" aria-hidden="true">✓</span>
+      <span>{{ submitSuccess() }}</span>
+    </div>
+  }
+
+  <!-- Collapsible Write Review Form -->
+  @if (showWriteForm()) {
+    <div class="review-composer-panel" role="region" aria-label="Write a Review Form">
+      <div class="composer-header">
+        <h3 class="composer-title">Review this Product</h3>
+        <button
+          type="button"
+          class="btn-close-form"
+          (click)="closeWriteForm()"
+          aria-label="Cancel and close review form"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="composer-body">
+        <!-- Star Selection -->
+        <div class="form-group rating-selection-group">
+          <label class="form-label" id="rating-choice-label">Overall Rating *</label>
+          <div class="star-choice-wrap">
+            <app-star-rating
+              [rating]="formRating()"
+              [interactive]="true"
+              [size]="'lg'"
+              [showValue]="true"
+              (ratingChange)="formRating.set($event)"
+            />
+            <span class="rating-choice-desc">
+              @switch (formRating()) {
+                @case (5) {
+                  Excellent (5/5)
+                }
+                @case (4) {
+                  Very Good (4/5)
+                }
+                @case (3) {
+                  Average (3/5)
+                }
+                @case (2) {
+                  Below Average (2/5)
+                }
+                @case (1) {
+                  Poor (1/5)
+                }
+              }
+            </span>
+          </div>
+        </div>
+
+        <!-- Review Title Input -->
+        <div class="form-group">
+          <label for="review-title-input" class="form-label">Review Headline (Optional)</label>
+          <input
+            id="review-title-input"
+            type="text"
+            class="form-input"
+            maxlength="180"
+            placeholder="e.g. Robust build quality, exceeded expectations"
+            [ngModel]="formTitle()"
+            (ngModelChange)="formTitle.set($event)"
+          />
+        </div>
+
+        <!-- Review Text Input -->
+        <div class="form-group">
+          <label for="review-text-input" class="form-label">Written Feedback *</label>
+          <textarea
+            id="review-text-input"
+            class="form-textarea"
+            rows="4"
+            maxlength="3000"
+            placeholder="Share details about durability, performance, packaging, or seller communication..."
+            [ngModel]="formText()"
+            (ngModelChange)="formText.set($event)"
+          ></textarea>
+          <div class="char-counter">{{ formText().length }}/3000 characters</div>
+        </div>
+
+        <!-- Photo Attachment Upload -->
+        <div class="form-group">
+          <label class="form-label">Photo Attachment (Optional)</label>
+          <div class="media-upload-area">
+            <input
+              #fileInput
+              type="file"
+              class="hidden-file-input"
+              accept="image/jpeg,image/png,image/webp"
+              [disabled]="uploadingMedia() || submitting()"
+              (change)="onMediaFileSelected($event)"
+            />
+            <button
+              type="button"
+              class="btn-upload-media"
+              [disabled]="uploadingMedia() || submitting() || formMedia().length >= 5"
+              (click)="fileInput.click()"
+            >
+              <span class="upload-icon" aria-hidden="true">📷</span>
+              <span>{{
+                uploadingMedia()
+                  ? 'Uploading photo (' + uploadProgress() + '%)...'
+                  : 'Upload Product Photo'
+              }}</span>
+            </button>
+            <span class="upload-hint">JPG, PNG, WebP up to 5MB (Max 5 photos)</span>
+          </div>
+
+          @if (uploadingMedia()) {
+            <div
+              class="upload-progress-bar"
+              role="progressbar"
+              [attr.aria-valuenow]="uploadProgress()"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
+              <div class="progress-fill" [style.width.%]="uploadProgress()"></div>
+            </div>
+          }
+
+          @if (formMedia().length > 0) {
+            <div class="media-preview-strip">
+              @for (item of formMedia(); track $index) {
+                <div class="preview-thumb">
+                  <img [src]="item.preview_url || item.media_url" [alt]="item.file_name" />
+                  <button
+                    type="button"
+                    class="btn-remove-thumb"
+                    (click)="removeMedia($index)"
+                    aria-label="Remove photo"
+                  >
+                    ✕
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        @if (submitError()) {
+          <div class="alert-error" role="alert">
+            <span class="alert-icon" aria-hidden="true">⚠️</span>
+            <span>{{ submitError() }}</span>
+          </div>
+        }
+
+        <div class="composer-actions">
+          <button
+            type="button"
+            class="btn-cancel"
+            [disabled]="submitting()"
+            (click)="closeWriteForm()"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn-submit"
+            [disabled]="submitting() || formText().trim().length < 5"
+            (click)="submitReview()"
+          >
+            @if (submitting()) {
+              <span class="spinner-sm" aria-hidden="true"></span>
+              <span>Publishing…</span>
+            } @else {
+              <span>Publish Review</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Rating Summary Component -->
+  @if (summary(); as sum) {
+    <div class="summary-wrapper">
+      <app-rating-summary
+        [summary]="sum"
+        [selectedStar]="selectedStarFilter()"
+        (starFilterChange)="onStarFilter($event)"
+      />
+    </div>
+  }
+
+  <!-- Reviews List Toolbar (Sort & Active Filters) -->
+  <div class="reviews-toolbar">
+    <div class="toolbar-info">
+      <h3 class="reviews-count-heading">
+        @if (selectedStarFilter() !== null) {
+          Filtered Reviews ({{ filteredReviews().length }})
+        } @else {
+          All Reviews ({{ totalCount() }})
+        }
+      </h3>
+    </div>
+
+    <div class="toolbar-sort">
+      <label for="review-sort-select" class="sort-label">Sort by:</label>
+      <select
+        id="review-sort-select"
+        class="sort-select"
+        [ngModel]="sortBy()"
+        (ngModelChange)="onSortChange($event)"
+      >
+        <option value="NEWEST">Most Recent</option>
+        <option value="MOST_HELPFUL">Most Helpful</option>
+        <option value="RATING_HIGH">Highest Rating</option>
+        <option value="RATING_LOW">Lowest Rating</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-state-reviews" role="status">
+      <app-skeleton-loader [count]="4" />
+    </div>
+  } @else if (filteredReviews().length === 0) {
+    <!-- Empty State -->
+    <div class="empty-reviews-state">
+      <app-empty-state
+        title="No Reviews Found"
+        [description]="
+          selectedStarFilter() !== null
+            ? 'There are no ' + selectedStarFilter() + '-star reviews for this item yet.'
+            : 'Be the first customer to leave a review and help the community!'
+        "
+      >
+        @if (selectedStarFilter() !== null) {
+          <button type="button" class="btn-view-all" (click)="selectedStarFilter.set(null)">
+            Show All Reviews
+          </button>
+        } @else if (!showWriteForm()) {
+          <button type="button" class="btn-write-review-empty" (click)="openWriteForm($event)">
+            Write First Review
+          </button>
+        }
+      </app-empty-state>
+    </div>
+  } @else {
+    <!-- Review Cards Feed -->
+    <div class="reviews-feed" role="feed" aria-label="Customer Reviews">
+      @for (review of filteredReviews(); track review.id) {
+        <article class="review-card" [attr.aria-labelledby]="'review-author-' + review.id">
+          <!-- Card Header -->
+          <div class="card-header-row">
+            <div class="reviewer-badge">
+              <div class="reviewer-avatar" aria-hidden="true">
+                {{ getAuthorMonogram(review.author_name) }}
+              </div>
+              <div class="reviewer-meta">
+                <span [id]="'review-author-' + review.id" class="reviewer-name">
+                  {{ review.author_name }}
+                </span>
+                <time class="review-date" [attr.datetime]="review.reviewed_on">
+                  {{ review.reviewed_on | date: 'mediumDate' }}
+                </time>
+              </div>
+            </div>
+
+            <!-- Author Badges -->
+            <div class="card-pills-row">
+              @if (review.is_author) {
+                <span class="author-pill">Your Review</span>
+              }
+            </div>
+          </div>
+
+          <!-- Edit Mode -->
+          @if (editingReviewId() === review.id) {
+            <div class="inline-edit-panel">
+              <div class="form-group">
+                <label class="form-label">Update Rating</label>
+                <app-star-rating
+                  [rating]="editRating()"
+                  [interactive]="true"
+                  (ratingChange)="editRating.set($event)"
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Headline</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  [ngModel]="editTitle()"
+                  (ngModelChange)="editTitle.set($event)"
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Feedback</label>
+                <textarea
+                  class="form-textarea"
+                  rows="3"
+                  [ngModel]="editText()"
+                  (ngModelChange)="editText.set($event)"
+                ></textarea>
+              </div>
+              <div class="edit-actions-row">
+                <button type="button" class="btn-cancel-edit" (click)="cancelEditing()">
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="btn-save-edit"
+                  [disabled]="editSubmitting() || editText().trim().length < 5"
+                  (click)="saveEdit(review.id)"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          } @else {
+            <!-- Star Rating & Review Title -->
+            <div class="rating-title-row">
+              <app-star-rating [rating]="review.rating" [size]="'sm'" />
+              @if (review.review_title) {
+                <h4 class="review-headline">{{ review.review_title }}</h4>
+              }
+            </div>
+
+            <!-- Review Body Text -->
+            <p class="review-body-text">{{ review.review_text }}</p>
+
+            <!-- Media Gallery Strip -->
+            @if (review.media && review.media.length > 0) {
+              <div class="review-gallery-strip" aria-label="Customer product photos">
+                @for (media of review.media; track media.id) {
+                  <button
+                    type="button"
+                    class="gallery-thumb-btn"
+                    (click)="activeMediaUrl.set(media.media_url)"
+                    [attr.aria-label]="'Enlarge ' + (media.file_name || 'review photo')"
+                  >
+                    <img
+                      [src]="media.media_url"
+                      [alt]="media.file_name || 'Customer review photo'"
+                      loading="lazy"
+                    />
+                  </button>
+                }
+              </div>
+            }
+
+            <!-- Card Actions Footer -->
+            <footer class="review-card-footer">
+              <div class="footer-left">
+                <!-- Helpful Vote Button -->
+                <button
+                  type="button"
+                  class="btn-helpful"
+                  [class.voted]="review.user_voted_helpful"
+                  (click)="toggleHelpful(review, $event)"
+                  [attr.aria-pressed]="review.user_voted_helpful"
+                  [attr.aria-label]="
+                    'Mark review as helpful. ' + review.helpful_count + ' people found this helpful'
+                  "
+                >
+                  <span class="thumb-icon" aria-hidden="true">👍</span>
+                  <span>Helpful</span>
+                  @if (review.helpful_count > 0) {
+                    <span class="helpful-counter">({{ review.helpful_count }})</span>
+                  }
+                </button>
+
+                <!-- Report Action -->
+                @if (!review.is_author) {
+                  <button
+                    type="button"
+                    class="btn-report"
+                    (click)="openReportModal(review.id, $event)"
+                    aria-label="Report inappropriate review"
+                  >
+                    <span aria-hidden="true">🚩</span>
+                    <span>Report</span>
+                  </button>
+                }
+              </div>
+
+              <!-- Author Specific Actions -->
+              @if (review.is_author) {
+                <div class="footer-author-actions">
+                  <button type="button" class="btn-edit-action" (click)="startEditing(review)">
+                    Edit
+                  </button>
+                  <button type="button" class="btn-delete-action" (click)="deleteReview(review.id)">
+                    Delete
+                  </button>
+                </div>
+              }
+            </footer>
+          }
+        </article>
+      }
+    </div>
+
+    <!-- Pagination Strip -->
+    @if (totalPages() > 1) {
+      <nav class="reviews-pagination" aria-label="Reviews pagination">
+        <button type="button" class="btn-page-nav" [disabled]="page() <= 1" (click)="prevPage()">
+          ← Previous
+        </button>
+        <span class="page-indicator">Page {{ page() }} of {{ totalPages() }}</span>
+        <button
+          type="button"
+          class="btn-page-nav"
+          [disabled]="page() >= totalPages()"
+          (click)="nextPage()"
+        >
+          Next →
+        </button>
+      </nav>
+    }
+  }
+
+  <!-- Lightbox Modal for Review Images -->
+  @if (activeMediaUrl(); as url) {
+    <div
+      class="lightbox-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Enlarged review photo"
+      (click)="activeMediaUrl.set(null)"
+    >
+      <div class="lightbox-content" (click)="$event.stopPropagation()">
+        <img [src]="url" alt="Enlarged review attachment" />
+        <button
+          type="button"
+          class="lightbox-close"
+          (click)="activeMediaUrl.set(null)"
+          aria-label="Close image"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Report Modal -->
+  @if (reportingReviewId()) {
+    <div
+      class="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="report-modal-title"
+    >
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="report-modal-title" class="modal-title">Report Review</h3>
+          <button
+            type="button"
+            class="modal-close-btn"
+            (click)="closeReportModal()"
+            aria-label="Close modal"
+          >
+            ✕
+          </button>
+        </div>
+
+        @if (reportSuccess()) {
+          <div class="alert-success">
+            <span>{{ reportSuccess() }}</span>
+          </div>
+        } @else {
+          <div class="modal-body">
+            <p class="modal-desc">
+              Help us maintain marketplace standards. Why are you reporting this review?
+            </p>
+
+            <div class="form-group">
+              <label for="report-reason-select" class="form-label">Reason *</label>
+              <select
+                id="report-reason-select"
+                class="form-input"
+                [ngModel]="reportReason()"
+                (ngModelChange)="reportReason.set($event)"
+              >
+                <option value="Spam or advertising">Spam or advertising</option>
+                <option value="Offensive or abusive language">Offensive or abusive language</option>
+                <option value="Misleading or inaccurate content">
+                  Misleading or inaccurate content
+                </option>
+                <option value="Competitor sabotage">Competitor sabotage</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="report-details-input" class="form-label"
+                >Additional Details (Optional)</label
+              >
+              <textarea
+                id="report-details-input"
+                class="form-textarea"
+                rows="3"
+                maxlength="500"
+                placeholder="Describe why this review breaches policy..."
+                [ngModel]="reportDetails()"
+                (ngModelChange)="reportDetails.set($event)"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn-cancel"
+              [disabled]="reportSubmitting()"
+              (click)="closeReportModal()"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn-submit-report"
+              [disabled]="reportSubmitting()"
+              (click)="submitReport()"
+            >
+              @if (reportSubmitting()) {
+                <span>Submitting…</span>
+              } @else {
+                <span>Submit Report</span>
+              }
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</section>

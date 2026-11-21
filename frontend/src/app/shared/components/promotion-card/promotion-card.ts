@@ -1,53 +1,231 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
+import { AuthDialogService } from '../../../core/auth/auth-dialog.service';
+import { EngagementApiService } from '../../../core/engagement/engagement-api.service';
 import type { CardMediaModel, PromotionCardModel } from '../../models/marketplace-card.models';
+import { PromotionEngagementComponent } from '../promotion-engagement/promotion-engagement.component';
+
+const SAVED_PROMOTIONS_STORAGE_KEY = 'bbg_saved_promotions_v1';
 
 @Component({
   selector: 'app-promotion-card',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <article class="promotion-card">
-      <div class="topline"><span class="label">{{ label() }}</span>@if (promotion().valid_until) { <time [attr.datetime]="promotion().valid_until">Until {{ promotion().valid_until | date:'mediumDate' }}</time> }</div>
-      <div class="business">{{ promotion().business_name }}</div>
-      <h3>{{ promotion().post_title }}</h3>
-      <p class="content">{{ promotion().post_content }}</p>
-      @if (mediaItems().length > 0) {
-        <div class="media-grid">
-          @for (media of mediaItems(); track media.id; let index = $index) {
-            @if (index < mediaLimit()) {
-              @if (media.url && media.media_type === 'IMAGE') {
-                <img [src]="media.url" [alt]="media.original_file_name || promotion().post_title" loading="lazy">
-              } @else if (media.url && media.media_type === 'VIDEO') {
-                <video [src]="media.url" controls preload="metadata"></video>
-              } @else if (media.url && media.media_type === 'AUDIO') {
-                <audio [src]="media.url" controls></audio>
-              } @else if (media.url && media.media_type === 'DOCUMENT') {
-                <a class="document" [href]="media.url" target="_blank" rel="noopener noreferrer">{{ media.original_file_name || 'Open attachment' }}</a>
-              }
-            }
-          }
-        </div>
-        @if (mediaItems().length > mediaLimit()) { <p class="more-media">+{{ mediaItems().length - mediaLimit() }} more attachments</p> }
-      }
-      <div class="footer">
-        <time [attr.datetime]="promotion().published_on">Published {{ promotion().published_on | date:'mediumDate' }}</time>
-        <button type="button" (click)="selected.emit(promotion())">View promotion <span aria-hidden="true">→</span></button>
-      </div>
-    </article>
-  `,
-  styles: [`
-    :host{display:block;min-width:0}.promotion-card{position:relative;height:100%;overflow:hidden;padding:19px;border:1px solid var(--border);border-radius:13px;background:var(--surface-card);color:var(--text-primary)}.promotion-card:before{position:absolute;inset:0 0 auto;height:4px;background:var(--accent,#e6c928);content:""}.topline{display:flex;align-items:center;justify-content:space-between;gap:8px}.label{padding:6px 8px;border-radius:5px;background:var(--brand-soft);color:var(--brand-strong);font-size:.61rem;font-weight:850;letter-spacing:.07em}.topline time,.footer>time{color:var(--text-muted);font-size:.63rem}.business{margin:15px 0 5px;color:var(--brand-strong);font-size:.72rem;font-weight:750}.promotion-card h3{margin:0;font-size:1.04rem;letter-spacing:-.025em}.content{display:-webkit-box;min-height:3.8em;overflow:hidden;margin:10px 0 15px;color:var(--text-secondary);font-size:.78rem;line-height:1.55;-webkit-box-orient:vertical;-webkit-line-clamp:3}.media-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.media-grid img,.media-grid video{width:100%;max-height:190px;aspect-ratio:4/3;object-fit:cover;border-radius:7px;background:#111}.media-grid audio{grid-column:1/-1;width:100%}.document{display:flex;min-height:48px;align-items:center;padding:9px;border:1px solid var(--border);border-radius:7px;color:var(--brand-strong);font-size:.68rem;overflow-wrap:anywhere}.more-media{margin:7px 0 0;color:var(--text-muted);font-size:.65rem}.footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:15px;padding-top:12px;border-top:1px solid var(--border)}.footer button{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;background:var(--surface-subtle);color:var(--text-primary);font:inherit;font-size:.68rem;font-weight:750;cursor:pointer}.footer button:focus-visible,.document:focus-visible{outline:2px solid var(--brand-strong);outline-offset:2px}
-  `],
-  imports: [DatePipe],
+  imports: [DatePipe, FormsModule, RouterLink, PromotionEngagementComponent],
+  templateUrl: './promotion-card.html',
+  styleUrl: './promotion-card.scss',
 })
 export class PromotionCard {
+  private readonly engagementApi = inject(EngagementApiService);
+  private readonly authDialog = inject(AuthDialogService);
+
   readonly promotion = input.required<PromotionCardModel>();
   readonly label = input('BBG PROMOTION');
   readonly mediaLimit = input(4);
   readonly selected = output<PromotionCardModel>();
 
-  protected mediaItems(): CardMediaModel[] {
+  protected readonly isExpanded = signal(false);
+  protected readonly logoError = signal(false);
+  protected readonly failedMediaIds = signal<ReadonlySet<number>>(new Set());
+  protected readonly isSaved = signal(false);
+  protected readonly saveFeedback = signal<string | null>(null);
+
+  // Header Report Action State (backed by EngagementApiService.reportContent)
+  protected readonly reportOpen = signal(false);
+  protected readonly reportReason = signal('MISLEADING');
+  protected readonly reportDetails = signal('');
+  protected readonly submittingReport = signal(false);
+  protected readonly reportFeedback = signal<string | null>(null);
+  protected readonly reportError = signal<string | null>(null);
+
+  protected readonly reportReasons: ReadonlyArray<{ value: string; label: string }> = [
+    { value: 'MISLEADING', label: 'Misleading or inaccurate offer' },
+    { value: 'SPAM', label: 'Spam or repetitive promotion' },
+    { value: 'INAPPROPRIATE', label: 'Inappropriate content' },
+    { value: 'OTHER', label: 'Other concern' },
+  ];
+
+  protected readonly hasValidLogo = computed<boolean>(() => {
+    return !this.logoError() && !!this.promotion().logo_path;
+  });
+
+  protected readonly isVerified = computed<boolean>(() => {
+    return this.promotion().verified !== false;
+  });
+
+  protected readonly businessLocation = computed<string | null>(() => {
+    const city = (this.promotion().city || '').trim();
+    const state = (this.promotion().state || '').trim();
+    if (city && state) return `${city}, ${state}`;
+    return city || state || null;
+  });
+
+  protected readonly mediaItems = computed<CardMediaModel[]>(() => {
     return this.promotion().media ?? [];
+  });
+
+  protected readonly firstMediaType = computed<'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | null>(
+    () => {
+      const items = this.mediaItems();
+      return items.length > 0 ? items[0].media_type : null;
+    },
+  );
+
+  protected readonly businessMonogram = computed<string>(() => {
+    const name = (this.promotion().business_name || '').trim();
+    if (!name) return 'B';
+    const parts = name.split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  });
+
+  protected readonly isLongContent = computed<boolean>(() => {
+    return (this.promotion().post_content || '').length > 180;
+  });
+
+  protected readonly isExpired = computed<boolean>(() => {
+    const validUntil = this.promotion().valid_until;
+    if (!validUntil) return false;
+    const expiry = new Date(validUntil).getTime();
+    return !Number.isNaN(expiry) && expiry < Date.now();
+  });
+
+  constructor() {
+    effect(() => {
+      const id = this.promotion().id;
+      this.logoError.set(false);
+      this.isSaved.set(this.readSavedIds().has(id));
+    });
+  }
+
+  protected toggleExpand(): void {
+    this.isExpanded.update((v) => !v);
+  }
+
+  protected onLogoError(): void {
+    this.logoError.set(true);
+  }
+
+  protected onMediaError(mediaId: number): void {
+    this.failedMediaIds.update((prev) => {
+      const next = new Set(prev);
+      next.add(mediaId);
+      return next;
+    });
+  }
+
+  protected isMediaFailed(mediaId: number): boolean {
+    return this.failedMediaIds().has(mediaId);
+  }
+
+  protected onSelectKeydown(event: Event): void {
+    event.preventDefault();
+    this.selected.emit(this.promotion());
+  }
+
+  protected toggleSave(event: Event): void {
+    event.stopPropagation();
+    const id = this.promotion().id;
+    const savedIds = this.readSavedIds();
+    const nextSaved = !this.isSaved();
+    if (nextSaved) {
+      savedIds.add(id);
+    } else {
+      savedIds.delete(id);
+    }
+    this.writeSavedIds(savedIds);
+    this.isSaved.set(nextSaved);
+    this.saveFeedback.set(nextSaved ? 'Promotion saved to your bookmarks.' : 'Removed from saved.');
+    setTimeout(() => this.saveFeedback.set(null), 2200);
+  }
+
+  protected toggleReportPanel(event: Event): void {
+    event.stopPropagation();
+    if (this.reportOpen()) {
+      this.closeReportPanel();
+      return;
+    }
+
+    const anchor = event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+    void this.authDialog.requireAuthentication(
+      'Sign in to report this promotional post',
+      anchor,
+      () => {
+        this.reportError.set(null);
+        this.reportFeedback.set(null);
+        this.reportOpen.set(true);
+      },
+    );
+  }
+
+  protected closeReportPanel(): void {
+    this.reportOpen.set(false);
+    this.reportError.set(null);
+    this.reportDetails.set('');
+  }
+
+  protected async submitReport(): Promise<void> {
+    if (this.submittingReport()) return;
+    this.submittingReport.set(true);
+    this.reportError.set(null);
+
+    try {
+      const res = await firstValueFrom(
+        this.engagementApi.reportContent({
+          content_type: 'POST',
+          content_id: this.promotion().id,
+          report_reason: this.reportReason(),
+          report_details: this.reportDetails().trim() || null,
+        }),
+      );
+      if (res.status !== 'SUCCESS') {
+        throw new Error(res.msgArr?.join(' ') || 'Unable to submit report right now.');
+      }
+      this.reportOpen.set(false);
+      this.reportDetails.set('');
+      this.reportFeedback.set('Report submitted for moderation review.');
+    } catch (err) {
+      this.reportError.set(
+        err instanceof Error ? err.message : 'Unable to submit report right now.',
+      );
+    } finally {
+      this.submittingReport.set(false);
+    }
+  }
+
+  private readSavedIds(): Set<number> {
+    try {
+      const raw = globalThis.localStorage?.getItem(SAVED_PROMOTIONS_STORAGE_KEY);
+      if (!raw) return new Set<number>();
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return new Set<number>();
+      return new Set<number>(
+        parsed.filter((item): item is number => typeof item === 'number' && Number.isInteger(item)),
+      );
+    } catch {
+      return new Set<number>();
+    }
+  }
+
+  private writeSavedIds(ids: Set<number>): void {
+    try {
+      globalThis.localStorage?.setItem(SAVED_PROMOTIONS_STORAGE_KEY, JSON.stringify([...ids]));
+    } catch {
+      // Storage unavailable (private browsing / restricted context)
+    }
   }
 }

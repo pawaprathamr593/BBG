@@ -14,37 +14,130 @@ import { TenantManagementApiService } from '../../core/tenant/tenant-management-
       <section class="invite-card">
         <p class="eyebrow">BBG TEAM INVITATION</p>
         @if (busy()) {
-          <div class="invite-loading"><span class="spinner"></span><div><strong>Accepting your invitation</strong><p>Adding your account to the business workspace…</p></div></div>
+          <div class="invite-loading">
+            <span class="spinner"></span>
+            <div>
+              <strong>Accepting your invitation</strong>
+              <p>Adding your account to the business workspace…</p>
+            </div>
+          </div>
         } @else if (error()) {
           <h1>We couldn’t accept this invitation</h1>
           <p>{{ error() }}</p>
           <a routerLink="/">Return to BBG</a>
         } @else if (needsSignIn()) {
           <h1>You’ve been invited to join a BBG business</h1>
-          <p>Sign in with the email address that received this invitation. If you’re new to BBG, create an account using that same email address.</p>
+          <p>
+            Sign in with the email address that received this invitation. If you’re new to BBG,
+            create an account using that same email address.
+          </p>
           <div class="invite-actions">
             <a [routerLink]="['/login']" [queryParams]="{ returnUrl: returnUrl }">Sign in</a>
-            <a class="secondary" [routerLink]="['/register']" [queryParams]="{ returnUrl: returnUrl }">Create account</a>
+            <a
+              class="secondary"
+              [routerLink]="['/register']"
+              [queryParams]="{ returnUrl: returnUrl }"
+              >Create account</a
+            >
           </div>
         } @else {
           <h1>Invitation accepted</h1>
-          <p>Your account has been added to the business workspace with the Tenant Order Manager role.</p>
+          <p>
+            Your account has been added to the business workspace with the Tenant Order Manager
+            role.
+          </p>
           <a routerLink="/dashboard">Open team workspace</a>
         }
       </section>
     </main>
   `,
-  styles: [`
-    :host{display:block;min-height:100%;background:var(--surface-page);color:var(--text-primary)}
-    .invite-page{display:grid;min-height:70vh;place-items:center;padding:30px 16px}
-    .invite-card{width:min(560px,100%);padding:clamp(24px,4vw,40px);background:var(--surface-card);border:1px solid var(--border);border-radius:18px;box-shadow:0 14px 42px rgba(20,35,26,.05)}
-    .eyebrow{margin:0 0 10px;color:var(--brand);font-size:.68rem;font-weight:800;letter-spacing:.13em}
-    h1{margin:0;font-size:clamp(1.7rem,4vw,2.2rem);letter-spacing:-.04em}.invite-card>p:not(.eyebrow){color:var(--text-secondary);font-size:.88rem;line-height:1.6}
-    .invite-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.invite-actions a,.invite-card>a{display:inline-flex;margin-top:20px;padding:11px 15px;color:#fff;background:var(--brand);border-radius:9px;text-decoration:none;font-size:.82rem;font-weight:750}
-    .invite-actions a.secondary{color:var(--text-primary);background:var(--surface-subtle);border:1px solid var(--border)}
-    .invite-loading{display:flex;align-items:center;gap:14px}.invite-loading p{margin:5px 0 0;color:var(--text-secondary);font-size:.8rem}
-    .spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
-  `],
+  styles: [
+    `
+      :host {
+        display: block;
+        min-height: 100%;
+        background: var(--surface-page);
+        color: var(--text-primary);
+      }
+      .invite-page {
+        display: grid;
+        min-height: 70vh;
+        place-items: center;
+        padding: 30px 16px;
+      }
+      .invite-card {
+        width: min(560px, 100%);
+        padding: clamp(24px, 4vw, 40px);
+        background: var(--surface-card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: 0 14px 42px rgba(20, 35, 26, 0.05);
+      }
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--brand);
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.13em;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(1.7rem, 4vw, 2.2rem);
+        letter-spacing: -0.04em;
+      }
+      .invite-card > p:not(.eyebrow) {
+        color: var(--text-secondary);
+        font-size: 0.88rem;
+        line-height: 1.6;
+      }
+      .invite-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 22px;
+      }
+      .invite-actions a,
+      .invite-card > a {
+        display: inline-flex;
+        margin-top: 20px;
+        padding: 11px 15px;
+        color: #fff;
+        background: var(--brand);
+        border-radius: 9px;
+        text-decoration: none;
+        font-size: 0.82rem;
+        font-weight: 750;
+      }
+      .invite-actions a.secondary {
+        color: var(--text-primary);
+        background: var(--surface-subtle);
+        border: 1px solid var(--border);
+      }
+      .invite-loading {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .invite-loading p {
+        margin: 5px 0 0;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+      }
+      .spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid var(--border);
+        border-top-color: var(--brand);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    `,
+  ],
 })
 export class TeamInvitationAcceptance implements OnInit {
   private readonly route = inject(ActivatedRoute);
@@ -65,7 +158,7 @@ export class TeamInvitationAcceptance implements OnInit {
       return;
     }
     try {
-      if (!await this.auth.restoreSession()) {
+      if (!(await this.auth.restoreSession())) {
         this.needsSignIn.set(true);
         return;
       }

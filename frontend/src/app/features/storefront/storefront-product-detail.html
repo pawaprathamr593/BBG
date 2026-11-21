@@ -1,96 +1,320 @@
-    @if (loading()) {
-      <main class="loading-state" role="status"><span class="loader"></span><p>Loading product information…</p></main>
-    } @else if (error()) {
-      <main class="error-state" role="alert"><span class="error-mark" aria-hidden="true">!</span><h1>Product unavailable</h1><p>{{ error() }}</p><a [routerLink]="['/store', slug, 'products']">Return to products <span aria-hidden="true">↗</span></a></main>
-    } @else if (detail(); as data) {
-      <main class="product-page">
-        <nav class="breadcrumbs" aria-label="Breadcrumb">
-          <a [routerLink]="['/store', slug]">Home</a><span aria-hidden="true">/</span>
-          <a [routerLink]="['/store', slug, 'products']">Products</a><span aria-hidden="true">/</span>
-          <span aria-current="page">{{ data.product.product_name }}</span>
-        </nav>
+<div class="product-page-container">
+  @if (loading()) {
+    <main class="loading-state" role="status">
+      <div class="loader-spinner"></div>
+      <p>Loading product information…</p>
+    </main>
+  } @else if (error()) {
+    <main class="error-state" role="alert">
+      <div class="error-mark" aria-hidden="true">⚠️</div>
+      <h1>Product currently unavailable</h1>
+      <p>{{ error() }}</p>
+      <a class="btn-return" [routerLink]="['/store', slug, 'products']">
+        <span>Return to storefront catalogue</span>
+        <span aria-hidden="true">↗</span>
+      </a>
+    </main>
+  } @else if (detail(); as data) {
+    <main class="product-page">
+      <!-- Breadcrumb navigation -->
+      <nav class="product-breadcrumbs" aria-label="Breadcrumb">
+        <app-breadcrumbs [items]="breadcrumbs()" />
+      </nav>
 
-        <article class="product-layout">
-          <div class="visual-column">
-            @if (data.product.media?.length) {
-              <div class="product-gallery" style="display:grid;gap:12px">
+      <!-- Main Product Display Grid -->
+      <article class="product-layout">
+        <!-- LEFT: Product Media & Gallery -->
+        <div class="product-media-column">
+          @if (data.product.media?.length) {
+            <div class="media-gallery-card">
+              <!-- Primary Media Display -->
+              <div class="primary-media-viewport">
                 @for (media of data.product.media; track media.id) {
-                  @if (media.url && media.media_type === 'IMAGE') {
-                    <img [src]="media.url" [alt]="media.original_file_name || data.product.product_name" loading="lazy" style="width:100%;max-height:520px;object-fit:contain;background:var(--surface-card);border:1px solid var(--border);border-radius:10px">
-                  } @else if (media.url && media.media_type === 'VIDEO') {
-                    <video [src]="media.url" controls preload="metadata" style="width:100%;max-height:520px;background:#111;border-radius:10px"></video>
-                  } @else if (media.url && media.media_type === 'AUDIO') {
-                    <audio [src]="media.url" controls style="width:100%"></audio>
-                  } @else if (media.url && media.media_type === 'DOCUMENT') {
-                    <a [href]="media.url" target="_blank" rel="noopener noreferrer">{{ media.original_file_name || 'Open product document' }}</a>
+                  @if (media.url && media.media_type === 'IMAGE' && $first) {
+                    <img
+                      [src]="media.url"
+                      [alt]="media.original_file_name || data.product.product_name"
+                      class="primary-product-img"
+                    />
+                  } @else if (media.url && media.media_type === 'VIDEO' && $first) {
+                    <video
+                      [src]="media.url"
+                      controls
+                      preload="metadata"
+                      class="primary-product-video"
+                    ></video>
                   }
                 }
               </div>
-            } @else {
-              <div class="product-visual" [class.visual-alt]="(data.product.category_name?.length || 0) % 2 === 0">
-                <span class="visual-kicker">{{ data.product.category_name || 'PRODUCT DETAILS' }}</span>
-                <span class="visual-monogram">{{ data.product.product_name.slice(0, 1).toUpperCase() }}</span>
-                <span class="visual-orbit"></span>
-                <span class="visual-caption">BBG / {{ data.product.product_code }}</span>
-              </div>
-            }
-            <div class="visual-note"><span aria-hidden="true">✳</span><p>Product information provided by {{ businessName }}.</p></div>
-          </div>
 
-          <div class="product-copy">
-            <p class="eyebrow">{{ data.product.category_name || 'PRODUCT' }}</p>
-            <h1>{{ data.product.product_name }}</h1>
-            @if (data.product.brand_name) { <p class="brand-name">{{ data.product.brand_name }}</p> }
-            <p class="description">{{ data.product.description || 'Contact the business for further information about this product.' }}</p>
-
-            <div class="price-panel">
-              <span class="price-label">PRICE</span>
-              @if (context.detail()?.storefront?.show_prices && data.product.selling_price !== undefined) {
-                <strong>{{ context.detail()?.storefront?.currency || '' }} {{ data.product.selling_price }}</strong>
-                <small>Displayed price from the business</small>
-              } @else {
-                <strong class="price-enquiry">Contact for pricing</strong>
-                <small>Get in touch with the business for price details</small>
-              }
-            </div>
-
-            <div class="product-facts">
-              <div><span>Product code</span><strong>{{ data.product.product_code }}</strong></div>
-              <div><span>Unit</span><strong>{{ data.product.unit.name }} ({{ data.product.unit.symbol }})</strong></div>
-              @if (data.product.is_variant_product) { <div><span>Product type</span><strong>Available in variants</strong></div> }
-              @if (data.product.brand_name) { <div><span>Brand</span><strong>{{ data.product.brand_name }}</strong></div> }
-            </div>
-
-            @if (data.variants.length) {
-              <section class="variants" aria-labelledby="variants-title">
-                <div class="variants-heading"><p class="eyebrow">OPTIONS</p><h2 id="variants-title">Available variants</h2></div>
-                <div class="variant-list">
-                  @for (variant of data.variants; track variant.id) {
-                    <div class="variant-row">
-                      <div><strong>{{ variant.variant_name }}</strong><span>{{ variant.variant_code }}</span></div>
-                      @if (context.detail()?.storefront?.show_prices && variant.selling_price !== undefined) {
-                        <b>{{ context.detail()?.storefront?.currency || '' }} {{ variant.selling_price }}</b>
-                      }
-                    </div>
+              <!-- Media Thumbnails Strip -->
+              @if (data.product.media.length > 1) {
+                <div class="media-thumbnails-strip" aria-label="Additional media views">
+                  @for (media of data.product.media; track media.id) {
+                    @if (media.url && media.media_type === 'IMAGE') {
+                      <div class="thumb-item" tabindex="0">
+                        <img
+                          [src]="media.thumbnail_url || media.url"
+                          [alt]="media.original_file_name || 'Thumbnail'"
+                        />
+                      </div>
+                    } @else if (media.url && media.media_type === 'DOCUMENT') {
+                      <a
+                        [href]="media.url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="doc-attachment-pill"
+                      >
+                        <span aria-hidden="true">📄</span>
+                        <span>{{ media.original_file_name || 'Product Datasheet' }}</span>
+                      </a>
+                    }
                   }
                 </div>
-              </section>
-            }
-
-            <div class="product-actions">
-              <a class="primary-action" [routerLink]="['/store', slug, 'contact']">Enquire about this product <span aria-hidden="true">↗</span></a>
-              @if (context.detail()?.storefront?.whatsapp_enabled && context.detail()?.business?.whatsapp_number) {
-                <a class="secondary-action" [href]="whatsappUrl(context.detail()!.business.whatsapp_number!)" target="_blank" rel="noopener noreferrer">Chat on WhatsApp ↗</a>
               }
             </div>
-            <p class="seller-note">Offered by <strong>{{ businessName }}</strong></p>
-          </div>
-        </article>
+          } @else {
+            <!-- Fallback Clean Monogram Visual -->
+            <div
+              class="product-visual-monogram"
+              [class.visual-alt]="(data.product.category_name?.length || 0) % 2 === 0"
+            >
+              <div class="monogram-badge">{{ data.product.category_name || 'CATALOGUE ITEM' }}</div>
+              <div class="monogram-char">
+                {{ data.product.product_name.slice(0, 1).toUpperCase() }}
+              </div>
+              <div class="monogram-orbit"></div>
+              <div class="monogram-footer">BBG / {{ data.product.product_code }}</div>
+            </div>
+          }
 
-        <section class="more-info">
-          <div><p class="eyebrow">NEED MORE INFORMATION?</p><h2>Talk directly with {{ businessName }}.</h2><p>For availability, specifications, pricing or other product questions, contact the business using its published details.</p></div>
-          <a [routerLink]="['/store', slug, 'contact']">View contact details <span aria-hidden="true">↗</span></a>
-        </section>
-      </main>
-    }
-  
+          <!-- Seller Accreditation Ribbon -->
+          <div class="seller-accreditation-ribbon">
+            <span class="ribbon-seal" aria-hidden="true">🛡️</span>
+            <div>
+              <strong>Verified Bharat Merchant</strong>
+              <p>Direct catalogue listing by {{ businessName }}.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Product Commercials & Specifications -->
+        <div class="product-info-column">
+          <!-- Category & SKU Badges -->
+          <div class="info-badges-row">
+            <span class="category-chip">{{ data.product.category_name || 'Product' }}</span>
+            <span class="code-chip">SKU: {{ data.product.product_code }}</span>
+            @if (data.product.is_variant_product) {
+              <span class="variants-indicator-chip">Multiple Options Available</span>
+            }
+          </div>
+
+          <h1 class="product-title">{{ data.product.product_name }}</h1>
+
+          @if (data.product.brand_name) {
+            <p class="product-brand-line">
+              <span class="brand-by">Brand:</span>
+              <strong class="brand-val">{{ data.product.brand_name }}</strong>
+            </p>
+          }
+
+          <!-- Commercial Pricing Card -->
+          <div class="commercial-pricing-card">
+            <span class="pricing-label">COMMERCIAL TERMS</span>
+            @if (
+              context.detail()?.storefront?.show_prices && data.product.selling_price !== undefined
+            ) {
+              <div class="price-value-row">
+                <strong class="price-figure">
+                  {{ context.detail()?.storefront?.currency || '₹' }}
+                  {{ data.product.selling_price }}
+                </strong>
+                <span class="price-unit">per {{ data.product.unit.name }}</span>
+              </div>
+              <p class="price-subtext">
+                Direct seller price. Excludes local taxes and freight unless specified.
+              </p>
+            } @else {
+              <div class="price-value-row">
+                <strong class="price-figure price-quote">Quote on Request</strong>
+              </div>
+              <p class="price-subtext">
+                Contact seller directly for volume pricing, wholesale discounts, and delivery.
+              </p>
+            }
+          </div>
+
+          <!-- Product Technical Specifications Grid -->
+          <div class="specifications-panel">
+            <h3 class="specs-title">Key Specifications</h3>
+            <div class="specs-grid">
+              <div class="spec-cell">
+                <span class="spec-label">Item Code</span>
+                <strong class="spec-val">{{ data.product.product_code }}</strong>
+              </div>
+              <div class="spec-cell">
+                <span class="spec-label">Unit of Measure</span>
+                <strong class="spec-val"
+                  >{{ data.product.unit.name }} ({{ data.product.unit.symbol }})</strong
+                >
+              </div>
+              <div class="spec-cell">
+                <span class="spec-label">Fractional Sale</span>
+                <strong class="spec-val">{{
+                  data.product.unit.is_fraction_allowed ? 'Allowed' : 'Whole units only'
+                }}</strong>
+              </div>
+              @if (data.product.barcode) {
+                <div class="spec-cell">
+                  <span class="spec-label">Barcode / GTIN</span>
+                  <strong class="spec-val">{{ data.product.barcode }}</strong>
+                </div>
+              }
+              @if (data.product.brand_name) {
+                <div class="spec-cell">
+                  <span class="spec-label">Manufacturer</span>
+                  <strong class="spec-val">{{ data.product.brand_name }}</strong>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Product Variants Matrix -->
+          @if (data.variants.length) {
+            <section class="variants-section" aria-labelledby="variants-title">
+              <div class="variants-header">
+                <h3 id="variants-title" class="specs-title">
+                  Available Variants &amp; Configurations
+                </h3>
+                <span class="variants-count">{{ data.variants.length }} options</span>
+              </div>
+              <div class="variants-table-wrap">
+                <table class="variants-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Variant Name</th>
+                      <th scope="col">Variant SKU</th>
+                      @if (context.detail()?.storefront?.show_prices) {
+                        <th scope="col" style="text-align: right">Price</th>
+                      }
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (variant of data.variants; track variant.id) {
+                      <tr>
+                        <td>
+                          <strong>{{ variant.variant_name }}</strong>
+                        </td>
+                        <td>
+                          <span class="variant-code-cell">{{ variant.variant_code }}</span>
+                        </td>
+                        @if (context.detail()?.storefront?.show_prices) {
+                          <td style="text-align: right">
+                            @if (variant.selling_price !== undefined) {
+                              <strong class="variant-price">
+                                {{ context.detail()?.storefront?.currency || '₹' }}
+                                {{ variant.selling_price }}
+                              </strong>
+                            } @else {
+                              <span class="price-subtext">On Enquiry</span>
+                            }
+                          </td>
+                        }
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          }
+
+          <!-- Seller Credentials & Contact CTAs -->
+          <div class="seller-contact-card">
+            <div class="seller-info-top">
+              <div>
+                <span class="seller-kicker">SUPPLIED BY</span>
+                <h4 class="seller-name">{{ businessName }}</h4>
+                @if (context.detail()?.business?.city; as city) {
+                  <p class="seller-location">
+                    📍 {{ city }}
+                    @if (context.detail()?.business?.state; as state) {
+                      , {{ state }}
+                    }
+                  </p>
+                }
+              </div>
+              <a class="view-store-link" [routerLink]="['/store', slug]">
+                <span>Visit Storefront</span>
+                <span aria-hidden="true">↗</span>
+              </a>
+            </div>
+
+            <!-- Direct B2B / Customer Enquiry Actions (Zero Cart/Order buttons) -->
+            <div class="enquiry-actions-group">
+              <a class="btn-enquiry-primary" [routerLink]="['/store', slug, 'contact']">
+                <span>Send Direct Enquiry</span>
+                <span aria-hidden="true">→</span>
+              </a>
+              @if (isWhatsAppAvailable && whatsappUrl) {
+                <a
+                  class="btn-whatsapp-action"
+                  [href]="whatsappUrl"
+                  (click)="onWhatsAppEnquiry($event)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [attr.aria-label]="'Enquire about ' + data.product.product_name + ' on WhatsApp'"
+                >
+                  <span class="whatsapp-icon" aria-hidden="true">💬</span>
+                  <span>Enquire on WhatsApp</span>
+                </a>
+              }
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- FULL DESCRIPTION & TECHNICAL DETAILS SECTION -->
+      <section class="product-description-section" aria-labelledby="desc-heading">
+        <h2 id="desc-heading" class="section-title">Product Description &amp; Specifications</h2>
+        <div class="description-card">
+          <p class="description-text">
+            {{
+              data.product.description ||
+                'No full description has been published for this item. Contact the business using the enquiry actions above for specifications, delivery estimates and custom requirements.'
+            }}
+          </p>
+
+          <div class="procurement-assurance-box">
+            <div class="assurance-item">
+              <span class="assurance-icon">✓</span>
+              <div>
+                <strong>Direct Sourcing</strong>
+                <p>Deal directly with verified merchants with zero platform markups.</p>
+              </div>
+            </div>
+            <div class="assurance-item">
+              <span class="assurance-icon">✓</span>
+              <div>
+                <strong>Direct Seller Communication</strong>
+                <p>Immediate response via WhatsApp or registered business contact desk.</p>
+              </div>
+            </div>
+            <div class="assurance-item">
+              <span class="assurance-icon">✓</span>
+              <div>
+                <strong>Verified Merchant BCN Seal</strong>
+                <p>All active storefronts are accredited members of Bharat Business Group.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CUSTOMER RATINGS & PRODUCT REVIEWS SECTION -->
+      <app-product-reviews
+        [productId]="data.product.id"
+        [productName]="data.product.product_name"
+      />
+    </main>
+  }
+</div>

@@ -1,11 +1,25 @@
 @if (dialog.state(); as state) {
   <div class="auth-popup-layer" (click)="close()" role="presentation">
-    <section class="auth-popup" [attr.data-placement]="state.placement"
-      [style.top.px]="state.top" [style.left.px]="state.left" [style.--arrow-offset]="state.arrowOffset + 'px'"
-      role="dialog" aria-modal="true" aria-label="BBG authentication" (click)="$event.stopPropagation()">
-      <button type="button" class="popup-close" (click)="close()" aria-label="Close sign-in">×</button>
-      <app-auth-experience [mode]="state.mode" presentation="popup" [reason]="state.reason"
-        (authenticated)="authenticated()" />
+    <section
+      class="auth-popup"
+      [attr.data-placement]="state.placement"
+      [style.top.px]="state.top"
+      [style.left.px]="state.left"
+      [style.--arrow-offset]="state.arrowOffset + 'px'"
+      role="dialog"
+      aria-modal="true"
+      aria-label="BBG authentication"
+      (click)="$event.stopPropagation()"
+    >
+      <button type="button" class="popup-close" (click)="close()" aria-label="Close sign-in">
+        ×
+      </button>
+      <app-auth-experience
+        [mode]="state.mode"
+        presentation="popup"
+        [reason]="state.reason"
+        (authenticated)="authenticated()"
+      />
     </section>
   </div>
 }

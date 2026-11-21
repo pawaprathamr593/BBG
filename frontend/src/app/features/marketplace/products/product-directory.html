@@ -1,120 +1,201 @@
-    <main class="page">
-      <section class="intro">
-        <p class="eyebrow">THE BBG MARKETPLACE</p>
-        <h1>Discover <span>products</span></h1>
-        <p class="lead">Explore products from approved BBG businesses. Search by name, compare prices and find sellers near you.</p>
-        <div class="intro-meta"><span>One marketplace</span><i></i><span>Products from verified storefronts</span></div>
-      </section>
+<main class="page">
+  <section class="intro">
+    <p class="eyebrow">THE BBG MARKETPLACE</p>
+    <h1>Discover <span>products</span></h1>
+    <p class="lead">
+      Explore products from approved BBG businesses. Search by name, compare prices and find sellers
+      near you.
+    </p>
+    <div class="intro-meta">
+      <span>One marketplace</span><i></i><span>Products from verified storefronts</span>
+    </div>
+  </section>
 
-      <section class="results" aria-labelledby="products-title">
-        <div class="heading">
-          <div><p class="eyebrow">PRODUCT DISCOVERY</p><h2 id="products-title">Explore all products</h2></div>
-          <span>{{ total() }} products</span>
+  <section class="results" aria-labelledby="products-title">
+    <div class="heading">
+      <div>
+        <p class="eyebrow">PRODUCT DISCOVERY</p>
+        <h2 id="products-title">Explore all products</h2>
+      </div>
+      <span>{{ total() }} products</span>
+    </div>
+
+    <form class="toolbar" (ngSubmit)="applySearch()" aria-label="Search and sort products">
+      <div class="filter-field search-field">
+        <label for="product-search">Search products</label>
+        <input
+          id="product-search"
+          name="search"
+          [(ngModel)]="query"
+          placeholder="Name, code, brand or keyword"
+        />
+      </div>
+      <div class="filter-field sort-field">
+        <label for="product-sort">Sort by</label>
+        <select
+          id="product-sort"
+          name="sort"
+          [(ngModel)]="sort"
+          (ngModelChange)="sortChanged($event)"
+        >
+          <option value="newest">Newly added</option>
+          <option value="popular">Most popular</option>
+          <option value="nearby">Nearby first</option>
+          <option value="price_low">Price: low to high</option>
+          <option value="price_high">Price: high to low</option>
+          <option value="name">Name: A to Z</option>
+        </select>
+      </div>
+      <button class="search-submit" type="submit">Search</button>
+    </form>
+
+    @if (activeFilterChips().length) {
+      <div class="active-filters" aria-label="Applied filters">
+        <span class="active-filter-caption">Active filters</span>
+        @for (chip of activeFilterChips(); track chip.key) {
+          <button class="filter-chip" type="button" (click)="removeFilter(chip.key)">
+            {{ chip.label }} <span aria-hidden="true">×</span>
+          </button>
+        }
+        <button class="clear-active-filters" type="button" (click)="clearFilters()">
+          Clear all
+        </button>
+      </div>
+    }
+
+    <app-filter-drawer
+      [open]="filtersOpen()"
+      [activeCount]="activeFilterCount()"
+      (openChange)="setFiltersOpen($event)"
+      (apply)="applyFilters()"
+      (reset)="resetDraftFilters()"
+    >
+      <form class="drawer-filters" aria-label="Advanced product filters">
+        @if (filterNotice()) {
+          <p class="drawer-notice" role="alert">{{ filterNotice() }}</p>
+        }
+        <div class="filter-field">
+          <label for="product-category">Category</label>
+          <select id="product-category" name="category" [(ngModel)]="draftFilters.categoryId">
+            <option value="">All product categories</option>
+            @for (category of categories(); track category.id) {
+              <option [value]="category.id">{{ category.category_name }}</option>
+            }
+          </select>
         </div>
+        <div class="filter-field">
+          <label for="product-brand">Brand</label>
+          <input
+            id="product-brand"
+            name="brand"
+            [(ngModel)]="draftFilters.brand"
+            placeholder="Any brand"
+          />
+        </div>
+        <div class="filter-field">
+          <label for="product-city">City</label>
+          <input
+            id="product-city"
+            name="city"
+            [(ngModel)]="draftFilters.city"
+            placeholder="Any city"
+          />
+        </div>
+        <div class="filter-field">
+          <label for="product-state">State</label>
+          <input
+            id="product-state"
+            name="state"
+            [(ngModel)]="draftFilters.state"
+            placeholder="Any state"
+          />
+        </div>
+        <div class="filter-field">
+          <label for="product-min-price">Minimum price (₹)</label>
+          <input
+            id="product-min-price"
+            name="minPrice"
+            type="number"
+            min="0"
+            step="0.01"
+            [(ngModel)]="draftFilters.minPrice"
+            placeholder="No minimum"
+          />
+        </div>
+        <div class="filter-field">
+          <label for="product-max-price">Maximum price (₹)</label>
+          <input
+            id="product-max-price"
+            name="maxPrice"
+            type="number"
+            min="0"
+            step="0.01"
+            [(ngModel)]="draftFilters.maxPrice"
+            placeholder="No maximum"
+          />
+        </div>
+        <label class="check-field"
+          ><input type="checkbox" name="onlineOnly" [(ngModel)]="draftFilters.onlineOnly" /><span
+            >BCN accredited businesses only</span
+          ></label
+        >
+        <label class="check-field"
+          ><input
+            type="checkbox"
+            name="variantsOnly"
+            [(ngModel)]="draftFilters.variantsOnly"
+          /><span>Variant products only</span></label
+        >
+        <label class="check-field"
+          ><input type="checkbox" name="withImages" [(ngModel)]="draftFilters.withImages" /><span
+            >Products with images</span
+          ></label
+        >
+      </form>
+    </app-filter-drawer>
 
-        <form class="toolbar" (ngSubmit)="applySearch()" aria-label="Search and sort products">
-          <div class="filter-field search-field">
-            <label for="product-search">Search products</label>
-            <input id="product-search" name="search" [(ngModel)]="query" placeholder="Name, code, brand or keyword" />
-          </div>
-          <div class="filter-field sort-field">
-            <label for="product-sort">Sort by</label>
-            <select id="product-sort" name="sort" [(ngModel)]="sort" (ngModelChange)="sortChanged($event)">
-              <option value="newest">Newly added</option>
-              <option value="popular">Most popular</option>
-              <option value="nearby">Nearby first</option>
-              <option value="price_low">Price: low to high</option>
-              <option value="price_high">Price: high to low</option>
-              <option value="name">Name: A to Z</option>
-            </select>
-          </div>
-          <button class="search-submit" type="submit">Search</button>
-        </form>
-
-        @if (activeFilterChips().length) {
-          <div class="active-filters" aria-label="Applied filters">
-            <span class="active-filter-caption">Active filters</span>
-            @for (chip of activeFilterChips(); track chip.key) {
-              <button class="filter-chip" type="button" (click)="removeFilter(chip.key)">
-                {{ chip.label }} <span aria-hidden="true">×</span>
-              </button>
-            }
-            <button class="clear-active-filters" type="button" (click)="clearFilters()">Clear all</button>
-          </div>
+    @if (filterNotice()) {
+      <p class="notice" role="status">{{ filterNotice() }}</p>
+    }
+    @if (loading()) {
+      <div style="padding: 24px 0">
+        <app-skeleton-loader variant="card" [count]="3" />
+      </div>
+    } @else if (error()) {
+      <div class="state error" role="alert">
+        {{ error() }} <button type="button" (click)="load()">Try again</button>
+      </div>
+    } @else if (productCards().length) {
+      <div class="grid">
+        @for (product of productCards(); track product.id) {
+          <app-product-card
+            [product]="product"
+            [showPrice]="true"
+            currency="₹ "
+            actionLabel="View Details"
+            (selected)="openProduct($event)"
+            (businessSelected)="openBusiness($event)"
+          />
         }
-
-        <app-filter-drawer
-          [open]="filtersOpen()"
-          [activeCount]="activeFilterCount()"
-          (openChange)="setFiltersOpen($event)"
-          (apply)="applyFilters()"
-          (reset)="resetDraftFilters()">
-          <form class="drawer-filters" aria-label="Advanced product filters">
-            @if (filterNotice()) { <p class="drawer-notice" role="alert">{{ filterNotice() }}</p> }
-            <div class="filter-field">
-              <label for="product-category">Category</label>
-              <select id="product-category" name="category" [(ngModel)]="draftFilters.categoryId">
-                <option value="">All product categories</option>
-                @for (category of categories(); track category.id) {
-                  <option [value]="category.id">{{ category.category_name }}</option>
-                }
-              </select>
-            </div>
-            <div class="filter-field">
-              <label for="product-brand">Brand</label>
-              <input id="product-brand" name="brand" [(ngModel)]="draftFilters.brand" placeholder="Any brand" />
-            </div>
-            <div class="filter-field">
-              <label for="product-city">City</label>
-              <input id="product-city" name="city" [(ngModel)]="draftFilters.city" placeholder="Any city" />
-            </div>
-            <div class="filter-field">
-              <label for="product-state">State</label>
-              <input id="product-state" name="state" [(ngModel)]="draftFilters.state" placeholder="Any state" />
-            </div>
-            <div class="filter-field">
-              <label for="product-min-price">Minimum price (₹)</label>
-              <input id="product-min-price" name="minPrice" type="number" min="0" step="0.01" [(ngModel)]="draftFilters.minPrice" placeholder="No minimum" />
-            </div>
-            <div class="filter-field">
-              <label for="product-max-price">Maximum price (₹)</label>
-              <input id="product-max-price" name="maxPrice" type="number" min="0" step="0.01" [(ngModel)]="draftFilters.maxPrice" placeholder="No maximum" />
-            </div>
-            <label class="check-field"><input type="checkbox" name="onlineOnly" [(ngModel)]="draftFilters.onlineOnly" /><span>Businesses accepting online orders only</span></label>
-            <label class="check-field"><input type="checkbox" name="variantsOnly" [(ngModel)]="draftFilters.variantsOnly" /><span>Variant products only</span></label>
-            <label class="check-field"><input type="checkbox" name="withImages" [(ngModel)]="draftFilters.withImages" /><span>Products with images</span></label>
-          </form>
-        </app-filter-drawer>
-
-        @if (filterNotice()) { <p class="notice" role="status">{{ filterNotice() }}</p> }
-        @if (loading()) {
-          <div style="padding: 24px 0">
-            <app-skeleton-loader variant="card" [count]="8" />
-          </div>
-        } @else if (error()) {
-          <div class="state error" role="alert">{{ error() }} <button type="button" (click)="load()">Try again</button></div>
-        } @else if (products().length) {
-          <div class="grid">
-            @for (product of products(); track product.id) {
-              <app-product-card
-                [product]="product"
-                [showPrice]="true"
-                currency="₹ "
-                actionLabel="View product"
-                (selected)="openProduct($event)"
-                (businessSelected)="openBusiness($event)" />
-            }
-          </div>
-          <app-pagination [currentPage]="page()" [totalItems]="total()" [pageSize]="12" (pageChange)="changePage($event)" />
-          <p class="data-note">Only active products published by approved businesses with active storefronts are displayed. “Newly added” uses the product record creation date.</p>
-        } @else {
-          <app-empty-state
-            icon="🛍️"
-            title="No products found"
-            description="Try changing your search terms or clearing active category and price filters."
-            actionText="Clear all filters"
-            (actionClicked)="clearAllFilters()" />
-        }
-      </section>
-    </main>
-  
+      </div>
+      <app-pagination
+        [currentPage]="page()"
+        [totalItems]="total()"
+        [pageSize]="pageSize"
+        (pageChange)="changePage($event)"
+      />
+      <p class="data-note">
+        Only active products published by approved businesses with active storefronts are displayed.
+        “Newly added” uses the product record creation date.
+      </p>
+    } @else {
+      <app-empty-state
+        icon="🛍️"
+        title="No products found"
+        description="Try changing your search terms or clearing active category and price filters."
+        actionText="Clear all filters"
+        (actionClicked)="clearAllFilters()"
+      />
+    }
+  </section>
+</main>

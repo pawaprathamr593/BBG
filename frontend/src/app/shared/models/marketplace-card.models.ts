@@ -20,8 +20,16 @@ export interface BusinessCardModel {
   cover_image_path: string | null;
   city: string | null;
   state: string | null;
+  country_code?: string | null;
   whatsapp_enabled: boolean;
+  whatsapp_number?: string | null;
   accept_online_orders: boolean;
+  featured?: boolean;
+  verified?: boolean;
+  product_count?: number;
+  years_in_operation?: number;
+  average_rating?: number;
+  specialities?: string[];
   rank?: number;
   popularity?: { views: number; enquiries: number; engagements: number };
   created_on?: string;
@@ -36,11 +44,22 @@ export interface ProductCardModel {
   description: string | null;
   category_name: string | null;
   brand_name: string | null;
-  selling_price?: number | string;
+  selling_price?: number | string | null;
+  featured?: boolean;
+  availability_status?: string | null;
   primary_image_url?: string | null;
   media?: CardMediaModel[];
   unit: { symbol: string };
-  business: { business_name: string; business_slug: string };
+  business: {
+    business_name: string;
+    business_slug: string;
+    logo_path?: string | null;
+    city?: string | null;
+    state?: string | null;
+    country_code?: string | null;
+    whatsapp_enabled?: boolean;
+    whatsapp_number?: string | null;
+  };
   distance_km?: number;
   popularity?: { engagements: number };
   created_on: string;
@@ -54,5 +73,12 @@ export interface PromotionCardModel {
   valid_until: string | null;
   business_name: string;
   business_slug: string;
+  logo_path?: string | null;
+  category_name?: string | null;
+  city?: string | null;
+  state?: string | null;
+  verified?: boolean;
+  visibility?: string | null;
+  hashtags?: string[];
   media?: CardMediaModel[];
 }

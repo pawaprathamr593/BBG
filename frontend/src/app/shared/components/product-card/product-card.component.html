@@ -1,0 +1,223 @@
+<article class="bbg-product-card" [class.has-image]="hasValidImage()">
+  <!-- 1. Product Image Section (4:3 Aspect Ratio) -->
+  <div
+    class="product-media-container"
+    (click)="onDetailsClick()"
+    (keydown.enter)="onDetailsKeydown($event)"
+    (keydown.space)="onDetailsKeydown($event)"
+    role="button"
+    tabindex="0"
+    [attr.aria-label]="'View details for ' + product().product_name"
+  >
+    @if (hasValidImage()) {
+      <img
+        class="product-image"
+        [src]="displayImageUrl()"
+        [alt]="product().product_name"
+        loading="lazy"
+        (error)="onImageError()"
+      />
+    } @else if (primaryVideo()) {
+      <video
+        class="product-video"
+        [src]="primaryVideo()"
+        muted
+        autoplay
+        loop
+        playsinline
+        preload="metadata"
+        [attr.aria-label]="product().product_name + ' video preview'"
+      ></video>
+    } @else {
+      <div class="product-image-placeholder" aria-hidden="true">
+        <svg
+          class="placeholder-svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"
+          />
+        </svg>
+        <span class="placeholder-monogram">{{ productMonogram() }}</span>
+      </div>
+    }
+
+    <!-- Featured Badge (Approved Yellow/Gold Accent) -->
+    @if (product().featured) {
+      <span class="featured-badge">Featured</span>
+    }
+
+    <!-- Multiple Images Indicator -->
+    @if (extraMediaCount() > 0) {
+      <span class="media-count-badge">+{{ extraMediaCount() }} photos</span>
+    }
+  </div>
+
+  <!-- 2. Product Information & Price -->
+  <div class="product-body">
+    <!-- Category & Availability Badges -->
+    @if (product().category_name || product().availability_status) {
+      <div class="meta-badges-row">
+        @if (product().category_name) {
+          <span class="category-chip">{{ product().category_name }}</span>
+        }
+        @if (product().availability_status) {
+          <span class="availability-chip">{{ product().availability_status }}</span>
+        }
+      </div>
+    }
+
+    <!-- Product Name -->
+    <h3
+      class="product-title"
+      (click)="onDetailsClick()"
+      (keydown.enter)="onDetailsKeydown($event)"
+      (keydown.space)="onDetailsKeydown($event)"
+      role="button"
+      tabindex="0"
+      [attr.title]="product().product_name"
+    >
+      {{ product().product_name }}
+    </h3>
+
+    <!-- Short Description -->
+    @if (product().description) {
+      <p class="product-description">{{ product().description }}</p>
+    }
+
+    <!-- 3. Product Price Behaviour: State A (Price Available) vs State B (Price on Request) -->
+    @if (hasValidPrice()) {
+      <div class="pricing-panel price-available">
+        <span class="pricing-kicker">PRODUCT PRICE</span>
+        <div class="price-value-line">
+          <strong class="price-amount">{{ formattedPrice() }}</strong>
+          @if (product().unit?.symbol) {
+            <span class="price-unit">/ {{ product().unit.symbol }}</span>
+          }
+          @if (product().distance_km !== undefined) {
+            <span class="distance-badge">{{ product().distance_km }} km away</span>
+          }
+        </div>
+      </div>
+    } @else {
+      <div class="pricing-panel price-on-request">
+        <span class="pricing-kicker">PRICE ON REQUEST</span>
+        <strong class="price-request-title">Price on Request</strong>
+        <p class="price-request-note">
+          Contact the business to know the product price and availability.
+        </p>
+      </div>
+    }
+
+    <!-- 4. Associated Business Information -->
+    @if (product().business?.business_name) {
+      <div class="associated-business-block">
+        @if (hasValidBusinessLogo()) {
+          <img
+            class="business-mini-logo"
+            [src]="product().business.logo_path"
+            [alt]="product().business.business_name + ' logo'"
+            loading="lazy"
+            (error)="onBusinessLogoError()"
+          />
+        } @else {
+          <span class="business-mini-monogram" aria-hidden="true">{{ businessMonogram() }}</span>
+        }
+
+        <div class="business-mini-copy">
+          @if (hasBusinessSlug()) {
+            <button
+              type="button"
+              class="business-name-btn"
+              (click)="onBusinessClick($event)"
+              [attr.aria-label]="'Visit ' + product().business.business_name + ' storefront'"
+            >
+              {{ product().business.business_name }}
+            </button>
+          } @else {
+            <span class="business-name-static">{{ product().business.business_name }}</span>
+          }
+          @if (businessLocation()) {
+            <span class="business-mini-location">{{ businessLocation() }}</span>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Added Timestamp (when enabled) -->
+    @if (showCreated() && product().created_on) {
+      <time class="created-time" [attr.datetime]="product().created_on">
+        Added {{ product().created_on | date: 'mediumDate' }}
+      </time>
+    }
+
+    <!-- 5. Action Area: Primary Row (View Details + WhatsApp / Contact for Price) & Dedicated Explore Storefront Button -->
+    <div class="card-actions-area">
+      <div class="primary-actions-row" [class.single-action]="!isWhatsAppAvailable()">
+        <button
+          type="button"
+          class="btn-action-details"
+          (click)="onDetailsClick()"
+          [attr.aria-label]="actionLabel() + ' for ' + product().product_name"
+        >
+          <span class="action-text">{{ actionLabel() }}</span>
+          <span class="arrow-icon" aria-hidden="true">→</span>
+        </button>
+
+        @if (isWhatsAppAvailable()) {
+          <button
+            type="button"
+            class="btn-action-whatsapp"
+            [class.price-enquiry]="!hasValidPrice()"
+            (click)="onWhatsAppClick($event)"
+            [attr.aria-label]="
+              hasValidPrice()
+                ? 'Enquire about ' + product().product_name + ' on WhatsApp'
+                : 'Contact business for price of ' + product().product_name + ' on WhatsApp'
+            "
+          >
+            <svg class="action-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path
+                d="M12.03 2C6.5 2 2 6.48 2 12c0 1.98.58 3.83 1.58 5.39L2.5 22l4.74-1.04A9.97 9.97 0 0012.03 22C17.56 22 22 17.52 22 12S17.56 2 12.03 2zm5.82 14.12c-.25.7-1.44 1.33-2 1.41-.51.07-1.15.1-1.85-.12-.43-.14-.98-.32-1.69-.63-2.97-1.29-4.91-4.31-5.06-4.51-.15-.2-1.21-1.61-1.21-3.07 0-1.46.76-2.18 1.03-2.48.27-.3.59-.37.79-.37.2 0 .4 0 .57.01.18.01.43-.07.67.51.25.6.84 2.07.92 2.22.07.15.12.32.02.52-.1.2-.15.32-.3.5-.15.17-.31.39-.44.52-.15.15-.3.31-.13.61.17.3.77 1.27 1.65 2.06 1.13 1.01 2.09 1.32 2.39 1.47.3.15.47.12.64-.07.18-.2.74-.87.94-1.17.2-.3.4-.25.67-.15.27.1 1.73.82 2.03.97.3.15.5.22.57.35.07.12.07.72-.18 1.42z"
+              />
+            </svg>
+            <span class="action-text">{{
+              hasValidPrice() ? 'WhatsApp' : 'Contact Business for Price'
+            }}</span>
+          </button>
+        }
+      </div>
+
+      <!-- Dedicated Full-Width Explore Storefront Button -->
+      @if (hasBusinessSlug()) {
+        <button
+          type="button"
+          class="btn-explore-storefront"
+          (click)="onBusinessClick($event)"
+          [attr.aria-label]="'Explore storefront of ' + product().business.business_name"
+        >
+          <svg
+            class="action-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z"
+            />
+          </svg>
+          <span>Explore Storefront</span>
+        </button>
+      }
+    </div>
+  </div>
+</article>

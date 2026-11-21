@@ -10,6 +10,7 @@ use App\Services\Interfaces\IAuthServices;
 use App\Services\Interfaces\IPromotionServices;
 use App\Utils\AwsS3Storage;
 use DateTimeImmutable;
+use DateTimeZone;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use Yiisoft\Db\Connection\ConnectionInterface;
@@ -432,20 +433,46 @@ final readonly class PromotionServices implements IPromotionServices
             );
         }
 
-        $content = $this->requiredText($actionData['post_content'] ?? '', 10000);
+        if ($operation === 'update' && ($existing['data']['publication_status'] ?? '') === 'PUBLISHED') {
+            $resArr['msgArr'][] = 'Unpublish this promotion before editing it.';
+            return $resArr;
+        }
+
+        $hasContent = array_key_exists('post_content', $actionData);
+        if ($operation === 'update' && !$hasContent) {
+            $content = $this->requiredText($existing['data']['post_content'] ?? '', 10000);
+        } else {
+            $content = $this->requiredText($actionData['post_content'] ?? '', 10000);
+        }
         if ($content === null) {
             $resArr['msgArr'][] = 'post_content is required and must not exceed 10000 characters.';
             return $resArr;
         }
-        $title = $this->nullableText($actionData['post_title'] ?? null, 180);
-        $validUntil = $this->dateTimeText($actionData['valid_until'] ?? null);
-        if (($actionData['valid_until'] ?? null) !== null && $validUntil === null) {
-            $resArr['msgArr'][] = 'valid_until must be a valid date-time.';
-            return $resArr;
-        }
-        if ($validUntil !== null && strtotime($validUntil) <= time()) {
-            $resArr['msgArr'][] = 'valid_until must be in the future.';
-            return $resArr;
+
+        $hasTitle = array_key_exists('post_title', $actionData);
+        $title = ($operation === 'update' && !$hasTitle)
+            ? $this->nullableText($existing['data']['post_title'] ?? null, 180)
+            : $this->nullableText($actionData['post_title'] ?? null, 180);
+
+        $existingValidUntil = $operation === 'update'
+            ? $this->dateTimeText($existing['data']['valid_until'] ?? null)
+            : null;
+        $hasValidUntil = array_key_exists('valid_until', $actionData);
+        if ($operation === 'update' && !$hasValidUntil) {
+            $validUntil = $existingValidUntil;
+        } else {
+            $rawValidUntil = $actionData['valid_until'] ?? null;
+            $isEmptyValidUntil = $rawValidUntil === null || (is_string($rawValidUntil) && trim($rawValidUntil) === '');
+            $validUntil = $isEmptyValidUntil ? null : $this->dateTimeText($rawValidUntil);
+            if (!$isEmptyValidUntil && $validUntil === null) {
+                $resArr['msgArr'][] = 'valid_until must be a valid date-time.';
+                return $resArr;
+            }
+            $validUntilChanged = $operation === 'create' || $validUntil !== $existingValidUntil;
+            if ($validUntil !== null && $validUntilChanged && strtotime($validUntil . ' UTC') <= time()) {
+                $resArr['msgArr'][] = 'valid_until must be in the future.';
+                return $resArr;
+            }
         }
 
         if ($operation === 'create') {
@@ -515,12 +542,14 @@ final readonly class PromotionServices implements IPromotionServices
 
     private function dateTimeText(mixed $value): ?string
     {
-        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         if (!is_scalar($value) || trim((string) $value) === '') {
             return null;
         }
         try {
-            return (new DateTimeImmutable((string) $value))->format('Y-m-d H:i:s');
+            $utc = new DateTimeZone('UTC');
+            return (new DateTimeImmutable(trim((string) $value), $utc))
+                ->setTimezone($utc)
+                ->format('Y-m-d H:i:s');
         } catch (Throwable) {
             return null;
         }

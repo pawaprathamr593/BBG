@@ -1,30 +1,254 @@
 <section class="addresses-page" aria-labelledby="addresses-heading">
- <header class="addresses-heading"><div><p class="eyebrow">PERSONAL ACCOUNT</p><h2 id="addresses-heading">Saved addresses</h2><p>Manage the delivery addresses linked to your BBG account.</p></div>
- @if(canManage()){<button type="button" class="primary-button" (click)="create()" [disabled]="busy()">＋ Add address</button>}</header>
- @if(notice()){<p class="module-notice" role="status">{{notice()}}</p>} @if(error()){<p class="module-error" role="alert">{{error()}}</p>}
- @if(addresses().length){
-  <div class="address-grid">@for(address of addresses();track address['address_id']??address['id']){
-   <article class="address-card"><header><div><span class="address-label">{{label(address)}}</span>@if(isDefault(address)){<span class="default-pill">Default</span>}</div></header>
-    <strong>{{value(address,'recipient_name')||'Recipient not provided'}}</strong>
-    <p>{{value(address,'address_line_1')}} {{value(address,'address_line_2')}}</p>
-    <p>{{value(address,'city')}}@if(value(address,'state')){, {{value(address,'state')}}} {{value(address,'postal_code')}}</p>
-    @if(value(address,'mobile')){<small>{{value(address,'mobile')}}</small>}
-    @if(canManage()){<footer><button type="button" (click)="edit(address)" [disabled]="busy()">Edit</button>@if(!isDefault(address)){<button type="button" (click)="setDefault(address)" [disabled]="busy()">Set default</button>}<button type="button" class="danger" (click)="remove(address)" [disabled]="busy()">Delete</button></footer>}
-   </article>
-  }</div>
- }@else{<div class="empty-state"><strong>No saved addresses yet</strong><p>Add an address to make future orders easier to complete.</p>@if(canManage()){<button type="button" class="primary-button" (click)="create()">Add address</button>}</div>}
+  <header class="addresses-heading">
+    <div class="heading-content">
+      <span class="eyebrow">PERSONAL ACCOUNT</span>
+      <h2 id="addresses-heading">Saved Addresses</h2>
+      <p class="heading-desc">Manage delivery and contact addresses linked to your BBG account.</p>
+    </div>
+    @if (canManage()) {
+      <button type="button" class="btn-primary" (click)="create()" [disabled]="busy()">
+        <span class="btn-icon">＋</span> Add Address
+      </button>
+    }
+  </header>
+
+  @if (notice()) {
+    <p class="module-notice" role="status">{{ notice() }}</p>
+  }
+  @if (error()) {
+    <p class="module-error" role="alert">{{ error() }}</p>
+  }
+
+  @if (addresses().length) {
+    <div class="address-grid">
+      @for (address of addresses(); track address['address_id'] ?? address['id']) {
+        <article class="address-card">
+          <header class="card-header">
+            <div class="label-row">
+              <span class="address-label">{{ label(address) }}</span>
+              @if (isDefault(address)) {
+                <app-status-badge status="active" label="Default Address" size="sm" />
+              }
+            </div>
+          </header>
+
+          <strong class="recipient-name">{{
+            value(address, 'recipient_name') || 'Recipient not provided'
+          }}</strong>
+          <p class="address-lines">
+            {{ value(address, 'address_line_1') }}
+            @if (value(address, 'address_line_2')) {
+              , {{ value(address, 'address_line_2') }}
+            }
+          </p>
+          <p class="city-postal">
+            {{ value(address, 'city') }}
+            @if (value(address, 'state')) {
+              , {{ value(address, 'state') }}
+            }
+            {{ value(address, 'postal_code') }}
+          </p>
+          @if (value(address, 'mobile')) {
+            <small class="address-mobile">📞 {{ value(address, 'mobile') }}</small>
+          }
+
+          @if (canManage()) {
+            <footer class="card-actions">
+              <button type="button" class="action-btn" (click)="edit(address)" [disabled]="busy()">
+                Edit
+              </button>
+              @if (!isDefault(address)) {
+                <button
+                  type="button"
+                  class="action-btn secondary"
+                  (click)="setDefault(address)"
+                  [disabled]="busy()"
+                >
+                  Set Default
+                </button>
+              }
+              <button
+                type="button"
+                class="action-btn danger"
+                (click)="remove(address)"
+                [disabled]="busy()"
+              >
+                Delete
+              </button>
+            </footer>
+          }
+        </article>
+      }
+    </div>
+  } @else {
+    <app-empty-state
+      title="No saved addresses yet"
+      description="Add an address to manage your location and contact details on BBG."
+      [actionText]="canManage() ? 'Add Address' : ''"
+      icon="📍"
+      (actionClicked)="create()"
+    />
+  }
 </section>
-<app-workspace-drawer [open]="drawerOpen()" [title]="editingId()===null?'Add address':'Edit address'" description="Maintain your saved delivery address." (closed)="drawerOpen.set(false)">
- <form class="address-form" (ngSubmit)="save()">
-  <label>Address label<input name="addressLabel" [ngModel]="form().address_label" (ngModelChange)="updateField('address_label',$event)" maxlength="80"></label>
-  <label>Recipient name<input name="recipientName" [ngModel]="form().recipient_name" (ngModelChange)="updateField('recipient_name',$event)" maxlength="180"></label>
-  <label>Mobile number<input type="tel" name="mobile" [ngModel]="form().mobile" (ngModelChange)="updateField('mobile',$event)" maxlength="30"></label>
-  <label>Address line 1<input name="addressLine1" [ngModel]="form().address_line_1" (ngModelChange)="updateField('address_line_1',$event)" maxlength="180" required></label>
-  <label>Address line 2<input name="addressLine2" [ngModel]="form().address_line_2" (ngModelChange)="updateField('address_line_2',$event)" maxlength="180"></label>
-  <div class="form-row"><label>City<input name="city" [ngModel]="form().city" (ngModelChange)="updateField('city',$event)"></label><label>State<input name="state" [ngModel]="form().state" (ngModelChange)="updateField('state',$event)"></label></div>
-  <div class="form-row"><label>Postal code<input name="postalCode" [ngModel]="form().postal_code" (ngModelChange)="updateField('postal_code',$event)"></label><label>Country code<input name="countryCode" [ngModel]="form().country_code" (ngModelChange)="updateField('country_code',$event)" maxlength="2"></label></div>
-  @if(editingId()!==null){<label class="default-toggle"><input type="checkbox" [ngModel]="form().is_default" (ngModelChange)="updateField('is_default',$event)" name="isDefault"> Set as default address</label>}
-  @if(error()){<p class="module-error" role="alert">{{error()}}</p>}
-  <footer><button type="button" (click)="drawerOpen.set(false)" [disabled]="busy()">Cancel</button><button type="submit" class="primary-button" [disabled]="busy()||!form().address_line_1.trim()">{{busy()?'Saving…':(editingId()===null?'Add address':'Save address')}}</button></footer>
- </form>
+
+<app-workspace-drawer
+  [open]="drawerOpen()"
+  [title]="editingId() === null ? 'Add Address' : 'Edit Address'"
+  description="Maintain your saved contact or delivery address."
+  eyebrow="ADDRESS BOOK"
+  (closed)="drawerOpen.set(false)"
+>
+  <form class="address-form" (ngSubmit)="save()">
+    <label class="form-field">
+      <span class="field-label">Address Label</span>
+      <input
+        type="text"
+        name="addressLabel"
+        [ngModel]="form().address_label"
+        (ngModelChange)="updateField('address_label', $event)"
+        maxlength="80"
+        class="form-input"
+        placeholder="e.g. Home, Office, Warehouse"
+      />
+    </label>
+
+    <label class="form-field">
+      <span class="field-label">Recipient Name</span>
+      <input
+        type="text"
+        name="recipientName"
+        [ngModel]="form().recipient_name"
+        (ngModelChange)="updateField('recipient_name', $event)"
+        maxlength="180"
+        class="form-input"
+        placeholder="Full name of recipient or contact person"
+      />
+    </label>
+
+    <label class="form-field">
+      <span class="field-label">Mobile Number</span>
+      <input
+        type="tel"
+        name="mobile"
+        [ngModel]="form().mobile"
+        (ngModelChange)="updateField('mobile', $event)"
+        maxlength="30"
+        class="form-input"
+        placeholder="+919876543210"
+      />
+    </label>
+
+    <label class="form-field">
+      <span class="field-label">Address Line 1 <span class="required">*</span></span>
+      <input
+        type="text"
+        name="addressLine1"
+        [ngModel]="form().address_line_1"
+        (ngModelChange)="updateField('address_line_1', $event)"
+        maxlength="180"
+        required
+        class="form-input"
+        placeholder="Flat, building or house number, street"
+      />
+    </label>
+
+    <label class="form-field">
+      <span class="field-label">Address Line 2</span>
+      <input
+        type="text"
+        name="addressLine2"
+        [ngModel]="form().address_line_2"
+        (ngModelChange)="updateField('address_line_2', $event)"
+        maxlength="180"
+        class="form-input"
+        placeholder="Area, landmark or apartment complex"
+      />
+    </label>
+
+    <div class="form-row">
+      <label class="form-field">
+        <span class="field-label">City</span>
+        <input
+          type="text"
+          name="city"
+          [ngModel]="form().city"
+          (ngModelChange)="updateField('city', $event)"
+          class="form-input"
+          placeholder="City"
+        />
+      </label>
+      <label class="form-field">
+        <span class="field-label">State</span>
+        <input
+          type="text"
+          name="state"
+          [ngModel]="form().state"
+          (ngModelChange)="updateField('state', $event)"
+          class="form-input"
+          placeholder="State"
+        />
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label class="form-field">
+        <span class="field-label">Postal Code</span>
+        <input
+          type="text"
+          name="postalCode"
+          [ngModel]="form().postal_code"
+          (ngModelChange)="updateField('postal_code', $event)"
+          class="form-input"
+          placeholder="PIN / Postal Code"
+        />
+      </label>
+      <label class="form-field">
+        <span class="field-label">Country Code</span>
+        <input
+          type="text"
+          name="countryCode"
+          [ngModel]="form().country_code"
+          (ngModelChange)="updateField('country_code', $event)"
+          maxlength="2"
+          class="form-input"
+          placeholder="IN"
+        />
+      </label>
+    </div>
+
+    @if (editingId() !== null) {
+      <label class="default-toggle-row">
+        <input
+          type="checkbox"
+          [ngModel]="form().is_default"
+          (ngModelChange)="updateField('is_default', $event)"
+          name="isDefault"
+          class="toggle-checkbox"
+        />
+        <span>Set as default address</span>
+      </label>
+    }
+
+    @if (error()) {
+      <p class="module-error" role="alert">{{ error() }}</p>
+    }
+
+    <footer class="drawer-footer">
+      <button
+        type="button"
+        class="btn-secondary"
+        (click)="drawerOpen.set(false)"
+        [disabled]="busy()"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        class="btn-primary"
+        [disabled]="busy() || !form().address_line_1.trim()"
+      >
+        {{ busy() ? 'Saving…' : editingId() === null ? 'Add Address' : 'Save Changes' }}
+      </button>
+    </footer>
+  </form>
 </app-workspace-drawer>

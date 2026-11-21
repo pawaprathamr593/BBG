@@ -1,0 +1,361 @@
+<article class="bbg-promotion-card" [class.has-media]="mediaItems().length > 0">
+  <!-- 1. Top Utility Bar: Standalone BBG Promotion Badge + Visible Save & Report Icons -->
+  <div class="card-top-bar">
+    <span class="promotion-badge">
+      <span class="badge-accent-dot" aria-hidden="true"></span>
+      <span>{{ label() }}</span>
+    </span>
+
+    <div class="header-icon-actions">
+      <button
+        type="button"
+        class="btn-header-icon btn-save-post"
+        [class.saved]="isSaved()"
+        (click)="toggleSave($event)"
+        [attr.aria-pressed]="isSaved()"
+        [attr.aria-label]="isSaved() ? 'Remove promotion from saved' : 'Save promotion'"
+        [title]="isSaved() ? 'Saved' : 'Save promotion'"
+      >
+        <svg
+          class="header-action-svg"
+          viewBox="0 0 24 24"
+          [attr.fill]="isSaved() ? 'currentColor' : 'none'"
+          stroke="currentColor"
+          stroke-width="1.8"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
+          />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        class="btn-header-icon btn-report-post"
+        [class.active]="reportOpen()"
+        (click)="toggleReportPanel($event)"
+        [attr.aria-expanded]="reportOpen()"
+        aria-label="Report this promotional post"
+        title="Report post"
+      >
+        <svg
+          class="header-action-svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. Business Identity Header & Campaign Schedule -->
+  <header class="card-header">
+    <div class="business-identity">
+      @if (hasValidLogo()) {
+        <img
+          class="business-avatar"
+          [src]="promotion().logo_path"
+          [alt]="promotion().business_name + ' logo'"
+          loading="lazy"
+          (error)="onLogoError()"
+        />
+      } @else {
+        <div class="business-monogram" aria-hidden="true">
+          {{ businessMonogram() }}
+        </div>
+      }
+
+      <div class="business-meta">
+        <div class="business-name-row">
+          @if (promotion().business_slug) {
+            <a
+              class="business-name-link"
+              [routerLink]="['/store', promotion().business_slug]"
+              (click)="$event.stopPropagation()"
+            >
+              {{ promotion().business_name }}
+            </a>
+          } @else {
+            <span class="business-name">{{ promotion().business_name }}</span>
+          }
+
+          @if (isVerified()) {
+            <span
+              class="verified-badge"
+              title="Verified BBG Merchant"
+              aria-label="Verified Merchant"
+            >
+              <svg class="verified-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path
+                  fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </span>
+          }
+        </div>
+
+        <div class="post-meta-subline">
+          @if (promotion().category_name) {
+            <span class="business-category">{{ promotion().category_name }}</span>
+          }
+          @if (businessLocation()) {
+            @if (promotion().category_name) {
+              <span class="meta-separator" aria-hidden="true">·</span>
+            }
+            <span class="business-location">{{ businessLocation() }}</span>
+          }
+          @if (promotion().category_name || businessLocation()) {
+            <span class="meta-separator" aria-hidden="true">·</span>
+          }
+          <time class="published-time" [attr.datetime]="promotion().published_on">
+            {{ promotion().published_on | date: 'mediumDate' }}
+          </time>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compact Readable Promotion Dates Bar -->
+    <div class="campaign-dates-bar" [class.expired]="isExpired()">
+      <svg
+        class="calendar-icon"
+        viewBox="0 0 20 20"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        aria-hidden="true"
+      >
+        <rect x="3" y="4.5" width="14" height="12.5" rx="2" />
+        <path d="M6.5 2.5v3M13.5 2.5v3M3 8.5h14" stroke-linecap="round" />
+      </svg>
+      <span class="campaign-date-range">
+        @if (promotion().valid_until) {
+          <span>{{ promotion().published_on | date: 'MMM d' }}</span>
+          <span class="date-dash" aria-hidden="true">–</span>
+          <span>{{ promotion().valid_until | date: 'MMM d, y' }}</span>
+        } @else {
+          <span>Active from {{ promotion().published_on | date: 'MMM d, y' }}</span>
+        }
+      </span>
+      @if (isExpired()) {
+        <span class="campaign-status-pill expired">Expired</span>
+      } @else if (promotion().valid_until) {
+        <span class="campaign-status-pill active">Valid offer</span>
+      }
+    </div>
+  </header>
+
+  @if (saveFeedback()) {
+    <div class="save-feedback" role="status">{{ saveFeedback() }}</div>
+  }
+
+  <!-- Inline Report Panel (Backed by EngagementApiService.reportContent) -->
+  @if (reportOpen()) {
+    <div class="report-post-panel" role="region" aria-label="Report promotional post">
+      <div class="report-panel-header">
+        <strong>Report this promotional post</strong>
+        <button
+          type="button"
+          class="btn-close-report"
+          (click)="closeReportPanel()"
+          aria-label="Cancel report"
+        >
+          ×
+        </button>
+      </div>
+      @if (reportError()) {
+        <p class="report-error" role="alert">{{ reportError() }}</p>
+      }
+      <label class="report-field">
+        <span>Reason</span>
+        <select [ngModel]="reportReason()" (ngModelChange)="reportReason.set($event)">
+          @for (item of reportReasons; track item.value) {
+            <option [value]="item.value">{{ item.label }}</option>
+          }
+        </select>
+      </label>
+      <label class="report-field">
+        <span>Additional details (optional)</span>
+        <textarea
+          rows="2"
+          maxlength="1000"
+          placeholder="Provide context for moderators..."
+          [ngModel]="reportDetails()"
+          (ngModelChange)="reportDetails.set($event)"
+        ></textarea>
+      </label>
+      <div class="report-panel-actions">
+        <button type="button" class="btn-report-cancel" (click)="closeReportPanel()">Cancel</button>
+        <button
+          type="button"
+          class="btn-report-submit"
+          [disabled]="submittingReport()"
+          (click)="submitReport()"
+        >
+          {{ submittingReport() ? 'Submitting…' : 'Submit Report' }}
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (reportFeedback()) {
+    <div class="report-feedback" role="status">{{ reportFeedback() }}</div>
+  }
+
+  <!-- 3. Post Title, Description & Optional Hashtags -->
+  <div class="card-body">
+    @if (promotion().post_title) {
+      <h3
+        class="post-title"
+        (click)="selected.emit(promotion())"
+        (keydown.enter)="onSelectKeydown($event)"
+        (keydown.space)="onSelectKeydown($event)"
+        role="button"
+        tabindex="0"
+      >
+        {{ promotion().post_title }}
+      </h3>
+    }
+
+    <div class="post-content-container">
+      <p class="post-text" [class.clamped]="!isExpanded() && isLongContent()">
+        {{ promotion().post_content }}
+      </p>
+      @if (isLongContent()) {
+        <button
+          type="button"
+          class="btn-expand-text"
+          (click)="toggleExpand()"
+          [attr.aria-expanded]="isExpanded()"
+        >
+          {{ isExpanded() ? 'Show less' : 'Read more' }}
+        </button>
+      }
+    </div>
+
+    @if (promotion().hashtags?.length) {
+      <div class="hashtags-row" aria-label="Post tags">
+        @for (tag of promotion().hashtags; track tag) {
+          <span class="hashtag-chip">#{{ tag }}</span>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- 4. Responsive Media Section with Multi-Media Indicator -->
+  @if (mediaItems().length > 0) {
+    <div class="card-media-section">
+      @if (mediaItems().length > 1 && firstMediaType() === 'IMAGE') {
+        <span
+          class="multi-media-badge"
+          [attr.aria-label]="mediaItems().length + ' media attachments'"
+        >
+          {{ mediaItems().length }} photos
+        </span>
+      }
+
+      @if (firstMediaType() === 'IMAGE') {
+        @if (mediaItems().length === 1) {
+          <div class="single-media-hero">
+            @if (!isMediaFailed(mediaItems()[0].id) && mediaItems()[0].url) {
+              <img
+                class="hero-media-img"
+                [src]="mediaItems()[0].url"
+                [alt]="mediaItems()[0].original_file_name || promotion().post_title"
+                loading="lazy"
+                (error)="onMediaError(mediaItems()[0].id)"
+              />
+            } @else {
+              <div class="media-fallback" aria-label="Image unavailable">Image unavailable</div>
+            }
+          </div>
+        } @else {
+          <div
+            class="media-grid"
+            [attr.data-count]="mediaItems().length > 4 ? 4 : mediaItems().length"
+          >
+            @for (media of mediaItems(); track media.id; let idx = $index) {
+              @if (idx < mediaLimit()) {
+                <div
+                  class="media-grid-item"
+                  [class.has-overlay]="
+                    idx === mediaLimit() - 1 && mediaItems().length > mediaLimit()
+                  "
+                >
+                  @if (!isMediaFailed(media.id) && media.url) {
+                    <img
+                      class="grid-media-img"
+                      [src]="media.url"
+                      [alt]="media.original_file_name || promotion().post_title"
+                      loading="lazy"
+                      (error)="onMediaError(media.id)"
+                    />
+                  } @else {
+                    <div class="media-fallback" aria-label="Image unavailable">Unavailable</div>
+                  }
+                  @if (idx === mediaLimit() - 1 && mediaItems().length > mediaLimit()) {
+                    <div class="media-overflow-overlay">
+                      <span class="overflow-count">+{{ mediaItems().length - mediaLimit() }}</span>
+                    </div>
+                  }
+                </div>
+              }
+            }
+          </div>
+        }
+      } @else if (firstMediaType() === 'VIDEO') {
+        <div class="video-container">
+          <video class="feed-video" [src]="mediaItems()[0].url" controls preload="metadata"></video>
+        </div>
+      } @else if (firstMediaType() === 'AUDIO') {
+        <div class="audio-container">
+          <audio class="feed-audio" [src]="mediaItems()[0].url" controls></audio>
+        </div>
+      } @else if (firstMediaType() === 'DOCUMENT') {
+        <div class="documents-list">
+          @for (doc of mediaItems(); track doc.id) {
+            <a
+              class="document-pill"
+              [href]="doc.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Download attachment"
+            >
+              <span class="doc-icon" aria-hidden="true">📄</span>
+              <span class="doc-title">{{ doc.original_file_name || 'Download document' }}</span>
+              <span class="doc-action-icon" aria-hidden="true">↗</span>
+            </a>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- 5. Storefront Navigation CTA -->
+  <div class="card-footer-cta">
+    <button
+      type="button"
+      class="btn-view-promotion"
+      (click)="selected.emit(promotion())"
+      [attr.aria-label]="'Visit ' + promotion().business_name + ' storefront'"
+    >
+      <span>Visit Storefront</span>
+      <span class="cta-arrow" aria-hidden="true">→</span>
+    </button>
+  </div>
+
+  <!-- 6. Strictly ONE Engagement Row & Comments Component -->
+  <app-promotion-engagement [postId]="promotion().id" [postTitle]="promotion().post_title" />
+</article>

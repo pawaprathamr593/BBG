@@ -1,86 +1,212 @@
-<section class="records-section">
+<section class="records-section" aria-labelledby="records-heading">
   <div class="section-title">
-    <div><p class="eyebrow">LIVE RECORDS</p><h2>{{ heading() }}</h2></div>
-    <span class="record-count">{{ cards().length }} shown of {{ totalItems() }}</span>
+    <div class="title-meta">
+      <span class="eyebrow">WORKSPACE RECORDS</span>
+      <h2 id="records-heading">{{ heading() }}</h2>
+    </div>
+    <span class="record-count-badge">
+      <span class="count-num">{{ cards().length }}</span> shown of {{ totalItems() }} records
+    </span>
   </div>
+
   <div class="records-list">
     @if (cards().length) {
       @for (card of cards(); track card.id) {
         <article class="record-card">
           <div class="record-head">
-            <div><strong>{{ card.title }}</strong><span>{{ card.subtitle }}</span></div>
-            @if (card.status) { <span class="status-chip" [class]="card.statusClass">{{ card.status }}</span> }
+            <div class="record-title-group">
+              <strong class="record-title">{{ card.title }}</strong>
+              <span class="record-subtitle">{{ card.subtitle }}</span>
+            </div>
+            @if (card.status) {
+              <app-status-badge [status]="card.status" size="sm" />
+            }
           </div>
+
           @if (card.fields.length) {
-            <div class="record-fields">
+            <div class="record-fields-grid">
               @for (field of card.fields; track field.key) {
-                <div><span>{{ field.label }}</span><strong>{{ field.value }}</strong></div>
-              }
-            </div>
-          }
-          @if (card.showBcn) {
-            <div class="bcn-record">
-              <span>BBG Contribution Number (BCN ID)</span>
-              <div>
-                <strong>{{ card.bcn || 'Not assigned yet' }}</strong>
-                @if (card.bcn; as bcn) {
-                  <button type="button" (click)="copyBcnRequested.emit(bcn)">Copy</button>
-                }
-              </div>
-            </div>
-          }
-          @if (card.showDetail) { <button type="button" class="secondary-action" (click)="detailRequested.emit(card.record)" [disabled]="loading()">View details</button> }
-          @if (card.showSubscriptionReview) { <button type="button" class="secondary-action" (click)="subscriptionReviewRequested.emit(card.record)" [disabled]="loading()">View business details, receipts &amp; history</button> }
-          @if (card.paymentQr; as qr) {
-            <div class="subscription-payment-qr">
-              <img [src]="qr.url" alt="UPI payment QR for this subscription">
-              <div><strong>Pay using UPI</strong><span>{{ qr.payeeName }}</span><span>{{ qr.upiId }}</span><small>QR version {{ qr.version }} · retained for this request</small></div>
-            </div>
-            @if (qr.instructions) { <p class="payment-instructions">{{ qr.instructions }}</p> }
-          }
-          @if (card.media.length) {
-            <div class="post-media-strip" aria-label="Post attachments">
-              @for (media of card.media; track media.id) {
-                <div class="post-media-item">
-                  @if (media.url && media.type === 'IMAGE') { <img [src]="media.url" alt="Post image attachment"> }
-                  @else if (media.url && media.type === 'VIDEO') { <video controls [src]="media.url" aria-label="Post video attachment"></video> }
-                  @else if (media.url && media.type === 'AUDIO') { <audio controls [src]="media.url" aria-label="Post audio attachment"></audio> }
-                  @else if (media.url) { <a [href]="media.url" target="_blank" rel="noopener">Open {{ media.type }} attachment</a> }
-                  @else { <span>{{ media.type }} attachment</span> }
-                  @if (media.canRemove) { <button type="button" (click)="mediaRemoveRequested.emit({record: card.record, media: {id: media.id, media_type: media.type, url: media.url}})" [disabled]="loading()">Remove</button> }
+                <div class="field-item">
+                  <span class="field-label">{{ field.label }}</span>
+                  <strong class="field-value">{{ field.value }}</strong>
                 </div>
               }
             </div>
           }
-          @if (card.showProofUpload) {
-            <label class="upload-proof">Upload payment proof
-              <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" [disabled]="loading()" (change)="proofFileSelected.emit({event: $event, record: card.record})">
-            </label>
-            @if (card.proofFileName) {
-              <div class="proof-ready" role="status">
-                <span>Receipt uploaded: {{ card.proofFileName }}</span>
-                <button type="button" (click)="proofSubmitRequested.emit(card.record)" [disabled]="loading()">Submit for Review</button>
+
+          @if (card.showBcn) {
+            <div class="bcn-record-strip">
+              <span class="bcn-label">BBG Contribution Number (BCN ID)</span>
+              <div class="bcn-badge-wrap">
+                @if (card.bcn; as bcn) {
+                  <app-bcn-badge [bcn]="bcn" />
+                  <button
+                    type="button"
+                    class="bcn-copy-btn"
+                    (click)="copyBcnRequested.emit(bcn)"
+                    title="Copy BCN ID"
+                  >
+                    Copy
+                  </button>
+                } @else {
+                  <span class="bcn-unassigned">Not assigned yet</span>
+                }
               </div>
+            </div>
+          }
+
+          @if (card.paymentQr; as qr) {
+            <div class="subscription-payment-qr">
+              <div class="qr-img-box">
+                <img [src]="qr.url" alt="UPI payment QR for this subscription" />
+              </div>
+              <div class="qr-info">
+                <strong>Pay via UPI</strong>
+                <span class="payee-name">{{ qr.payeeName }}</span>
+                <code class="upi-id">{{ qr.upiId }}</code>
+                <small class="qr-version"
+                  >QR version {{ qr.version }} · captured for this request</small
+                >
+              </div>
+            </div>
+            @if (qr.instructions) {
+              <p class="payment-instructions">{{ qr.instructions }}</p>
             }
           }
-          @if (card.actions.length) {
-            <div class="record-actions">
-              @for (action of card.actions; track action.key) {
-                <button type="button" [class.danger]="action.danger" (click)="actionRequested.emit({action: action.key, record: card.record})" [disabled]="loading()">{{ action.label }}</button>
+
+          @if (card.media.length) {
+            <div class="post-media-strip" aria-label="Media attachments">
+              @for (media of card.media; track media.id) {
+                <div class="post-media-item">
+                  @if (media.url && media.type === 'IMAGE') {
+                    <img [src]="media.url" alt="Media attachment" />
+                  } @else if (media.url && media.type === 'VIDEO') {
+                    <video controls [src]="media.url" aria-label="Video attachment"></video>
+                  } @else if (media.url && media.type === 'AUDIO') {
+                    <audio controls [src]="media.url" aria-label="Audio attachment"></audio>
+                  } @else if (media.url) {
+                    <a [href]="media.url" target="_blank" rel="noopener" class="media-file-link">
+                      📄 Open {{ media.type }} file
+                    </a>
+                  } @else {
+                    <span class="media-file-kind">{{ media.type }} attachment</span>
+                  }
+                  @if (media.canRemove) {
+                    <button
+                      type="button"
+                      class="media-remove-btn"
+                      (click)="
+                        mediaRemoveRequested.emit({
+                          record: card.record,
+                          media: { id: media.id, media_type: media.type, url: media.url },
+                        })
+                      "
+                      [disabled]="loading()"
+                    >
+                      Remove
+                    </button>
+                  }
+                </div>
               }
             </div>
           }
+
+          @if (card.showProofUpload) {
+            <div class="proof-upload-section">
+              <label class="upload-proof-box">
+                <span class="upload-icon">📤</span>
+                <div class="upload-text">
+                  <strong>Upload payment receipt / proof</strong>
+                  <small>JPG, PNG, WebP or PDF format</small>
+                </div>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  [disabled]="loading()"
+                  (change)="proofFileSelected.emit({ event: $event, record: card.record })"
+                />
+              </label>
+              @if (card.proofFileName) {
+                <div class="proof-ready-badge" role="status">
+                  <div class="file-info">
+                    <span class="check-icon">✓</span>
+                    <span
+                      >File ready: <strong>{{ card.proofFileName }}</strong></span
+                    >
+                  </div>
+                  <button
+                    type="button"
+                    class="proof-submit-btn"
+                    (click)="proofSubmitRequested.emit(card.record)"
+                    [disabled]="loading()"
+                  >
+                    Submit for Review
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          <div class="record-card-footer">
+            <div class="left-actions">
+              @if (card.showDetail) {
+                <button
+                  type="button"
+                  class="action-btn secondary"
+                  (click)="detailRequested.emit(card.record)"
+                  [disabled]="loading()"
+                >
+                  View Details
+                </button>
+              }
+              @if (card.showSubscriptionReview) {
+                <button
+                  type="button"
+                  class="action-btn secondary"
+                  (click)="subscriptionReviewRequested.emit(card.record)"
+                  [disabled]="loading()"
+                >
+                  Review Details &amp; History
+                </button>
+              }
+            </div>
+
+            @if (card.actions.length) {
+              <div class="record-actions">
+                @for (action of card.actions; track action.key) {
+                  <button
+                    type="button"
+                    class="action-btn"
+                    [class.danger]="action.danger"
+                    [class.primary]="!action.danger"
+                    (click)="actionRequested.emit({ action: action.key, record: card.record })"
+                    [disabled]="loading()"
+                  >
+                    {{ action.label }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
         </article>
       }
     } @else {
-      <p class="records-filter-empty">No records match the current filters on this page. Adjust or reset the filters to see more results.</p>
+      <app-empty-state
+        title="No matching records"
+        description="No records match the current filters on this page. Adjust or reset the filters to see more results."
+        icon="📋"
+      />
     }
   </div>
+
   @if (totalItems() > pageSize()) {
-    <nav class="records-pagination" aria-label="Record pages">
-      <button type="button" (click)="pageChange.emit(currentPage() - 1)" [disabled]="loading() || currentPage() <= 1">Previous</button>
-      <span>Page {{ currentPage() }} of {{ pageCount() }} · {{ totalItems() }} records</span>
-      <button type="button" (click)="pageChange.emit(currentPage() + 1)" [disabled]="loading() || currentPage() >= pageCount()">Next</button>
-    </nav>
+    <div class="pagination-container">
+      <app-pagination
+        [currentPage]="currentPage()"
+        [totalItems]="totalItems()"
+        [pageSize]="pageSize()"
+        (pageChange)="pageChange.emit($event)"
+      />
+    </div>
   }
 </section>

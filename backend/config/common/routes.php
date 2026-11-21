@@ -14,6 +14,7 @@ use App\Modules\Api\V1\Controllers\CustomerController;
 use App\Modules\Api\V1\Controllers\EnquiryController;
 use App\Modules\Api\V1\Controllers\PromotionController;
 use App\Modules\Api\V1\Controllers\EngagementController;
+use App\Modules\Api\V1\Controllers\ProductReviewController;
 use App\Modules\Api\V1\Controllers\SubscriptionController;
 use App\Modules\Api\V1\Controllers\AdminController;
 use App\Modules\Api\V1\Controllers\PaymentController;
@@ -93,6 +94,7 @@ return [
     Route::post('/api/v1/business/storefront/owner/publish')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/storefront/owner/publish'),
     Route::post('/api/v1/business/storefront/unpublish')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/storefront/unpublish'),
     Route::post('/api/v1/business/storefront/owner/unpublish')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/storefront/owner/unpublish'),
+    Route::post('/api/v1/business/media/upload-url')->action([BusinessController::class, 'actionManageBusiness'])->name('api/v1/business/media/upload-url'),
 
     Route::post('/api/v1/catalogue/units/list')->action([CatalogueController::class, 'actionGetCatalogue'])->name('api/v1/catalogue/units/list'),
     Route::post('/api/v1/catalogue/categories/list')->action([CatalogueController::class, 'actionGetCatalogue'])->name('api/v1/catalogue/categories/list'),
@@ -141,8 +143,20 @@ return [
     Route::post('/api/v1/engagement/likes/toggle')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/likes/toggle'),
     Route::post('/api/v1/engagement/comments/list')->action([EngagementController::class, 'actionGetEngagement'])->name('api/v1/engagement/comments/list'),
     Route::post('/api/v1/engagement/comments/create')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/comments/create'),
+    Route::post('/api/v1/engagement/comments/update')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/comments/update'),
+    Route::post('/api/v1/engagement/comments/delete')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/comments/delete'),
+    Route::post('/api/v1/engagement/summary')->action([EngagementController::class, 'actionGetEngagement'])->name('api/v1/engagement/summary'),
     Route::post('/api/v1/engagement/reports/create')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/reports/create'),
     Route::post('/api/v1/engagement/views/record')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/views/record'),
+
+    Route::post('/api/v1/marketplace/products/reviews/list')->action([ProductReviewController::class, 'actionGetReviews'])->name('api/v1/marketplace/products/reviews/list'),
+    Route::post('/api/v1/marketplace/products/reviews/summary')->action([ProductReviewController::class, 'actionGetReviews'])->name('api/v1/marketplace/products/reviews/summary'),
+    Route::post('/api/v1/marketplace/products/reviews/create')->action([ProductReviewController::class, 'actionManageReviews'])->name('api/v1/marketplace/products/reviews/create'),
+    Route::post('/api/v1/marketplace/products/reviews/update')->action([ProductReviewController::class, 'actionManageReviews'])->name('api/v1/marketplace/products/reviews/update'),
+    Route::post('/api/v1/marketplace/products/reviews/delete')->action([ProductReviewController::class, 'actionManageReviews'])->name('api/v1/marketplace/products/reviews/delete'),
+    Route::post('/api/v1/marketplace/products/reviews/vote')->action([ProductReviewController::class, 'actionManageReviews'])->name('api/v1/marketplace/products/reviews/vote'),
+    Route::post('/api/v1/marketplace/products/reviews/report')->action([ProductReviewController::class, 'actionManageReviews'])->name('api/v1/marketplace/products/reviews/report'),
+    Route::post('/api/v1/marketplace/products/reviews/media/upload-url')->action([ProductReviewController::class, 'actionManageReviews'])->name('api/v1/marketplace/products/reviews/media/upload-url'),
 
     Route::post('/api/v1/subscriptions/plans/list')->action([SubscriptionController::class, 'actionGetSubscription'])->name('api/v1/subscriptions/plans/list'),
     Route::post('/api/v1/subscriptions/application/current')->action([SubscriptionController::class, 'actionGetSubscription'])->name('api/v1/subscriptions/application/current'),

@@ -1,110 +1,507 @@
-<main class="registration-page">
-  <section class="registration-card">
-    <a class="back-link" href="/" (click)="goHome($event)">← Back to BBG</a>
-
-    <!-- Stepper indicator -->
-    <nav class="stepper-nav" aria-label="Registration Progress">
-      <div class="step-indicator" [class.active]="step() === 'details'" [class.completed]="step() !== 'details'">
-        <span class="step-num">{{ step() === 'details' ? '1' : '✓' }}</span>
-        <span class="step-text">Details</span>
-      </div>
-      <div class="step-divider"></div>
-      <div class="step-indicator" [class.active]="step() === 'plans'" [class.completed]="step() === 'payment' || step() === 'complete'">
-        <span class="step-num">{{ (step() === 'payment' || step() === 'complete') ? '✓' : '2' }}</span>
-        <span class="step-text">Plan</span>
-      </div>
-      <div class="step-divider"></div>
-      <div class="step-indicator" [class.active]="step() === 'payment'" [class.completed]="step() === 'complete'">
-        <span class="step-num">{{ step() === 'complete' ? '✓' : '3' }}</span>
-        <span class="step-text">Payment</span>
-      </div>
-      <div class="step-divider"></div>
-      <div class="step-indicator" [class.active]="step() === 'complete'">
-        <span class="step-num">4</span>
-        <span class="step-text">Review</span>
-      </div>
-    </nav>
-
-    <p class="eyebrow">JOIN THE BBG BUSINESS NETWORK</p>
-    <h1>{{ step() === 'details' ? 'Register your business' : step() === 'plans' ? 'Choose your plan' : step() === 'payment' ? 'Complete your payment' : 'Application submitted' }}</h1>
-    <p class="intro">
-      @if (step() === 'details') { Save your details as a draft, then choose a plan and submit your payment receipt for review. }
-      @else if (step() === 'plans') { Select the subscription plan that fits your business. }
-      @else if (step() === 'payment') { Pay using the BBG payment instructions and upload your receipt. }
-      @else { Your business and payment details have been submitted for admin review. }
-    </p>
-
-    @if (error()) { <div class="notice error" role="alert">{{ error() }}</div> }
-    @if (notice()) { <div class="notice success" role="status">{{ notice() }}</div> }
-
-    @if (step() === 'details') {
-      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-        <div class="field-grid">
-          <label class="field full"><span>Business name *</span><input formControlName="business_name" maxlength="180" placeholder="Your registered business name" (input)="updateSlug()" /><small>Use the name customers know your business by.</small></label>
-          <label class="field full"><span>Storefront URL *</span><div class="slug-control"><span>bbg.in/store/</span><input formControlName="business_slug" maxlength="200" placeholder="your-business-name" /></div><small>Lowercase letters, numbers and hyphens only.</small></label>
-          <label class="field"><span>Business email *</span><input type="email" formControlName="business_email" maxlength="190" placeholder="name@business.com" /></label>
-          <label class="field"><span>Business phone *</span><input type="tel" formControlName="business_phone" maxlength="25" placeholder="+91 98765 43210" /></label>
-          <label class="field"><span>WhatsApp number</span><input type="tel" formControlName="whatsapp_number" maxlength="25" placeholder="Optional" /></label>
-          <label class="field"><span>Postal code *</span><input formControlName="postal_code" maxlength="15" placeholder="PIN code" /></label>
-          <label class="field full"><span>Business description</span><textarea formControlName="business_description" rows="4" maxlength="5000" placeholder="Describe your products, services and what makes your business unique."></textarea></label>
-          <label class="field full"><span>Address line 1 *</span><input formControlName="address_line_1" maxlength="190" placeholder="Building, street and area" /></label>
-          <button class="location-button" type="button" (click)="getMyLocation()" [disabled]="geolocating()">{{ geolocating() ? 'Detecting location…' : '⌖ Get My Location' }}</button>
-          @if (locationNotice()) { <p class="location-note" role="status">{{ locationNotice() }}</p> }
-          <p class="map-attribution">Address lookup © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>. Detected address is editable; please confirm it matches your business premises.</p>
-          <label class="field full"><span>Address line 2</span><input formControlName="address_line_2" maxlength="190" placeholder="Landmark, suite or floor (optional)" /></label>
-          <label class="field"><span>City *</span><input formControlName="city" maxlength="100" placeholder="City" /></label>
-          <label class="field"><span>State *</span><input formControlName="state" maxlength="100" placeholder="State" /></label>
+<div class="onboarding-split-layout">
+  <!-- LEFT HERO BRAND PANEL -->
+  <aside class="onboarding-brand-panel" aria-label="BBG Network Verification">
+    <div>
+      <div class="brand-header">
+        <div class="brand-badge">
+          <span class="badge-dot"></span>
+          <span>Enterprise Verification</span>
         </div>
-        <div class="form-note"><strong>Save and continue later</strong><span>Your business details can be saved as a draft. Your application will enter admin review only after you select a plan, upload payment proof and submit.</span></div>
-        <div class="wizard-actions">
-          <button class="secondary-button" type="button" (click)="saveDraft()" [disabled]="busy()">{{ busy() ? 'Saving…' : 'Save draft' }}</button>
-          <button class="submit-button" type="submit" [disabled]="busy()">{{ busy() ? 'Saving…' : 'Save and choose a plan' }} <span aria-hidden="true">→</span></button>
+        <h2 class="brand-title">Bharat Business Group</h2>
+        <p class="brand-subtitle">
+          Join India's trusted network of verified BCN merchants and digital storefronts.
+        </p>
+      </div>
+
+      <!-- Live Stepper Milestones -->
+      <nav class="milestones-stepper" aria-label="Onboarding Milestones">
+        <div
+          class="milestone-item"
+          [class.completed]="step() !== 'details'"
+          [class.active]="step() === 'details'"
+        >
+          <div class="milestone-icon">
+            {{ step() !== 'details' ? '✓' : '1' }}
+          </div>
+          <div class="milestone-content">
+            <span class="milestone-step">Step 01</span>
+            <span class="milestone-label">Business Identity</span>
+            <span class="milestone-desc">Storefront URL & premises location</span>
+          </div>
         </div>
-      </form>
-    } @else if (step() === 'plans') {
-      <div class="plans-selection-grid">
-        @for (plan of plans(); track plan.id) {
-          <app-plan-card
-            [name]="plan.plan_name"
-            [price]="plan.price"
-            [period]="plan.billing_cycle || 'billing cycle'"
-            [badge]="plan.plan_code"
-            [features]="[plan.description || 'Full marketplace access and verified storefront']"
-            (selected)="choosePlan(plan)" />
+
+        <div
+          class="milestone-item"
+          [class.completed]="step() === 'payment' || step() === 'complete'"
+          [class.active]="step() === 'plans'"
+        >
+          <div class="milestone-icon">
+            {{ step() === 'payment' || step() === 'complete' ? '✓' : '2' }}
+          </div>
+          <div class="milestone-content">
+            <span class="milestone-step">Step 02</span>
+            <span class="milestone-label">Subscription Tier</span>
+            <span class="milestone-desc">Choose plan scale & billing cycle</span>
+          </div>
+        </div>
+
+        <div
+          class="milestone-item"
+          [class.completed]="step() === 'complete'"
+          [class.active]="step() === 'payment'"
+        >
+          <div class="milestone-icon">
+            {{ step() === 'complete' ? '✓' : '3' }}
+          </div>
+          <div class="milestone-content">
+            <span class="milestone-step">Step 03</span>
+            <span class="milestone-label">UPI Verification</span>
+            <span class="milestone-desc">Official QR payment & receipt upload</span>
+          </div>
+        </div>
+
+        <div class="milestone-item" [class.active]="step() === 'complete'">
+          <div class="milestone-icon">
+            {{ step() === 'complete' ? '✓' : '4' }}
+          </div>
+          <div class="milestone-content">
+            <span class="milestone-step">Step 04</span>
+            <span class="milestone-label">BCN Accreditation</span>
+            <span class="milestone-desc">Admin review & live marketplace activation</span>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Trust Perks & Guarantees -->
+    <div class="onboarding-trust-section">
+      <ul class="trust-perks">
+        <li>
+          <span class="perk-check">✓</span>
+          <span>Verified Bharat Merchant Seal (BCN ID)</span>
+        </li>
+        <li>
+          <span class="perk-check">✓</span>
+          <span>Zero platform commission on direct customer business</span>
+        </li>
+        <li>
+          <span class="perk-check">✓</span>
+          <span>Integrated WhatsApp customer enquiry routing</span>
+        </li>
+      </ul>
+
+      <div class="security-pill">
+        <span class="lock-icon" aria-hidden="true">🔒</span>
+        <span>Bank-grade encryption • Strict tenant isolation</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- RIGHT FORM WIZARD PANEL -->
+  <main class="onboarding-form-panel">
+    <div class="wizard-card-wrapper">
+      <div class="onboarding-top-bar">
+        <a class="back-link" href="/" (click)="goHome($event)"> ← Back to BBG Marketplace </a>
+        <span class="stage-badge">
+          {{
+            step() === 'details'
+              ? 'Stage 1 of 4'
+              : step() === 'plans'
+                ? 'Stage 2 of 4'
+                : step() === 'payment'
+                  ? 'Stage 3 of 4'
+                  : 'Stage 4 of 4'
+          }}
+        </span>
+      </div>
+
+      <section class="form-card">
+        <header class="card-header">
+          <p class="eyebrow-text">BBG ONBOARDING WORKSPACE</p>
+          <h1>
+            {{
+              step() === 'details'
+                ? 'Register your business'
+                : step() === 'plans'
+                  ? 'Select your subscription plan'
+                  : step() === 'payment'
+                    ? 'Complete payment & upload proof'
+                    : 'Application submitted'
+            }}
+          </h1>
+          <p class="intro-text">
+            @if (step() === 'details') {
+              Save your details as a draft, then choose a plan and submit your payment receipt for
+              review.
+            } @else if (step() === 'plans') {
+              Select the subscription plan that fits your business scale and product volume.
+            } @else if (step() === 'payment') {
+              Scan the official BBG UPI QR code below and upload your transaction receipt.
+            } @else {
+              Your business application and payment receipt are now awaiting BBG admin review.
+            }
+          </p>
+        </header>
+
+        <!-- Alerts -->
+        @if (error()) {
+          <div class="notice error" role="alert">
+            <span aria-hidden="true">⚠️</span>
+            <span>{{ error() }}</span>
+          </div>
         }
-      </div>
-      <button class="secondary-button back-step" type="button" (click)="step.set('details')">← Back to business details</button>
-    } @else if (step() === 'payment') {
-      @if (subscription(); as payment) {
-        <section class="payment-card">
-          <div class="payment-summary"><span>Selected plan</span><strong>{{ payment.plan_name }}</strong><span>Amount to pay</span><strong>{{ payment.currency }} {{ payment.amount }}</strong></div>
-          <div class="bcn-id"><span>BBG Contribution Number (BCN ID)</span><strong>{{ payment.bcn || 'Not assigned yet' }}</strong></div>
-          @if (payment.subscription_status === 'REJECTED' && payment.rejection_reason) {
-            <div class="notice error" role="alert">Payment proof was rejected: {{ payment.rejection_reason }}</div>
+        @if (notice()) {
+          <div class="notice success" role="status">
+            <span aria-hidden="true">✓</span>
+            <span>{{ notice() }}</span>
+          </div>
+        }
+
+        <!-- STEP 1: BUSINESS DETAILS -->
+        @if (step() === 'details') {
+          <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+            <div class="field-grid">
+              <label class="field full">
+                <span class="field-label">
+                  Business name <span class="required-marker">*</span>
+                </span>
+                <input
+                  formControlName="business_name"
+                  maxlength="180"
+                  placeholder="Your registered business name"
+                  (input)="updateSlug()"
+                />
+                <span class="field-hint"
+                  >Use the official name customers know your business by.</span
+                >
+              </label>
+
+              <label class="field full">
+                <span class="field-label">
+                  Storefront URL <span class="required-marker">*</span>
+                </span>
+                <div class="slug-input-wrapper">
+                  <span class="slug-domain-prefix">bbg.in/store/</span>
+                  <input
+                    formControlName="business_slug"
+                    maxlength="200"
+                    placeholder="your-business-name"
+                  />
+                </div>
+                <span class="field-hint">Lowercase letters, numbers and hyphens only.</span>
+              </label>
+
+              <label class="field">
+                <span class="field-label">
+                  Business email <span class="required-marker">*</span>
+                </span>
+                <input
+                  type="email"
+                  formControlName="business_email"
+                  maxlength="190"
+                  placeholder="name@business.com"
+                />
+              </label>
+
+              <label class="field">
+                <span class="field-label">
+                  Business phone <span class="required-marker">*</span>
+                </span>
+                <input
+                  type="tel"
+                  formControlName="business_phone"
+                  maxlength="25"
+                  placeholder="+91 98765 43210"
+                />
+              </label>
+
+              <label class="field">
+                <span class="field-label">WhatsApp number</span>
+                <input
+                  type="tel"
+                  formControlName="whatsapp_number"
+                  maxlength="25"
+                  placeholder="Optional for direct customer enquiries"
+                />
+              </label>
+
+              <label class="field">
+                <span class="field-label">
+                  Postal code <span class="required-marker">*</span>
+                </span>
+                <input
+                  formControlName="postal_code"
+                  maxlength="15"
+                  placeholder="6-digit PIN code"
+                />
+              </label>
+
+              <label class="field full">
+                <span class="field-label">Business description</span>
+                <textarea
+                  formControlName="business_description"
+                  rows="4"
+                  maxlength="5000"
+                  placeholder="Describe your products, services, specialization and what makes your business unique."
+                ></textarea>
+              </label>
+
+              <label class="field full">
+                <span class="field-label">
+                  Address line 1 <span class="required-marker">*</span>
+                </span>
+                <input
+                  formControlName="address_line_1"
+                  maxlength="190"
+                  placeholder="Building, street, and area"
+                />
+              </label>
+
+              <!-- Geolocation Locator Control -->
+              <div class="location-row">
+                <button
+                  class="location-btn"
+                  type="button"
+                  (click)="getMyLocation()"
+                  [disabled]="geolocating()"
+                >
+                  <span aria-hidden="true">⌖</span>
+                  <span>{{
+                    geolocating() ? 'Detecting premises location…' : 'Detect My Location'
+                  }}</span>
+                </button>
+                @if (locationNotice()) {
+                  <p class="location-feedback" role="status">{{ locationNotice() }}</p>
+                }
+                <p class="osm-attribution">
+                  Address lookup ©
+                  <a
+                    href="https://www.openstreetmap.org/copyright"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    >OpenStreetMap contributors</a
+                  >. Detected address is editable; please confirm it matches your business premises.
+                </p>
+              </div>
+
+              <label class="field full">
+                <span class="field-label">Address line 2</span>
+                <input
+                  formControlName="address_line_2"
+                  maxlength="190"
+                  placeholder="Landmark, suite, or floor (optional)"
+                />
+              </label>
+
+              <label class="field">
+                <span class="field-label"> City <span class="required-marker">*</span> </span>
+                <input formControlName="city" maxlength="100" placeholder="City / Town" />
+              </label>
+
+              <label class="field">
+                <span class="field-label"> State <span class="required-marker">*</span> </span>
+                <input
+                  formControlName="state"
+                  maxlength="100"
+                  placeholder="State / Union Territory"
+                />
+              </label>
+            </div>
+
+            <!-- Draft Save Note -->
+            <div class="draft-note-box">
+              <span class="info-icon" aria-hidden="true">ℹ</span>
+              <div class="info-text">
+                <strong>Save as draft anytime</strong>
+                <span>
+                  Your business details can be saved as a draft. Your application will enter
+                  official BBG review only after you select a plan, upload payment proof and submit.
+                </span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons-group">
+              <button class="btn-secondary" type="button" (click)="saveDraft()" [disabled]="busy()">
+                {{ busy() ? 'Saving…' : 'Save draft' }}
+              </button>
+              <button class="btn-primary" type="submit" [disabled]="busy()">
+                <span>{{ busy() ? 'Saving…' : 'Save and choose a plan' }}</span>
+                <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </form>
+        }
+
+        <!-- STEP 2: PLANS SELECTION -->
+        @else if (step() === 'plans') {
+          <div class="plans-selection-grid">
+            @for (plan of plans(); track plan.id) {
+              <app-plan-card
+                [name]="plan.plan_name"
+                [price]="plan.price"
+                [period]="plan.billing_cycle || 'billing cycle'"
+                [badge]="plan.plan_code"
+                [features]="[plan.description || 'Full marketplace access and verified storefront']"
+                (selected)="choosePlan(plan)"
+              />
+            }
+          </div>
+
+          <button class="step-back-btn" type="button" (click)="step.set('details')">
+            ← Back to business details
+          </button>
+        }
+
+        <!-- STEP 3: PAYMENT & PROOF UPLOAD -->
+        @else if (step() === 'payment') {
+          @if (subscription(); as payment) {
+            <section class="payment-flow-card">
+              <div class="payment-summary-box">
+                <div class="summary-item">
+                  <span class="summary-label">Selected Tier</span>
+                  <span class="summary-value">{{ payment.plan_name }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label">Amount Payable</span>
+                  <span class="summary-value">{{ payment.currency }} {{ payment.amount }}</span>
+                </div>
+              </div>
+
+              <div class="bcn-notice-card">
+                <span class="bcn-label">BBG Contribution Number (BCN Allocation)</span>
+                <span class="bcn-code">{{ payment.bcn || 'Assigned upon payment review' }}</span>
+              </div>
+
+              @if (payment.subscription_status === 'REJECTED' && payment.rejection_reason) {
+                <div class="notice error" role="alert">
+                  <span aria-hidden="true">⚠️</span>
+                  <span>Payment proof was rejected: {{ payment.rejection_reason }}</span>
+                </div>
+              }
+
+              @if (payment.payment_qr_url) {
+                <div class="upi-qr-card">
+                  <img
+                    [src]="payment.payment_qr_url"
+                    alt="Official BBG subscription payment QR code"
+                  />
+                  <span class="qr-instruction"
+                    >Scan this official QR using any UPI app (GPay, PhonePe, Paytm, BHIM)</span
+                  >
+                </div>
+              }
+
+              @if (payment.payment_payee_name) {
+                <div class="payment-meta-row">
+                  <span class="meta-key">Verified Payee:</span>
+                  <span class="meta-val">{{ payment.payment_payee_name }}</span>
+                </div>
+              }
+
+              @if (payment.payment_upi_id) {
+                <div class="payment-meta-row">
+                  <span class="meta-key">Official UPI ID:</span>
+                  <span class="meta-val">{{ payment.payment_upi_id }}</span>
+                </div>
+              }
+
+              @if (payment.payment_instructions) {
+                <p class="payment-guide-text">{{ payment.payment_instructions }}</p>
+              }
+
+              @if (
+                payment.subscription_status === 'PENDING' &&
+                payment.latest_proof_review_status === 'PENDING'
+              ) {
+                <div class="notice success" role="status">
+                  <span aria-hidden="true">✓</span>
+                  <span>
+                    Your payment receipt has been received and is awaiting BBG admin review. You do
+                    not need to upload it again.
+                  </span>
+                </div>
+                <button
+                  class="btn-primary"
+                  type="button"
+                  (click)="openWorkspace()"
+                  style="width: 100%"
+                >
+                  <span>View application status in Workspace</span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              } @else {
+                <label class="field full">
+                  <span class="field-label">Payment Reference / UTR Number (optional)</span>
+                  <input
+                    [value]="paymentReference()"
+                    (input)="paymentReference.set($any($event.target).value)"
+                    maxlength="120"
+                    placeholder="e.g. 12-digit UPI UTR or bank transaction reference"
+                  />
+                </label>
+
+                <div class="field full">
+                  <span class="field-label">
+                    Upload payment receipt <span class="required-marker">*</span>
+                  </span>
+                  <label class="receipt-dropzone-label">
+                    <div class="dropzone-box">
+                      <span class="dropzone-icon" aria-hidden="true">📄</span>
+                      @if (proofFile(); as file) {
+                        <span class="dropzone-filename">{{ file.name }}</span>
+                        <span class="dropzone-sub">Click to choose a different receipt</span>
+                      } @else {
+                        <span class="dropzone-prompt"
+                          >Click to upload payment screenshot or PDF</span
+                        >
+                        <span class="dropzone-sub"
+                          >Accepted formats: JPG, PNG, WEBP, or PDF (Max 10MB)</span
+                        >
+                      }
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      (change)="onProofSelected($event)"
+                    />
+                  </label>
+                </div>
+
+                <button
+                  class="btn-primary"
+                  type="button"
+                  (click)="submitPaymentProof()"
+                  [disabled]="busy() || !proofFile()"
+                  style="width: 100%; margin-top: 10px"
+                >
+                  <span>{{
+                    busy() ? 'Uploading and submitting receipt…' : 'Submit payment receipt'
+                  }}</span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              }
+            </section>
           }
-          @if (payment.payment_qr_url) {
-            <div class="qr-panel"><img [src]="payment.payment_qr_url" alt="BBG subscription payment QR code" /><span>Scan this QR code using your UPI app</span></div>
-          }
-          @if (payment.payment_payee_name) { <p class="payment-line"><strong>Payee:</strong> {{ payment.payment_payee_name }}</p> }
-          @if (payment.payment_upi_id) { <p class="payment-line"><strong>UPI ID:</strong> {{ payment.payment_upi_id }}</p> }
-          @if (payment.payment_instructions) { <p class="payment-instructions">{{ payment.payment_instructions }}</p> }
-          @if (payment.subscription_status === 'PENDING' && payment.latest_proof_review_status === 'PENDING') {
-            <div class="notice success" role="status">Your payment receipt has been received and is awaiting BBG admin review. You do not need to upload it again.</div>
-            <button class="submit-button" type="button" (click)="openWorkspace()">View application status <span aria-hidden="true">→</span></button>
-          } @else {
-            <label class="field"><span>Payment reference / UTR (optional)</span><input [value]="paymentReference()" (input)="paymentReference.set($any($event.target).value)" maxlength="120" placeholder="Enter UTR or transaction reference" /></label>
-            <label class="field proof-field"><span>Upload payment receipt *</span><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" (change)="onProofSelected($event)" /><small>{{ proofFile()?.name || 'Accepted: JPG, PNG, WEBP or PDF' }}</small></label>
-            <button class="submit-button" type="button" (click)="submitPaymentProof()" [disabled]="busy() || !proofFile()">{{ busy() ? 'Uploading and submitting…' : 'Submit payment receipt' }} <span aria-hidden="true">→</span></button>
-          }
-        </section>
-      }
-    } @else {
-      <section class="completion-card">
-        <div class="completion-icon">✓</div>
-        <h2>Payment proof submitted</h2>
-        <p>Your business application and payment receipt have been sent to BBG for review. You can check the status from your business workspace.</p>
-        <button class="submit-button" type="button" (click)="openWorkspace()">View application status <span aria-hidden="true">→</span></button>
+        }
+
+        <!-- STEP 4: REVIEW & COMPLETION -->
+        @else {
+          <section class="completion-state-panel">
+            <div class="success-crest" aria-hidden="true">✓</div>
+            <h2>Payment proof submitted!</h2>
+            <p>
+              Your business application and payment receipt have been securely submitted to the BBG
+              administrative desk. You can track your accreditation status and view your workspace
+              anytime.
+            </p>
+            <button class="btn-workspace" type="button" (click)="openWorkspace()">
+              <span>Go to Business Workspace</span>
+              <span aria-hidden="true">→</span>
+            </button>
+          </section>
+        }
       </section>
-    }
-  </section>
-</main>
+    </div>
+  </main>
+</div>

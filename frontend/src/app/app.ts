@@ -10,7 +10,13 @@ import { UserProfileDrawerComponent } from './shared/user-profile-drawer/user-pr
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, AuthPopupComponent, UserProfileDrawerComponent],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+    AuthPopupComponent,
+    UserProfileDrawerComponent,
+  ],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',
@@ -29,10 +35,12 @@ export class App {
   constructor() {
     this.syncShellWithRoute(this.document.location?.pathname || this.router.url);
     void this.auth.restoreSession();
-    this.router.events.pipe(
-      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-      takeUntilDestroyed(this.destroyRef),
-    ).subscribe((event) => this.syncShellWithRoute(event.urlAfterRedirects));
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((event) => this.syncShellWithRoute(event.urlAfterRedirects));
   }
 
   private syncShellWithRoute(url: string): void {

@@ -18,3 +18,7 @@ export * from './breadcrumbs/breadcrumbs.component';
 export * from './business-card/business-card';
 export * from './product-card/product-card';
 export * from './promotion-card/promotion-card';
+export * from './star-rating/star-rating.component';
+export * from './rating-summary/rating-summary.component';
+export * from './product-reviews/product-reviews.component';
+export * from './promotion-engagement/promotion-engagement.component';

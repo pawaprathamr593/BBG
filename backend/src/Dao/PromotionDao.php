@@ -62,9 +62,9 @@ final readonly class PromotionDao
         try {
             $db->createCommand("INSERT INTO PROMOTIONAL_POSTS
                 (tenant_id, post_title, post_content, publication_status, valid_until, status, created_by, updated_by)
-                VALUES (:tenant_id, :title, :content, 'DRAFT', :valid_until, 'A', :user_id, :user_id)",
+                VALUES (:tenant_id, :title, :content, 'DRAFT', :valid_until, 'A', :created_by, :updated_by)",
                 [':tenant_id' => $tenantId, ':title' => $title, ':content' => $content,
-                 ':valid_until' => $validUntil, ':user_id' => $userId])->execute();
+                 ':valid_until' => $validUntil, ':created_by' => $userId, ':updated_by' => $userId])->execute();
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = ['id' => (int) $db->getLastInsertId()];
         } catch (Throwable $exception) {
@@ -186,9 +186,10 @@ final readonly class PromotionDao
         try {
             $db->createCommand("INSERT INTO POST_MEDIA
                 (tenant_id, post_id, file_path, media_type, display_order, status, created_by, updated_by)
-                VALUES (:tenant_id, :post_id, :file_path, :media_type, :display_order, 'A', :user_id, :user_id)",
+                VALUES (:tenant_id, :post_id, :file_path, :media_type, :display_order, 'A', :created_by, :updated_by)",
                 [':tenant_id' => $tenantId, ':post_id' => $promotionId, ':file_path' => $filePath,
-                 ':media_type' => $mediaType, ':display_order' => $displayOrder, ':user_id' => $userId])->execute();
+                 ':media_type' => $mediaType, ':display_order' => $displayOrder,
+                 ':created_by' => $userId, ':updated_by' => $userId])->execute();
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = ['id' => (int) $db->getLastInsertId()];
         } catch (Throwable $exception) {

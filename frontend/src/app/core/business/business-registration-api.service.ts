@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { API_BASE_URL } from '../config/api-base-url';
 import { AuthService } from '../auth/auth.service';
+import { S3UploadService } from '../storage/s3-upload.service';
 
 export interface BusinessApplication {
   business_id: number;
@@ -14,6 +15,10 @@ export interface BusinessApplication {
   business_phone: string;
   whatsapp_number: string;
   business_email: string;
+  logo_path?: string | null;
+  cover_image_path?: string | null;
+  logo_url?: string | null;
+  cover_image_url?: string | null;
   address_line_1: string;
   address_line_2: string;
   city: string;
@@ -53,8 +58,6 @@ export interface BusinessApplicationPayload {
   latitude: number | null;
   longitude: number | null;
 }
-
-
 
 export interface StorefrontSettings {
   id: number;
@@ -127,19 +130,21 @@ interface UploadUrlResponse {
 export class BusinessRegistrationApiService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
+  private readonly s3Upload = inject(S3UploadService);
   private readonly apiBaseUrl = inject(API_BASE_URL);
 
   private get headers(): HttpHeaders {
     return new HttpHeaders({ Authorization: `Bearer ${this.auth.accessToken() ?? ''}` });
   }
 
-
   async getMyApplications(): Promise<BusinessApplication[]> {
-    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ items: BusinessApplication[] }>>(
-      `${this.apiBaseUrl}/api/v1/business/application/list`,
-      { businessParam: { actionData: {} } },
-      { headers: this.headers },
-    ));
+    const response = await firstValueFrom(
+      this.http.post<BusinessApiResponse<{ items: BusinessApplication[] }>>(
+        `${this.apiBaseUrl}/api/v1/business/application/list`,
+        { businessParam: { actionData: {} } },
+        { headers: this.headers },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
       throw new Error(response.msgArr?.join(' ') || 'Unable to load your business applications.');
     }
@@ -148,11 +153,13 @@ export class BusinessRegistrationApiService {
 
   async getMyApplication(tenantId = 0): Promise<BusinessApplication | null> {
     try {
-      const response = await firstValueFrom(this.http.post<BusinessApiResponse<BusinessApplication>>(
-        `${this.apiBaseUrl}/api/v1/business/application/get`,
-        { businessParam: { actionData: tenantId > 0 ? { tenant_id: tenantId } : {} } },
-        { headers: this.headers },
-      ));
+      const response = await firstValueFrom(
+        this.http.post<BusinessApiResponse<BusinessApplication>>(
+          `${this.apiBaseUrl}/api/v1/business/application/get`,
+          { businessParam: { actionData: tenantId > 0 ? { tenant_id: tenantId } : {} } },
+          { headers: this.headers },
+        ),
+      );
       if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
         throw new Error(response.msgArr?.join(' ') || 'Unable to load your business application.');
       }
@@ -166,14 +173,14 @@ export class BusinessRegistrationApiService {
     }
   }
 
-
-
   async getOwnedStorefront(tenantId: number): Promise<OwnedStorefront> {
-    const response = await firstValueFrom(this.http.post<BusinessApiResponse<OwnedStorefront>>(
-      `${this.apiBaseUrl}/api/v1/business/storefront/owner/get`,
-      { businessParam: { actionData: { tenant_id: tenantId } } },
-      { headers: this.headers },
-    ));
+    const response = await firstValueFrom(
+      this.http.post<BusinessApiResponse<OwnedStorefront>>(
+        `${this.apiBaseUrl}/api/v1/business/storefront/owner/get`,
+        { businessParam: { actionData: { tenant_id: tenantId } } },
+        { headers: this.headers },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
       throw new Error(response.msgArr?.join(' ') || 'Unable to load storefront settings.');
     }
@@ -181,46 +188,91 @@ export class BusinessRegistrationApiService {
   }
 
   async updateOwnedStorefront(tenantId: number, payload: StorefrontUpdatePayload): Promise<void> {
-    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ tenant_id: number }>>(
-      `${this.apiBaseUrl}/api/v1/business/storefront/owner/update`,
-      { businessParam: { actionData: { tenant_id: tenantId, ...payload } } },
-      { headers: this.headers },
-    ));
+    const response = await firstValueFrom(
+      this.http.post<BusinessApiResponse<{ tenant_id: number }>>(
+        `${this.apiBaseUrl}/api/v1/business/storefront/owner/update`,
+        { businessParam: { actionData: { tenant_id: tenantId, ...payload } } },
+        { headers: this.headers },
+      ),
+    );
     if (response.status !== 'SUCCESS') {
       throw new Error(response.msgArr?.join(' ') || 'Unable to save storefront settings.');
     }
   }
 
-  async publishOwnedStorefront(tenantId: number): Promise<{ publication_status: string; storefront_status: string }> {
-    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ tenant_id: number; publication_status: string; storefront_status: string }>>(
-      `${this.apiBaseUrl}/api/v1/business/storefront/owner/publish`,
-      { businessParam: { actionData: { tenant_id: tenantId } } },
-      { headers: this.headers },
-    ));
+  async publishOwnedStorefront(
+    tenantId: number,
+  ): Promise<{ publication_status: string; storefront_status: string }> {
+    const response = await firstValueFrom(
+      this.http.post<
+        BusinessApiResponse<{
+          tenant_id: number;
+          publication_status: string;
+          storefront_status: string;
+        }>
+      >(
+        `${this.apiBaseUrl}/api/v1/business/storefront/owner/publish`,
+        { businessParam: { actionData: { tenant_id: tenantId } } },
+        { headers: this.headers },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
       throw new Error(response.msgArr?.join(' ') || 'Unable to publish the storefront.');
     }
-    return response.data as { tenant_id: number; publication_status: string; storefront_status: string };
+    return response.data as {
+      tenant_id: number;
+      publication_status: string;
+      storefront_status: string;
+    };
   }
 
-  async unpublishOwnedStorefront(tenantId: number): Promise<{ publication_status: string; storefront_status: string }> {
-    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ tenant_id: number; publication_status: string; storefront_status: string }>>(
-      `${this.apiBaseUrl}/api/v1/business/storefront/owner/unpublish`,
-      { businessParam: { actionData: { tenant_id: tenantId } } },
-      { headers: this.headers },
-    ));
+  async unpublishOwnedStorefront(
+    tenantId: number,
+  ): Promise<{ publication_status: string; storefront_status: string }> {
+    const response = await firstValueFrom(
+      this.http.post<
+        BusinessApiResponse<{
+          tenant_id: number;
+          publication_status: string;
+          storefront_status: string;
+        }>
+      >(
+        `${this.apiBaseUrl}/api/v1/business/storefront/owner/unpublish`,
+        { businessParam: { actionData: { tenant_id: tenantId } } },
+        { headers: this.headers },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
       throw new Error(response.msgArr?.join(' ') || 'Unable to unpublish the storefront.');
     }
-    return response.data as { tenant_id: number; publication_status: string; storefront_status: string };
+    return response.data as {
+      tenant_id: number;
+      publication_status: string;
+      storefront_status: string;
+    };
   }
 
-  async saveDraft(payload: BusinessApplicationPayload, businessId?: number, tenantId?: number): Promise<{ business_id: number; tenant_id: number; approval_status: string }> {
-    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ business_id: number; tenant_id: number; approval_status: string }>>(
-      `${this.apiBaseUrl}/api/v1/business/application/draft/save`,
-      { businessParam: { actionData: { ...payload, ...(businessId ? { business_id: businessId, tenant_id: tenantId } : {}) } } },
-      { headers: this.headers },
-    ));
+  async saveDraft(
+    payload: BusinessApplicationPayload,
+    businessId?: number,
+    tenantId?: number,
+  ): Promise<{ business_id: number; tenant_id: number; approval_status: string }> {
+    const response = await firstValueFrom(
+      this.http.post<
+        BusinessApiResponse<{ business_id: number; tenant_id: number; approval_status: string }>
+      >(
+        `${this.apiBaseUrl}/api/v1/business/application/draft/save`,
+        {
+          businessParam: {
+            actionData: {
+              ...payload,
+              ...(businessId ? { business_id: businessId, tenant_id: tenantId } : {}),
+            },
+          },
+        },
+        { headers: this.headers },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
       throw new Error(response.msgArr?.join(' ') || 'Your business draft could not be saved.');
     }
@@ -228,75 +280,121 @@ export class BusinessRegistrationApiService {
   }
 
   async getActivePlans(): Promise<SubscriptionPlan[]> {
-    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ items: SubscriptionPlan[] }>>(
-      `${this.apiBaseUrl}/api/v1/subscriptions/plans/list`,
-      { subscriptionParam: { actionData: {} } },
-      { headers: this.headers },
-    ));
+    const response = await firstValueFrom(
+      this.http.post<BusinessApiResponse<{ items: SubscriptionPlan[] }>>(
+        `${this.apiBaseUrl}/api/v1/subscriptions/plans/list`,
+        { subscriptionParam: { actionData: {} } },
+        { headers: this.headers },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
       throw new Error(response.msgArr?.join(' ') || 'Unable to load subscription plans.');
     }
     return (response.data as { items: SubscriptionPlan[] }).items ?? [];
   }
 
-
-
   async listOwnedSubscriptions(tenantId: number): Promise<ApplicationSubscription[]> {
-    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ items: ApplicationSubscription[] }>>(
-      `${this.apiBaseUrl}/api/v1/subscriptions/application/list`,
-      { subscriptionParam: { actionData: { tenant_id: tenantId } } },
-      { headers: this.headers },
-    ));
+    const response = await firstValueFrom(
+      this.http.post<BusinessApiResponse<{ items: ApplicationSubscription[] }>>(
+        `${this.apiBaseUrl}/api/v1/subscriptions/application/list`,
+        { subscriptionParam: { actionData: { tenant_id: tenantId } } },
+        { headers: this.headers },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
       throw new Error(response.msgArr?.join(' ') || 'Unable to load business subscriptions.');
     }
     return (response.data as { items: ApplicationSubscription[] }).items ?? [];
   }
 
-  async requestApplicationSubscriptionUpgrade(tenantId: number, subscriptionId: number, planId: number): Promise<ApplicationSubscription> {
-    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription }>>(
-      `${this.apiBaseUrl}/api/v1/subscriptions/application/upgrade/request`,
-      { subscriptionParam: { actionData: { tenant_id: tenantId, subscription_id: subscriptionId, plan_id: planId } } },
-      { headers: this.headers },
-    ));
+  async requestApplicationSubscriptionUpgrade(
+    tenantId: number,
+    subscriptionId: number,
+    planId: number,
+  ): Promise<ApplicationSubscription> {
+    const response = await firstValueFrom(
+      this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription }>>(
+        `${this.apiBaseUrl}/api/v1/subscriptions/application/upgrade/request`,
+        {
+          subscriptionParam: {
+            actionData: { tenant_id: tenantId, subscription_id: subscriptionId, plan_id: planId },
+          },
+        },
+        { headers: this.headers },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
-      throw new Error(response.msgArr?.join(' ') || 'Unable to create the subscription upgrade request.');
+      throw new Error(
+        response.msgArr?.join(' ') || 'Unable to create the subscription upgrade request.',
+      );
     }
     return (response.data as { subscription: ApplicationSubscription }).subscription;
   }
 
-  async requestApplicationSubscriptionRenewal(tenantId: number, subscriptionId: number): Promise<ApplicationSubscription> {
-    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription }>>(
-      `${this.apiBaseUrl}/api/v1/subscriptions/application/renewal/request`,
-      { subscriptionParam: { actionData: { tenant_id: tenantId, subscription_id: subscriptionId } } },
-      { headers: this.headers },
-    ));
+  async requestApplicationSubscriptionRenewal(
+    tenantId: number,
+    subscriptionId: number,
+  ): Promise<ApplicationSubscription> {
+    const response = await firstValueFrom(
+      this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription }>>(
+        `${this.apiBaseUrl}/api/v1/subscriptions/application/renewal/request`,
+        {
+          subscriptionParam: {
+            actionData: { tenant_id: tenantId, subscription_id: subscriptionId },
+          },
+        },
+        { headers: this.headers },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
-      throw new Error(response.msgArr?.join(' ') || 'Unable to create the subscription renewal request.');
+      throw new Error(
+        response.msgArr?.join(' ') || 'Unable to create the subscription renewal request.',
+      );
     }
     return (response.data as { subscription: ApplicationSubscription }).subscription;
   }
 
-  async getCurrentApplicationSubscription(businessId: number | null, tenantId: number): Promise<ApplicationSubscription | null> {
-    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription | null }>>(
-      `${this.apiBaseUrl}/api/v1/subscriptions/application/current`,
-      { subscriptionParam: { actionData: { ...(businessId ? { business_id: businessId } : {}), tenant_id: tenantId } } },
-      { headers: this.headers },
-    ));
+  async getCurrentApplicationSubscription(
+    businessId: number | null,
+    tenantId: number,
+  ): Promise<ApplicationSubscription | null> {
+    const response = await firstValueFrom(
+      this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription | null }>>(
+        `${this.apiBaseUrl}/api/v1/subscriptions/application/current`,
+        {
+          subscriptionParam: {
+            actionData: { ...(businessId ? { business_id: businessId } : {}), tenant_id: tenantId },
+          },
+        },
+        { headers: this.headers },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
       throw new Error(response.msgArr?.join(' ') || 'Unable to restore your payment request.');
     }
     return (response.data as { subscription: ApplicationSubscription | null }).subscription ?? null;
   }
 
-  async requestApplicationSubscription(businessId: number, tenantId: number, planId: number): Promise<ApplicationSubscription> {
-    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription }>>(
-      `${this.apiBaseUrl}/api/v1/subscriptions/application/request`,
-      { subscriptionParam: { actionData: { business_id: businessId, tenant_id: tenantId, plan_id: planId } } },
-      { headers: this.headers },
-    ));
+  async requestApplicationSubscription(
+    businessId: number,
+    tenantId: number,
+    planId: number,
+  ): Promise<ApplicationSubscription> {
+    const response = await firstValueFrom(
+      this.http.post<BusinessApiResponse<{ subscription: ApplicationSubscription }>>(
+        `${this.apiBaseUrl}/api/v1/subscriptions/application/request`,
+        {
+          subscriptionParam: {
+            actionData: { business_id: businessId, tenant_id: tenantId, plan_id: planId },
+          },
+        },
+        { headers: this.headers },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
-      throw new Error(response.msgArr?.join(' ') || 'Unable to create the subscription payment request.');
+      throw new Error(
+        response.msgArr?.join(' ') || 'Unable to create the subscription payment request.',
+      );
     }
     return (response.data as { subscription: ApplicationSubscription }).subscription;
   }
@@ -308,43 +406,73 @@ export class BusinessRegistrationApiService {
     file: File,
     paymentReference: string,
   ): Promise<void> {
-    const uploadResponse = await firstValueFrom(this.http.post<BusinessApiResponse<UploadUrlResponse>>(
-      `${this.apiBaseUrl}/api/v1/subscriptions/application/proofs/upload-url`,
-      { subscriptionParam: { actionData: {
-        ...(businessId ? { business_id: businessId } : {}), tenant_id: tenantId, subscription_id: subscriptionId,
-        original_file_name: file.name, mime_type: file.type, file_size_bytes: file.size,
-      } } },
-      { headers: this.headers },
-    ));
-    if (uploadResponse.status !== 'SUCCESS' || !uploadResponse.data || Array.isArray(uploadResponse.data)) {
-      throw new Error(uploadResponse.msgArr?.join(' ') || 'Unable to prepare the payment receipt upload.');
+    const uploadResponse = await firstValueFrom(
+      this.http.post<BusinessApiResponse<UploadUrlResponse>>(
+        `${this.apiBaseUrl}/api/v1/subscriptions/application/proofs/upload-url`,
+        {
+          subscriptionParam: {
+            actionData: {
+              ...(businessId ? { business_id: businessId } : {}),
+              tenant_id: tenantId,
+              subscription_id: subscriptionId,
+              original_file_name: file.name,
+              mime_type: file.type,
+              file_size_bytes: file.size,
+            },
+          },
+        },
+        { headers: this.headers },
+      ),
+    );
+    if (
+      uploadResponse.status !== 'SUCCESS' ||
+      !uploadResponse.data ||
+      Array.isArray(uploadResponse.data)
+    ) {
+      throw new Error(
+        uploadResponse.msgArr?.join(' ') || 'Unable to prepare the payment receipt upload.',
+      );
     }
     const upload = uploadResponse.data as UploadUrlResponse;
-    await firstValueFrom(this.http.put(upload.upload_url, file, {
-      headers: new HttpHeaders(upload.headers),
-      responseType: 'text',
-    }));
-    const submitResponse = await firstValueFrom(this.http.post<BusinessApiResponse<{ proof_id: number }>>(
-      `${this.apiBaseUrl}/api/v1/subscriptions/application/proofs/submit`,
-      { subscriptionParam: { actionData: {
-        ...(businessId ? { business_id: businessId } : {}), tenant_id: tenantId, subscription_id: subscriptionId,
-        proof_file_path: upload.object_key, payment_reference: paymentReference || null,
-      } } },
-      { headers: this.headers },
-    ));
+    await this.s3Upload.upload(upload.upload_url, file, upload.headers);
+    const submitResponse = await firstValueFrom(
+      this.http.post<BusinessApiResponse<{ proof_id: number }>>(
+        `${this.apiBaseUrl}/api/v1/subscriptions/application/proofs/submit`,
+        {
+          subscriptionParam: {
+            actionData: {
+              ...(businessId ? { business_id: businessId } : {}),
+              tenant_id: tenantId,
+              subscription_id: subscriptionId,
+              proof_file_path: upload.object_key,
+              payment_reference: paymentReference || null,
+            },
+          },
+        },
+        { headers: this.headers },
+      ),
+    );
     if (submitResponse.status !== 'SUCCESS') {
       throw new Error(submitResponse.msgArr?.join(' ') || 'Unable to submit the payment receipt.');
     }
   }
 
-  async submitApplication(payload: BusinessApplicationPayload): Promise<{ business_id: number; tenant_id: number; approval_status: string }> {
-    const response = await firstValueFrom(this.http.post<BusinessApiResponse<{ business_id: number; tenant_id: number; approval_status: string }>>(
-      `${this.apiBaseUrl}/api/v1/business/application/submit`,
-      { businessParam: { actionData: payload } },
-      { headers: this.headers },
-    ));
+  async submitApplication(
+    payload: BusinessApplicationPayload,
+  ): Promise<{ business_id: number; tenant_id: number; approval_status: string }> {
+    const response = await firstValueFrom(
+      this.http.post<
+        BusinessApiResponse<{ business_id: number; tenant_id: number; approval_status: string }>
+      >(
+        `${this.apiBaseUrl}/api/v1/business/application/submit`,
+        { businessParam: { actionData: payload } },
+        { headers: this.headers },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
-      throw new Error(response.msgArr?.join(' ') || 'Your business application could not be submitted.');
+      throw new Error(
+        response.msgArr?.join(' ') || 'Your business application could not be submitted.',
+      );
     }
     return response.data as { business_id: number; tenant_id: number; approval_status: string };
   }

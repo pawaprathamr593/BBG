@@ -278,6 +278,11 @@ final readonly class MarketplaceServices implements IMarketplaceServices
                 'logo_path' => $row['business_logo_path'],
                 'city' => $row['city'],
                 'state' => $row['state'],
+                'country_code' => $row['country_code'] ?? 'IN',
+                'whatsapp_enabled' => (bool) ($row['whatsapp_enabled'] ?? false),
+                'whatsapp_number' => ((bool) ($row['whatsapp_enabled'] ?? false) && !empty($row['whatsapp_number']))
+                    ? $row['whatsapp_number']
+                    : null,
             ];
             return $item;
         }, $rows['data']);
@@ -422,6 +427,9 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         }
         foreach ($rows['data'] as &$promotionRow) {
             $promotionRow['media'] = $mediaByPost[(int) $promotionRow['id']] ?? [];
+            if (!empty($promotionRow['logo_path'])) {
+                $promotionRow['logo_path'] = $this->s3Storage->resolveDownloadUrl((string) $promotionRow['logo_path']);
+            }
         }
         unset($promotionRow);
 
@@ -474,6 +482,9 @@ final readonly class MarketplaceServices implements IMarketplaceServices
             }
         }
         unset($mediaRow);
+        if (!empty($result['data']['logo_path'])) {
+            $result['data']['logo_path'] = $this->s3Storage->resolveDownloadUrl((string) $result['data']['logo_path']);
+        }
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = ['promotion' => $result['data'], 'media' => $media['data']];
         return $resArr;
@@ -573,6 +584,13 @@ final readonly class MarketplaceServices implements IMarketplaceServices
                 'business_name' => $row['business_name'],
                 'business_slug' => $row['business_slug'],
                 'logo_path' => $row['business_logo_path'],
+                'city' => $row['city'] ?? null,
+                'state' => $row['state'] ?? null,
+                'country_code' => $row['country_code'] ?? 'IN',
+                'whatsapp_enabled' => (bool) ($row['whatsapp_enabled'] ?? false),
+                'whatsapp_number' => ((bool) ($row['whatsapp_enabled'] ?? false) && !empty($row['whatsapp_number']))
+                    ? $row['whatsapp_number']
+                    : null,
             ];
             $item['created_on'] = $row['created_on'];
             return $item;
@@ -660,11 +678,12 @@ final readonly class MarketplaceServices implements IMarketplaceServices
             'category_name' => $row['category_name'],
             'business_phone' => $row['business_phone'],
             'business_email' => $row['business_email'],
-            'logo_path' => $row['logo_path'],
-            'cover_image_path' => $row['cover_image_path'],
+            'logo_path' => $this->s3Storage->resolveDownloadUrl($row['logo_path'] ?? null),
+            'cover_image_path' => $this->s3Storage->resolveDownloadUrl($row['cover_image_path'] ?? null),
             'city' => $row['city'],
             'state' => $row['state'],
             'postal_code' => $row['postal_code'],
+            'country_code' => $row['country_code'] ?? 'IN',
             'whatsapp_enabled' => (bool) $row['whatsapp_enabled'],
             'accept_online_orders' => (bool) $row['accept_online_orders'],
         ];
@@ -773,6 +792,21 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         ];
         if ($showPrices) {
             $product['selling_price'] = $row['selling_price'];
+        }
+        if (isset($row['business_name'])) {
+            $rawLogo = $row['business_logo_path'] ?? ($row['logo_path'] ?? null);
+            $product['business'] = [
+                'business_name' => $row['business_name'],
+                'business_slug' => $row['business_slug'] ?? '',
+                'logo_path' => $this->s3Storage->resolveDownloadUrl($rawLogo),
+                'city' => $row['city'] ?? null,
+                'state' => $row['state'] ?? null,
+                'country_code' => $row['country_code'] ?? 'IN',
+                'whatsapp_enabled' => (bool) ($row['whatsapp_enabled'] ?? false),
+                'whatsapp_number' => ((bool) ($row['whatsapp_enabled'] ?? false) && !empty($row['whatsapp_number']))
+                    ? $row['whatsapp_number']
+                    : null,
+            ];
         }
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = $product;

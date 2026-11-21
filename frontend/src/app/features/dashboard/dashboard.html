@@ -1,83 +1,239 @@
-    <main class="workspace">
-      <section class="workspace-heading">
-        <div>
-          <p class="heading-copy">Good {{ greeting() }}, {{ firstName() }}.</p>
-          
-        </div>
-      </section>
-
-      @if (loading()) {
-        <section class="loading-panel" role="status"><span class="loader"></span><div><strong>Preparing your account</strong><p>Checking your roles and available permissions…</p></div></section>
-      } @else if (error()) {
-        <section class="message-panel error-panel" role="alert"><strong>We couldn’t load this area.</strong><p>{{ error() }}</p><button type="button" (click)="reload()">Try again</button></section>
-      } @else {
-        <section class="context-banner">
-          <div class="context-symbol" aria-hidden="true">{{ selectedTenant() ? '⌂' : '◎' }}</div>
-          <div class="context-copy">
-            <span>{{ isPersonalContext() ? 'PERSONAL ACCOUNT' : isPlatformContext() ? 'PLATFORM ADMINISTRATION' : 'BUSINESS WORKSPACE' }}</span>
-            <strong>{{ selectedTenant() ? 'Business Workspace' : isPlatformContext() ? 'BBG Platform' : 'My Account' }}</strong>
-            <p>{{ isPersonalContext() ? 'Your personal orders, enquiries and profile in one place.' : isPlatformContext() ? 'Manage BBG platform operations using your assigned administrator permissions.' : 'Manage your business operations using your assigned permissions.' }}</p>
+<main class="workspace">
+  @if (loading()) {
+    <section class="loading-panel" role="status">
+      <span class="loader-spinner"></span>
+      <div>
+        <strong>Preparing your workspace</strong>
+        <p>Checking active roles, entitlements and system permissions…</p>
+      </div>
+    </section>
+  } @else if (error()) {
+    <section class="error-card" role="alert">
+      <strong>Unable to load workspace</strong>
+      <p>{{ error() }}</p>
+      <button type="button" (click)="reload()">Try again</button>
+    </section>
+  } @else {
+    <!-- EXECUTIVE HERO BANNER -->
+    <header class="workspace-hero-banner">
+      <div class="banner-content">
+        <div class="banner-badge-row">
+          <div class="context-pill">
+            <span class="pill-glow"></span>
+            <span>{{
+              isPersonalContext()
+                ? 'Personal Account'
+                : isPlatformContext()
+                  ? 'Platform Administration'
+                  : 'Business Workspace'
+            }}</span>
           </div>
-          @if (!isPersonalContext()) {
-            <div class="role-list">
-              @for (role of roleCodes(); track role) { <span class="role-chip">{{ roleLabel(role) }}</span> }
-              @if (!roleCodes().length) { <span class="role-chip muted">No assigned roles in this context</span> }
-            </div>
+          @if (selectedTenant(); as tenant) {
+            <span class="tenant-tag">{{ tenant.tenant_name }}</span>
           }
-        </section>
+        </div>
+        <h1>Good {{ greeting() }}, {{ firstName() }}.</h1>
+        <p>
+          {{
+            isPersonalContext()
+              ? 'Manage your personal orders, enquiries, saved items, and profile settings.'
+              : isPlatformContext()
+                ? 'Manage BBG platform operations, merchants, subscriptions, and administrative desks.'
+                : 'Manage your verified business catalogue, orders, team members, and storefront.'
+          }}
+        </p>
+      </div>
 
-        @if (summaryLoading()) {
-          <div style="padding: 16px 0">
-            <app-skeleton-loader variant="card" [count]="3" />
+      <div class="banner-actions">
+        @if (tenants().length > 1 || !isPersonalContext()) {
+          <div class="tenant-select-wrapper" title="Switch active workspace">
+            <select
+              [value]="selectedTenantId() ?? ''"
+              (change)="onTenantChange($event)"
+              aria-label="Switch active workspace"
+            >
+              @if (isPlatformContext()) {
+                <option value="">BBG Platform Admin</option>
+              } @else {
+                <option value="">Personal Account</option>
+              }
+              @for (tenant of tenants(); track tenant.id) {
+                <option [value]="tenant.id">{{ tenant.tenant_name }}</option>
+              }
+            </select>
+            <span class="select-chevron" aria-hidden="true">▼</span>
           </div>
+        }
+        <a class="btn-market-explore" routerLink="/" target="_blank">
+          <span>Explore BBG Marketplace</span>
+          <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+
+      <div class="banner-glow-orbit" aria-hidden="true"></div>
+    </header>
+
+    <!-- TWO-COLUMN OPERATIONAL DASHBOARD LAYOUT -->
+    <div class="dashboard-operational-layout">
+      <!-- LEFT COLUMN: Main Stream -->
+      <section class="dashboard-main-stream">
+        <!-- KPI Metrics Grid -->
+        @if (summaryLoading()) {
+          <app-skeleton-loader variant="card" [count]="4" />
         } @else if (summaryError()) {
-          <div class="summary-notice">{{ summaryError() }}</div>
+          <div class="summary-notice" role="alert">{{ summaryError() }}</div>
         } @else if (summaryCards().length) {
-          <section class="metrics-grid" aria-label="Account and business summary">
+          <div class="metrics-grid" aria-label="Operational metrics summary">
             @for (metric of summaryCards(); track metric.label) {
-              <app-metric-card
-                [title]="metric.label"
-                [value]="metric.value"
-                [icon]="metric.icon" />
+              <app-metric-card [title]="metric.label" [value]="metric.value" [icon]="metric.icon" />
             }
-          </section>
+          </div>
         }
 
+        <!-- Workspace Modules Section -->
         <section class="modules-section" aria-labelledby="workspace-modules-heading">
-          <div class="section-heading">
+          <div class="section-header">
             <div>
-              <p class="eyebrow">{{ isPersonalContext() ? 'MY ACCOUNT' : isPlatformContext() ? 'PLATFORM ADMINISTRATION' : 'BUSINESS WORKSPACE' }}</p>
-              <h2 id="workspace-modules-heading">{{ isPersonalContext() ? 'Your account modules' : isPlatformContext() ? 'Administration modules' : 'Business modules' }}</h2>
-              <p>Open a module to continue working in this workspace.</p>
+              <p class="eyebrow-text">
+                {{
+                  isPersonalContext()
+                    ? 'ACCOUNT OVERVIEW'
+                    : isPlatformContext()
+                      ? 'ADMINISTRATION DESK'
+                      : 'OPERATIONAL WORKSPACE'
+                }}
+              </p>
+              <h2 id="workspace-modules-heading">
+                {{
+                  isPersonalContext()
+                    ? 'Your account modules'
+                    : isPlatformContext()
+                      ? 'Administration modules'
+                      : 'Business modules'
+                }}
+              </h2>
             </div>
             @if (moduleCards().length) {
-              <span class="module-count">{{ moduleCards().length }} available</span>
+              <span class="module-count-badge">{{ moduleCards().length }} available</span>
             }
           </div>
+
           @if (moduleCards().length) {
             <div class="module-grid">
               @for (module of moduleCards(); track module.route) {
                 <a class="module-card" [routerLink]="module.route">
-                  <div class="module-top">
-                    <span class="module-icon"><app-workspace-nav-icon [name]="module.icon" /></span>
-                    <span class="access-indicator"><i></i>Available</span>
+                  <div>
+                    <div class="module-top">
+                      <div class="module-icon-wrap">
+                        <app-workspace-nav-icon [name]="module.icon" />
+                      </div>
+                      <span class="access-pill"><i></i>Active</span>
+                    </div>
+                    <h3>{{ module.label }}</h3>
+                    <p>{{ module.description }}</p>
                   </div>
-                  <h3>{{ module.label }}</h3>
-                  <p>{{ module.description }}</p>
-                  <div class="module-foot"><span>{{ isPersonalContext() ? 'PERSONAL' : isPlatformContext() ? 'PLATFORM' : 'BUSINESS' }}</span><span>Open module →</span></div>
+                  <div class="module-foot">
+                    <span class="context-tag">{{
+                      isPersonalContext()
+                        ? 'PERSONAL'
+                        : isPlatformContext()
+                          ? 'PLATFORM'
+                          : 'BUSINESS'
+                    }}</span>
+                    <span class="action-arrow">
+                      <span>Open module</span>
+                      <span aria-hidden="true">→</span>
+                    </span>
+                  </div>
                 </a>
               }
             </div>
           } @else {
-            <section class="empty-modules" role="status">
-              <span class="empty-icon" aria-hidden="true">⌑</span>
-              <h3>No modules are assigned in this workspace</h3>
-              <p>Your account has no matching module permissions in this context. Ask your platform administrator to review the role and permission assignments. Your access will update when the server returns the relevant permissions.</p>
-            </section>
+            <div class="empty-modules-card" role="status">
+              <div class="empty-symbol" aria-hidden="true">⌑</div>
+              <h3>No modules assigned in this workspace</h3>
+              <p>
+                Your account currently has no active permissions for this context. Contact your
+                workspace owner or platform administrator to assign entitlements.
+              </p>
+            </div>
           }
         </section>
+      </section>
 
+      <!-- RIGHT COLUMN: Sidebar Rail -->
+      <aside class="dashboard-sidebar-rail" aria-label="Workspace Context & Quick Actions">
+        <!-- Roles & Access Widget -->
+        @if (!isPersonalContext()) {
+          <div class="sidebar-widget-card roles-widget">
+            <h3 class="widget-title">Active Role Entitlements</h3>
+            <div class="roles-chips-list">
+              @for (role of roleCodes(); track role) {
+                <span class="role-chip">{{ roleLabel(role) }}</span>
+              }
+              @if (!roleCodes().length) {
+                <span class="role-chip muted">No roles assigned</span>
+              }
+            </div>
+          </div>
+        }
 
-      }
-    </main>
-  
+        <!-- Quick Actions Launcher Widget -->
+        <div class="sidebar-widget-card quick-actions-widget">
+          <h3 class="widget-title">Quick Actions</h3>
+          <div class="quick-actions-list">
+            @if (selectedTenantId() !== null) {
+              <a class="quick-action-btn" routerLink="/business/catalogue">
+                <span>Manage Catalogue</span>
+                <span class="action-arrow">→</span>
+              </a>
+              <a class="quick-action-btn" routerLink="/business/team">
+                <span>Team & Access</span>
+                <span class="action-arrow">→</span>
+              </a>
+              <a class="quick-action-btn" routerLink="/business/profile">
+                <span>Business Profile</span>
+                <span class="action-arrow">→</span>
+              </a>
+            } @else if (isPersonalContext()) {
+              <a class="quick-action-btn" routerLink="/products">
+                <span>Browse Products</span>
+                <span class="action-arrow">→</span>
+              </a>
+              <a class="quick-action-btn" routerLink="/onboarding">
+                <span>Register a Business</span>
+                <span class="action-arrow">→</span>
+              </a>
+              <a class="quick-action-btn" routerLink="/dashboard/enquiries">
+                <span>My Enquiries</span>
+                <span class="action-arrow">→</span>
+              </a>
+            } @else {
+              <a class="quick-action-btn" routerLink="/admin/businesses">
+                <span>Business Moderation</span>
+                <span class="action-arrow">→</span>
+              </a>
+              <a class="quick-action-btn" routerLink="/admin/plans">
+                <span>Subscription Plans</span>
+                <span class="action-arrow">→</span>
+              </a>
+            }
+          </div>
+        </div>
+
+        <!-- Network Verification & System Status -->
+        <div class="sidebar-widget-card network-status-widget">
+          <h3 class="widget-title">BBG Network Status</h3>
+          <div class="status-item">
+            <span class="status-dot"></span>
+            <strong>Services Operational</strong>
+          </div>
+          <p class="support-desc">
+            Bharat Business Group enterprise network is live. Direct merchant support is available
+            via WhatsApp desk.
+          </p>
+        </div>
+      </aside>
+    </div>
+  }
+</main>

@@ -33,10 +33,13 @@ export class DashboardApiService {
   private readonly apiBaseUrl = inject(API_BASE_URL);
 
   async getPermissions(tenantId = 0): Promise<DashboardPermission[]> {
-    const response = await firstValueFrom(this.http.post<DashboardApiResponse<{ tenant_id: number | null; permissions: DashboardPermission[] }>>(
-      `${this.apiBaseUrl}/api/v1/auth/permissions`,
-      { authParam: { actionType: 'getPermissions', actionData: { tenant_id: tenantId } } },
-    ));
+    const response = await firstValueFrom(
+      this.http.post<
+        DashboardApiResponse<{ tenant_id: number | null; permissions: DashboardPermission[] }>
+      >(`${this.apiBaseUrl}/api/v1/auth/permissions`, {
+        authParam: { actionType: 'getPermissions', actionData: { tenant_id: tenantId } },
+      }),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
       throw new Error(response.msgArr?.join(' ') || 'Unable to load access permissions.');
     }
@@ -44,25 +47,31 @@ export class DashboardApiService {
   }
 
   async getMyTenants(): Promise<DashboardTenant[]> {
-    const response = await firstValueFrom(this.http.post<DashboardApiResponse<{ items: DashboardTenant[] }>>(
-      `${this.apiBaseUrl}/api/v1/tenants/mine/list`,
-      { tenantParam: { actionType: 'listMyTenants', actionData: { page: 1, page_size: 50 } } },
-    ));
+    const response = await firstValueFrom(
+      this.http.post<DashboardApiResponse<{ items: DashboardTenant[] }>>(
+        `${this.apiBaseUrl}/api/v1/tenants/mine/list`,
+        { tenantParam: { actionType: 'listMyTenants', actionData: { page: 1, page_size: 50 } } },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
       throw new Error(response.msgArr?.join(' ') || 'Unable to load your business workspaces.');
     }
-    return (response.data.items ?? []).map((tenant) => ({
-      ...tenant,
-      id: Number(tenant.id),
-      tenant_name: String(tenant.tenant_name ?? '').trim(),
-    })).filter((tenant) => Number.isInteger(tenant.id) && tenant.id > 0);
+    return (response.data.items ?? [])
+      .map((tenant) => ({
+        ...tenant,
+        id: Number(tenant.id),
+        tenant_name: String(tenant.tenant_name ?? '').trim(),
+      }))
+      .filter((tenant) => Number.isInteger(tenant.id) && tenant.id > 0);
   }
 
   async getConsumerSummary(): Promise<Record<string, number>> {
-    const response = await firstValueFrom(this.http.post<DashboardApiResponse<Record<string, number>>>(
-      `${this.apiBaseUrl}/api/v1/dashboard/consumer/summary`,
-      { dashboardParam: { actionData: {} } },
-    ));
+    const response = await firstValueFrom(
+      this.http.post<DashboardApiResponse<Record<string, number>>>(
+        `${this.apiBaseUrl}/api/v1/dashboard/consumer/summary`,
+        { dashboardParam: { actionData: {} } },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
       throw new Error(response.msgArr?.join(' ') || 'Consumer summary is unavailable.');
     }
@@ -70,12 +79,16 @@ export class DashboardApiService {
   }
 
   async getTenantSummary(tenantId: number): Promise<Record<string, string | number | null>> {
-    const response = await firstValueFrom(this.http.post<DashboardApiResponse<Record<string, string | number | null>>>(
-      `${this.apiBaseUrl}/api/v1/dashboard/entrepreneur/summary`,
-      { dashboardParam: { actionData: { tenant_id: tenantId } } },
-    ));
+    const response = await firstValueFrom(
+      this.http.post<DashboardApiResponse<Record<string, string | number | null>>>(
+        `${this.apiBaseUrl}/api/v1/dashboard/entrepreneur/summary`,
+        { dashboardParam: { actionData: { tenant_id: tenantId } } },
+      ),
+    );
     if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
-      throw new Error(response.msgArr?.join(' ') || 'Business summary is unavailable for this workspace.');
+      throw new Error(
+        response.msgArr?.join(' ') || 'Business summary is unavailable for this workspace.',
+      );
     }
     return response.data;
   }

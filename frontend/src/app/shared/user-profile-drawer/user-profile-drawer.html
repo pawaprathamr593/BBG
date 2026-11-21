@@ -1,5 +1,11 @@
-<button class="profile-trigger" type="button" aria-label="Open profile menu"
-  aria-haspopup="dialog" [attr.aria-expanded]="open()" (click)="toggle()">
+<button
+  class="profile-trigger"
+  type="button"
+  aria-label="Open profile menu"
+  aria-haspopup="dialog"
+  [attr.aria-expanded]="open()"
+  (click)="toggle()"
+>
   @if (auth.user()?.profile_image; as image) {
     <img [src]="image" alt="" />
   } @else {
@@ -13,79 +19,127 @@
   eyebrow="YOUR BBG ACCOUNT"
   width="compact"
   [offsetHeader]="true"
-  (closed)="close()">
+  (closed)="close()"
+>
   <div class="profile-drawer-content">
-          <section class="profile-summary">
-            @if (auth.user()?.profile_image; as image) {
-              <img class="profile-avatar" [src]="image" alt="" />
-            } @else {
-              <span class="profile-avatar profile-initials">{{ initials() }}</span>
-            }
-            <div class="profile-copy">
-              <strong>{{ auth.user()?.full_name || 'BBG user' }}</strong>
-              <span>{{ auth.user()?.email || auth.user()?.mobile || 'Account details' }}</span>
-            </div>
-          </section>
+    <section class="profile-summary">
+      @if (auth.user()?.profile_image; as image) {
+        <img class="profile-avatar" [src]="image" alt="" />
+      } @else {
+        <span class="profile-avatar profile-initials">{{ initials() }}</span>
+      }
+      <div class="profile-copy">
+        <strong>{{ auth.user()?.full_name || 'BBG user' }}</strong>
+        <span>{{ auth.user()?.email || auth.user()?.mobile || 'Account details' }}</span>
+      </div>
+    </section>
 
-          <section class="drawer-section context-section">
-            <div class="section-heading"><h3>Go to</h3></div>
-            <button class="context-action" type="button" [disabled]="switching()"
-              [class.is-active]="isPersonalContext()"
-              (click)="goToMyAccount()">
-              <span class="context-action-icon">◎</span>
-              <span><strong>My Account</strong><small>Orders, enquiries, payments and profile</small></span>
-              @if (isPersonalContext()) { <span class="selected-mark">✓</span> }
-            </button>
-            @if (hasPlatformAccess()) {
-              <button class="context-action" type="button" [disabled]="switching()"
-                [class.is-active]="isPlatformContext()"
-                (click)="goToPlatformAdministration()">
-                <span class="context-action-icon">⚙</span>
-                <span><strong>Platform Administration</strong><small>Manage BBG platform operations</small></span>
-                @if (isPlatformContext()) { <span class="selected-mark">✓</span> }
-              </button>
-            }
-            @if (workspace.loading()) {
-              <div class="drawer-status" role="status">Checking business access…</div>
-            } @else if (workspace.error()) {
-              <div class="drawer-error" role="alert">{{ workspace.error() }}</div>
-              <button class="retry-button" type="button" (click)="reloadWorkspaces()">Try again</button>
-            } @else if (workspace.tenants().length) {
-              <button class="context-action" type="button" [disabled]="switching()"
-                [class.is-active]="workspace.activeTenantId() !== null"
-                (click)="goToBusinessWorkspace()">
-                <span class="context-action-icon">⌂</span>
-                <span><strong>Business Workspace</strong><small>Manage your business and its operations</small></span>
-                @if (workspace.activeTenantId() !== null) { <span class="selected-mark">✓</span> }
-              </button>
-            }
-            @if (switching()) { <div class="drawer-status" role="status">Changing your BBG area…</div> }
-            @if (switchError()) { <div class="drawer-error" role="alert">{{ switchError() }}</div> }
-          </section>
+    <section class="drawer-section context-section">
+      <div class="section-heading"><h3>Go to</h3></div>
+      <button
+        class="context-action"
+        type="button"
+        [disabled]="switching()"
+        [class.is-active]="isPersonalContext()"
+        (click)="goToMyAccount()"
+      >
+        <span class="context-action-icon">◎</span>
+        <span
+          ><strong>My Account</strong><small>Enquiries, addresses, account and profile</small></span
+        >
+        @if (isPersonalContext()) {
+          <span class="selected-mark">✓</span>
+        }
+      </button>
+      @if (hasPlatformAccess()) {
+        <button
+          class="context-action"
+          type="button"
+          [disabled]="switching()"
+          [class.is-active]="isPlatformContext()"
+          (click)="goToPlatformAdministration()"
+        >
+          <span class="context-action-icon">⚙</span>
+          <span
+            ><strong>Platform Administration</strong
+            ><small>Manage BBG platform operations</small></span
+          >
+          @if (isPlatformContext()) {
+            <span class="selected-mark">✓</span>
+          }
+        </button>
+      }
+      @if (workspace.loading()) {
+        <div class="drawer-status" role="status">Checking business access…</div>
+      } @else if (workspace.error()) {
+        <div class="drawer-error" role="alert">{{ workspace.error() }}</div>
+        <button class="retry-button" type="button" (click)="reloadWorkspaces()">Try again</button>
+      } @else if (workspace.tenants().length) {
+        <button
+          class="context-action"
+          type="button"
+          [disabled]="switching()"
+          [class.is-active]="workspace.activeTenantId() !== null"
+          (click)="goToBusinessWorkspace()"
+        >
+          <span class="context-action-icon">⌂</span>
+          <span
+            ><strong>Business Workspace</strong
+            ><small>Manage your business and its operations</small></span
+          >
+          @if (workspace.activeTenantId() !== null) {
+            <span class="selected-mark">✓</span>
+          }
+        </button>
+      }
+      @if (switching()) {
+        <div class="drawer-status" role="status">Changing your BBG area…</div>
+      }
+      @if (switchError()) {
+        <div class="drawer-error" role="alert">{{ switchError() }}</div>
+      }
+    </section>
 
-          <section class="drawer-section appearance-section">
-            <div class="section-heading"><h3>Appearance</h3><span>Theme</span></div>
-            <div class="theme-options" role="group" aria-label="Choose theme">
-              <button type="button" [class.is-active]="theme.mode() === 'light'"
-                [attr.aria-pressed]="theme.mode() === 'light'" (click)="setTheme('light')">
-                <span aria-hidden="true">☀</span> Light
-              </button>
-              <button type="button" [class.is-active]="theme.mode() === 'dark'"
-                [attr.aria-pressed]="theme.mode() === 'dark'" (click)="setTheme('dark')">
-                <span aria-hidden="true">☾</span> Dark
-              </button>
-              <button type="button" [class.is-active]="theme.mode() === 'system'"
-                [attr.aria-pressed]="theme.mode() === 'system'" (click)="setTheme('system')">
-                <span aria-hidden="true">◐</span> System
-              </button>
-            </div>
-          </section>
+    <section class="drawer-section appearance-section">
+      <div class="section-heading">
+        <h3>Appearance</h3>
+        <span>Theme</span>
+      </div>
+      <div class="theme-options" role="group" aria-label="Choose theme">
+        <button
+          type="button"
+          [class.is-active]="theme.mode() === 'light'"
+          [attr.aria-pressed]="theme.mode() === 'light'"
+          (click)="setTheme('light')"
+        >
+          <span aria-hidden="true">☀</span> Light
+        </button>
+        <button
+          type="button"
+          [class.is-active]="theme.mode() === 'dark'"
+          [attr.aria-pressed]="theme.mode() === 'dark'"
+          (click)="setTheme('dark')"
+        >
+          <span aria-hidden="true">☾</span> Dark
+        </button>
+        <button
+          type="button"
+          [class.is-active]="theme.mode() === 'system'"
+          [attr.aria-pressed]="theme.mode() === 'system'"
+          (click)="setTheme('system')"
+        >
+          <span aria-hidden="true">◐</span> System
+        </button>
+      </div>
+    </section>
   </div>
   <footer workspace-drawer-footer class="drawer-footer">
-          @if (logoutError()) { <p class="drawer-error" role="alert">{{ logoutError() }}</p> }
-          <button class="logout-button" type="button" [disabled]="loggingOut()" (click)="logout()">
-            <span aria-hidden="true">↪</span>
-            {{ loggingOut() ? 'Signing out…' : 'Log out' }}
-          </button>
+    @if (logoutError()) {
+      <p class="drawer-error" role="alert">{{ logoutError() }}</p>
+    }
+    <button class="logout-button" type="button" [disabled]="loggingOut()" (click)="logout()">
+      <span aria-hidden="true">↪</span>
+      {{ loggingOut() ? 'Signing out…' : 'Log out' }}
+    </button>
   </footer>
 </app-workspace-drawer>

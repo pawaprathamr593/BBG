@@ -8,6 +8,7 @@ use App\Dao\BusinessDao;
 use App\Dao\TenantDao;
 use App\Services\Interfaces\IAuthServices;
 use App\Services\Interfaces\IBusinessServices;
+use App\Utils\AwsS3Storage;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use Yiisoft\Db\Connection\ConnectionInterface;
@@ -19,6 +20,7 @@ final readonly class BusinessServices implements IBusinessServices
         private BusinessDao $dao,
         private TenantDao $tenantDao,
         private IAuthServices $authServices,
+        private AwsS3Storage $s3Storage,
         private LoggerInterface $logger,
     ) {}
 
@@ -124,6 +126,9 @@ final readonly class BusinessServices implements IBusinessServices
                 case 'unpublishOwnedStorefront':
                     $resArr = $this->manageMyStorefront($actionData, 'unpublish', true);
                     break;
+                case 'generateBusinessMediaUploadUrl':
+                    $resArr = $this->generateBusinessMediaUploadUrl($actionData);
+                    break;
                 default:
                     $resArr['msgArr'][] = 'Unsupported business management action.';
                     break;
@@ -157,8 +162,15 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = 'No business application is associated with the authenticated user.';
             return $resArr;
         }
+        $app = $result['data'];
+        if (!empty($app['logo_path'])) {
+            $app['logo_url'] = $this->s3Storage->resolveDownloadUrl((string) $app['logo_path']);
+        }
+        if (!empty($app['cover_image_path'])) {
+            $app['cover_image_url'] = $this->s3Storage->resolveDownloadUrl((string) $app['cover_image_path']);
+        }
         $resArr['status'] = 'SUCCESS';
-        $resArr['data'] = $result['data'];
+        $resArr['data'] = $app;
         return $resArr;
     }
 
@@ -174,8 +186,18 @@ final readonly class BusinessServices implements IBusinessServices
         if ($result['status'] !== 'SUCCESS') {
             return $this->propagateFailure($result, 'BusinessServices::getMyBusinessApplications');
         }
+        $items = $result['data'];
+        foreach ($items as &$item) {
+            if (!empty($item['logo_path'])) {
+                $item['logo_url'] = $this->s3Storage->resolveDownloadUrl((string) $item['logo_path']);
+            }
+            if (!empty($item['cover_image_path'])) {
+                $item['cover_image_url'] = $this->s3Storage->resolveDownloadUrl((string) $item['cover_image_path']);
+            }
+        }
+        unset($item);
         $resArr['status'] = 'SUCCESS';
-        $resArr['data'] = ['items' => $result['data']];
+        $resArr['data'] = ['items' => $items];
         return $resArr;
     }
 
@@ -539,8 +561,15 @@ final readonly class BusinessServices implements IBusinessServices
         if ($settings['status'] !== 'SUCCESS' || $settings['data'] === []) {
             return $this->propagateFailure($settings, 'BusinessServices::getOwnedStorefront');
         }
+        $businessData = $business['data'];
+        if (!empty($businessData['logo_path'])) {
+            $businessData['logo_url'] = $this->s3Storage->resolveDownloadUrl((string) $businessData['logo_path']);
+        }
+        if (!empty($businessData['cover_image_path'])) {
+            $businessData['cover_image_url'] = $this->s3Storage->resolveDownloadUrl((string) $businessData['cover_image_path']);
+        }
         $resArr['status'] = 'SUCCESS';
-        $resArr['data'] = ['business' => $business['data'], 'storefront' => $settings['data']];
+        $resArr['data'] = ['business' => $businessData, 'storefront' => $settings['data']];
         return $resArr;
     }
 
@@ -572,8 +601,15 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = 'Storefront settings were not found.';
             return $resArr;
         }
+        $businessData = $business['data'];
+        if (!empty($businessData['logo_path'])) {
+            $businessData['logo_url'] = $this->s3Storage->resolveDownloadUrl((string) $businessData['logo_path']);
+        }
+        if (!empty($businessData['cover_image_path'])) {
+            $businessData['cover_image_url'] = $this->s3Storage->resolveDownloadUrl((string) $businessData['cover_image_path']);
+        }
         $resArr['status'] = 'SUCCESS';
-        $resArr['data'] = ['business' => $business['data'], 'storefront' => $settings['data']];
+        $resArr['data'] = ['business' => $businessData, 'storefront' => $settings['data']];
         return $resArr;
     }
 
@@ -742,6 +778,26 @@ final readonly class BusinessServices implements IBusinessServices
             $resArr['msgArr'][] = 'A valid business_email is required.';
             return $resArr;
         }
+
+        $logoPath = isset($actionData['logo_path']) ? trim((string) $actionData['logo_path']) : null;
+        $coverImagePath = isset($actionData['cover_image_path']) ? trim((string) $actionData['cover_image_path']) : null;
+        if ($logoPath !== null && $logoPath !== '' && str_starts_with($logoPath, 'tenants/')) {
+            try {
+                $this->s3Storage->headObject($logoPath);
+            } catch (Throwable) {
+                $resArr['msgArr'][] = 'Logo file not found or upload incomplete on S3.';
+                return $resArr;
+            }
+        }
+        if ($coverImagePath !== null && $coverImagePath !== '' && str_starts_with($coverImagePath, 'tenants/')) {
+            try {
+                $this->s3Storage->headObject($coverImagePath);
+            } catch (Throwable) {
+                $resArr['msgArr'][] = 'Cover image file not found or upload incomplete on S3.';
+                return $resArr;
+            }
+        }
+
         $resArr = $this->dao->updateBusinessProfile(
             $this->db, $tenantId, $businessId, (int) $principal['data']['user_id'], $businessName,
             $this->optionalText($actionData['business_description'] ?? '', 5000) ?? '',
@@ -753,6 +809,8 @@ final readonly class BusinessServices implements IBusinessServices
             $this->optionalText($actionData['city'] ?? '', 100) ?? '',
             $this->optionalText($actionData['state'] ?? '', 100) ?? '',
             $this->optionalText($actionData['postal_code'] ?? '', 15) ?? '',
+            $logoPath,
+            $coverImagePath,
         );
         if ($resArr['status'] !== 'SUCCESS') {
             return $this->propagateFailure($resArr, 'BusinessServices::manageBusinessProfile');
@@ -845,5 +903,69 @@ final readonly class BusinessServices implements IBusinessServices
             $downstream['data'] = [];
         }
         return $downstream;
+    }
+
+    private function generateBusinessMediaUploadUrl(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $principal = $this->principal($actionData);
+        if ($principal['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($principal, 'BusinessServices::generateBusinessMediaUploadUrl');
+        }
+        $userId = (int) $principal['data']['user_id'];
+        $tenantId = $this->positiveInt($actionData['tenant_id'] ?? null);
+        if ($tenantId === null) {
+            $resArr['msgArr'][] = 'A valid tenant_id is required.';
+            return $resArr;
+        }
+
+        $access = $this->requireTenantPermission($userId, $tenantId, 'business.update', 'BusinessServices::generateBusinessMediaUploadUrl');
+        if ($access['status'] !== 'SUCCESS') return $access;
+
+        $mediaType = strtolower(trim((string) ($actionData['media_type'] ?? 'logo')));
+        if (!in_array($mediaType, ['logo', 'cover'], true)) {
+            $resArr['msgArr'][] = 'media_type must be either "logo" or "cover".';
+            return $resArr;
+        }
+
+        $mimeType = strtolower(trim((string) ($actionData['mime_type'] ?? $actionData['content_type'] ?? 'image/jpeg')));
+        $allowedMimes = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+        ];
+        if (!isset($allowedMimes[$mimeType])) {
+            $resArr['msgArr'][] = 'Unsupported media type. Allowed: image/jpeg, image/png, image/webp.';
+            return $resArr;
+        }
+
+        $fileSize = $this->positiveInt($actionData['file_size'] ?? 0);
+        $maxBytes = $this->s3Storage->getMaxUploadBytes();
+        if ($fileSize !== null && $fileSize > $maxBytes) {
+            $resArr['msgArr'][] = 'Image exceeds maximum permitted file size of ' . round($maxBytes / (1024 * 1024)) . 'MB.';
+            return $resArr;
+        }
+
+        $ext = $allowedMimes[$mimeType];
+        $key = sprintf('tenants/%d/branding/%s_%s.%s', $tenantId, $mediaType, bin2hex(random_bytes(16)), $ext);
+
+        try {
+            $upload = $this->s3Storage->createUploadUrl($key, $mimeType);
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = [
+                'upload_url' => $upload['url'],
+                'object_key' => $key,
+                'expires_in' => $upload['expires_in'],
+                'required_headers' => [
+                    'Content-Type' => $mimeType,
+                ],
+            ];
+            return $resArr;
+        } catch (Throwable $e) {
+            $this->logger->error('BusinessServices::generateBusinessMediaUploadUrl failed.', ['exception' => $e]);
+            $resArr['status'] = 'EXCEPTION';
+            $resArr['msgArr'][] = 'Unable to generate S3 upload URL for business media.';
+            return $resArr;
+        }
     }
 }

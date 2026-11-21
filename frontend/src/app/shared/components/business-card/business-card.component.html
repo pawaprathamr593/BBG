@@ -1,0 +1,191 @@
+<article class="bbg-business-card" [class.has-cover]="hasValidCover()">
+  <!-- 1. Cover Image & Overlapping Identity Banner -->
+  <div
+    class="business-cover-banner"
+    (click)="onBusinessClick()"
+    (keydown.enter)="onBusinessKeydown($event)"
+    (keydown.space)="onBusinessKeydown($event)"
+    role="button"
+    tabindex="0"
+    [attr.aria-label]="'Explore ' + business().business_name + ' storefront'"
+  >
+    @if (hasValidCover()) {
+      <img
+        class="cover-image"
+        [src]="business().cover_image_path"
+        [alt]="business().business_name + ' cover banner'"
+        loading="lazy"
+        (error)="onCoverError()"
+      />
+    }
+    <div class="cover-gradient-overlay" aria-hidden="true"></div>
+
+    <!-- Top-left: Featured / Verified Status Badges -->
+    <div class="cover-badges-left">
+      @if (business().featured || business().rank) {
+        <span class="badge-featured">
+          {{ business().rank ? '#' + business().rank + ' Featured' : 'Featured' }}
+        </span>
+      }
+      @if (business().verified !== false) {
+        <span class="badge-verified" title="Verified BBG Merchant">
+          <svg class="badge-svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path
+              fill-rule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <span>Verified</span>
+        </span>
+      }
+    </div>
+
+    <!-- Overlapping Business Logo / Monogram -->
+    <div class="business-identity-badge">
+      @if (hasValidLogo()) {
+        <img
+          class="business-logo"
+          [src]="business().logo_path"
+          [alt]="business().business_name + ' logo'"
+          loading="lazy"
+          (error)="onLogoError()"
+        />
+      } @else {
+        <div class="business-logo-fallback" aria-hidden="true">
+          {{ businessMonogram() }}
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- 2. Business Identity, Description, Metrics & Specialities -->
+  <div class="business-body">
+    <div class="identity-header">
+      <h3
+        class="business-title"
+        (click)="onBusinessClick()"
+        (keydown.enter)="onBusinessKeydown($event)"
+        (keydown.space)="onBusinessKeydown($event)"
+        role="button"
+        tabindex="0"
+        [attr.title]="business().business_name"
+      >
+        {{ business().business_name }}
+      </h3>
+
+      @if (business().category_name) {
+        <span class="business-category-label">{{ business().category_name }}</span>
+      }
+    </div>
+
+    @if (formattedLocation()) {
+      <p class="business-location">
+        <svg
+          class="meta-svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
+          />
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"
+          />
+        </svg>
+        <span>{{ formattedLocation() }}</span>
+      </p>
+    }
+
+    @if (business().business_description) {
+      <p class="business-description">{{ business().business_description }}</p>
+    }
+
+    <!-- 3. Business Metrics (Only rendered when supported API values exist) -->
+    @if (metrics().length > 0) {
+      <div class="business-metrics-grid" aria-label="Business metrics">
+        @for (metric of metrics(); track metric.label) {
+          <div class="metric-cell">
+            <strong class="metric-value">{{ metric.value }}</strong>
+            <span class="metric-label">{{ metric.label }}</span>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- 4. Specialities & Supported Capabilities -->
+    @if (specialityBadges().length > 0) {
+      <div class="specialities-row" aria-label="Business specialities">
+        @for (badge of specialityBadges(); track badge) {
+          <span class="speciality-badge">{{ badge }}</span>
+        }
+      </div>
+    }
+
+    @if (showCreated() && business().created_on) {
+      <time class="created-time" [attr.datetime]="business().created_on">
+        Member since {{ business().created_on | date: 'mediumDate' }}
+      </time>
+    }
+
+    <!-- 5. Actions Area: Explore Storefront (Primary) & WhatsApp (Secondary) -->
+    <div class="business-actions-area">
+      <button
+        type="button"
+        class="btn-action-storefront"
+        (click)="onBusinessClick()"
+        [attr.aria-label]="'Explore storefront of ' + business().business_name"
+      >
+        <svg
+          class="action-svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z"
+          />
+        </svg>
+        <span class="action-text">Explore Storefront</span>
+      </button>
+
+      @if (isWhatsAppAvailable()) {
+        <button
+          type="button"
+          class="btn-action-whatsapp"
+          (click)="onWhatsAppClick($event)"
+          [attr.aria-label]="'Contact ' + business().business_name + ' on WhatsApp'"
+        >
+          <svg class="action-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path
+              d="M12.03 2C6.5 2 2 6.48 2 12c0 1.98.58 3.83 1.58 5.39L2.5 22l4.74-1.04A9.97 9.97 0 0012.03 22C17.56 22 22 17.52 22 12S17.56 2 12.03 2zm5.82 14.12c-.25.7-1.44 1.33-2 1.41-.51.07-1.15.1-1.85-.12-.43-.14-.98-.32-1.69-.63-2.97-1.29-4.91-4.31-5.06-4.51-.15-.2-1.21-1.61-1.21-3.07 0-1.46.76-2.18 1.03-2.48.27-.3.59-.37.79-.37.2 0 .4 0 .57.01.18.01.43-.07.67.51.25.6.84 2.07.92 2.22.07.15.12.32.02.52-.1.2-.15.32-.3.5-.15.17-.31.39-.44.52-.15.15-.3.31-.13.61.17.3.77 1.27 1.65 2.06 1.13 1.01 2.09 1.32 2.39 1.47.3.15.47.12.64-.07.18-.2.74-.87.94-1.17.2-.3.4-.25.67-.15.27.1 1.73.82 2.03.97.3.15.5.22.57.35.07.12.07.72-.18 1.42z"
+            />
+          </svg>
+          <span class="action-text">WhatsApp</span>
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="btn-action-whatsapp disabled"
+          disabled
+          aria-disabled="true"
+          title="WhatsApp unavailable for this business"
+          aria-label="WhatsApp unavailable"
+        >
+          <span class="action-text">Unavailable</span>
+        </button>
+      }
+    </div>
+  </div>
+</article>

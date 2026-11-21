@@ -17,7 +17,10 @@ export class PlatformAnalyticsModule {
   }
 
   humanize(value: string): string {
-    return value.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+    return value
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 
   formatValue(value: unknown): string {

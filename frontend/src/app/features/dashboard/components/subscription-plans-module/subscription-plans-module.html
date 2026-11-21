@@ -1,15 +1,47 @@
 <section class="plans-section" aria-labelledby="subscription-plans-heading">
-  <div class="section-title"><div><p class="eyebrow">AVAILABLE PLANS</p><h2 id="subscription-plans-heading">Choose a business plan</h2></div></div>
+  <div class="section-title">
+    <div class="title-meta">
+      <span class="eyebrow">MEMBERSHIP TIERS</span>
+      <h2 id="subscription-plans-heading">Choose a Business Plan</h2>
+    </div>
+  </div>
+
   <div class="plans-grid">
-    @for (plan of plans(); track planId(plan)) {
+    @for (plan of visiblePlans(); track planId(plan)) {
       <article class="plan-card">
-        <h3>{{ value(plan, ['plan_name', 'name', 'plan_code']) }}</h3>
-        <strong class="plan-price">{{ value(plan, ['price', 'amount']) }} {{ value(plan, ['currency']) }}</strong>
-        <p>{{ value(plan, ['description', 'plan_description']) }}</p>
+        <div class="plan-header">
+          <h3 class="plan-title">{{ value(plan, ['plan_name', 'name', 'plan_code']) }}</h3>
+          <div class="plan-pricing">
+            <span class="currency">{{ value(plan, ['currency']) || '₹' }}</span>
+            <span class="amount">{{ value(plan, ['price', 'amount']) }}</span>
+            <span class="frequency">/ cycle</span>
+          </div>
+        </div>
+
+        <p class="plan-description">{{ value(plan, ['description', 'plan_description']) }}</p>
+
         @if (canRequest()) {
-          <button type="button" (click)="planRequested.emit(plan)" [disabled]="busy()">{{ pendingPlanId() === planId(plan) ? 'Requesting…' : 'Request this plan' }}</button>
+          <button
+            type="button"
+            class="plan-btn"
+            (click)="planRequested.emit(plan)"
+            [disabled]="busy()"
+          >
+            {{ pendingPlanId() === planId(plan) ? 'Requesting Plan…' : 'Request This Plan' }}
+          </button>
         }
       </article>
     }
   </div>
+
+  @if (plans().length > pageSize) {
+    <div class="plans-pagination">
+      <app-pagination
+        [currentPage]="currentPage()"
+        [totalItems]="plans().length"
+        [pageSize]="pageSize"
+        (pageChange)="onPageChange($event)"
+      />
+    </div>
+  }
 </section>

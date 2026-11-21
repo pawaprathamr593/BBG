@@ -4,7 +4,8 @@
   [attr.aria-expanded]="open"
   aria-haspopup="dialog"
   aria-label="Open advanced filters"
-  (click)="openChange.emit(true)">
+  (click)="openChange.emit(true)"
+>
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M4 6h16M7 12h10m-7 6h4" />
     <circle cx="8" cy="6" r="1.5" />
@@ -13,7 +14,9 @@
   </svg>
   <span>Filters</span>
   @if (activeCount > 0) {
-    <span class="filter-count" aria-label="{{ activeCount }} active filters">{{ activeCount }}</span>
+    <span class="filter-count" aria-label="{{ activeCount }} active filters">{{
+      activeCount
+    }}</span>
   }
 </button>
 
@@ -24,7 +27,8 @@
   description="Adjust the results shown in this workspace."
   width="compact"
   [offsetHeader]="true"
-  (closed)="close()">
+  (closed)="close()"
+>
   <ng-content />
   <footer workspace-drawer-footer class="drawer-footer">
     <button class="drawer-reset" type="button" (click)="reset.emit()">Reset</button>
