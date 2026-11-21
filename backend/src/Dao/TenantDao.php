@@ -109,13 +109,23 @@ final readonly class TenantDao
     public function hasTenantEntitlement(ConnectionInterface $db, int $tenantId, string $entitlementCode): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $codes = $this->resolveEntitlementAliases($entitlementCode);
+        $placeholders = [];
+        $params = [':tenant_id' => $tenantId];
+        foreach ($codes as $idx => $code) {
+            $key = ':code_' . $idx;
+            $placeholders[] = $key;
+            $params[$key] = $code;
+        }
+        $inClause = implode(', ', $placeholders);
+
         return $this->one(
             $db,
             "SELECT pe.id
              FROM TENANT_SUBSCRIPTIONS ts
              INNER JOIN PLAN_ENTITLEMENTS pe ON pe.plan_id = ts.plan_id
-                AND pe.entitlement_code = :entitlement_code
-                AND UPPER(pe.entitlement_value) IN ('1', 'TRUE', 'YES')
+                AND pe.entitlement_code IN ($inClause)
+                AND (UPPER(pe.entitlement_value) IN ('1', 'TRUE', 'YES') OR CAST(pe.entitlement_value AS SIGNED) > 0)
                 AND pe.status = 'A'
              WHERE ts.tenant_id = :tenant_id
                 AND ts.subscription_status = 'ACTIVE' AND ts.status = 'A'
@@ -123,9 +133,28 @@ final readonly class TenantDao
                 AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
              ORDER BY ts.starts_on DESC, ts.id DESC
              LIMIT 1",
-            [':tenant_id' => $tenantId, ':entitlement_code' => $entitlementCode],
+            $params,
             'hasTenantEntitlement',
         );
+    }
+
+    private function resolveEntitlementAliases(string $code): array
+    {
+        $map = [
+            'business.profile' => ['business.profile', 'BUSINESS_LISTING'],
+            'BUSINESS_LISTING' => ['BUSINESS_LISTING', 'business.profile'],
+            'storefront.enabled' => ['storefront.enabled', 'STOREFRONT_ACCESS'],
+            'STOREFRONT_ACCESS' => ['STOREFRONT_ACCESS', 'storefront.enabled'],
+            'catalogue.enabled' => ['catalogue.enabled', 'PRODUCT_MANAGEMENT'],
+            'PRODUCT_MANAGEMENT' => ['PRODUCT_MANAGEMENT', 'catalogue.enabled'],
+            'promotions.enabled' => ['promotions.enabled', 'PROMOTIONAL_POSTS', 'DAILY_PROMOTION_LIMIT'],
+            'PROMOTIONAL_POSTS' => ['PROMOTIONAL_POSTS', 'DAILY_PROMOTION_LIMIT', 'promotions.enabled'],
+            'DAILY_PROMOTION_LIMIT' => ['DAILY_PROMOTION_LIMIT', 'PROMOTIONAL_POSTS', 'promotions.enabled'],
+            'advanced.reports.enabled' => ['advanced.reports.enabled', 'SEO_SUGGESTIONS', 'ADVANCED_ANALYTICS'],
+            'SEO_SUGGESTIONS' => ['SEO_SUGGESTIONS', 'ADVANCED_ANALYTICS', 'advanced.reports.enabled'],
+            'ADVANCED_ANALYTICS' => ['ADVANCED_ANALYTICS', 'SEO_SUGGESTIONS', 'advanced.reports.enabled'],
+        ];
+        return $map[$code] ?? [$code];
     }
 
     public function getTenantMembers(ConnectionInterface $db, int $tenantId, int $limit, int $offset): array

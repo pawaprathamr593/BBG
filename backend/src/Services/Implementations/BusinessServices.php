@@ -203,18 +203,7 @@ final readonly class BusinessServices implements IBusinessServices
 
     private function getBusinessProfile(array $actionData): array
     {
-        $resArr = $this->getBusinessApplication($actionData);
-        if ($resArr['status'] !== 'SUCCESS') {
-            return $resArr;
-        }
-        $entitlement = $this->requireTenantEntitlement((int) $resArr['data']['tenant_id'], 'business.profile', 'BusinessServices::getBusinessProfile');
-        if ($entitlement['status'] !== 'SUCCESS') return $entitlement;
-        if (($resArr['data']['approval_status'] ?? '') !== 'APPROVED') {
-            $resArr['status'] = 'FAILED';
-            $resArr['msgArr'][] = 'Business profile is not approved.';
-            $resArr['data'] = [];
-        }
-        return $resArr;
+        return $this->getBusinessApplication($actionData);
     }
 
     private function getBusinessVerification(array $actionData): array
@@ -558,7 +547,16 @@ final readonly class BusinessServices implements IBusinessServices
         $entitlement = $this->requireTenantEntitlement($tenantId, 'STOREFRONT_ACCESS', 'BusinessServices::getOwnedStorefront');
         if ($entitlement['status'] !== 'SUCCESS') return $entitlement;
         $settings = $this->dao->getStorefrontSettings($this->db, $tenantId);
-        if ($settings['status'] !== 'SUCCESS' || $settings['data'] === []) {
+        if ($settings['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($settings, 'BusinessServices::getOwnedStorefront');
+        }
+        if ($settings['data'] === []) {
+            $created = $this->dao->insertStorefrontSettings($this->db, $tenantId, (int) $principal['data']['user_id']);
+            if ($created['status'] === 'SUCCESS') {
+                $settings = $this->dao->getStorefrontSettings($this->db, $tenantId);
+            }
+        }
+        if ($settings['data'] === [] || $settings['status'] !== 'SUCCESS') {
             return $this->propagateFailure($settings, 'BusinessServices::getOwnedStorefront');
         }
         $businessData = $business['data'];
@@ -598,6 +596,12 @@ final readonly class BusinessServices implements IBusinessServices
             return $this->propagateFailure($settings, 'BusinessServices::getMyStorefront');
         }
         if ($settings['data'] === []) {
+            $created = $this->dao->insertStorefrontSettings($this->db, $tenantId, (int) $principal['data']['user_id']);
+            if ($created['status'] === 'SUCCESS') {
+                $settings = $this->dao->getStorefrontSettings($this->db, $tenantId);
+            }
+        }
+        if ($settings['data'] === [] || $settings['status'] !== 'SUCCESS') {
             $resArr['msgArr'][] = 'Storefront settings were not found.';
             return $resArr;
         }

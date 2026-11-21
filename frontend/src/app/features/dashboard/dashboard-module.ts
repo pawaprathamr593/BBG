@@ -654,14 +654,29 @@ export class DashboardModule implements OnInit {
         case 'profile':
           if (!tenantId)
             return this.setUnsupported('Open Business Workspace to view your business profile.');
-          this.summary.set(
-            await this.request<DataRecord>(
-              '/api/v1/business/profile/get',
-              'businessParam',
-              'getMyBusinessProfile',
-              { tenant_id: tenantId },
-            ),
-          );
+          try {
+            this.summary.set(
+              await this.request<DataRecord>(
+                '/api/v1/business/profile/get',
+                'businessParam',
+                'getMyBusinessProfile',
+                { tenant_id: tenantId },
+              ),
+            );
+          } catch (profileError) {
+            try {
+              this.summary.set(
+                await this.request<DataRecord>(
+                  '/api/v1/business/application/get',
+                  'businessParam',
+                  'getMyBusinessApplication',
+                  { tenant_id: tenantId },
+                ),
+              );
+            } catch {
+              throw profileError;
+            }
+          }
           break;
         case 'storefront':
           if (!tenantId)

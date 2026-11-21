@@ -281,84 +281,261 @@
           </div>
         } @else {
           @if (viewMode() === 'table') {
-            <div class="table-wrap">
-              <table>
+            <div class="table-responsive-container">
+              <table class="workspace-data-table" role="table">
                 <thead>
                   <tr>
-                    <th>Product</th>
+                    <th
+                      scope="col"
+                      class="th-primary sortable-th"
+                      [class.sorted]="sortColumn() === 'product_name'"
+                      [attr.aria-sort]="getAriaSort('product_name')"
+                    >
+                      <button
+                        type="button"
+                        class="th-sort-btn"
+                        (click)="toggleSort('product_name')"
+                        [attr.aria-label]="getSortLabel('product_name', 'Product Name')"
+                      >
+                        <span>Product / Code</span>
+                        <span class="sort-indicator" aria-hidden="true">
+                          @if (sortColumn() === 'product_name') {
+                            @if (sortDirection() === 'asc') {
+                              ▲
+                            } @else {
+                              ▼
+                            }
+                          } @else {
+                            <span class="sort-idle">⇅</span>
+                          }
+                        </span>
+                      </button>
+                    </th>
                     @if (isColumnVisible('category')) {
-                      <th>Category</th>
+                      <th
+                        scope="col"
+                        class="sortable-th"
+                        [class.sorted]="sortColumn() === 'category_name'"
+                        [attr.aria-sort]="getAriaSort('category_name')"
+                      >
+                        <button
+                          type="button"
+                          class="th-sort-btn"
+                          (click)="toggleSort('category_name')"
+                          [attr.aria-label]="getSortLabel('category_name', 'Category')"
+                        >
+                          <span>Category</span>
+                          <span class="sort-indicator" aria-hidden="true">
+                            @if (sortColumn() === 'category_name') {
+                              @if (sortDirection() === 'asc') {
+                                ▲
+                              } @else {
+                                ▼
+                              }
+                            } @else {
+                              <span class="sort-idle">⇅</span>
+                            }
+                          </span>
+                        </button>
+                      </th>
                     }
                     @if (isColumnVisible('price')) {
-                      <th>Price</th>
+                      <th
+                        scope="col"
+                        class="sortable-th"
+                        [class.sorted]="sortColumn() === 'selling_price'"
+                        [attr.aria-sort]="getAriaSort('selling_price')"
+                      >
+                        <button
+                          type="button"
+                          class="th-sort-btn"
+                          (click)="toggleSort('selling_price')"
+                          [attr.aria-label]="getSortLabel('selling_price', 'Selling Price')"
+                        >
+                          <span>Selling Price</span>
+                          <span class="sort-indicator" aria-hidden="true">
+                            @if (sortColumn() === 'selling_price') {
+                              @if (sortDirection() === 'asc') {
+                                ▲
+                              } @else {
+                                ▼
+                              }
+                            } @else {
+                              <span class="sort-idle">⇅</span>
+                            }
+                          </span>
+                        </button>
+                      </th>
                     }
                     @if (isColumnVisible('cost_price')) {
-                      <th>Cost Price</th>
+                      <th
+                        scope="col"
+                        class="sortable-th"
+                        [class.sorted]="sortColumn() === 'cost_price'"
+                        [attr.aria-sort]="getAriaSort('cost_price')"
+                      >
+                        <button
+                          type="button"
+                          class="th-sort-btn"
+                          (click)="toggleSort('cost_price')"
+                          [attr.aria-label]="getSortLabel('cost_price', 'Cost Price')"
+                        >
+                          <span>Cost Price</span>
+                          <span class="sort-indicator" aria-hidden="true">
+                            @if (sortColumn() === 'cost_price') {
+                              @if (sortDirection() === 'asc') {
+                                ▲
+                              } @else {
+                                ▼
+                              }
+                            } @else {
+                              <span class="sort-idle">⇅</span>
+                            }
+                          </span>
+                        </button>
+                      </th>
                     }
                     @if (isColumnVisible('barcode')) {
-                      <th>Barcode</th>
+                      <th
+                        scope="col"
+                        class="sortable-th"
+                        [class.sorted]="sortColumn() === 'barcode'"
+                        [attr.aria-sort]="getAriaSort('barcode')"
+                      >
+                        <button
+                          type="button"
+                          class="th-sort-btn"
+                          (click)="toggleSort('barcode')"
+                          [attr.aria-label]="getSortLabel('barcode', 'Barcode')"
+                        >
+                          <span>Barcode</span>
+                          <span class="sort-indicator" aria-hidden="true">
+                            @if (sortColumn() === 'barcode') {
+                              @if (sortDirection() === 'asc') {
+                                ▲
+                              } @else {
+                                ▼
+                              }
+                            } @else {
+                              <span class="sort-idle">⇅</span>
+                            }
+                          </span>
+                        </button>
+                      </th>
                     }
                     @if (isColumnVisible('status')) {
-                      <th>Status</th>
+                      <th
+                        scope="col"
+                        class="th-status sortable-th"
+                        [class.sorted]="sortColumn() === 'publication_status'"
+                        [attr.aria-sort]="getAriaSort('publication_status')"
+                      >
+                        <button
+                          type="button"
+                          class="th-sort-btn"
+                          (click)="toggleSort('publication_status')"
+                          [attr.aria-label]="getSortLabel('publication_status', 'Status')"
+                        >
+                          <span>Status</span>
+                          <span class="sort-indicator" aria-hidden="true">
+                            @if (sortColumn() === 'publication_status') {
+                              @if (sortDirection() === 'asc') {
+                                ▲
+                              } @else {
+                                ▼
+                              }
+                            } @else {
+                              <span class="sort-idle">⇅</span>
+                            }
+                          </span>
+                        </button>
+                      </th>
                     }
-                    <th class="actions-heading">Actions</th>
+                    <th scope="col" class="th-actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   @for (product of pagedProducts(); track product.id) {
-                    <tr>
-                      <td>
-                        <div class="product-cell">
-                          @if (product.primary_image_url) {
-                            <img [src]="product.primary_image_url" [alt]="product.product_name" />
+                    <tr class="table-row">
+                      <td class="td-primary">
+                        <div class="primary-cell-content">
+                          @if (product.primary_image_url && !failedImages().has(product.id)) {
+                            <img
+                              class="cell-media-thumb"
+                              [src]="product.primary_image_url"
+                              [alt]="product.product_name"
+                              loading="lazy"
+                              (error)="handleImageError(product.id)"
+                            />
                           } @else {
-                            <span class="product-placeholder">▧</span>
+                            <div class="cell-media-avatar" aria-hidden="true">
+                              {{ getInitials(product.product_name) }}
+                            </div>
                           }
-                          <div>
-                            <strong>{{ product.product_name }}</strong>
-                            <small>
+                          <div class="cell-text-group">
+                            <strong class="cell-title">{{ product.product_name }}</strong>
+                            <span class="cell-subtitle">
                               {{ product.product_code }}
                               @if (product.brand_name) {
                                 · {{ product.brand_name }}
                               }
-                            </small>
+                            </span>
                           </div>
                         </div>
                       </td>
                       @if (isColumnVisible('category')) {
-                        <td>{{ product.category_name || 'Uncategorised' }}</td>
+                        <td class="td-dynamic">
+                          <span class="cell-val">{{
+                            product.category_name || 'Uncategorised'
+                          }}</span>
+                        </td>
                       }
                       @if (isColumnVisible('price')) {
-                        <td>
-                          {{ product.selling_price | number: '1.2-2' }}
-                          <small>{{ product.unit_symbol || '' }}</small>
+                        <td class="td-dynamic">
+                          <strong class="price-val"
+                            >₹{{ product.selling_price | number: '1.2-2' }}</strong
+                          >
+                          @if (product.unit_symbol) {
+                            <small class="unit-val">/ {{ product.unit_symbol }}</small>
+                          }
                         </td>
                       }
                       @if (isColumnVisible('cost_price')) {
-                        <td>
-                          {{ product.cost_price | number: '1.2-2' }}
-                          <small>{{ product.unit_symbol || '' }}</small>
+                        <td class="td-dynamic">
+                          <span class="cell-val">₹{{ product.cost_price | number: '1.2-2' }}</span>
                         </td>
                       }
                       @if (isColumnVisible('barcode')) {
-                        <td>{{ product.barcode || '—' }}</td>
+                        <td class="td-dynamic">
+                          <span class="cell-val font-mono">{{ product.barcode || '—' }}</span>
+                        </td>
                       }
                       @if (isColumnVisible('status')) {
-                        <td><app-status-badge [status]="product.publication_status" /></td>
+                        <td class="td-status">
+                          <app-status-badge [status]="product.publication_status" size="sm" />
+                        </td>
                       }
-                      <td class="actions">
-                        @if (canUpdate()) {
-                          <button type="button" (click)="edit(product)">Edit</button>
-                        }
-                        @if (canDelete()) {
-                          <button
-                            type="button"
-                            class="danger-link"
-                            (click)="removeProduct(product)"
-                          >
-                            Delete
-                          </button>
-                        }
+                      <td class="td-actions">
+                        <div class="row-actions-group">
+                          @if (canUpdate()) {
+                            <button
+                              type="button"
+                              class="btn-action-outline"
+                              (click)="edit(product)"
+                            >
+                              Edit
+                            </button>
+                          }
+                          @if (canDelete()) {
+                            <button
+                              type="button"
+                              class="btn-action-outline btn-danger"
+                              (click)="removeProduct(product)"
+                            >
+                              Delete
+                            </button>
+                          }
+                        </div>
                       </td>
                     </tr>
                   }
@@ -366,42 +543,85 @@
               </table>
             </div>
           } @else {
-            <div class="catalogue-grid">
+            <div class="records-card-grid">
               @for (product of pagedProducts(); track product.id) {
-                <article class="catalogue-grid-card">
-                  <div class="card-media">
-                    @if (product.primary_image_url) {
-                      <img [src]="product.primary_image_url" [alt]="product.product_name" />
+                <article class="record-grid-card">
+                  <!-- CARD MEDIA HEADER -->
+                  <div class="card-media-banner">
+                    @if (product.primary_image_url && !failedImages().has(product.id)) {
+                      <img
+                        class="card-cover-img"
+                        [src]="product.primary_image_url"
+                        [alt]="product.product_name"
+                        loading="lazy"
+                        (error)="handleImageError(product.id)"
+                      />
                     } @else {
-                      <span class="product-placeholder">▧</span>
+                      <div class="card-media-placeholder">
+                        <span class="placeholder-monogram">{{
+                          getInitials(product.product_name)
+                        }}</span>
+                      </div>
                     }
-                    <div class="card-status-badge">
+                    <div class="card-status-pill">
                       <app-status-badge [status]="product.publication_status" size="sm" />
                     </div>
                   </div>
-                  <div class="card-content">
-                    <small class="product-code">
-                      {{ product.product_code }}
-                      @if (product.brand_name) {
-                        · {{ product.brand_name }}
-                      }
-                    </small>
-                    <h3>{{ product.product_name }}</h3>
-                    <span class="product-category">
-                      {{ product.category_name || 'Uncategorised' }}
-                    </span>
-                    <div class="price-line">
-                      <strong>
-                        {{ product.selling_price | number: '1.2-2' }}
-                        <small>{{ product.unit_symbol || '' }}</small>
-                      </strong>
+
+                  <!-- CARD BODY -->
+                  <div class="card-body">
+                    <div class="card-header-group">
+                      <strong class="card-title">{{ product.product_name }}</strong>
+                      <span class="card-subtitle">
+                        {{ product.product_code }}
+                        @if (product.brand_name) {
+                          · {{ product.brand_name }}
+                        }
+                      </span>
                     </div>
-                    <div class="card-actions">
+
+                    <!-- CARD FIELDS GRID -->
+                    <div class="card-fields-grid">
+                      <div class="grid-field-item">
+                        <span class="grid-field-label">Category</span>
+                        <strong class="grid-field-value">{{
+                          product.category_name || 'Uncategorised'
+                        }}</strong>
+                      </div>
+                      <div class="grid-field-item">
+                        <span class="grid-field-label">Selling Price</span>
+                        <strong class="grid-field-value highlight-price">
+                          ₹{{ product.selling_price | number: '1.2-2' }}
+                          @if (product.unit_symbol) {
+                            <small>/ {{ product.unit_symbol }}</small>
+                          }
+                        </strong>
+                      </div>
+                      <div class="grid-field-item">
+                        <span class="grid-field-label">Cost Price</span>
+                        <strong class="grid-field-value">
+                          ₹{{ product.cost_price | number: '1.2-2' }}
+                        </strong>
+                      </div>
+                      <div class="grid-field-item">
+                        <span class="grid-field-label">Barcode</span>
+                        <strong class="grid-field-value">{{ product.barcode || '—' }}</strong>
+                      </div>
+                    </div>
+
+                    <!-- CARD ACTIONS -->
+                    <div class="card-actions-row">
                       @if (canUpdate()) {
-                        <button type="button" class="btn-edit" (click)="edit(product)">Edit</button>
+                        <button type="button" class="btn-action-outline" (click)="edit(product)">
+                          Edit
+                        </button>
                       }
                       @if (canDelete()) {
-                        <button type="button" class="btn-delete" (click)="removeProduct(product)">
+                        <button
+                          type="button"
+                          class="btn-action-outline btn-danger"
+                          (click)="removeProduct(product)"
+                        >
                           Delete
                         </button>
                       }
@@ -412,10 +632,10 @@
             </div>
           }
 
-          @if (filteredProducts().length > pageSize()) {
+          @if (sortedProducts().length > pageSize()) {
             <app-pagination
               [currentPage]="currentPage()"
-              [totalItems]="filteredProducts().length"
+              [totalItems]="sortedProducts().length"
               [pageSize]="pageSize()"
               (pageChange)="onPageChange($event)"
             />

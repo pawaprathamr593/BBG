@@ -51,7 +51,7 @@ export function createResponsiveViewMode(
 
   const viewMode = signal<DashboardViewMode>(initialMode);
 
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
     const mql = window.matchMedia('(max-width: 1024px)');
     const onChange = (e: MediaQueryListEvent) => {
       if (!userOverrode) {

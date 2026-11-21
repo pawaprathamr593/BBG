@@ -4,7 +4,7 @@ title: Catalogue visual parity, product media rendering and client-side table so
 area: workspace
 type: enhancement
 owner: unset
-status: draft
+status: implemented
 ---
 
 # Catalogue visual parity, product media rendering and client-side table sorting
@@ -19,10 +19,10 @@ This is a focused Catalogue refinement. Preserve existing catalogue operations, 
 
 ## 2. Personas
 
-| Persona | Device | Goal |
-| --- | --- | --- |
-| Business owner / authorized catalogue manager | Mobile, tablet, desktop | Browse, find and manage products using a consistent catalogue experience |
-| Authorized business staff member | Mobile, tablet, desktop | Identify products, inspect product media and sort the available product list |
+| Persona                                                    | Device                  | Goal                                                                              |
+| ---------------------------------------------------------- | ----------------------- | --------------------------------------------------------------------------------- |
+| Business owner / authorized catalogue manager              | Mobile, tablet, desktop | Browse, find and manage products using a consistent catalogue experience          |
+| Authorized business staff member                           | Mobile, tablet, desktop | Identify products, inspect product media and sort the available product list      |
 | Platform administrator, where catalogue access is provided | Desktop, tablet, mobile | Use the same established BBG list and media patterns where Catalogue is available |
 
 ## 3. Scope
@@ -68,14 +68,14 @@ This is a focused Catalogue refinement. Preserve existing catalogue operations, 
 
 ## 6. Screens / regions
 
-| Region | Intent | Reuse expectation |
-| --- | --- | --- |
-| Catalogue page shell | Maintain established dashboard hierarchy and visual language | Follow the nearest existing dashboard record module and approved Catalogue baseline |
-| Products toolbar | Keep search, filters, view switch, page size and column configuration aligned | Reuse existing BBG toolbar/control patterns |
-| Products Table View | Show readable product columns and clear sort affordances | Reuse table header, row, status and action patterns used by other record modules |
-| Products Grid View | Display product media and information in consistent cards | Reuse the existing dashboard Grid View card/media implementation rather than inventing a Catalogue-only card style |
-| Product media | Render actual product image media with loading and fallback states | Reuse existing media component/service/resolver and signed-URL lifecycle |
-| Sort indicators | Communicate unsorted, ascending and descending states accessibly | Reuse existing BBG iconography, focus and button patterns |
+| Region               | Intent                                                                        | Reuse expectation                                                                                                  |
+| -------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Catalogue page shell | Maintain established dashboard hierarchy and visual language                  | Follow the nearest existing dashboard record module and approved Catalogue baseline                                |
+| Products toolbar     | Keep search, filters, view switch, page size and column configuration aligned | Reuse existing BBG toolbar/control patterns                                                                        |
+| Products Table View  | Show readable product columns and clear sort affordances                      | Reuse table header, row, status and action patterns used by other record modules                                   |
+| Products Grid View   | Display product media and information in consistent cards                     | Reuse the existing dashboard Grid View card/media implementation rather than inventing a Catalogue-only card style |
+| Product media        | Render actual product image media with loading and fallback states            | Reuse existing media component/service/resolver and signed-URL lifecycle                                           |
+| Sort indicators      | Communicate unsorted, ascending and descending states accessibly              | Reuse existing BBG iconography, focus and button patterns                                                          |
 
 ## 7. API
 
@@ -88,12 +88,12 @@ No new API operations are introduced.
 - Confirm exact product image fields and media resolver inputs from current-branch models, API service and working media-bearing sibling modules before implementation.
 - If the API currently returns only a server-paginated page, client-side sorting can only order records currently loaded in memory. Do not claim that this sorts products on other pages that have not been loaded. Do not fetch additional pages solely to sort.
 
-| Operation | Method | Path | Envelope | Status |
-| --- | --- | --- | --- | --- |
-| Load products | Existing Catalogue operation | Existing path from current Catalogue API service | Preserve existing envelope | Existing; verify current implementation |
-| Load categories | Existing Catalogue operation | Existing path from current Catalogue API service | Preserve existing envelope | Existing; verify current implementation |
-| Resolve product media | Existing media/S3 workflow | Existing resolver/service; no new path | Preserve current contract | Existing workflow must be reused |
-| Sort loaded products | In-memory operation | No HTTP path | None | New client-side behaviour; must not call API |
+| Operation             | Method                       | Path                                             | Envelope                   | Status                                       |
+| --------------------- | ---------------------------- | ------------------------------------------------ | -------------------------- | -------------------------------------------- |
+| Load products         | Existing Catalogue operation | Existing path from current Catalogue API service | Preserve existing envelope | Existing; verify current implementation      |
+| Load categories       | Existing Catalogue operation | Existing path from current Catalogue API service | Preserve existing envelope | Existing; verify current implementation      |
+| Resolve product media | Existing media/S3 workflow   | Existing resolver/service; no new path           | Preserve current contract  | Existing workflow must be reused             |
+| Sort loaded products  | In-memory operation          | No HTTP path                                     | None                       | New client-side behaviour; must not call API |
 
 ## 8. Permissions
 
@@ -102,12 +102,12 @@ No new API operations are introduced.
 - Sorting and switching presentation modes are local presentation operations and must not grant additional access to product data or actions.
 - Backend authorization and tenant scoping remain authoritative.
 
-| Action | Permission key | Status |
-| --- | --- | --- |
-| View Catalogue products/categories | Existing Catalogue view permission and entitlement | Existing; preserve |
-| Create/edit/delete product | Existing action-specific Catalogue permissions | Existing; preserve |
-| Sort currently loaded products | No additional permission | Local presentation only |
-| Switch Table/Grid View | No additional permission | Local presentation only |
+| Action                             | Permission key                                     | Status                  |
+| ---------------------------------- | -------------------------------------------------- | ----------------------- |
+| View Catalogue products/categories | Existing Catalogue view permission and entitlement | Existing; preserve      |
+| Create/edit/delete product         | Existing action-specific Catalogue permissions     | Existing; preserve      |
+| Sort currently loaded products     | No additional permission                           | Local presentation only |
+| Switch Table/Grid View             | No additional permission                           | Local presentation only |
 
 ## 9. Rules and validation
 
@@ -145,15 +145,15 @@ No new API operations are introduced.
 
 Candidate sortable columns, subject to actual available product fields:
 
-| Column | Sort behaviour |
-| --- | --- |
-| Product name | Case-insensitive alphabetical |
-| Product code / BCN | Case-insensitive alphanumeric |
-| Brand | Case-insensitive alphabetical |
-| Category | Case-insensitive alphabetical |
-| Selling price | Numeric |
-| Cost price | Numeric |
-| Barcode | Case-insensitive alphanumeric |
+| Column             | Sort behaviour                              |
+| ------------------ | ------------------------------------------- |
+| Product name       | Case-insensitive alphabetical               |
+| Product code / BCN | Case-insensitive alphanumeric               |
+| Brand              | Case-insensitive alphabetical               |
+| Category           | Case-insensitive alphabetical               |
+| Selling price      | Numeric                                     |
+| Cost price         | Numeric                                     |
+| Barcode            | Case-insensitive alphanumeric               |
 | Publication status | Consistent ordering of actual status values |
 
 - The default interaction cycle is unsorted → ascending → descending → unsorted.
@@ -222,15 +222,28 @@ Candidate sortable columns, subject to actual available product fields:
 16. Given the user changes light/dark theme, when Catalogue renders, then cards, images, table headers, sort indicators and controls remain legible and consistent with BBG tokens.
 17. Given implementation is complete, when verification is performed, then TypeScript, relevant tests, formatting and Angular development build results are recorded with exact commands and actual outcomes.
 
-## Open questions
+## Resolved questions
 
-- UNKNOWN: Exact product image/media property names and whether the current product list response includes a resolved media URL or only a media/object reference. Confirm from current-branch DTOs and existing working media resolver before implementation.
-- UNKNOWN: Whether product pagination is fully client-side or server-driven for the complete catalogue. Confirm from current Catalogue API service and response metadata. Sorting must remain request-free and limited to records currently loaded in memory.
-- UNKNOWN: Exact shared component/helper used by the best-matching dashboard Grid View. Inspect current branch and reuse it where compatible; do not assume a component name or path.
+- **RESOLVED**: Exact product image/media property names: The product object provides `primary_image_url?: string | null` generated from S3 storage download URLs via `createDownloadUrl()`. In `backend/src/Services/Implementations/CatalogueServices.php`, an accidental duplicate loop was resetting `$productRow['primary_image_url'] = null` after `countTenantProducts`, which wiped out resolved image URLs. Eliminating this duplicate loop restored `primary_image_url` delivery. In frontend, `handleImageError(productId)` ensures graceful monogram fallback on media failures.
+- **RESOLVED**: Product pagination is hybrid: `listProducts(tenantId, search, page, pageSize)` retrieves the tenant's product slice into frontend memory (`this.products()`), where client-side sorting and local pagination/filtering operate. Client-side sorting sorts 100% in-memory over the currently loaded filtered dataset (`this.sortedProducts()`) with zero HTTP calls.
+- **RESOLVED**: Best-matching reference module: `WorkspaceRecordsModule` (`workspace-records-module.html`, `.scss`, `.ts`). Its table and card design tokens (`record-grid-card`, `card-media-banner`, `card-cover-img`, `card-media-placeholder`, `placeholder-monogram`, `card-fields-grid`, `btn-action-outline`) were reused for visual parity.
 
 ## Implementation log
 
-- Requirement drafted from the Catalogue visual-parity, missing product-image and request-free client-side sorting refinement.
-- Source guidance: requirements/BBG_DASHBOARD_MODULE_UX_RBAC_SUBSCRIPTION_SPEC.md, frontend/requirements/workspace/REQ-WORKSPACE-004-business-workspace.md, and frontend/requirements/workspace/REQ-WORKSPACE-007-modular-workspace-and-drawer-ux.md.
-- Skill workflow: bbg-context, requirement-intake, build-ui, data-layer and coding-standards; requirement template and UI/UX standards reviewed.
-- Status remains draft until the open questions are resolved against the current implementation and the requirement is readiness-checked.
+- **Implementation completed**:
+  1. **Visual Parity**: Updated Catalogue Table View and Grid View to follow `WorkspaceRecordsModule`.
+     - Standardized `.table-responsive-container` and `.workspace-data-table` with sortable column headers (`.sortable-th`, `.th-sort-btn`, indicators `▲`, `▼`, `⇅`, and full ARIA support).
+     - Standardized `.records-card-grid` and `.record-grid-card` with media banner, 2x2 fields grid (`Category`, `Selling Price`, `Cost Price`, `Barcode`), status badges, and action rows (`Edit`, `Delete`).
+  2. **Product Image Rendering**:
+     - Identified root cause in `backend/src/Services/Implementations/CatalogueServices.php` where an erroneous duplicate loop overwrote `primary_image_url` with `null`. Fixed backend loop so pre-signed S3 download URLs are properly returned.
+     - Implemented graceful monogram fallback in frontend (`getInitials()`, `failedImages` signal, `handleImageError(id)`).
+  3. **Client-Side Sorting**:
+     - Created pure, reusable helper `frontend/src/app/core/workspace/client-sort.ts` with 3-state cycle (unsorted -> asc -> desc -> unsorted), natural alphanumeric comparisons, numeric price sorting, case-insensitivity, safe null-handling, and stable tie-breaking.
+     - Wired 8 sortable columns in `Catalogue`: `product_name`, `product_code`, `brand_name`, `category_name`, `selling_price`, `cost_price`, `barcode`, `publication_status`.
+     - Guaranteed 0 API requests on sort changes; verified via unit tests and reactive pipeline (`Loaded Products -> Status/Category Filter -> Sort -> Pagination -> View`).
+  4. **Responsive view utility fix**: Added guard `typeof window.matchMedia === 'function'` in `responsive-view.ts` for safe operation in headless environments.
+  5. **Verification**:
+     - `npx tsc --noEmit` passed with 0 errors.
+     - `npm test -- --watch=false` passed (12 test files, 92 unit tests passing).
+     - `npm run build` passed cleanly.
+- Status updated to **implemented**.

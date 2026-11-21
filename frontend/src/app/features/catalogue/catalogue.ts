@@ -19,6 +19,11 @@ import {
 } from '../../core/workspace/workspace-access';
 import { createResponsiveViewMode } from '../../core/workspace/responsive-view';
 import {
+  SortDirection,
+  getNextSortDirection,
+  sortCollection,
+} from '../../core/workspace/client-sort';
+import {
   CatalogueApiService,
   CatalogueCategory,
   CatalogueProduct,
@@ -29,6 +34,16 @@ import { WorkspaceDrawer } from '../../shared/workspace-drawer/workspace-drawer'
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { SkeletonLoaderComponent } from '../../shared/components/skeleton-loader/skeleton-loader.component';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
+
+export type CatalogueSortColumn =
+  | 'product_name'
+  | 'product_code'
+  | 'brand_name'
+  | 'category_name'
+  | 'selling_price'
+  | 'cost_price'
+  | 'barcode'
+  | 'publication_status';
 
 interface ProductForm {
   product_code: string;
@@ -171,6 +186,48 @@ export class Catalogue implements OnInit {
     this.hiddenColumns.set([]);
   }
 
+  readonly sortColumn = signal<CatalogueSortColumn | null>(null);
+  readonly sortDirection = signal<SortDirection>(null);
+  readonly failedImages = signal<Set<number>>(new Set());
+
+  toggleSort(column: CatalogueSortColumn): void {
+    const nextDir = getNextSortDirection(this.sortColumn(), column, this.sortDirection());
+    this.sortDirection.set(nextDir);
+    this.sortColumn.set(nextDir ? column : null);
+  }
+
+  getAriaSort(column: CatalogueSortColumn): 'ascending' | 'descending' | 'none' {
+    if (this.sortColumn() !== column || !this.sortDirection()) return 'none';
+    return this.sortDirection() === 'asc' ? 'ascending' : 'descending';
+  }
+
+  getSortLabel(column: CatalogueSortColumn, label: string): string {
+    if (this.sortColumn() !== column || !this.sortDirection()) {
+      return `Sort by ${label}. Currently unsorted. Activate to sort ascending.`;
+    }
+    if (this.sortDirection() === 'asc') {
+      return `Sort by ${label}. Currently ascending. Activate to sort descending.`;
+    }
+    return `Sort by ${label}. Currently descending. Activate to clear sort.`;
+  }
+
+  handleImageError(productId: number): void {
+    this.failedImages.update((set) => {
+      const next = new Set(set);
+      next.add(productId);
+      return next;
+    });
+  }
+
+  getInitials(name: string): string {
+    if (!name) return '•';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  }
+
   readonly filteredProducts = computed(() => {
     const status = this.filterStatus();
     const catId = this.selectedCategoryId();
@@ -181,12 +238,46 @@ export class Catalogue implements OnInit {
     });
   });
 
+  readonly sortedProducts = computed(() => {
+    const items = this.filteredProducts();
+    const col = this.sortColumn();
+    const dir = this.sortDirection();
+    if (!col || !dir) return items;
+
+    return sortCollection(
+      items,
+      (p) => {
+        switch (col) {
+          case 'product_name':
+            return p.product_name;
+          case 'product_code':
+            return p.product_code;
+          case 'brand_name':
+            return p.brand_name;
+          case 'category_name':
+            return p.category_name;
+          case 'selling_price':
+            return Number(p.selling_price) || 0;
+          case 'cost_price':
+            return Number(p.cost_price) || 0;
+          case 'barcode':
+            return p.barcode;
+          case 'publication_status':
+            return p.publication_status;
+          default:
+            return '';
+        }
+      },
+      dir,
+    );
+  });
+
   readonly totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.filteredProducts().length / this.pageSize())),
+    Math.max(1, Math.ceil(this.sortedProducts().length / this.pageSize())),
   );
 
   readonly pagedProducts = computed(() => {
-    const items = this.filteredProducts();
+    const items = this.sortedProducts();
     const safePage = Math.min(this.currentPage(), this.totalPages());
     const start = (safePage - 1) * this.pageSize();
     return items.slice(start, start + this.pageSize());

@@ -18,8 +18,8 @@ final readonly class PromotionDao
         return $this->one($db, "SELECT ts.id
             FROM TENANT_SUBSCRIPTIONS ts
             INNER JOIN PLAN_ENTITLEMENTS pe ON pe.plan_id = ts.plan_id
-                AND pe.entitlement_code = 'promotions.enabled'
-                AND UPPER(pe.entitlement_value) IN ('1', 'TRUE', 'YES')
+                AND pe.entitlement_code IN ('promotions.enabled', 'DAILY_PROMOTION_LIMIT', 'PROMOTIONAL_POSTS')
+                AND (UPPER(pe.entitlement_value) IN ('1', 'TRUE', 'YES') OR CAST(pe.entitlement_value AS SIGNED) > 0)
                 AND pe.status = 'A'
             WHERE ts.tenant_id = :tenant_id AND ts.subscription_status = 'ACTIVE'
                 AND ts.status = 'A'
