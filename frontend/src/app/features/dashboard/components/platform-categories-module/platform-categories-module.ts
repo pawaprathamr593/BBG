@@ -10,6 +10,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { WorkspaceModuleApiService } from '../../../../core/workspace/workspace-module-api.service';
+import { createResponsiveViewMode } from '../../../../core/workspace/responsive-view';
 import { WorkspaceDrawer } from '../../../../shared/workspace-drawer/workspace-drawer';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
@@ -53,7 +54,12 @@ export class PlatformCategoriesModule {
   readonly pageCount = input(1);
   readonly loading = input(false);
   readonly pageChange = output<number>();
-  readonly viewMode = signal<'table' | 'grid'>('table');
+  private readonly responsiveView = createResponsiveViewMode(
+    inject(DestroyRef),
+    'bbg_platform_categories_view',
+  );
+  readonly viewMode = this.responsiveView.viewMode;
+  readonly setViewMode = this.responsiveView.setViewMode;
   readonly drawerOpen = signal(false);
   readonly editingId = signal<number | null>(null);
   readonly form = signal<CategoryForm>(emptyForm());

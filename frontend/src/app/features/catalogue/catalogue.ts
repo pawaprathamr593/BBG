@@ -17,6 +17,7 @@ import {
   hasActiveEntitlement,
   hasWorkspacePermission,
 } from '../../core/workspace/workspace-access';
+import { createResponsiveViewMode } from '../../core/workspace/responsive-view';
 import {
   CatalogueApiService,
   CatalogueCategory,
@@ -74,7 +75,12 @@ const emptyProduct = (): ProductForm => ({
   styleUrl: './catalogue.scss',
 })
 export class Catalogue implements OnInit {
-  readonly viewMode = signal<'table' | 'grid'>('table');
+  private readonly responsiveView = createResponsiveViewMode(
+    inject(DestroyRef),
+    'bbg_catalogue_view',
+  );
+  readonly viewMode = this.responsiveView.viewMode;
+  readonly setViewMode = this.responsiveView.setViewMode;
 
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
@@ -122,20 +128,92 @@ export class Catalogue implements OnInit {
   readonly totalProducts = signal(0);
   readonly search = signal('');
   readonly filterStatus = signal('');
-  readonly filteredProducts = computed(() =>
-    this.products().filter(
-      (product) => !this.filterStatus() || product.publication_status === this.filterStatus(),
-    ),
+  readonly selectedCategoryId = signal<number | null>(null);
+
+  readonly pageSizeOptions = [5, 10, 20, 50];
+  readonly pageSize = signal(10);
+  readonly currentPage = signal(1);
+
+  readonly showColumnMenu = signal(false);
+  readonly hiddenColumns = signal<string[]>([]);
+  readonly availableColumns = [
+    { key: 'category', label: 'Category' },
+    { key: 'price', label: 'Selling Price' },
+    { key: 'cost_price', label: 'Cost Price' },
+    { key: 'barcode', label: 'Barcode' },
+    { key: 'status', label: 'Publication Status' },
+  ];
+  readonly visibleColumns = computed(() =>
+    this.availableColumns.filter((col) => this.isColumnVisible(col.key)),
   );
-  readonly gridPage = signal(1);
-  readonly gridPageSize = 3;
-  readonly pagedGridProducts = computed(() => {
-    const items = this.filteredProducts();
-    const totalPages = Math.max(1, Math.ceil(items.length / this.gridPageSize));
-    const safePage = Math.min(this.gridPage(), totalPages);
-    const start = (safePage - 1) * this.gridPageSize;
-    return items.slice(start, start + this.gridPageSize);
+  readonly selectedCategory = computed(
+    () => this.categories().find((c) => c.id === this.selectedCategoryId()) ?? null,
+  );
+
+  toggleColumnMenu(): void {
+    this.showColumnMenu.update((v) => !v);
+  }
+
+  isColumnVisible(key: string): boolean {
+    return !this.hiddenColumns().includes(key);
+  }
+
+  toggleColumn(key: string): void {
+    const hidden = this.hiddenColumns();
+    if (hidden.includes(key)) {
+      this.hiddenColumns.set(hidden.filter((k) => k !== key));
+    } else {
+      this.hiddenColumns.set([...hidden, key]);
+    }
+  }
+
+  resetColumns(): void {
+    this.hiddenColumns.set([]);
+  }
+
+  readonly filteredProducts = computed(() => {
+    const status = this.filterStatus();
+    const catId = this.selectedCategoryId();
+    return this.products().filter((product) => {
+      if (status && product.publication_status !== status) return false;
+      if (catId !== null && product.category_id !== catId) return false;
+      return true;
+    });
   });
+
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredProducts().length / this.pageSize())),
+  );
+
+  readonly pagedProducts = computed(() => {
+    const items = this.filteredProducts();
+    const safePage = Math.min(this.currentPage(), this.totalPages());
+    const start = (safePage - 1) * this.pageSize();
+    return items.slice(start, start + this.pageSize());
+  });
+
+  onPageChange(page: number): void {
+    this.currentPage.set(page);
+  }
+
+  onPageSizeChange(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    const size = parseInt(select.value, 10);
+    if (!isNaN(size) && size > 0) {
+      this.pageSize.set(size);
+      this.currentPage.set(1);
+    }
+  }
+
+  toggleCategoryFilter(categoryId: number | null): void {
+    if (this.selectedCategoryId() === categoryId) {
+      this.selectedCategoryId.set(null);
+    } else {
+      this.selectedCategoryId.set(categoryId);
+    }
+    this.currentPage.set(1);
+  }
+
   readonly showForm = signal(false);
   readonly showCategoryForm = signal(false);
   readonly editingId = signal<number | null>(null);
@@ -171,7 +249,7 @@ export class Catalogue implements OnInit {
         const searchChanged = nextSearch !== this.search();
         this.search.set(nextSearch);
         this.filterStatus.set(nextStatus);
-        this.gridPage.set(1);
+        this.currentPage.set(1);
         if (searchChanged && this.tenantId() && this.canManage()) void this.loadProducts();
       });
     } catch (error) {
@@ -211,16 +289,12 @@ export class Catalogue implements OnInit {
       const result = await this.api.listProducts(tenantId, this.search().trim());
       this.products.set(result.items ?? []);
       this.totalProducts.set(result.pagination?.total ?? result.items?.length ?? 0);
-      this.gridPage.set(1);
+      this.currentPage.set(1);
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
       this.productsLoading.set(false);
     }
-  }
-
-  onGridPageChange(page: number): void {
-    this.gridPage.set(page);
   }
 
   openCreate(): void {

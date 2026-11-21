@@ -11,7 +11,7 @@
           type="button"
           class="toggle-btn"
           [class.active]="viewMode() === 'table'"
-          (click)="viewMode.set('table')"
+          (click)="setViewMode('table')"
           title="Table view"
         >
           <span aria-hidden="true">☰</span> Table
@@ -20,7 +20,7 @@
           type="button"
           class="toggle-btn"
           [class.active]="viewMode() === 'grid'"
-          (click)="viewMode.set('grid')"
+          (click)="setViewMode('grid')"
           title="Grid view"
         >
           <span aria-hidden="true">▦</span> Grid

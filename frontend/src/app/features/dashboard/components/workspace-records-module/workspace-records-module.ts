@@ -1,8 +1,18 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 import { BcnBadgeComponent } from '../../../../shared/components/bcn-badge/bcn-badge.component';
 import { EmptyStateComponent } from '../../../../shared/components/empty-state/empty-state.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { createResponsiveViewMode } from '../../../../core/workspace/responsive-view';
 
 export interface WorkspaceRecordAction {
   key: string;
@@ -77,7 +87,12 @@ export class WorkspaceRecordsModule {
   readonly proofFileSelected = output<{ event: Event; record: Record<string, unknown> }>();
   readonly proofSubmitRequested = output<Record<string, unknown>>();
 
-  readonly viewMode = signal<'table' | 'grid'>('table');
+  private readonly responsiveView = createResponsiveViewMode(
+    inject(DestroyRef),
+    'bbg_workspace_records_view',
+  );
+  readonly viewMode = this.responsiveView.viewMode;
+  readonly setViewMode = this.responsiveView.setViewMode;
   readonly showColumnMenu = signal(false);
   readonly hiddenColumns = signal<string[]>([]);
 
