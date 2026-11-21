@@ -9,9 +9,31 @@
       </p>
     </div>
     <button type="button" class="btn-edit" (click)="editRequested.emit()">
-      <span class="btn-icon">✎</span> Edit QR Settings
+      <span class="btn-icon">{{ qrUrl() ? '✎' : '+' }}</span>
+      {{ qrUrl() ? 'Edit QR Settings' : 'Configure Payment QR' }}
     </button>
   </header>
+
+  @if (!qrUrl()) {
+    <div
+      class="notice"
+      role="alert"
+      style="
+        margin-bottom: 1.5rem;
+        padding: 1rem;
+        border-radius: 8px;
+        background: rgba(234, 179, 8, 0.1);
+        border: 1px solid rgba(234, 179, 8, 0.3);
+        color: inherit;
+      "
+    >
+      <strong>⚠️ Payment QR is not configured</strong>
+      <p style="margin: 0.25rem 0 0; font-size: 0.875rem">
+        No active payment QR code exists. Business registration and subscription payment submissions
+        will be blocked until an active UPI QR code is configured.
+      </p>
+    </div>
+  }
 
   <div class="qr-content-layout">
     @if (qrUrl()) {

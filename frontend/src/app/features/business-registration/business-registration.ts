@@ -89,7 +89,7 @@ export class BusinessRegistration implements OnInit {
         if (!existing)
           throw new Error('This business draft was not found or you are not its owner.');
         if (!['DRAFT', 'PENDING'].includes(existing.approval_status)) {
-          await this.router.navigate(['/workspace']);
+          await this.router.navigate(['/dashboard/businesses']);
           return;
         }
         this.application.set({
@@ -119,7 +119,7 @@ export class BusinessRegistration implements OnInit {
           this.subscription.set(pendingPayment);
           this.step.set('payment');
         } else if (existing.approval_status !== 'DRAFT') {
-          await this.router.navigate(['/workspace']);
+          await this.router.navigate(['/dashboard/businesses']);
           return;
         }
       }
@@ -363,7 +363,7 @@ export class BusinessRegistration implements OnInit {
   }
 
   openWorkspace(): void {
-    void this.router.navigate(['/workspace']);
+    void this.router.navigate(['/dashboard/businesses']);
   }
 
   async submit(): Promise<void> {

@@ -45,25 +45,6 @@
       </div>
 
       <div class="banner-actions">
-        @if (tenants().length > 1 || !isPersonalContext()) {
-          <div class="tenant-select-wrapper" title="Switch active workspace">
-            <select
-              [value]="selectedTenantId() ?? ''"
-              (change)="onTenantChange($event)"
-              aria-label="Switch active workspace"
-            >
-              @if (isPlatformContext()) {
-                <option value="">BBG Platform Admin</option>
-              } @else {
-                <option value="">Personal Account</option>
-              }
-              @for (tenant of tenants(); track tenant.id) {
-                <option [value]="tenant.id">{{ tenant.tenant_name }}</option>
-              }
-            </select>
-            <span class="select-chevron" aria-hidden="true">▼</span>
-          </div>
-        }
         <a class="btn-market-explore" routerLink="/" target="_blank">
           <span>Explore BBG Marketplace</span>
           <span aria-hidden="true">↗</span>
@@ -79,13 +60,18 @@
       <section class="dashboard-main-stream">
         <!-- KPI Metrics Grid -->
         @if (summaryLoading()) {
-          <app-skeleton-loader variant="card" [count]="4" />
+          <app-skeleton-loader variant="card" [count]="3" />
         } @else if (summaryError()) {
           <div class="summary-notice" role="alert">{{ summaryError() }}</div>
         } @else if (summaryCards().length) {
           <div class="metrics-grid" aria-label="Operational metrics summary">
             @for (metric of summaryCards(); track metric.label) {
-              <app-metric-card [title]="metric.label" [value]="metric.value" [icon]="metric.icon" />
+              <app-metric-card
+                [title]="metric.label"
+                [value]="metric.value"
+                [icon]="metric.icon"
+                [description]="metric.subtitle"
+              />
             }
           </div>
         }
@@ -182,25 +168,29 @@
         <div class="sidebar-widget-card quick-actions-widget">
           <h3 class="widget-title">Quick Actions</h3>
           <div class="quick-actions-list">
-            @if (selectedTenantId() !== null) {
-              <a class="quick-action-btn" routerLink="/business/catalogue">
+            @if (isBusinessContext()) {
+              <a class="quick-action-btn" routerLink="/dashboard/catalogue">
                 <span>Manage Catalogue</span>
                 <span class="action-arrow">→</span>
               </a>
-              <a class="quick-action-btn" routerLink="/business/team">
-                <span>Team & Access</span>
-                <span class="action-arrow">→</span>
-              </a>
-              <a class="quick-action-btn" routerLink="/business/profile">
+              <a class="quick-action-btn" routerLink="/dashboard/profile">
                 <span>Business Profile</span>
                 <span class="action-arrow">→</span>
               </a>
-            } @else if (isPersonalContext()) {
-              <a class="quick-action-btn" routerLink="/products">
-                <span>Browse Products</span>
+              <a class="quick-action-btn" routerLink="/dashboard/storefront">
+                <span>Storefront Settings</span>
                 <span class="action-arrow">→</span>
               </a>
-              <a class="quick-action-btn" routerLink="/onboarding">
+              <a class="quick-action-btn" routerLink="/dashboard/members">
+                <span>Team & Access</span>
+                <span class="action-arrow">→</span>
+              </a>
+            } @else if (isPersonalContext()) {
+              <a class="quick-action-btn" routerLink="/dashboard/businesses">
+                <span>All Businesses</span>
+                <span class="action-arrow">→</span>
+              </a>
+              <a class="quick-action-btn" routerLink="/dashboard/businesses/register">
                 <span>Register a Business</span>
                 <span class="action-arrow">→</span>
               </a>
@@ -208,13 +198,25 @@
                 <span>My Enquiries</span>
                 <span class="action-arrow">→</span>
               </a>
-            } @else {
-              <a class="quick-action-btn" routerLink="/admin/businesses">
-                <span>Business Moderation</span>
+              <a class="quick-action-btn" routerLink="/dashboard/profile">
+                <span>Profile & Addresses</span>
                 <span class="action-arrow">→</span>
               </a>
-              <a class="quick-action-btn" routerLink="/admin/plans">
-                <span>Subscription Plans</span>
+            } @else {
+              <a class="quick-action-btn" routerLink="/dashboard/business-approval">
+                <span>Business Approvals</span>
+                <span class="action-arrow">→</span>
+              </a>
+              <a class="quick-action-btn" routerLink="/dashboard/subscription-approval">
+                <span>Subscription Approvals</span>
+                <span class="action-arrow">→</span>
+              </a>
+              <a class="quick-action-btn" routerLink="/dashboard/platform-users">
+                <span>Platform Users</span>
+                <span class="action-arrow">→</span>
+              </a>
+              <a class="quick-action-btn" routerLink="/dashboard/categories">
+                <span>Marketplace Categories</span>
                 <span class="action-arrow">→</span>
               </a>
             }

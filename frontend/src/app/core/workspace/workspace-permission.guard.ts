@@ -3,7 +3,9 @@ import { CanActivateChildFn, Router } from '@angular/router';
 import { WorkspaceContextService } from '../workspace/workspace-context.service';
 import { hasActiveEntitlement, hasWorkspacePermission } from './workspace-access';
 
-const BUSINESS_PERMISSIONS: Record<string, string> = {
+const BUSINESS_PERMISSIONS: Record<string, string | null> = {
+  businesses: null,
+  'businesses/register': null,
   profile: 'business.view',
   storefront: 'business.view',
   catalogue: 'catalogue.view',
@@ -25,10 +27,13 @@ const BUSINESS_ENTITLEMENTS: Record<string, string> = {
   analytics: 'advanced.reports.enabled',
 };
 
-const PLATFORM_PERMISSIONS: Record<string, string> = {
+const PLATFORM_PERMISSIONS: Record<string, string | null> = {
+  businesses: null,
+  'businesses/register': null,
   'platform-users': 'user.view',
   'business-approval': 'business.approve',
   'subscription-approval': 'subscription.approve',
+  'subscription-plans': 'subscription.view',
   'payment-qr-settings': 'subscription.update',
   moderation: 'admin.view',
   categories: 'admin.view',
@@ -36,7 +41,10 @@ const PLATFORM_PERMISSIONS: Record<string, string> = {
   'system-health': 'admin.view',
 };
 
-const PERSONAL_PERMISSIONS: Record<string, string> = {
+const PERSONAL_PERMISSIONS: Record<string, string | null> = {
+  businesses: null,
+  'businesses/register': null,
+  profile: null,
   customers: 'user.view',
   enquiries: 'enquiry.own.view',
   orders: 'order.own.view',
@@ -61,21 +69,22 @@ export const workspacePermissionGuard: CanActivateChildFn = async (route) => {
 
   const context = workspace.activeContext();
   if (context === 'PERSONAL') {
+    if (!Object.prototype.hasOwnProperty.call(PERSONAL_PERMISSIONS, section)) {
+      return router.createUrlTree(['/dashboard']);
+    }
     const requiredPermission = PERSONAL_PERMISSIONS[section];
-    const allowed =
-      requiredPermission !== undefined &&
-      hasWorkspacePermission(workspace.permissions(), 'GLOBAL', requiredPermission);
+    if (requiredPermission === null) return true;
+    const allowed = hasWorkspacePermission(workspace.permissions(), 'GLOBAL', requiredPermission);
     return allowed ? true : router.createUrlTree(['/dashboard']);
   }
 
-  const requiredPermission =
-    context === 'BUSINESS'
-      ? BUSINESS_PERMISSIONS[section]
-      : context === 'PLATFORM'
-        ? PLATFORM_PERMISSIONS[section]
-        : undefined;
+  const permissionsMap = context === 'BUSINESS' ? BUSINESS_PERMISSIONS : PLATFORM_PERMISSIONS;
+  if (!Object.prototype.hasOwnProperty.call(permissionsMap, section)) {
+    return router.createUrlTree(['/dashboard']);
+  }
 
-  if (!requiredPermission) return router.createUrlTree(['/dashboard']);
+  const requiredPermission = permissionsMap[section];
+  if (requiredPermission === null) return true;
 
   const requiredScope = context === 'BUSINESS' ? 'TENANT' : 'PLATFORM';
   const hasPermission = hasWorkspacePermission(

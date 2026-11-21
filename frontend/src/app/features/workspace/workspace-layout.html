@@ -26,60 +26,74 @@
     <aside class="workspace-sidebar" [attr.aria-label]="contextLabel() + ' navigation'">
       @if (showContextSwitcher()) {
         <div class="sidebar-context-switcher">
+          <div class="context-identity-row">
+            <span class="context-pill context-{{ contextClass() }}">{{
+              activeContext() || 'PERSONAL'
+            }}</span>
+            <span class="role-badge">{{ currentRoleBadge() }}</span>
+          </div>
+          <div class="context-name-row">
+            <strong class="active-identity-name" [title]="activeDisplayName()">{{
+              activeDisplayName()
+            }}</strong>
+          </div>
           <label>
-            <span>SWITCH AREA</span>
+            <span class="visually-hidden">Switch account area</span>
             <select
               [value]="activeContextSelection()"
               [disabled]="contextSwitching()"
               (change)="switchContext($event)"
               aria-label="Switch account area"
             >
-              <option value="PERSONAL">My Account</option>
+              <option value="PERSONAL">My Account (Personal)</option>
               @if (canAccessPlatform()) {
                 <option value="PLATFORM">Platform Administration</option>
               }
-              @for (tenant of workspace.tenants(); track tenant.id; let index = $index) {
-                <option [value]="'BUSINESS:' + tenant.id">
-                  {{ tenant.tenant_name || 'Business Workspace ' + (index + 1) }}
-                </option>
+              @if (workspace.tenants().length > 0) {
+                <optgroup label="Business Workspaces">
+                  @for (tenant of workspace.tenants(); track tenant.id) {
+                    <option [value]="'BUSINESS:' + tenant.id">
+                      {{ tenant.tenant_name }}
+                    </option>
+                  }
+                </optgroup>
               }
+              <optgroup label="Actions">
+                <option value="REGISTER_NEW">+ Register New Business</option>
+              </optgroup>
             </select>
           </label>
+          @if (contextSwitching()) {
+            <span class="context-switching-indicator">Switching workspace…</span>
+          }
           @if (contextSwitchError()) {
             <span class="context-switch-error" role="alert">{{ contextSwitchError() }}</span>
           }
         </div>
       }
       <div class="sidebar-scroll">
-        <p class="sidebar-caption" [class.visually-hidden]="sidebarCollapsed()">
-          {{ contextLabel() }}
-        </p>
-        <a
-          class="nav-item overview-link"
-          routerLink="/dashboard"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          [attr.title]="sidebarCollapsed() ? overviewLabel() : null"
-        >
-          <span class="nav-icon"><app-workspace-nav-icon name="layout-dashboard" /></span
-          ><span class="nav-label">{{ overviewLabel() }}</span>
-        </a>
-        <div class="nav-divider"></div>
-        <p class="sidebar-caption" [class.visually-hidden]="sidebarCollapsed()">
-          {{ navSectionLabel() }}
-        </p>
-        @for (item of visibleNavItems(); track item.route) {
-          <a
-            class="nav-item"
-            [routerLink]="item.route"
-            routerLinkActive="active"
-            [attr.title]="sidebarCollapsed() ? item.label : null"
-          >
-            <span class="nav-icon"><app-workspace-nav-icon [name]="item.icon" /></span
-            ><span class="nav-label">{{ item.label }}</span>
-          </a>
+        @for (group of visibleNavGroups(); track group.name) {
+          <div class="nav-group">
+            <p class="sidebar-caption" [class.visually-hidden]="sidebarCollapsed()">
+              {{ group.name }}
+            </p>
+            @for (item of group.items; track item.route) {
+              <a
+                class="nav-item"
+                [routerLink]="item.route"
+                routerLinkActive="active"
+                [routerLinkActiveOptions]="
+                  item.route === '/dashboard' ? { exact: true } : { exact: false }
+                "
+                [attr.title]="sidebarCollapsed() ? item.label : null"
+              >
+                <span class="nav-icon"><app-workspace-nav-icon [name]="item.icon" /></span>
+                <span class="nav-label">{{ item.label }}</span>
+              </a>
+            }
+          </div>
         }
-        @if (!visibleNavItems().length) {
+        @if (!visibleNavGroups().length) {
           <p class="sidebar-empty" [class.visually-hidden]="sidebarCollapsed()">
             No modules are assigned in this area.
           </p>

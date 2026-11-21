@@ -64,7 +64,7 @@ export class BusinessWorkspace implements OnInit {
       if (!this.auth.user()) await this.auth.loadProfile();
       const applications = await this.api.getMyApplications();
       if (!applications.length) {
-        await this.router.navigate(['/business/register']);
+        await this.router.navigate(['/dashboard/businesses/register']);
         return;
       }
       this.applications.set(applications);
@@ -118,41 +118,50 @@ export class BusinessWorkspace implements OnInit {
 
   resumeDraft(business: BusinessApplication): void {
     if (business.approval_status !== 'DRAFT') return;
-    void this.router.navigate(['/business/register'], {
+    void this.router.navigate(['/dashboard/businesses/register'], {
       queryParams: { business_id: business.business_id, tenant_id: business.tenant_id },
     });
   }
 
   registerAnotherBusiness(): void {
-    void this.router.navigate(['/business/register']);
+    void this.router.navigate(['/dashboard/businesses/register']);
   }
 
   resumePayment(business: BusinessApplication): void {
     if (!this.rejectedPaymentBusinessIds().includes(business.business_id)) return;
-    void this.router.navigate(['/business/register'], {
+    void this.router.navigate(['/dashboard/businesses/register'], {
       queryParams: { business_id: business.business_id, tenant_id: business.tenant_id },
     });
   }
 
-  manageSubscription(business: BusinessApplication): void {
+  async manageSubscription(business: BusinessApplication): Promise<void> {
     if (business.approval_status !== 'APPROVED') return;
-    void this.router.navigate(['/business/subscriptions'], {
-      queryParams: { tenant_id: business.tenant_id },
-    });
+    try {
+      await this.workspace.switchWorkspace(business.tenant_id);
+      await this.router.navigate(['/dashboard/subscriptions']);
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    }
   }
 
-  manageStorefront(business: BusinessApplication): void {
+  async manageStorefront(business: BusinessApplication): Promise<void> {
     if (business.approval_status !== 'APPROVED') return;
-    void this.router.navigate(['/business/storefront'], {
-      queryParams: { tenant_id: business.tenant_id },
-    });
+    try {
+      await this.workspace.switchWorkspace(business.tenant_id);
+      await this.router.navigate(['/dashboard/storefront']);
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    }
   }
 
-  manageTeam(business: BusinessApplication): void {
+  async manageTeam(business: BusinessApplication): Promise<void> {
     if (business.approval_status !== 'APPROVED') return;
-    void this.router.navigate(['/business/team'], {
-      queryParams: { tenant_id: business.tenant_id },
-    });
+    try {
+      await this.workspace.switchWorkspace(business.tenant_id);
+      await this.router.navigate(['/dashboard/members']);
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    }
   }
 
   async openWorkspace(business: BusinessApplication): Promise<void> {

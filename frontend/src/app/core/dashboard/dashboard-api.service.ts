@@ -92,4 +92,17 @@ export class DashboardApiService {
     }
     return response.data;
   }
+
+  async getPlatformSummary(): Promise<Record<string, number>> {
+    const response = await firstValueFrom(
+      this.http.post<DashboardApiResponse<Record<string, number>>>(
+        `${this.apiBaseUrl}/api/v1/admin/analytics/summary`,
+        { adminParam: { actionType: 'getAdminAnalyticsSummary', actionData: {} } },
+      ),
+    );
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Platform analytics summary is unavailable.');
+    }
+    return response.data;
+  }
 }

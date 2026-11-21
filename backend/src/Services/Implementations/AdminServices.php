@@ -83,6 +83,9 @@ final readonly class AdminServices implements IAdminServices
                 case 'getSafeSystemHealth':
                     $resArr = $this->getSafeSystemHealth($actionData);
                     break;
+                case 'listAdminPlans':
+                    $resArr = $this->listAdminPlans($actionData);
+                    break;
                 default:
                     $resArr['msgArr'][] = 'Unsupported administration read action.';
                     break;
@@ -149,6 +152,9 @@ final readonly class AdminServices implements IAdminServices
                     break;
                 case 'applyModerationAction':
                     $resArr = $this->manageModerationAction($actionData);
+                    break;
+                case 'updateAdminPlan':
+                    $resArr = $this->updateAdminPlan($actionData);
                     break;
                 default:
                     $resArr['msgArr'][] = 'Unsupported administration management action.';
@@ -385,6 +391,54 @@ final readonly class AdminServices implements IAdminServices
         }
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = ['subscription' => $subscription['data'], 'proofs' => $proofs['data'], 'review_history' => $history['data']];
+        return $resArr;
+    }
+
+    private function listAdminPlans(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'subscription.view');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::listAdminPlans');
+        }
+        $result = $this->dao->getAllPlans($this->db);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'AdminServices::listAdminPlans');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = ['items' => $result['data']];
+        return $resArr;
+    }
+
+    private function updateAdminPlan(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->platformContext($actionData, 'subscription.update');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'AdminServices::updateAdminPlan');
+        }
+        $adminId = (int) $context['data']['user_id'];
+        $planId = $this->positiveInt($actionData['plan_id'] ?? null);
+        if ($planId === null) {
+            $resArr['msgArr'][] = 'A valid plan_id is required.';
+            return $resArr;
+        }
+        $planName = $this->requiredText($actionData['plan_name'] ?? '', 100);
+        $description = $this->nullableText($actionData['description'] ?? null, 500);
+        $price = isset($actionData['price']) && is_numeric($actionData['price']) && (float) $actionData['price'] >= 0
+            ? (float) $actionData['price']
+            : null;
+        $planStatus = strtoupper(trim((string) ($actionData['plan_status'] ?? 'ACTIVE')));
+        if ($planName === null || $price === null || !in_array($planStatus, ['ACTIVE', 'INACTIVE'], true)) {
+            $resArr['msgArr'][] = 'Valid plan_name, non-negative price, and plan_status (ACTIVE/INACTIVE) are required.';
+            return $resArr;
+        }
+        $result = $this->dao->updatePlan($this->db, $planId, $planName, $description, $price, $planStatus, $adminId);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'AdminServices::updateAdminPlan');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = $result['data'];
         return $resArr;
     }
 

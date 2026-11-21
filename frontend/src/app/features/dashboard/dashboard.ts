@@ -41,6 +41,7 @@ export class Dashboard implements OnInit {
   readonly selectedTenantId = this.workspace.activeTenantId;
   readonly permissions = this.workspace.permissions;
   readonly summary = signal<Record<string, string | number | null> | null>(null);
+  readonly myBusinessesCount = signal(0);
 
   private activeContextObserved = false;
   private summaryLoadSequence = 0;
@@ -70,6 +71,8 @@ export class Dashboard implements OnInit {
         void this.loadTenantSummary(tenantId);
       } else if (context === 'PERSONAL') {
         void this.loadConsumerSummary();
+      } else if (context === 'PLATFORM') {
+        void this.loadPlatformSummary();
       } else {
         this.summaryLoading.set(false);
       }
@@ -81,6 +84,7 @@ export class Dashboard implements OnInit {
   );
   readonly isPlatformContext = computed(() => this.workspace.activeContext() === 'PLATFORM');
   readonly isPersonalContext = computed(() => this.workspace.activeContext() === 'PERSONAL');
+  readonly isBusinessContext = computed(() => this.workspace.activeContext() === 'BUSINESS');
   readonly moduleCards = computed(() => {
     const context = this.workspace.activeContext();
     if (!context) return [];
@@ -126,7 +130,7 @@ export class Dashboard implements OnInit {
       if (activeTenant && activeTenantIsOwned) {
         const application = await this.businessApi.getMyApplication(activeTenant.id);
         if (application && application.approval_status !== 'APPROVED') {
-          await this.router.navigate(['/workspace']);
+          await this.router.navigate(['/dashboard/businesses']);
           return;
         }
       }
@@ -137,8 +141,7 @@ export class Dashboard implements OnInit {
       this.summary.set(null);
       this.summaryError.set('');
       this.loading.set(false);
-      // The same refresh trigger handles initial load, manual refresh and
-      // Personal/Business/Platform context changes consistently.
+
       if (
         previousContext === this.workspace.activeContext() &&
         previousTenantId === this.workspace.activeTenantId()
@@ -151,36 +154,16 @@ export class Dashboard implements OnInit {
     }
   }
 
-  async onTenantChange(event: Event): Promise<void> {
-    const value = (event.target as HTMLSelectElement).value;
-    const tenantId = value ? Number(value) : null;
-    if (
-      tenantId !== null &&
-      (!Number.isInteger(tenantId) || !this.tenants().some((tenant) => tenant.id === tenantId))
-    )
-      return;
-    this.summary.set(null);
-    this.summaryError.set('');
-    this.loading.set(true);
-    try {
-      await this.workspace.switchWorkspace(tenantId);
-      this.selectedTenantId.set(this.workspace.activeTenantId());
-      this.permissions.set(this.workspace.permissions());
-      this.tenants.set(this.workspace.tenants());
-      this.loading.set(false);
-      // Summary refresh follows the shared active-workspace signal.
-    } catch (error) {
-      this.error.set(this.auth.errorMessage(error));
-      this.loading.set(false);
-    }
-  }
-
   private async loadConsumerSummary(): Promise<void> {
     const requestId = ++this.summaryLoadSequence;
     this.summaryLoading.set(true);
     try {
-      const summary = await this.api.getConsumerSummary();
+      const [summary, applications] = await Promise.all([
+        this.api.getConsumerSummary(),
+        this.businessApi.getMyApplications().catch(() => []),
+      ]);
       if (requestId === this.summaryLoadSequence && this.workspace.activeContext() === 'PERSONAL') {
+        this.myBusinessesCount.set(applications.length);
         this.summary.set(summary);
       }
     } catch (error) {
@@ -209,29 +192,103 @@ export class Dashboard implements OnInit {
     }
   }
 
+  private async loadPlatformSummary(): Promise<void> {
+    const requestId = ++this.summaryLoadSequence;
+    this.summaryLoading.set(true);
+    try {
+      const summary = await this.api.getPlatformSummary();
+      if (requestId === this.summaryLoadSequence && this.workspace.activeContext() === 'PLATFORM') {
+        this.summary.set(summary);
+      }
+    } catch (error) {
+      if (requestId === this.summaryLoadSequence) {
+        this.summaryError.set(this.auth.errorMessage(error));
+      }
+    } finally {
+      if (requestId === this.summaryLoadSequence) this.summaryLoading.set(false);
+    }
+  }
+
   readonly summaryCards = computed(() => {
     const data = this.summary();
+    const context = this.workspace.activeContext();
     if (!data) return [];
-    if (this.selectedTenantId() !== null) {
+
+    if (context === 'BUSINESS') {
+      const planName = String(data['current_plan'] || '').trim();
+      const planDisplay = planName ? planName.toUpperCase() : 'ACTIVE PLAN';
+      const subStatus = String(data['subscription_status'] || 'Active').trim();
+      const openEnq = data['open_enquiries'] ?? 0;
+      const pubPromo = data['published_promotions'] ?? 0;
+
       return [
-        { label: 'Products', value: data['total_products'] ?? 0, icon: '▦' },
-        { label: 'Open enquiries', value: data['open_enquiries'] ?? 0, icon: '✉' },
-        { label: 'Published promotions', value: data['published_promotions'] ?? 0, icon: '✳' },
         {
-          label: 'Connected customers',
-          value: data['total_customers'] ?? data['customers'] ?? 0,
-          icon: '👥',
+          label: 'Subscription Plan',
+          value: planDisplay,
+          icon: '★',
+          subtitle: `Status: ${subStatus}`,
+        },
+        {
+          label: 'Catalogue Products',
+          value: data['total_products'] ?? 0,
+          icon: '▦',
+          subtitle: 'Active products listed',
+        },
+        {
+          label: 'Enquiries & Feed',
+          value: `${openEnq} Enquiries`,
+          icon: '✉',
+          subtitle: `${pubPromo} published promotions`,
         },
       ];
     }
+
+    if (context === 'PLATFORM') {
+      const totalUsers = data['total_users'] ?? 0;
+      const totalBiz = data['total_businesses'] ?? 0;
+      return [
+        {
+          label: 'Pending Approvals',
+          value: data['pending_businesses'] ?? 0,
+          icon: '⏳',
+          subtitle: 'Registrations awaiting review',
+        },
+        {
+          label: 'Active Subscriptions',
+          value: data['active_subscriptions'] ?? 0,
+          icon: '★',
+          subtitle: 'Approved merchant plans',
+        },
+        {
+          label: 'Platform Users',
+          value: totalUsers,
+          icon: '👥',
+          subtitle: `${totalBiz} registered businesses`,
+        },
+      ];
+    }
+
+    // PERSONAL CONTEXT
+    const openEnq = data['open_enquiries'] ?? 0;
     return [
-      { label: 'My enquiries', value: data['open_enquiries'] ?? 0, icon: '✉' },
       {
-        label: 'Active chats',
-        value: data['active_enquiries'] ?? data['open_enquiries'] ?? 0,
-        icon: '↗',
+        label: 'My Businesses',
+        value: this.myBusinessesCount(),
+        icon: '🏛',
+        subtitle: 'Registered business entities',
       },
-      { label: 'Saved businesses', value: data['businesses'] ?? 0, icon: '🏛' },
+      {
+        label: 'Open Enquiries',
+        value: openEnq,
+        icon: '✉',
+        subtitle: 'Marketplace enquiries sent',
+      },
+      {
+        label: 'Account Status',
+        value: 'Active',
+        icon: '✓',
+        subtitle: 'Verified consumer profile',
+      },
     ];
   });
 

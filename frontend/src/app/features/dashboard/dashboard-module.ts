@@ -84,6 +84,7 @@ const ACTION_PERMISSION_CODES: Record<string, string> = {
   'renew-subscription': 'subscription.create',
   'approve-subscription': 'subscription.approve',
   'reject-subscription': 'subscription.approve',
+  'edit-plan': 'subscription.update',
   moderate: 'admin.update',
 };
 
@@ -206,6 +207,14 @@ export class DashboardModule implements OnInit {
   });
   readonly showReplyDrawer = signal(false);
   readonly showPaymentQrDrawer = signal(false);
+  readonly showPlanEditDrawer = signal(false);
+  readonly editingPlanId = signal<number | null>(null);
+  readonly editingPlanCode = signal('');
+  readonly editingPlanName = signal('');
+  readonly editingPlanPrice = signal('');
+  readonly editingPlanCycle = signal('');
+  readonly editingPlanDescription = signal('');
+  readonly editingPlanStatus = signal('ACTIVE');
   readonly replyEnquiryId = signal<number | null>(null);
   readonly replyMessage = signal('');
   readonly showDecisionDrawer = signal(false);
@@ -336,6 +345,11 @@ export class DashboardModule implements OnInit {
         path: '/dashboard/subscription-approval',
       },
       {
+        key: 'subscription-plans',
+        label: 'Subscription plans',
+        path: '/dashboard/subscription-plans',
+      },
+      {
         key: 'payment-qr-settings',
         label: 'Payment QR settings',
         path: '/dashboard/payment-qr-settings',
@@ -379,6 +393,7 @@ export class DashboardModule implements OnInit {
       'platform-users': 'user.view',
       'business-approval': 'business.approve',
       'subscription-approval': 'subscription.approve',
+      'subscription-plans': 'subscription.view',
       'payment-qr-settings': 'subscription.update',
       moderation: 'admin.view',
       categories: 'admin.view',
@@ -476,6 +491,10 @@ export class DashboardModule implements OnInit {
       title: 'Business onboarding reviews',
       description:
         'Review submitted business details, selected plans and payment receipts before activating a business workspace.',
+    },
+    'subscription-plans': {
+      title: 'Subscription plans',
+      description: 'Manage platform subscription plans, tier pricing, and availability.',
     },
     'payment-qr-settings': {
       title: 'Payment QR settings',
@@ -815,6 +834,16 @@ export class DashboardModule implements OnInit {
           });
           break;
         }
+        case 'subscription-plans': {
+          const data = await this.request<ListResult>(
+            '/api/v1/admin/plans/list',
+            'adminParam',
+            'listAdminPlans',
+            { page: this.currentPage(), page_size: this.pageSize },
+          );
+          this.setListResult(data);
+          break;
+        }
         case 'payment-qr-settings': {
           const data = await this.request<DataRecord>(
             '/api/v1/admin/subscriptions/payment-qr/current',
@@ -969,6 +998,12 @@ export class DashboardModule implements OnInit {
     return title === '—' ? 'Record' : title;
   }
   recordSubtitle(item: DataRecord): string {
+    if (this.section() === 'subscription-plans') {
+      const cycle = String(item['billing_cycle'] ?? '');
+      const price =
+        item['price'] !== undefined ? `${item['currency'] ?? '₹'} ${item['price']}` : '';
+      return [this.humanize(cycle), price].filter(Boolean).join(' · ');
+    }
     if (this.section() === 'subscription-approval') {
       const plan = String(item['plan_name'] ?? 'Plan not available');
       const status = String(item['subscription_status'] ?? 'PENDING');
@@ -1166,6 +1201,7 @@ export class DashboardModule implements OnInit {
         { key: 'approve-subscription', label: 'Approve' },
         { key: 'reject-subscription', label: 'Reject', danger: true },
       ];
+    if (this.section() === 'subscription-plans') return [{ key: 'edit-plan', label: 'Edit plan' }];
     if (this.section() === 'subscriptions' && ['ACTIVE', 'EXPIRED'].includes(status))
       return [{ key: 'renew-subscription', label: 'Renew subscription' }];
     if (this.section() === 'moderation' && status === 'OPEN')
@@ -1245,6 +1281,9 @@ export class DashboardModule implements OnInit {
         return;
       case 'moderate':
         this.openDecisionDrawer('moderate', item);
+        return;
+      case 'edit-plan':
+        this.openPlanEditDrawer(item);
         return;
       default:
         return;
@@ -1933,6 +1972,49 @@ export class DashboardModule implements OnInit {
       this.clearPaymentQrPreview();
       await this.load();
       this.showPaymentQrDrawer.set(false);
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  openPlanEditDrawer(item: DataRecord): void {
+    if (!this.can('subscription.update')) return;
+    this.editingPlanId.set(Number(item['id'] ?? 0));
+    this.editingPlanCode.set(String(item['plan_code'] ?? ''));
+    this.editingPlanName.set(String(item['plan_name'] ?? ''));
+    this.editingPlanPrice.set(String(item['price'] ?? '0.00'));
+    this.editingPlanCycle.set(String(item['billing_cycle'] ?? ''));
+    this.editingPlanDescription.set(String(item['description'] ?? ''));
+    this.editingPlanStatus.set(String(item['plan_status'] ?? 'ACTIVE'));
+    this.error.set('');
+    this.showPlanEditDrawer.set(true);
+  }
+
+  closePlanEditDrawer(): void {
+    if (this.busy()) return;
+    this.showPlanEditDrawer.set(false);
+    this.editingPlanId.set(null);
+  }
+
+  async savePlanEdit(): Promise<void> {
+    const planId = this.editingPlanId();
+    if (!planId || this.busy() || !this.can('subscription.update')) return;
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      await this.request('/api/v1/admin/plans/update', 'adminParam', 'updateAdminPlan', {
+        plan_id: planId,
+        plan_name: this.editingPlanName().trim(),
+        price: Number(this.editingPlanPrice()),
+        description: this.editingPlanDescription().trim(),
+        plan_status: this.editingPlanStatus(),
+      });
+      this.notice.set('Subscription plan updated successfully.');
+      this.showPlanEditDrawer.set(false);
+      this.editingPlanId.set(null);
+      await this.load();
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {

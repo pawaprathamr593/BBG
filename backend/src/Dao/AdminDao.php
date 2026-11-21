@@ -509,6 +509,57 @@ final readonly class AdminDao
             [], 'countActiveSubscriptions');
     }
 
+    public function getAllPlans(ConnectionInterface $db): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->many($db, "SELECT p.id, p.plan_code, p.plan_name, p.description,
+            p.billing_cycle, p.price, p.currency, p.plan_status, p.status, p.created_on, p.updated_on,
+            GROUP_CONCAT(CONCAT(pe.entitlement_code, '=', pe.entitlement_value) ORDER BY pe.entitlement_code SEPARATOR ';') AS entitlements
+            FROM PLANS p
+            LEFT JOIN PLAN_ENTITLEMENTS pe ON pe.plan_id = p.id AND pe.status = 'A'
+            WHERE p.status = 'A'
+            GROUP BY p.id, p.plan_code, p.plan_name, p.description, p.billing_cycle, p.price, p.currency, p.plan_status, p.status, p.created_on, p.updated_on
+            ORDER BY p.price ASC, p.id ASC", [], 'getAllPlans');
+    }
+
+    public function updatePlan(
+        ConnectionInterface $db,
+        int $planId,
+        string $planName,
+        ?string $description,
+        float $price,
+        string $planStatus,
+        int $adminId,
+    ): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $affected = $db->createCommand("UPDATE PLANS
+                SET plan_name = :plan_name, description = :description, price = :price, plan_status = :plan_status,
+                    updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
+                WHERE id = :id AND status = 'A'",
+                [
+                    ':id' => $planId,
+                    ':plan_name' => $planName,
+                    ':description' => $description,
+                    ':price' => $price,
+                    ':plan_status' => $planStatus,
+                    ':admin_id' => $adminId,
+                ])->execute();
+            if ($affected < 1) {
+                $exists = $this->one($db, "SELECT id FROM PLANS WHERE id = :id AND status = 'A'", [':id' => $planId], 'checkPlan');
+                if ($exists['status'] !== 'SUCCESS' || $exists['data'] === []) {
+                    $resArr['msgArr'][] = 'Subscription plan not found.';
+                    return $resArr;
+                }
+            }
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['id' => $planId];
+        } catch (Throwable $exception) {
+            return $this->error('updatePlan', $exception);
+        }
+        return $resArr;
+    }
+
     public function countModerationQueue(ConnectionInterface $db): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];

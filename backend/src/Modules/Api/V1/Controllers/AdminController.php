@@ -55,6 +55,7 @@ final class AdminController
             '/api/v1/admin/moderation/queue' => 'listModerationQueue',
             '/api/v1/admin/moderation/history' => 'listModerationHistory',
             '/api/v1/admin/health/summary' => 'getSafeSystemHealth',
+            '/api/v1/admin/plans/list' => 'listAdminPlans',
         ];
         $manageActions = [
             '/api/v1/admin/users/suspend' => 'suspendPlatformUser',
@@ -70,6 +71,7 @@ final class AdminController
             '/api/v1/admin/categories/update' => 'updateCategory',
             '/api/v1/admin/categories/delete' => 'deleteCategory',
             '/api/v1/admin/moderation/action' => 'applyModerationAction',
+            '/api/v1/admin/plans/update' => 'updateAdminPlan',
         ];
         $path = $request->getUri()->getPath();
         $action = $manage ? ($manageActions[$path] ?? '') : ($getActions[$path] ?? '');

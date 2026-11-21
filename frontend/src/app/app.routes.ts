@@ -4,37 +4,31 @@ import { authenticatedWorkspaceGuard } from './core/auth/authenticated-workspace
 import { workspacePermissionGuard } from './core/workspace/workspace-permission.guard';
 
 export const routes: Routes = [
+  // Compatibility redirects for legacy/fragmented paths
+  {
+    path: 'workspace',
+    pathMatch: 'full',
+    redirectTo: 'dashboard/businesses',
+  },
   {
     path: 'business/register',
-    loadComponent: () =>
-      import('./features/business-registration/business-registration').then(
-        (m) => m.BusinessRegistration,
-      ),
-    title: 'Register your business | BBG',
+    pathMatch: 'full',
+    redirectTo: 'dashboard/businesses/register',
   },
   {
     path: 'business/team',
-    loadComponent: () =>
-      import('./features/business-team/business-team-management').then(
-        (m) => m.BusinessTeamManagement,
-      ),
-    title: 'Team & Access | BBG',
-  },
-  {
-    path: 'business/subscriptions',
-    loadComponent: () =>
-      import('./features/business-subscriptions/business-subscription-management').then(
-        (m) => m.BusinessSubscriptionManagement,
-      ),
-    title: 'Subscriptions | BBG',
+    pathMatch: 'full',
+    redirectTo: 'dashboard/members',
   },
   {
     path: 'business/storefront',
-    loadComponent: () =>
-      import('./features/business-storefront/business-storefront-management').then(
-        (m) => m.BusinessStorefrontManagement,
-      ),
-    title: 'Storefront configuration | BBG',
+    pathMatch: 'full',
+    redirectTo: 'dashboard/storefront',
+  },
+  {
+    path: 'business/subscriptions',
+    pathMatch: 'full',
+    redirectTo: 'dashboard/subscriptions',
   },
   {
     path: 'invite/accept',
@@ -43,12 +37,6 @@ export const routes: Routes = [
         (m) => m.TeamInvitationAcceptance,
       ),
     title: 'Accept team invitation | BBG',
-  },
-  {
-    path: 'workspace',
-    loadComponent: () =>
-      import('./features/business-workspace/business-workspace').then((m) => m.BusinessWorkspace),
-    title: 'Business registration status | BBG',
   },
   {
     path: 'dashboard',
@@ -60,6 +48,28 @@ export const routes: Routes = [
         path: '',
         loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
         title: 'BBG Dashboard | BBG',
+      },
+      {
+        path: 'overview',
+        pathMatch: 'full',
+        redirectTo: '',
+      },
+      {
+        path: 'businesses',
+        pathMatch: 'full',
+        loadComponent: () =>
+          import('./features/business-workspace/business-workspace').then(
+            (m) => m.BusinessWorkspace,
+          ),
+        title: 'My Businesses | BBG',
+      },
+      {
+        path: 'businesses/register',
+        loadComponent: () =>
+          import('./features/business-registration/business-registration').then(
+            (m) => m.BusinessRegistration,
+          ),
+        title: 'Register Business | BBG',
       },
       {
         path: 'catalogue',

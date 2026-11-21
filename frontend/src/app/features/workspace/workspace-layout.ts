@@ -18,10 +18,11 @@ import {
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { UserProfileDrawerComponent } from '../../shared/user-profile-drawer/user-profile-drawer';
 import { FilterDrawer } from '../../shared/filter-drawer/filter-drawer';
 import { WorkspaceNavIconComponent } from './workspace-nav-icon';
-import { getWorkspaceNavItems } from './workspace-navigation';
+import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigation';
 
 @Component({
   selector: 'app-workspace-layout',
@@ -297,8 +298,62 @@ import { getWorkspaceNavItems } from './workspace-navigation';
         flex-basis: 76px;
       }
       .sidebar-context-switcher {
-        padding: 14px 12px;
+        padding: 12px 10px;
         border-bottom: 1px solid var(--border);
+        background: var(--surface-card);
+      }
+      .context-identity-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .context-pill {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.53rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .context-pill.context-personal {
+        background: rgba(99, 102, 241, 0.12);
+        color: #4f46e5;
+      }
+      .context-pill.context-business {
+        background: rgba(16, 185, 129, 0.12);
+        color: #059669;
+      }
+      .context-pill.context-platform {
+        background: rgba(245, 158, 11, 0.14);
+        color: #b45309;
+      }
+      .role-badge {
+        font-size: 0.58rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+        padding: 1px 6px;
+        border-radius: 4px;
+        background: var(--surface-subtle);
+        border: 1px solid var(--border);
+      }
+      .context-name-row {
+        margin-bottom: 6px;
+      }
+      .active-identity-name {
+        display: block;
+        font-size: 0.76rem;
+        font-weight: 750;
+        color: var(--text-primary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .sidebar-collapsed .context-identity-row,
+      .sidebar-collapsed .context-name-row {
+        display: none;
       }
       .sidebar-context-switcher label {
         display: grid;
@@ -310,21 +365,27 @@ import { getWorkspaceNavItems } from './workspace-navigation';
       }
       .sidebar-context-switcher select {
         width: 100%;
-        height: 39px;
+        height: 36px;
         min-width: 0;
-        padding: 0 9px;
+        padding: 0 8px;
         border: 1px solid var(--border);
         border-radius: 8px;
         background: var(--surface-page);
         color: var(--text-primary);
         font: inherit;
-        font-size: 0.7rem;
+        font-size: 0.69rem;
         letter-spacing: 0;
         cursor: pointer;
       }
       .sidebar-context-switcher select:disabled {
         opacity: 0.6;
         cursor: wait;
+      }
+      .context-switching-indicator {
+        display: block;
+        margin-top: 4px;
+        color: var(--brand);
+        font-size: 0.62rem;
       }
       .context-switch-error {
         display: block;
@@ -333,14 +394,20 @@ import { getWorkspaceNavItems } from './workspace-navigation';
         font-size: 0.64rem;
       }
       .sidebar-collapsed .sidebar-context-switcher {
-        padding: 10px 7px;
+        padding: 8px 6px;
       }
       .sidebar-collapsed .sidebar-context-switcher label > span {
         display: none;
       }
       .sidebar-collapsed .sidebar-context-switcher select {
-        padding: 0 3px;
-        font-size: 0.59rem;
+        padding: 0 2px;
+        font-size: 0.58rem;
+      }
+      .nav-group {
+        margin-bottom: 12px;
+      }
+      .nav-group:last-child {
+        margin-bottom: 0;
       }
       .sidebar-scroll {
         flex: 1 1 auto;
@@ -1001,6 +1068,7 @@ import { getWorkspaceNavItems } from './workspace-navigation';
 })
 export class WorkspaceLayout implements OnInit {
   readonly workspace = inject(WorkspaceContextService);
+  private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
@@ -1013,6 +1081,7 @@ export class WorkspaceLayout implements OnInit {
   readonly activeTenantId = this.workspace.activeTenantId;
   readonly permissions = this.workspace.permissions;
   readonly activeContext = this.workspace.activeContext;
+  readonly contextClass = computed(() => (this.activeContext() ?? 'personal').toLowerCase());
   readonly isPlatform = computed(
     () => this.activeTenantId() === null && this.activeContext() === 'PLATFORM',
   );
@@ -1043,9 +1112,42 @@ export class WorkspaceLayout implements OnInit {
   readonly canAccessPlatform = computed(() =>
     this.workspace.platformPermissions().some((permission) => permission.scope_type === 'PLATFORM'),
   );
-  readonly showContextSwitcher = computed(
-    () => this.workspace.tenants().length > 0 || this.canAccessPlatform(),
-  );
+  readonly showContextSwitcher = computed(() => true);
+
+  readonly currentRoleBadge = computed(() => {
+    const context = this.activeContext();
+    if (context === 'PLATFORM') return 'Platform Admin';
+    if (context === 'BUSINESS') {
+      const activeTenant = this.workspace.activeTenant();
+      const roles = (activeTenant?.role_codes ?? '')
+        .split(',')
+        .map((r) => r.trim())
+        .filter(Boolean);
+      if (roles.includes('TENANT_OWNER')) return 'Owner';
+      if (roles.includes('BUSINESS_MANAGER')) return 'Manager';
+      if (roles.includes('STAFF')) return 'Staff';
+      if (roles.length > 0) {
+        return roles[0]
+          .replace(/_/g, ' ')
+          .toLowerCase()
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+      }
+      return 'Business Member';
+    }
+    return 'Consumer';
+  });
+
+  readonly activeDisplayName = computed(() => {
+    const context = this.activeContext();
+    if (context === 'BUSINESS') {
+      return this.workspace.activeTenant()?.tenant_name || 'Business Workspace';
+    }
+    if (context === 'PLATFORM') {
+      return 'BBG Platform Administration';
+    }
+    return this.auth.user()?.full_name || 'My Personal Account';
+  });
+
   readonly activeContextSelection = computed(() =>
     this.activeTenantId() !== null
       ? 'BUSINESS:' + this.activeTenantId()
@@ -1068,13 +1170,31 @@ export class WorkspaceLayout implements OnInit {
   );
   readonly breadcrumbs = computed(() => {
     const parts = this.currentPath().split('/').filter(Boolean).slice(1);
-    const labels = parts.map((part) =>
-      part === 'catalogue'
-        ? 'Catalogue'
-        : part.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-    );
-    return labels.map((label, index) => ({
-      label,
+    const labelMap: Record<string, string> = {
+      businesses: 'My Businesses',
+      register: 'Register Business',
+      catalogue: 'Catalogue',
+      storefront: 'Storefront',
+      profile: 'Profile & Settings',
+      members: 'Team & Access',
+      enquiries: 'Enquiries',
+      customers: 'Customers',
+      orders: 'Orders',
+      payments: 'Payments',
+      promotions: 'Promotions',
+      subscriptions: 'Subscriptions',
+      analytics: 'Analytics',
+      'platform-users': 'Platform Users',
+      'business-approval': 'Business Approvals',
+      'subscription-approval': 'Subscription Approvals',
+      'payment-qr-settings': 'Payment QR Settings',
+      moderation: 'Moderation',
+      categories: 'Categories',
+      'platform-analytics': 'Platform Analytics',
+      'system-health': 'System Health',
+    };
+    return parts.map((part, index) => ({
+      label: labelMap[part] ?? part.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
       route: '/dashboard/' + parts.slice(0, index + 1).join('/'),
     }));
   });
@@ -1112,6 +1232,13 @@ export class WorkspaceLayout implements OnInit {
     if (s === 'catalogue') return ['DRAFT', 'PUBLISHED'];
     return ['ACTIVE', 'INACTIVE', 'PENDING', 'APPROVED', 'REJECTED'];
   });
+  readonly visibleNavGroups = computed(() =>
+    getWorkspaceNavGroups(
+      this.activeTenantId() !== null ? 'BUSINESS' : (this.activeContext() ?? 'PERSONAL'),
+      this.permissions(),
+      this.workspace.activeTenant()?.active_entitlements ?? null,
+    ),
+  );
   readonly visibleNavItems = computed(() =>
     getWorkspaceNavItems(
       this.activeTenantId() !== null ? 'BUSINESS' : (this.activeContext() ?? 'PERSONAL'),
@@ -1159,6 +1286,10 @@ export class WorkspaceLayout implements OnInit {
   }
 
   async switchContextSelection(selection: string): Promise<void> {
+    if (selection === 'REGISTER_NEW') {
+      await this.router.navigate(['/dashboard/businesses/register']);
+      return;
+    }
     if (this.contextSwitching() || !selection || selection === this.activeContextSelection())
       return;
     this.contextSwitching.set(true);
