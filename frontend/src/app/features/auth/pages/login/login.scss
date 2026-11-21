@@ -80,8 +80,8 @@
   width: 43px;
   height: 43px;
   place-items: center;
-  color: #172019;
-  background: #f5d928;
+  color: #000000;
+  background: var(--bbg-brand-accent);
   border-radius: 13px;
   font-size: 1.3rem;
   font-weight: 900;
@@ -111,7 +111,7 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  color: #f5d928;
+  color: var(--bbg-brand-accent);
   font-size: 0.66rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -120,8 +120,8 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #f5d928;
-  box-shadow: 0 0 0 5px rgba(245, 217, 40, 0.13);
+  background: var(--bbg-brand-accent);
+  box-shadow: 0 0 0 5px rgba(251, 191, 36, 0.2);
 }
 .story-content h1 {
   margin: 22px 0 15px;
@@ -131,7 +131,7 @@
   letter-spacing: -0.065em;
 }
 .story-content h1 em {
-  color: #f5d928;
+  color: var(--bbg-brand-accent);
   font-style: normal;
 }
 .story-content > p {
@@ -157,7 +157,7 @@
   height: 39px;
   flex: 0 0 39px;
   place-items: center;
-  color: #f5d928;
+  color: var(--bbg-brand-accent);
   background: rgba(255, 255, 255, 0.09);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
@@ -192,7 +192,7 @@
   letter-spacing: -0.08em;
 }
 .story-decoration span {
-  color: #f5d928;
+  color: var(--bbg-brand-accent);
 }
 .auth-panel {
   display: grid;
@@ -408,8 +408,8 @@ input:focus {
   gap: 12px;
   margin-top: 3px;
   padding: 0 18px;
-  color: #172019;
-  background: #f5d928;
+  color: var(--bbg-btn-accent-fg, #000000);
+  background: var(--bbg-btn-accent-bg, #fbbf24);
   border: 0;
   border-radius: 10px;
   font: inherit;
@@ -421,7 +421,8 @@ input:focus {
     transform 0.18s ease;
 }
 .submit-button:hover:not(:disabled) {
-  background: #ffe85b;
+  background: var(--bbg-btn-accent-bg-hover, #f59e0b);
+  color: var(--bbg-btn-accent-fg, #000000);
   transform: translateY(-1px);
 }
 .submit-button:disabled {

@@ -26,7 +26,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
         padding: 2px 8px;
         border-radius: var(--bbg-radius-xs);
         background: var(--bbg-brand-primary-soft);
-        border: 1px solid rgba(23, 77, 53, 0.2);
+        border: 1px solid var(--bbg-border-default);
         font-size: 0.72rem;
         font-weight: 700;
         color: var(--bbg-brand-primary);

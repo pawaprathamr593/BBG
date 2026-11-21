@@ -60,7 +60,7 @@
   width: 39px;
   height: 39px;
   overflow: hidden;
-  background: #174d35;
+  background: var(--bbg-brand-primary);
   border-radius: 9px;
   transform: skewY(-3deg);
 }
@@ -84,7 +84,7 @@
 .brand-mark span:nth-child(3) {
   top: 27px;
   left: 5px;
-  background: #f5d928;
+  background: var(--bbg-brand-accent);
 }
 .brand-wordmark {
   font-size: 2rem;
@@ -207,10 +207,10 @@
   color: #fff;
 }
 .footer-logo .brand-mark {
-  background: #f5d928;
+  background: var(--bbg-brand-accent);
 }
 .footer-logo .brand-mark span {
-  background: #174d35;
+  background: var(--bbg-brand-primary);
 }
 .footer-logo .brand-mark span:nth-child(3) {
   background: #fff;
@@ -236,7 +236,7 @@
   border: 0;
 }
 .footer-links a:hover {
-  color: #f5d928;
+  color: var(--bbg-brand-accent);
 }
 .copyright {
   color: #aeb8b1;

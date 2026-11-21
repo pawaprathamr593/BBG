@@ -81,7 +81,7 @@ button:disabled {
   margin: 0;
 }
 .state-panel.error {
-  border-color: #d97777;
+  border-color: var(--bbg-danger);
 }
 .spinner {
   width: 22px;
@@ -474,7 +474,7 @@ button:disabled {
   line-height: 1.5;
 }
 .form-error {
-  color: #bd3535;
+  color: var(--bbg-danger);
   font-size: 0.8rem;
 }
 .product-modal footer {
@@ -641,8 +641,8 @@ button:disabled {
   transition: all 0.12s ease;
 
   &:hover {
-    color: #d97777;
-    background: rgba(217, 119, 119, 0.15);
+    color: var(--bbg-danger);
+    background: var(--bbg-danger-soft);
   }
 }
 .category-empty {
@@ -1128,11 +1128,11 @@ button:disabled {
   }
 
   &.btn-danger {
-    color: #dc2626;
+    color: var(--bbg-danger);
 
     &:hover {
-      border-color: #dc2626;
-      background: rgba(220, 38, 38, 0.08);
+      border-color: var(--bbg-danger);
+      background: var(--bbg-danger-soft);
     }
   }
 }

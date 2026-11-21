@@ -85,22 +85,41 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       /* Variants */
       .btn-primary {
         background: var(--bbg-brand-primary);
-        color: var(--bbg-text-inverse);
+        color: #ffffff;
         border-color: var(--bbg-brand-primary);
       }
       .btn-primary:hover:not(:disabled) {
         background: var(--bbg-brand-primary-hover);
         border-color: var(--bbg-brand-primary-hover);
       }
+      .btn-primary:active:not(:disabled) {
+        background: var(--bbg-brand-primary-active);
+        border-color: var(--bbg-brand-primary-active);
+      }
 
       .btn-accent {
-        background: var(--bbg-brand-accent);
-        color: #171d19;
-        border-color: var(--bbg-brand-accent);
+        background: var(--bbg-btn-accent-bg);
+        color: var(--bbg-btn-accent-fg);
+        border-color: var(--bbg-btn-accent-bg);
+      }
+      .btn-accent * {
+        color: var(--bbg-btn-accent-fg) !important;
+        stroke: var(--bbg-btn-accent-fg) !important;
       }
       .btn-accent:hover:not(:disabled) {
-        background: var(--bbg-brand-accent-hover);
-        border-color: var(--bbg-brand-accent-hover);
+        background: var(--bbg-btn-accent-bg-hover);
+        border-color: var(--bbg-btn-accent-bg-hover);
+        color: var(--bbg-btn-accent-fg);
+      }
+      .btn-accent:active:not(:disabled) {
+        background: var(--bbg-btn-accent-bg-active);
+        border-color: var(--bbg-btn-accent-bg-active);
+        color: var(--bbg-btn-accent-fg);
+      }
+      .btn-accent:disabled {
+        background: var(--bbg-btn-accent-bg-disabled);
+        color: var(--bbg-btn-accent-fg);
+        border-color: var(--bbg-btn-accent-bg-disabled);
       }
 
       .btn-secondary {

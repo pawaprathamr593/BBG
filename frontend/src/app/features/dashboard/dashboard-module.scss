@@ -317,16 +317,16 @@ h1 {
   font-weight: 800;
 }
 .status-chip.good {
-  color: #168253;
-  background: #e9f7ef;
+  color: var(--bbg-success);
+  background: var(--bbg-success-soft);
 }
 .status-chip.warn {
-  color: #98691a;
-  background: #fff5df;
+  color: var(--bbg-warning);
+  background: var(--bbg-warning-soft);
 }
 .status-chip.bad {
-  color: #b34840;
-  background: #fff0ee;
+  color: var(--bbg-danger);
+  background: var(--bbg-danger-soft);
 }
 .record-fields {
   display: grid;

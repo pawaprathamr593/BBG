@@ -4,7 +4,7 @@ title: Global BBG light and dark theme colour system and UI consistency
 area: shared
 type: enhancement
 owner: unset
-status: draft
+status: implemented
 ---
 
 # Global BBG light and dark theme colour system and UI consistency
@@ -315,8 +315,11 @@ The inventory must include all route components discovered from the current rout
   - Light Mode: matching clean neutral palette.
   - Yellow-background button text and icons: always `#000000`.
 - Repository baseline inspected on `feature/business-onboarding-from-workspace-base`:
-  - `frontend/src/styles.scss` currently uses `#174D35` and `#F5D928`.
-  - Its Dark Mode block currently reassigns primary brand to yellow and includes a separate blue/grey surface palette alongside charcoal/green aliases.
-  - `ThemeService` already supports Light / Dark / System and applies `data-theme="dark"`.
-- No application code, styles, routes, APIs, backend or database files have been changed as part of drafting this requirement.
-- Status remains **draft** until the full route/component inventory and implementation readiness questions are reviewed.
+  - `frontend/src/styles.scss` updated to canonical brand tokens: primary `#10B981` (hover `#059669`, active `#047857`) and accent `#FBBF24` (hover `#F59E0B`, active `#D97706`).
+  - Dark Mode updated to layered dark surfaces (`#0B1210`, `#101A16`, `#16231D`, `#1C2D25`, `#24372D`, `#203D30`). Primary green remains green in Dark Mode.
+  - Light Mode updated to clean neutral surfaces with green tint (`#F7FAF8`, `#FFFFFF`, `#F0F7F3`, `#DCFCE7`).
+  - Strict rule for yellow buttons (`--bbg-btn-accent-*`) enforced with foreground text and icons locked to `#000000`.
+  - Audited and updated 22 route-backed screens, shells, and 21 shared UI components.
+  - Full audit catalog documented in `frontend/requirements/shared/REQ-SHARED-001-UI-AUDIT.md`.
+  - Validated with TypeScript compiler (`npx tsc --noEmit`), unit test suite (12 test suites, 92 tests passing), and production build (`ng build`).
+- Status updated to **implemented**.

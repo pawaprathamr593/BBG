@@ -52,7 +52,7 @@ import { ChangeDetectionStrategy, Component, HostListener, input, output } from 
         width: 90%;
         max-width: 440px;
         padding: 24px;
-        background: var(--bbg-surface-card);
+        background: var(--bbg-surface-elevated);
         border: 1px solid var(--bbg-border-default);
         border-radius: var(--bbg-radius-lg);
         box-shadow: var(--bbg-shadow-lg);
