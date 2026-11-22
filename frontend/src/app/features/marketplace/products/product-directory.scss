@@ -57,7 +57,7 @@
 
 .eyebrow {
   margin: 0 0 12px;
-  color: var(--bbg-brand-accent);
+  color: #f5d928;
   font-size: 0.75rem;
   font-weight: 750;
   letter-spacing: 0.12em;
@@ -72,8 +72,8 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--bbg-brand-accent);
-    box-shadow: 0 0 8px var(--bbg-brand-accent);
+    background: #f5d928;
+    box-shadow: 0 0 8px #f5d928;
   }
 }
 
@@ -88,7 +88,7 @@ h1 {
   color: #ffffff;
 
   span {
-    color: var(--bbg-brand-accent);
+    color: #f5d928;
   }
 }
 
@@ -110,7 +110,7 @@ h1 {
   i {
     width: 4px;
     height: 4px;
-    background: var(--bbg-brand-accent);
+    background: #f5d928;
     border-radius: 50%;
   }
 }
@@ -213,9 +213,9 @@ h1 {
 .search-submit {
   height: 44px;
   padding: 0 24px;
-  color: var(--bbg-btn-accent-fg);
-  background: var(--bbg-btn-accent-bg);
-  border: 1px solid var(--bbg-btn-accent-bg);
+  color: #000000;
+  background: #f5d928;
+  border: 1px solid #f5d928;
   border-radius: var(--bbg-radius-md, 8px);
   font: inherit;
   font-size: 0.8125rem;
@@ -224,21 +224,8 @@ h1 {
   transition: all 150ms ease;
 
   &:hover {
-    background: var(--bbg-btn-accent-bg-hover);
-    border-color: var(--bbg-btn-accent-bg-hover);
-    color: var(--bbg-btn-accent-fg);
-  }
-
-  &:active {
-    background: var(--bbg-btn-accent-bg-active);
-    border-color: var(--bbg-btn-accent-bg-active);
-    color: var(--bbg-btn-accent-fg);
-  }
-
-  &:disabled {
-    background: var(--bbg-btn-accent-bg-disabled);
-    border-color: var(--bbg-btn-accent-bg-disabled);
-    color: var(--bbg-btn-accent-fg);
+    background: #e6cb20;
+    border-color: #e6cb20;
   }
 }
 

@@ -239,7 +239,7 @@ h2 {
   border: 1px solid var(--bbg-brand-primary, #174d35);
   border-radius: var(--bbg-radius-md, 8px);
   background: var(--bbg-brand-primary, #174d35);
-  color: #fff;
+  color: var(--bbg-btn-text-on-primary, #fff);
   font: inherit;
   font-size: 0.8125rem;
   font-weight: 700;

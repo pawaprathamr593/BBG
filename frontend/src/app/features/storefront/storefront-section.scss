@@ -155,7 +155,7 @@
   cursor: pointer;
 }
 :host-context(html[data-theme='dark']) .search-button {
-  color: #17251c;
+  color: #000000;
 }
 .search-button:disabled {
   opacity: 0.6;
@@ -218,7 +218,7 @@
   font-size: 0.63rem;
 }
 :host-context(html[data-theme='dark']) .filter-trigger b {
-  color: #17251c;
+  color: #000000;
 }
 .active-filters {
   display: flex;
@@ -573,7 +573,7 @@
   text-decoration: none;
 }
 :host-context(html[data-theme='dark']) .aside-link {
-  color: #17251c;
+  color: #000000;
 }
 .about-cta,
 .contact-bottom {
@@ -618,7 +618,7 @@
   white-space: nowrap;
 }
 :host-context(html[data-theme='dark']) .cta-button {
-  color: #17251c;
+  color: #000000;
 }
 .contact-content {
   display: grid;

@@ -4,24 +4,28 @@ title: Global BBG light and dark theme colour system and UI consistency
 area: shared
 type: enhancement
 owner: unset
-status: approved-colour-refinement
+status: draft
 ---
 
 # Global BBG light and dark theme colour system and UI consistency
 
 ## 1. Problem
 
-BBG currently has inconsistent colour usage across global theme tokens and UI components. The current `frontend/src/styles.scss` defines Forest Green (`#174D35`) and Yellow (`#F5D928`), and changes the primary brand token to yellow in Dark Mode. This conflicts with the approved BBG brand direction:
+BBG currently has inconsistent colour usage across global theme tokens and UI components. The established and approved BBG brand direction across active workspace modules is:
 
-- Primary brand colour: Emerald Green `#10B981`.
-- Accent brand colour: Amber Yellow `#FBBF24`.
-- Dark Mode: layered dark surfaces.
-- Light Mode: clean, neutral surfaces with subtle green accents.
-- Yellow-background buttons: black (`#000000`) text and icons in every state and in both themes.
+- Primary brand colour: Forest Green `#174D35` (Hover: `#123F2C`, Soft: `#E8F1EB`).
+- Accent brand colour: Yellow `#F5D928` (Hover: `#E0C51F`, Soft: `#FEF9E7`).
+- Dark Mode: Primary brand shifts to Yellow `#F5D928` with layered dark surfaces (`#171D19`, `#242E27`, `#202923`).
+- Light Mode: Clean, neutral surfaces (`#FFFFFF`, `#F8FAFC`, `#F1F5F9`) with Forest Green accents.
+- Yellow-background buttons: Black (`#000000`) text and icons in every state and in both themes.
 
-Individual screens and components may also contain hardcoded or locally defined colours. This creates visual drift between marketplace, storefront, authentication, onboarding, workspace, shared components, and overlays.
+Individual screens and components (such as Catalogue and certain shared components) contain divergent or locally defined hardcoded colours (e.g. `#111`, `#bd3535`, `#d97777`, `#dc2626`). This creates visual drift between marketplace, storefront, catalogue, workspace modules, and shared components.
 
+<<<<<<< HEAD
 The objective is to establish one authoritative semantic token system and audit and align every frontend UI screen and component with it. This is a repository-wide visual consistency change, not a dashboard-only recolour. Forest Charcoal is the exclusive Dark Mode surface identity; the former Dark Navy palette must be removed wherever it is used.
+=======
+The objective is to establish one authoritative semantic token system and audit and align every frontend UI screen and component with the approved Forest Green and Yellow module theme.
+>>>>>>> 363bbc8 (Bug fixes)
 
 ## 2. Personas
 
@@ -125,58 +129,38 @@ Theme work must not change route guards, permission checks, role visibility, ten
 
 ### 9.1 Approved brand colours
 
-The following brand values are fixed across Light and Dark Mode:
+The following brand values are established across Light and Dark Mode:
 
-| Token | Value | Usage |
-| --- | --- | --- |
-| `--bbg-brand-primary` | `#06402B` | Forest Green primary brand identity and primary actions |
-| `--bbg-brand-primary-hover` | `#075438` | Primary green hover |
-| `--bbg-brand-primary-active` | `#043522` | Primary green pressed |
-| `--bbg-brand-highlight` | `#10B981` | Emerald highlights, charts and indicators where semantically appropriate |
-| `--bbg-brand-primary-soft` | `#D1FAE5` | Soft green selection |
-| `--bbg-brand-primary-tint` | `#ECFDF5` | Subtle green-tinted surface |
-| `--bbg-brand-accent` | `#FBBF24` | Warm yellow accent |
-| `--bbg-brand-accent-hover` | `#F59E0B` | Yellow hover |
-| `--bbg-brand-accent-active` | `#D97706` | Yellow pressed |
+| Token | Light Mode Value | Dark Mode Value | Usage |
+| --- | --- | --- | --- |
+| `--bbg-brand-primary` | `#174D35` | `#F5D928` | Primary brand green (shifts to Yellow in dark mode) |
+| `--bbg-brand-primary-hover` | `#123F2C` | `#F7E04F` | Primary brand hover |
+| `--bbg-brand-primary-soft` | `#E8F1EB` | `rgba(245, 217, 40, 0.15)` | Subtle brand selection/surface |
+| `--bbg-brand-accent` | `#F5D928` | `#F5D928` | Yellow brand accent |
+| `--bbg-brand-accent-hover` | `#E0C51F` | `#F7E04F` | Yellow hover |
+| `--bbg-btn-text-on-primary` | `#FFFFFF` | `#000000` | Text on primary brand buttons |
+| `--bbg-btn-text-on-accent` | `#000000` | `#000000` | Text on yellow accent buttons |
 
-Primary brand green remains `#06402B` in both themes. Emerald `#10B981` is retained as a highlight colour; it is no longer the primary brand colour. Do not repurpose the primary brand token as yellow.
-
-### 9.1.1 Semantic brand text mapping
-
-Semantic brand-green text in Light Mode must become Warm Yellow (`#FBBF24`) in Dark Mode. Apply this through dedicated theme-aware semantic tokens for brand text, brand links, active navigation labels, selected tab labels, brand-highlighted text and active brand icons.
-
-| Semantic use | Light Mode | Dark Mode |
-| --- | --- | --- |
-| Brand text and links | `#06402B` | `#FBBF24` |
-| Active navigation text | `#06402B` | `#FBBF24` |
-| Selected tab text when brand-green | `#06402B` | `#FBBF24` |
-| Brand-highlighted text | `#06402B` | `#FBBF24` |
-| Active brand icon | `#06402B` | `#FBBF24` |
-
-Do not globally recolour every green element. Normal text, semantic success/status green, chart series, green button backgrounds and other non-brand semantic colours must retain their own meanings. Primary green buttons retain white text/icons; yellow buttons retain black text/icons.
+In Dark Mode, the primary brand token shifts to Yellow (`#F5D928`), ensuring brand visibility against dark layered surfaces. Whenever any button has a yellow background (in Light or Dark mode), text and icons must be black (`#000000`).
 
 ### 9.2 Light Mode palette
 
 | Semantic token | Exact value |
 | --- | --- |
-| `--bbg-surface-page` | `#F7FAF8` |
-| `--bbg-surface-sidebar` | `#FFFFFF` |
+| `--bbg-surface-page` | `#F8FAFC` (`var(--surface-page)`: `#FFFFFF`) |
 | `--bbg-surface-card` | `#FFFFFF` |
-| `--bbg-surface-elevated` | `#FFFFFF` |
-| `--bbg-surface-hover` | `#ECFDF5` |
-| `--bbg-surface-selected` | `#D1FAE5` |
-| `--bbg-surface-input` | `#FFFFFF` |
-| `--bbg-text-primary` | `#14231B` |
-| `--bbg-text-secondary` | `#52635A` |
-| `--bbg-text-muted` | `#718078` |
-| `--bbg-text-disabled` | `#A3ADA6` |
-| `--bbg-border-default` | `#DCE6DF` |
-| `--bbg-border-strong` | `#BCCBC1` |
-| `--bbg-border-focus` | `#06402B` |
-| `--bbg-focus-ring-colour` | `#10B981` |
+| `--bbg-surface-subtle` | `#F1F5F9` |
+| `--bbg-text-primary` | `#0F172A` (`var(--text-primary)`: `#171D19`) |
+| `--bbg-text-secondary` | `#475569` (`var(--text-secondary)`: `#626B65`) |
+| `--bbg-text-muted` | `#64748B` (`var(--text-muted)`: `#7A847E`) |
+| `--bbg-border-default` | `#E2E8F0` (`var(--border)`: `#E3E8E4`) |
+| `--bbg-border-strong` | `#CBD5E1` |
+| `--bbg-border-focus` | `#174D35` |
+| `--bbg-focus-ring` | `0 0 0 3px rgba(23, 77, 53, 0.25)` |
 
 ### 9.3 Dark Mode palette — Forest Charcoal (exclusive)
 
+<<<<<<< HEAD
 **Forest Charcoal is the only approved Dark Mode surface identity for BBG.** Replace the former Dark Navy palette wherever it appears in the frontend, including global tokens, component styles, screen-specific overrides, tables, forms, navigation, storefronts, workspace screens, platform administration, overlays and shared UI. Do not retain Dark Navy as an alternative, fallback, secondary palette or route-specific theme.
 
 | Visual layer / semantic token | Exact value | Usage |
@@ -204,6 +188,29 @@ Use a consistent layered Forest Charcoal hierarchy: page/canvas (`#171D19`) → 
 
 The exact hover/selected/strong-border values above are theme-specific supporting tokens. Check them against actual UI usage and WCAG contrast; do not apply them indiscriminately to text or status indicators. Existing brand action and semantic status rules in Sections 9.1, 9.1.1, 9.4, 9.5 and 9.6 remain authoritative.
 
+=======
+| Semantic token | Exact value |
+| --- | --- |
+| `--bbg-surface-page` | `#171D19` (`var(--surface-page)`: `#171D19`) |
+| `--bbg-surface-card` | `#242E27` (`var(--surface-card)`: `#242E27`) |
+| `--bbg-surface-subtle` | `#202923` (`var(--surface-subtle)`: `#202923`) |
+| `--bbg-surface-elevated` | `#242E27` (`var(--surface-elevated)`: `#242E27`) |
+| `--bbg-surface-input` | `#202923` (`var(--surface-input)`: `#202923`) |
+| `--bbg-surface-hover` | `#2A382E` (`var(--surface-hover)`: `#2A382E`) |
+| `--bbg-surface-selected` | `#2D3D32` (`var(--surface-selected)`: `#2D3D32`) |
+| `--bbg-surface-overlay` | `rgba(0, 0, 0, 0.75)` |
+| `--bbg-text-primary` | `#FFFFFF` (`var(--text-primary)`: `#FFFFFF`) |
+| `--bbg-text-secondary` | `#C0C8C2` (`var(--text-secondary)`: `#C0C8C2`) |
+| `--bbg-text-muted` | `#A0A0A0` (`var(--text-muted)`: `#A0A0A0`) |
+| `--bbg-text-inverse` | `#171D19` |
+| `--bbg-border-default` | `#354139` (`var(--border)`: `#354139`) |
+| `--bbg-border-subtle` | `#26332A` |
+| `--bbg-border-strong` | `#445449` |
+| `--bbg-border-focus` | `#F5D928` |
+| `--bbg-focus-ring` | `0 0 0 3px rgba(245, 217, 40, 0.35)` |
+
+Dark Mode must use layered surfaces. Do not flatten every element to one background colour. Keep the hierarchy: application page → sidebar/input → card → elevated menu/dialog → hover/selected state.
+>>>>>>> 363bbc8 (Bug fixes)
 
 ### 9.4 Semantic status palette
 
@@ -235,8 +242,7 @@ This rule applies to primary/secondary CTAs when yellow is selected, icon button
 
 ### 9.6 Other interactive component rules
 
-- Green primary buttons use Forest Green (`#06402B`), hover `#075438`, active `#043522`, and white (`#FFFFFF`) text/icons in both themes.
-- Semantic brand-green text in Light Mode maps to Warm Yellow (`#FBBF24`) in Dark Mode through dedicated semantic tokens. Do not apply this mapping to normal text, status colours or chart series.
+- Green primary buttons use the primary green tokens and a foreground that passes contrast requirements. Do not change green to yellow in Dark Mode.
 - Secondary, outline, ghost, danger and link buttons use semantic tokens, not arbitrary per-screen colours.
 - Inputs, selects and textareas use theme-specific input surfaces, text, border, placeholder, disabled and focus tokens.
 - Checkboxes, radios and switches use the primary green selected state.
@@ -307,9 +313,14 @@ The inventory must include all route components discovered from the current rout
 
 1. Given the current frontend route configuration, when the audit is completed, then every route-backed screen and lazy-loaded route is listed in the screen/component inventory.
 2. Given the current frontend shared and feature component directories, when the audit is completed, then every reusable component, dialog, drawer, popover and component stylesheet is accounted for.
+<<<<<<< HEAD
 3. Given the approved brand palette, when either theme is active, then primary brand green is `#06402B`, emerald highlight is `#10B981`, and accent yellow is `#FBBF24`.
 3a. Given semantic brand-green text is displayed, when Dark Mode is active, then that brand text maps to `#FBBF24`; normal text and semantic status colours remain unchanged.
 4. Given Dark Mode is active, when any page or component renders, then it uses the exclusive Forest Charcoal surface identity (`#171D19` page, `#242E27` card/elevated, `#202923` inset/input) and does not render Dark Navy or blue/slate-tinted surface values. This must be verified across every route and component, including Platform Administration, Workspace Overview and all Storefront screens.
+=======
+3. Given the approved brand palette, when either theme is active, then primary brand green remains `#10B981` and accent yellow remains `#FBBF24`.
+4. Given Dark Mode is active, when any page or component renders, then it uses the approved layered dark surface palette and does not revert to unrelated blue/grey/charcoal palettes.
+>>>>>>> 363bbc8 (Bug fixes)
 5. Given Light Mode is active, when any page or component renders, then it uses the approved clean neutral palette.
 6. Given a button has a yellow background, when it is rendered in default, hover, active, focus-visible or disabled state, then its text and icons are black (`#000000`).
 7. Given a shared component is used by multiple screens, when its tokens are updated, then all hosts receive consistent theme behaviour without duplicating local colour overrides.
@@ -333,6 +344,7 @@ The inventory must include all route components discovered from the current rout
 
 ## Implementation log
 
+<<<<<<< HEAD
 - Previous implementation baseline (reported on `feature/business-onboarding-from-workspace-base`):
   - Existing Light / Dark / System theme support, ThemeService, `data-theme="dark"` mechanism and centralized token architecture are to be preserved.
   - Previous palette used Emerald Green `#10B981` as primary and Amber Yellow `#FBBF24` as accent.
@@ -355,3 +367,18 @@ The inventory must include all route components discovered from the current rout
   - Audit every UI screen in both themes, with explicit visual verification of Platform Administration, Workspace Overview, Business Workspace modules, and every Storefront route/screen. Include route-backed screens, lazy-loaded screens, overlays and shared components; do not mark a context complete based on its landing page alone.
   - Search for and remove Dark Navy values including `#0B1120`, `#131C31`, `#1E293B` and other identified navy/slate surface overrides. Distinguish legitimate status/chart colours from surface palette values.
   - Status of this Dark Navy-to-Forest-Charcoal replacement: **pending frontend implementation and visual verification**.
+=======
+- Requirement drafted from the user's confirmed design decisions:
+  - Primary green: `#10B981`.
+  - Accent yellow: `#FBBF24`.
+  - Dark Mode: proposed layered palette.
+  - Surface treatment: layered.
+  - Light Mode: matching clean neutral palette.
+  - Yellow-background button text and icons: always `#000000`.
+- Repository baseline inspected on `feature/business-onboarding-from-workspace-base`:
+  - `frontend/src/styles.scss` currently uses `#174D35` and `#F5D928`.
+  - Its Dark Mode block currently reassigns primary brand to yellow and includes a separate blue/grey surface palette alongside charcoal/green aliases.
+  - `ThemeService` already supports Light / Dark / System and applies `data-theme="dark"`.
+- No application code, styles, routes, APIs, backend or database files have been changed as part of drafting this requirement.
+- Status remains **draft** until the full route/component inventory and implementation readiness questions are reviewed.
+>>>>>>> 363bbc8 (Bug fixes)

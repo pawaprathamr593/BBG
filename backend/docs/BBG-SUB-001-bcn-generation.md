@@ -1,4 +1,4 @@
-# BBG-SUB-001 — BBG Contribution Number (BCN) generation
+# BBG-SUB-001 — Bavdhan Contribution Number (BCN) generation
 
 | Field | Value |
 | --- | --- |
@@ -11,7 +11,7 @@
 
 ## 1. Objective
 
-Generate and persist a unique BBG Contribution Number (BCN) when a Platform Admin approves a subscription request. The BCN becomes the permanent reference identifier for that approved subscription and is returned to the frontend for read-only display to the Platform Admin and the owning Business Owner.
+Generate and persist a unique Bavdhan Contribution Number (BCN) when a Platform Admin approves a subscription request. The BCN becomes the permanent reference identifier for that approved subscription and is returned to the frontend for read-only display to the Platform Admin and the owning Business Owner.
 
 BCN generation is a backend responsibility. Angular must never construct or allocate the identifier.
 
@@ -31,7 +31,7 @@ BCN-271203-00125
 
 | Segment | Example | Definition |
 | --- | --- | --- |
-| `BCN` | `BCN` | Fixed literal prefix: BBG Contribution Number |
+| `BCN` | `BCN` | Fixed literal prefix: Bavdhan Contribution Number |
 | `YYMM` | `2712` | Two-digit year and two-digit month of the subscription expiry date |
 | `PID` | `03` | Subscription's approved plan ID |
 | `SN` | `00125` | Serial number allocated according to the approved sequencing policy |

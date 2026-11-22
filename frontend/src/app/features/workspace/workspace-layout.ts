@@ -88,7 +88,7 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
         height: 36px;
         overflow: hidden;
         border-radius: 9px;
-        background: var(--bbg-brand-primary);
+        background: #174d35;
       }
       .brand-mark i {
         position: absolute;
@@ -108,7 +108,7 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
       }
       .brand-mark i:nth-child(3) {
         top: 25px;
-        background: var(--bbg-brand-accent);
+        background: #f5d928;
       }
       .brand-copy {
         display: grid;
@@ -215,7 +215,7 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
       }
       .switch-error {
         max-width: 210px;
-        color: var(--bbg-danger);
+        color: #c34f47;
         font-size: 0.65rem;
       }
       .workspace-body {
@@ -319,16 +319,16 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
         text-transform: uppercase;
       }
       .context-pill.context-personal {
-        background: var(--bbg-info-soft);
-        color: var(--bbg-info);
+        background: rgba(99, 102, 241, 0.12);
+        color: #4f46e5;
       }
       .context-pill.context-business {
-        background: var(--bbg-success-soft);
-        color: var(--bbg-success);
+        background: rgba(16, 185, 129, 0.12);
+        color: #059669;
       }
       .context-pill.context-platform {
-        background: var(--bbg-warning-soft);
-        color: var(--bbg-warning);
+        background: rgba(245, 158, 11, 0.14);
+        color: #b45309;
       }
       .role-badge {
         font-size: 0.58rem;
@@ -390,7 +390,7 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
       .context-switch-error {
         display: block;
         margin-top: 6px;
-        color: var(--bbg-danger);
+        color: #c34f47;
         font-size: 0.64rem;
       }
       .sidebar-collapsed .sidebar-context-switcher {

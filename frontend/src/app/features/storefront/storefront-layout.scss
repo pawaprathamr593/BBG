@@ -232,7 +232,7 @@
 }
 
 :host-context(html[data-theme='dark']) .store-footer {
-  background: #101713;
+  background: var(--bbg-surface-page, #171d19);
 }
 
 .footer-main {

@@ -5,7 +5,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <span class="bcn-badge" [title]="'Bharat Business Identification: ' + bcn()">
+    <span class="bcn-badge" [title]="'Bavdhan Contribution Number (BCN): ' + bcn()">
       <span class="bcn-icon" aria-hidden="true">✓</span>
       <span class="bcn-code">{{ bcn() }}</span>
       @if (verified()) {
@@ -26,7 +26,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
         padding: 2px 8px;
         border-radius: var(--bbg-radius-xs);
         background: var(--bbg-brand-primary-soft);
-        border: 1px solid var(--bbg-border-default);
+        border: 1px solid rgba(23, 77, 53, 0.2);
         font-size: 0.72rem;
         font-weight: 700;
         color: var(--bbg-brand-primary);

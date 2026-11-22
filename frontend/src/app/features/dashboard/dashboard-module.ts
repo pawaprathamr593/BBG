@@ -1802,7 +1802,7 @@ export class DashboardModule implements OnInit {
       const result = await this.request<DataRecord>(path, key, actionType, data);
       this.notice.set(
         kind === 'approve-subscription' && typeof result['bcn'] === 'string' && result['bcn']
-          ? `Subscription approved. BBG Contribution Number: ${result['bcn']}`
+          ? `Subscription approved. Bavdhan Contribution Number (BCN): ${result['bcn']}`
           : 'The requested decision was completed.',
       );
       this.showDecisionDrawer.set(false);
@@ -1869,7 +1869,7 @@ export class DashboardModule implements OnInit {
     if (typeof value !== 'string' || value === '') return;
     try {
       await navigator.clipboard.writeText(value);
-      this.notice.set('BBG Contribution Number copied.');
+      this.notice.set('Bavdhan Contribution Number (BCN) copied.');
     } catch {
       this.error.set('Could not copy the BCN. Please select and copy it manually.');
     }

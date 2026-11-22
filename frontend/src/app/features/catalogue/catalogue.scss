@@ -52,7 +52,7 @@ h1 {
   cursor: pointer;
 }
 .primary-button {
-  color: #fff;
+  color: var(--bbg-btn-text-on-primary, #fff);
   background: var(--brand);
 }
 .secondary-button {
@@ -81,7 +81,9 @@ button:disabled {
   margin: 0;
 }
 .state-panel.error {
-  border-color: var(--bbg-danger);
+  border-color: #e7c1bd;
+  background: #fff0ee;
+  color: #b34840;
 }
 .spinner {
   width: 22px;
@@ -398,7 +400,8 @@ button:disabled {
   height: 140px;
   object-fit: contain;
   border-radius: 8px;
-  background: #111;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
 }
 .media-audio {
   width: 100%;
@@ -434,7 +437,7 @@ button:disabled {
   display: grid;
   place-items: center;
   padding: 18px;
-  background: rgba(12, 20, 16, 0.58);
+  background: var(--bbg-surface-overlay, rgba(15, 23, 42, 0.6));
 }
 .product-modal {
   width: min(720px, 100%);
@@ -474,7 +477,7 @@ button:disabled {
   line-height: 1.5;
 }
 .form-error {
-  color: var(--bbg-danger);
+  color: var(--bbg-status-error, #b34840);
   font-size: 0.8rem;
 }
 .product-modal footer {
@@ -599,19 +602,21 @@ button:disabled {
 
   &.active {
     background: var(--brand);
-    color: #fff;
+    color: var(--bbg-btn-text-on-primary, #fff);
     border-color: var(--brand);
 
     .chip-count {
-      color: rgba(255, 255, 255, 0.85);
+      color: currentColor;
+      opacity: 0.85;
     }
 
     .chip-delete-btn {
-      color: rgba(255, 255, 255, 0.75);
+      color: currentColor;
+      opacity: 0.75;
 
       &:hover {
-        color: #fff;
-        background: rgba(0, 0, 0, 0.2);
+        color: currentColor;
+        background: rgba(0, 0, 0, 0.15);
       }
     }
   }
@@ -641,8 +646,8 @@ button:disabled {
   transition: all 0.12s ease;
 
   &:hover {
-    color: var(--bbg-danger);
-    background: var(--bbg-danger-soft);
+    color: var(--bbg-status-error, #b34840);
+    background: #fff0ee;
   }
 }
 .category-empty {
@@ -1128,11 +1133,11 @@ button:disabled {
   }
 
   &.btn-danger {
-    color: var(--bbg-danger);
+    color: var(--bbg-danger, #b91c1c);
 
     &:hover {
-      border-color: var(--bbg-danger);
-      background: var(--bbg-danger-soft);
+      border-color: color-mix(in srgb, var(--bbg-danger, #b91c1c) 35%, var(--border));
+      background: var(--bbg-danger-soft, #fee2e2);
     }
   }
 }
@@ -1293,5 +1298,16 @@ button:disabled {
     flex: 1;
     text-align: center;
     justify-content: center;
+  }
+}
+
+:host-context(html[data-theme='dark']),
+:host-context(body.dark-theme) {
+  .primary-button {
+    color: #000000;
+  }
+
+  .chip.active {
+    color: #000000;
   }
 }

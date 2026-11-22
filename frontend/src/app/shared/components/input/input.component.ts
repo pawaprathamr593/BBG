@@ -70,7 +70,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
         padding: 8px 12px;
         font-size: 0.875rem;
         color: var(--bbg-text-primary);
-        background: var(--bbg-surface-input);
+        background: var(--bbg-surface-card);
         border: 1px solid var(--bbg-border-default);
         border-radius: var(--bbg-radius-md);
         transition:

@@ -24,9 +24,9 @@ import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
         justify-content: center;
         gap: 9px;
         padding: 0 17px;
-        color: #000000;
-        background: var(--bbg-btn-accent-bg);
-        border: 1px solid var(--bbg-btn-accent-bg);
+        color: #17231b;
+        background: #f5d928;
+        border: 1px solid #e5ca17;
         border-radius: 999px;
         box-shadow: 0 8px 28px rgba(16, 42, 27, 0.24);
         font: inherit;
@@ -35,31 +35,22 @@ import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
         cursor: pointer;
         transition:
           transform 0.18s ease,
-          box-shadow 0.18s ease,
-          background-color 0.15s ease;
+          box-shadow 0.18s ease;
       }
       .filter-fab:hover {
-        background: var(--bbg-btn-accent-bg-hover);
-        color: #000000;
-        border-color: var(--bbg-btn-accent-bg-hover);
         transform: translateY(-2px);
         box-shadow: 0 12px 32px rgba(16, 42, 27, 0.3);
       }
-      .filter-fab:active {
-        background: var(--bbg-btn-accent-bg-active);
-        color: #000000;
-        border-color: var(--bbg-btn-accent-bg-active);
-      }
       .filter-fab:focus-visible,
       .drawer-footer button:focus-visible {
-        outline: 3px solid var(--bbg-focus-ring-colour);
+        outline: 3px solid color-mix(in srgb, #174d35 45%, transparent);
         outline-offset: 3px;
       }
       .filter-fab svg {
         width: 21px;
         height: 21px;
         fill: none;
-        stroke: #000000;
+        stroke: currentColor;
         stroke-width: 1.8;
         stroke-linecap: round;
         stroke-linejoin: round;
@@ -71,7 +62,7 @@ import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
         place-items: center;
         padding: 0 5px;
         color: #fff;
-        background: var(--bbg-brand-primary);
+        background: #174d35;
         border-radius: 999px;
         font-size: 0.68rem;
         font-weight: 850;
@@ -95,19 +86,9 @@ import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
       }
       .drawer-apply {
         flex: 1;
-        color: #000000;
-        background: var(--bbg-btn-accent-bg);
-        border: 1px solid var(--bbg-btn-accent-bg);
-      }
-      .drawer-apply:hover {
-        background: var(--bbg-btn-accent-bg-hover);
-        color: #000000;
-        border-color: var(--bbg-btn-accent-bg-hover);
-      }
-      .drawer-apply:active {
-        background: var(--bbg-btn-accent-bg-active);
-        color: #000000;
-        border-color: var(--bbg-btn-accent-bg-active);
+        color: #17231b;
+        background: #f5d928;
+        border: 1px solid #f5d928;
       }
       @media (max-width: 767.98px) {
         .filter-fab {

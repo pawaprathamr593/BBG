@@ -3,22 +3,22 @@
   width: 100%;
   height: 100%;
   box-sizing: border-box;
-  color: var(--text-primary, #172033);
+  color: var(--text-primary);
   font-family: inherit;
 }
 .auth-experience {
-  --auth-text: var(--bbg-text-primary, #172033);
-  --auth-muted: var(--bbg-text-secondary, #68758a);
-  --auth-border: var(--bbg-border-default, #dfe5ee);
-  --auth-control-bg: var(--bbg-surface-card, #fff);
-  --auth-input-bg: var(--bbg-surface-page, #fff);
-  --auth-soft-bg: var(--bbg-surface-subtle, #f8faff);
-  --auth-soft-hover: var(--bbg-border-default, #f0f5fd);
+  --auth-text: var(--bbg-text-primary, var(--text-primary));
+  --auth-muted: var(--bbg-text-secondary, var(--text-secondary));
+  --auth-border: var(--bbg-border-default, var(--border, #e3e8e4));
+  --auth-control-bg: var(--bbg-surface-card, var(--surface-card));
+  --auth-input-bg: var(--bbg-surface-input, var(--surface-subtle));
+  --auth-soft-bg: var(--bbg-surface-subtle, var(--surface-subtle));
+  --auth-soft-hover: var(--bbg-surface-hover, var(--surface-subtle));
   --auth-link: var(--bbg-brand-primary, #174d35);
   --auth-focus: var(--bbg-brand-primary, #174d35);
   --auth-focus-ring: rgba(23, 77, 53, 0.15);
   --auth-primary: var(--bbg-brand-primary, #174d35);
-  --auth-primary-hover: var(--bbg-brand-dark, #123f2c);
+  --auth-primary-hover: var(--bbg-brand-primary-hover, #123f2c);
   --auth-warning-bg: #fff9e9;
   --auth-warning-border: #f0dfb7;
   --auth-warning-text: #79551a;
@@ -29,11 +29,16 @@
   box-sizing: border-box;
   width: 100%;
   padding: 30px;
-  background: var(--auth-surface, var(--bbg-surface-card, #fff));
+  background: var(--auth-surface, var(--bbg-surface-card, var(--surface-card)));
   border-radius: 20px;
-  color: var(--auth-text, var(--bbg-text-primary, #172033));
+  color: var(--auth-text, var(--bbg-text-primary, var(--text-primary)));
 }
 :host-context(html[data-theme='dark']) .auth-experience {
+  --auth-control-bg: var(--bbg-surface-card, #242e27);
+  --auth-input-bg: var(--bbg-surface-input, #202923);
+  --auth-soft-bg: var(--bbg-surface-subtle, #202923);
+  --auth-soft-hover: var(--bbg-surface-hover, #2a382e);
+  --auth-border: var(--bbg-border-default, #354139);
   --auth-warning-bg: #3a2e17;
   --auth-warning-border: #66502a;
   --auth-warning-text: #f4d99a;
@@ -42,6 +47,10 @@
   --auth-error-border: #6d3838;
   --auth-error-text: #ffb4ad;
   --auth-focus-ring: rgba(245, 217, 40, 0.18);
+
+  .submit-button {
+    color: #000000;
+  }
 }
 .auth-page-mode {
   max-width: 480px;
@@ -76,14 +85,14 @@
 }
 .eyebrow {
   margin: 0 0 8px;
-  color: var(--auth-muted, var(--text-muted, #54709a));
+  color: var(--auth-muted, var(--text-muted));
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.16em;
 }
 .auth-heading h1 {
   margin: 0;
-  color: var(--auth-text, var(--text-primary, #14233b));
+  color: var(--auth-text, var(--text-primary));
   font-size: 25px;
   line-height: 1.2;
   font-weight: 750;
@@ -92,7 +101,7 @@
 .intro {
   margin: 10px auto 0;
   max-width: 330px;
-  color: var(--auth-muted, var(--text-secondary, #68758a));
+  color: var(--auth-muted, var(--text-secondary));
   font-size: 13px;
   line-height: 1.55;
 }
@@ -137,10 +146,10 @@
   justify-content: center;
   gap: 9px;
   min-height: 44px;
-  border: 1px solid var(--auth-border, var(--border, #dfe5ee));
+  border: 1px solid var(--auth-border, var(--border, #e3e8e4));
   border-radius: 11px;
-  background: var(--auth-control-bg, var(--surface-card, #fff));
-  color: var(--auth-text, var(--text-primary, #27364d));
+  background: var(--auth-control-bg, var(--surface-card));
+  color: var(--auth-text, var(--text-primary));
   font-size: 13px;
   font-weight: 650;
   cursor: pointer;
@@ -150,8 +159,8 @@
     transform 0.18s;
 }
 .social-button:hover:not(:disabled) {
-  border-color: var(--auth-border-hover, #9fb5d3);
-  background: var(--auth-soft-bg, var(--surface-subtle, #f8faff));
+  border-color: var(--auth-border-hover, var(--border-strong, #354139));
+  background: var(--auth-soft-bg, var(--surface-subtle));
   transform: translateY(-1px);
 }
 .social-button:disabled {
@@ -166,7 +175,7 @@
 .muted-notice,
 .provider-footnote {
   margin: 10px 0 0;
-  color: var(--auth-muted, var(--text-muted, #758197));
+  color: var(--auth-muted, var(--text-muted));
   font-size: 11px;
   line-height: 1.45;
 }
@@ -178,7 +187,7 @@
   align-items: center;
   gap: 12px;
   margin: 21px 0 13px;
-  color: var(--auth-muted, var(--text-muted, #a0aaba));
+  color: var(--auth-muted, var(--text-muted));
   font-size: 10px;
   font-weight: 750;
   letter-spacing: 0.12em;
@@ -188,7 +197,7 @@
   content: '';
   height: 1px;
   flex: 1;
-  background: var(--auth-border, var(--border, #e9edf3));
+  background: var(--auth-border, var(--border, #e3e8e4));
 }
 .email-entry {
   display: flex;
@@ -196,18 +205,18 @@
   justify-content: space-between;
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid var(--auth-border, var(--border, #dce4ef));
+  border: 1px solid var(--auth-border, var(--border, #e3e8e4));
   border-radius: 11px;
-  background: var(--auth-soft-bg, var(--surface-subtle, #f8faff));
-  color: var(--auth-link, var(--brand-strong, #234a80));
+  background: var(--auth-soft-bg, var(--surface-subtle));
+  color: var(--auth-link, var(--brand-strong));
   font-size: 13px;
   font-weight: 700;
   text-align: left;
   cursor: pointer;
 }
 .email-entry:hover {
-  background: var(--auth-soft-hover, var(--surface-subtle, #f0f5fd));
-  border-color: var(--auth-border-hover, #b8c9e0);
+  background: var(--auth-soft-hover, var(--surface-subtle));
+  border-color: var(--auth-border-hover, var(--border-strong, #354139));
 }
 .email-entry span {
   font-size: 18px;
@@ -219,7 +228,7 @@
 }
 .auth-experience label {
   margin-top: 4px;
-  color: var(--auth-text, var(--text-primary, #34435a));
+  color: var(--auth-text, var(--text-primary));
   font-size: 11px;
   font-weight: 700;
 }
@@ -229,17 +238,17 @@
   min-width: 0;
   height: 43px;
   padding: 0 12px;
-  border: 1px solid var(--auth-border, var(--border, #dce3ed));
+  border: 1px solid var(--auth-border, var(--border, #e3e8e4));
   border-radius: 9px;
   outline: none;
-  background: var(--auth-input-bg, var(--surface-page, #fff));
-  color: var(--auth-text, var(--text-primary, #172033));
+  background: var(--auth-input-bg, var(--surface-subtle));
+  color: var(--auth-text, var(--text-primary));
   font: inherit;
   font-size: 13px;
 }
 .auth-experience input:focus {
-  border-color: var(--auth-focus, var(--brand, #4d79b8));
-  box-shadow: 0 0 0 3px var(--auth-focus-ring, rgba(57, 105, 174, 0.11));
+  border-color: var(--auth-focus, var(--brand));
+  box-shadow: 0 0 0 3px var(--auth-focus-ring, rgba(23, 77, 53, 0.15));
 }
 .contact-fields {
   display: grid;
@@ -252,7 +261,7 @@
 }
 .field-hint {
   margin: 0;
-  color: var(--auth-muted, var(--text-muted, #7b8798));
+  color: var(--auth-muted, var(--text-muted));
   font-size: 10px;
 }
 .password-field {
@@ -268,7 +277,7 @@
   transform: translateY(-50%);
   border: 0;
   background: none;
-  color: var(--auth-link, var(--brand-strong, #315f9e));
+  color: var(--auth-link, var(--brand));
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -278,7 +287,7 @@
   padding: 2px 0;
   border: 0;
   background: none;
-  color: var(--auth-link, var(--brand-strong, #315f9e));
+  color: var(--auth-link, var(--brand));
   font-size: 11px;
   font-weight: 650;
   cursor: pointer;
@@ -288,14 +297,14 @@
   margin-top: 7px;
   border: 0;
   border-radius: 10px;
-  background: var(--auth-primary, var(--brand-strong, #174a8b));
+  background: var(--auth-primary, var(--brand));
   color: #fff;
   font-size: 13px;
   font-weight: 750;
   cursor: pointer;
 }
 .submit-button:hover:not(:disabled) {
-  background: var(--auth-primary-hover, #103c73);
+  background: var(--auth-primary-hover, var(--brand-strong));
 }
 .submit-button:disabled {
   opacity: 0.6;
@@ -314,14 +323,14 @@
 .mode-switch {
   margin: 19px 0 0;
   text-align: center;
-  color: var(--auth-muted, var(--text-secondary, #68758a));
+  color: var(--auth-muted, var(--text-secondary));
   font-size: 12px;
 }
 .mode-switch button {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--auth-link, var(--brand-strong, #1e579b));
+  color: var(--auth-link, var(--brand));
   font: inherit;
   font-weight: 750;
   cursor: pointer;
@@ -329,7 +338,7 @@
 .security-note {
   margin: 15px 0 0;
   text-align: center;
-  color: var(--auth-muted, var(--text-muted, #96a1b0));
+  color: var(--auth-muted, var(--text-muted));
   font-size: 10px;
 }
 .security-note span {
@@ -346,15 +355,15 @@
   gap: 8px;
   margin: 0 30px 18px 0;
   padding: 4px 0 12px;
-  border-bottom: 1px solid var(--auth-border, var(--border, #dfe5ee));
-  color: var(--auth-text, var(--text-primary, #172033));
+  border-bottom: 1px solid var(--auth-border, var(--border, #e3e8e4));
+  color: var(--auth-text, var(--text-primary));
   font-size: 13px;
 }
 .popup-compact-heading button {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--auth-link, var(--brand-strong, #315f9e));
+  color: var(--auth-link, var(--brand));
   font: inherit;
   font-size: 11px;
   font-weight: 750;

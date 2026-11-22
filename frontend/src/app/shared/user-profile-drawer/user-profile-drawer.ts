@@ -203,10 +203,9 @@ import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
       .drawer-error {
         margin: 4px 0;
         padding: 10px 12px;
-        border: 1px solid var(--bbg-danger);
-        background: var(--bbg-danger-soft);
+        border: 1px solid #d88a83;
         border-radius: 8px;
-        color: var(--bbg-danger);
+        color: var(--text-primary);
         font-size: 0.72rem;
       }
       .retry-button {
@@ -235,10 +234,10 @@ import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
         align-items: center;
         justify-content: center;
         gap: 9px;
-        border: 1px solid var(--bbg-danger);
+        border: 1px solid #d98a83;
         border-radius: 10px;
         background: transparent;
-        color: var(--bbg-danger);
+        color: #c34f47;
         font: inherit;
         font-size: 0.82rem;
         font-weight: 800;

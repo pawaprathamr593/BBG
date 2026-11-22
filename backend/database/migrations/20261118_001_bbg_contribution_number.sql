@@ -1,4 +1,4 @@
--- BBG Contribution Number (BCN) generation.
+-- Bavdhan Contribution Number (BCN) generation.
 -- Additive migration. Back up and inspect the target schema before applying.
 -- Existing approved subscriptions are intentionally not backfilled; BCN is issued
 -- when an approval occurs after this migration has been applied.
