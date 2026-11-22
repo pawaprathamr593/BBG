@@ -21,7 +21,7 @@ BBG currently has inconsistent colour usage across global theme tokens and UI co
 
 Individual screens and components may also contain hardcoded or locally defined colours. This creates visual drift between marketplace, storefront, authentication, onboarding, workspace, shared components, and overlays.
 
-The objective is to establish one authoritative semantic token system and audit and align every frontend UI screen and component with it. This is a repository-wide visual consistency change, not a dashboard-only recolour.
+The objective is to establish one authoritative semantic token system and audit and align every frontend UI screen and component with it. This is a repository-wide visual consistency change, not a dashboard-only recolour. Forest Charcoal is the exclusive Dark Mode surface identity; the former Dark Navy palette must be removed wherever it is used.
 
 ## 2. Personas
 
@@ -87,12 +87,12 @@ The objective is to establish one authoritative semantic token system and audit 
 | --- | --- | --- |
 | Global theme and token layer | Single source of truth for brand, surface, text, border, focus, status, overlay and shadow colours | Existing `src/styles.scss` token architecture and ThemeService |
 | Public marketplace | Consistent branding across landing, discovery, listing, detail and promotional screens | Existing marketplace components and shared tokens |
-| Business storefront | Consistent storefront surfaces, navigation, product/promotion cards and calls to action | Existing storefront shell and components |
+| Business storefront | Every storefront route and screen, including storefront landing/overview, navigation, product/promotion cards, detail surfaces, forms and calls to action | Existing storefront shell and components |
 | Authentication | Consistent login, registration, popup, validation and social-auth presentation | Existing shared auth components |
 | Business onboarding | Consistent steps, forms, progress, document/status presentation and dialogs | Existing onboarding components |
 | Personal / account | Consistent profile, preferences, theme selector and account drawers | Existing profile and account components |
-| Business workspace | Consistent dashboard, catalogue, records, team, customer, order, enquiry, payment, promotion, subscription and analytics screens that exist on the current branch | Existing workspace shell, shared tables/cards/drawers and feature patterns |
-| Platform administration | Consistent admin dashboards, management screens, tables, forms, review queues and status actions that exist on the current branch | Existing platform components and shared patterns |
+| Business workspace | Consistent workspace overview/dashboard and every existing catalogue, records, team, customer, order, enquiry, payment, promotion, subscription and analytics screen | Existing workspace shell, shared tables/cards/drawers and feature patterns |
+| Platform administration | Every platform administration landing/overview screen, admin dashboard, management screen, table, form, review queue and status action that exists on the current branch | Existing platform components and shared patterns |
 | Shared UI primitives | Consistent interactive and informational components across every host | Reuse first; consolidate only where appropriate |
 | Data visualisations | Readable chart series, legends, axes, tooltips and empty states in both themes | Existing chart implementation and semantic tokens |
 
@@ -175,27 +175,35 @@ Do not globally recolour every green element. Normal text, semantic success/stat
 | `--bbg-border-focus` | `#06402B` |
 | `--bbg-focus-ring-colour` | `#10B981` |
 
-### 9.3 Dark Mode palette
+### 9.3 Dark Mode palette — Forest Charcoal (exclusive)
 
-| Semantic token | Exact value |
-| --- | --- |
-| `--bbg-surface-page` | `#09130F` |
-| `--bbg-surface-sidebar` | `#0D1B14` |
-| `--bbg-surface-card` | `#14251C` |
-| `--bbg-surface-elevated` | `#1B3024` |
-| `--bbg-surface-hover` | `#243D2F` |
-| `--bbg-surface-selected` | `#193D2C` |
-| `--bbg-surface-input` | `#0D1B14` |
-| `--bbg-text-primary` | `#F3F7F4` |
-| `--bbg-text-secondary` | `#B0BDB5` |
-| `--bbg-text-muted` | `#829188` |
-| `--bbg-text-disabled` | `#64736A` |
-| `--bbg-border-default` | `#293C30` |
-| `--bbg-border-strong` | `#3A5142` |
-| `--bbg-border-focus` | `#10B981` |
-| `--bbg-focus-ring-colour` | `#10B981` |
+**Forest Charcoal is the only approved Dark Mode surface identity for BBG.** Replace the former Dark Navy palette wherever it appears in the frontend, including global tokens, component styles, screen-specific overrides, tables, forms, navigation, storefronts, workspace screens, platform administration, overlays and shared UI. Do not retain Dark Navy as an alternative, fallback, secondary palette or route-specific theme.
 
-Dark Mode must use layered evergreen surfaces. Keep the hierarchy: application page → sidebar/input → card → elevated menu/dialog → hover/selected state. Do not flatten every element to one background colour.
+| Visual layer / semantic token | Exact value | Usage |
+| --- | --- | --- |
+| `--bbg-surface-page` | `#171D19` | Main application canvas / page background |
+| `--bbg-surface-sidebar` | `#171D19` | Sidebar and navigation shell background |
+| `--bbg-surface-card` | `#242E27` | Primary cards, table wrappers and main containers |
+| `--bbg-surface-elevated` | `#242E27` | Drawers, modals and elevated panels |
+| `--bbg-surface-subtle` | `#202923` | Insets, inputs, table headers, sub-cards and grouped fields |
+| `--bbg-surface-hover` | `#2B352E` | Hover treatment derived from the Forest Charcoal family; verify against actual component states and contrast |
+| `--bbg-surface-selected` | `rgba(245, 217, 40, 0.15)` | Selected/active surface where the selection is brand-related |
+| `--bbg-surface-input` | `#202923` | Inputs, selects and textareas |
+| `--bbg-text-primary` | `#FFFFFF` | Main text and headings |
+| `--bbg-text-secondary` | `#C0C8C2` | Supporting text, labels and descriptions |
+| `--bbg-text-muted` | `#A0A0A0` | Metadata and muted content; verify contrast for each use |
+| `--bbg-text-disabled` | Existing accessible disabled token | Disabled controls; do not invent a replacement without checking current usage |
+| `--bbg-border-default` | `#354139` | Default card, table and control borders |
+| `--bbg-border-strong` | `#46534A` | Strong separators and emphasized outlines; verify contrast in context |
+| `--bbg-border-subtle` | `#29332C` | Subtle dividers |
+| `--bbg-border-focus` | `#F5D928` | Focus border where the existing focus treatment uses the brand accent |
+| `--bbg-focus-ring-colour` | `rgba(245, 217, 40, 0.35)` | Visible keyboard focus ring |
+| `--bbg-surface-overlay` | `rgba(0, 0, 0, 0.75)` | Modal/drawer backdrop |
+
+Use a consistent layered Forest Charcoal hierarchy: page/canvas (`#171D19`) → primary card/elevated panel (`#242E27`) → inset/input (`#202923`). Keep appropriate separation through borders, shadows and spacing. Do not mix in navy surfaces such as `#0B1120`, `#131C31`, `#1E293B`, or other blue/slate-tinted Dark Navy values. If a current component has a distinct surface that cannot be mapped safely to these layers, document it and propose a Forest Charcoal-derived semantic token rather than retaining a navy value.
+
+The exact hover/selected/strong-border values above are theme-specific supporting tokens. Check them against actual UI usage and WCAG contrast; do not apply them indiscriminately to text or status indicators. Existing brand action and semantic status rules in Sections 9.1, 9.1.1, 9.4, 9.5 and 9.6 remain authoritative.
+
 
 ### 9.4 Semantic status palette
 
@@ -301,7 +309,7 @@ The inventory must include all route components discovered from the current rout
 2. Given the current frontend shared and feature component directories, when the audit is completed, then every reusable component, dialog, drawer, popover and component stylesheet is accounted for.
 3. Given the approved brand palette, when either theme is active, then primary brand green is `#06402B`, emerald highlight is `#10B981`, and accent yellow is `#FBBF24`.
 3a. Given semantic brand-green text is displayed, when Dark Mode is active, then that brand text maps to `#FBBF24`; normal text and semantic status colours remain unchanged.
-4. Given Dark Mode is active, when any page or component renders, then it uses the approved layered dark surface palette and does not revert to unrelated blue/grey/charcoal palettes.
+4. Given Dark Mode is active, when any page or component renders, then it uses the exclusive Forest Charcoal surface identity (`#171D19` page, `#242E27` card/elevated, `#202923` inset/input) and does not render Dark Navy or blue/slate-tinted surface values. This must be verified across every route and component, including Platform Administration, Workspace Overview and all Storefront screens.
 5. Given Light Mode is active, when any page or component renders, then it uses the approved clean neutral palette.
 6. Given a button has a yellow background, when it is rendered in default, hover, active, focus-visible or disabled state, then its text and icons are black (`#000000`).
 7. Given a shared component is used by multiple screens, when its tokens are updated, then all hosts receive consistent theme behaviour without duplicating local colour overrides.
@@ -339,3 +347,11 @@ The inventory must include all route components discovered from the current rout
   - Yellow-background buttons continue to use black text and icons in all states and themes.
 - The existing theme implementation, layouts, component structure and functionality are not to be rebuilt or redesigned.
 - Status of the newly approved palette refinement: **pending implementation and verification**.
+
+- Additional approved Dark Mode identity decision:
+  - Forest Charcoal is the exclusive Dark Mode surface identity across the entire frontend.
+  - Replace the former Dark Navy surface palette wherever it is used; do not retain it as a fallback, alternate theme, route-level override or component-local palette.
+  - Canonical Forest Charcoal surfaces: page/sidebar `#171D19`, card/elevated `#242E27`, inset/input `#202923`, default border `#354139`, primary text `#FFFFFF`, secondary text `#C0C8C2`, muted text `#A0A0A0`.
+  - Audit every UI screen in both themes, with explicit visual verification of Platform Administration, Workspace Overview, Business Workspace modules, and every Storefront route/screen. Include route-backed screens, lazy-loaded screens, overlays and shared components; do not mark a context complete based on its landing page alone.
+  - Search for and remove Dark Navy values including `#0B1120`, `#131C31`, `#1E293B` and other identified navy/slate surface overrides. Distinguish legitimate status/chart colours from surface palette values.
+  - Status of this Dark Navy-to-Forest-Charcoal replacement: **pending frontend implementation and visual verification**.
