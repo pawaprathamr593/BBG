@@ -21,33 +21,39 @@
 
   /* Surface Tokens (Light) */
   --bbg-surface-page: #f8fafc;
+  --bbg-surface-sidebar: #ffffff;
   --bbg-surface-header: rgba(255, 255, 255, 0.96);
   --bbg-surface-card: #ffffff;
   --bbg-surface-subtle: #f1f5f9;
   --bbg-surface-elevated: #ffffff;
   --bbg-surface-input: #ffffff;
   --bbg-surface-hover: #f1f5f9;
+  --bbg-surface-active: #e8f1eb;
   --bbg-surface-selected: #e8f1eb;
   --bbg-surface-overlay: rgba(15, 23, 42, 0.6);
 
   --surface-page: #ffffff;
+  --surface-sidebar: #ffffff;
   --surface-header: var(--bbg-surface-header);
   --surface-card: var(--bbg-surface-card);
   --surface-subtle: var(--bbg-surface-subtle);
   --surface-elevated: var(--bbg-surface-elevated);
   --surface-input: var(--bbg-surface-input);
   --surface-hover: var(--bbg-surface-hover);
+  --surface-active: var(--bbg-surface-active);
   --surface-selected: var(--bbg-surface-selected);
 
   /* Text & Typography Tokens (Light) */
   --bbg-text-primary: #0f172a;
   --bbg-text-secondary: #475569;
   --bbg-text-muted: #64748b;
+  --bbg-text-disabled: #94a3b8;
   --bbg-text-inverse: #ffffff;
 
   --text-primary: #171d19;
   --text-secondary: #626b65;
   --text-muted: #7a847e;
+  --text-disabled: #94a3b8;
 
   /* Border Tokens */
   --bbg-border-default: #e2e8f0;
@@ -55,6 +61,8 @@
   --bbg-border-strong: #cbd5e1;
   --bbg-border-focus: #174d35;
   --border: #e3e8e4;
+  --border-subtle: #f1f5f9;
+  --border-strong: #cbd5e1;
 
   /* Status & Semantic Tokens */
   --bbg-success: #15803d;
@@ -83,6 +91,12 @@
   /* Focus Ring */
   --bbg-focus-ring: 0 0 0 3px rgba(23, 77, 53, 0.25);
 
+  /* WhatsApp Button Tokens (Light: Darker shade of green #075E54 with white text) */
+  --bbg-whatsapp-bg: #075e54;
+  --bbg-whatsapp-bg-hover: #054c44;
+  --bbg-whatsapp-border: #075e54;
+  --bbg-whatsapp-text: #ffffff;
+
   font-family:
     Inter,
     ui-sans-serif,
@@ -101,62 +115,99 @@
 body.dark-theme {
   color-scheme: dark;
 
-  /* Brand Tokens (Dark) */
-  --bbg-brand-primary: #f5d928;
-  --bbg-brand-primary-hover: #f7e04f;
-  --bbg-brand-primary-soft: rgba(245, 217, 40, 0.15);
-  --bbg-brand-accent: #f5d928;
-  --bbg-brand-accent-hover: #f7e04f;
-  --bbg-brand-accent-soft: rgba(245, 217, 40, 0.15);
+  /* Brand Tokens (Dark - Green and its shades change to Yellow and its shades) */
+  --bbg-brand-primary: #f5d927;
+  --bbg-brand-primary-hover: #eac816;
+  --bbg-brand-primary-active: #d4af12;
+  --bbg-brand-primary-soft: rgba(245, 217, 39, 0.15);
+  --bbg-brand-highlight: #f5d927;
+  --bbg-brand-soft: rgba(245, 217, 39, 0.15);
+  --bbg-brand-tint: rgba(245, 217, 39, 0.08);
 
-  --brand: #f5d928;
-  --brand-strong: #f5d928;
-  --brand-soft: #34351e;
-  --accent: #f5d928;
+  --bbg-brand-accent: #f5d927;
+  --bbg-brand-accent-hover: #eac816;
+  --bbg-brand-accent-active: #d4af12;
+  --bbg-brand-accent-soft: rgba(245, 217, 39, 0.15);
 
-  /* Surface Tokens (Dark - Canonical Forest Charcoal) */
-  --bbg-surface-page: #171d19;
-  --bbg-surface-header: rgba(23, 29, 25, 0.96);
-  --bbg-surface-card: #242e27;
-  --bbg-surface-subtle: #202923;
-  --bbg-surface-elevated: #242e27;
-  --bbg-surface-input: #202923;
-  --bbg-surface-hover: #2a382e;
-  --bbg-surface-selected: #2d3d32;
-  --bbg-surface-overlay: rgba(0, 0, 0, 0.75);
+  --brand: var(--bbg-brand-primary);
+  --brand-strong: var(--bbg-brand-primary-hover);
+  --brand-soft: var(--bbg-brand-primary-soft);
+  --brand-highlight: var(--bbg-brand-highlight);
+  --accent: var(--bbg-brand-accent);
 
-  --surface-page: #171d19;
-  --surface-header: rgba(23, 29, 25, 0.96);
-  --surface-card: #242e27;
-  --surface-subtle: #202923;
-  --surface-elevated: #242e27;
-  --surface-input: #202923;
-  --surface-hover: #2a382e;
-  --surface-selected: #2d3d32;
+  /* Surface Tokens (Dark - Pure Black Palette) */
+  --bbg-surface-page: #000000;
+  --bbg-surface-sidebar: #0a0a0a;
+  --bbg-surface-header: rgba(10, 10, 10, 0.96);
+  --bbg-surface-card: #141414;
+  --bbg-surface-subtle: #111111;
+  --bbg-surface-elevated: #141414;
+  --bbg-surface-input: #111111;
+  --bbg-surface-hover: #1a1a1a;
+  --bbg-surface-active: #202020;
+  --bbg-surface-selected: #202020;
+  --bbg-surface-overlay: rgba(0, 0, 0, 0.85);
+
+  --surface-page: #000000;
+  --surface-sidebar: #0a0a0a;
+  --surface-header: rgba(10, 10, 10, 0.96);
+  --surface-card: #141414;
+  --surface-subtle: #111111;
+  --surface-elevated: #141414;
+  --surface-input: #111111;
+  --surface-hover: #1a1a1a;
+  --surface-active: #202020;
+  --surface-selected: #202020;
 
   /* Text & Typography Tokens (Dark) */
   --bbg-text-primary: #ffffff;
-  --bbg-text-secondary: #c0c8c2;
-  --bbg-text-muted: #a0a0a0;
-  --bbg-text-inverse: #171d19;
+  --bbg-text-secondary: #a3a3a3;
+  --bbg-text-muted: #737373;
+  --bbg-text-disabled: #525252;
+  --bbg-text-inverse: #000000;
 
   --text-primary: #ffffff;
-  --text-secondary: #c0c8c2;
-  --text-muted: #a0a0a0;
+  --text-secondary: #a3a3a3;
+  --text-muted: #737373;
+  --text-disabled: #525252;
 
   /* Border Tokens (Dark) */
-  --bbg-border-default: #354139;
-  --bbg-border-subtle: #26332a;
-  --bbg-border-strong: #445449;
-  --bbg-border-focus: #f5d928;
-  --border: #354139;
+  --bbg-border-default: #292929;
+  --bbg-border-subtle: #202020;
+  --bbg-border-strong: #3a3a3a;
+  --bbg-border-focus: #f5d927;
+  --border: #292929;
+  --border-subtle: #202020;
+  --border-strong: #3a3a3a;
 
-  /* Focus Ring */
-  --bbg-focus-ring: 0 0 0 3px rgba(245, 217, 40, 0.35);
+  /* Status & Semantic Tokens (Dark - Green shifts to Yellow) */
+  --bbg-success: #f5d927;
+  --bbg-success-soft: rgba(245, 217, 39, 0.15);
+  --bbg-warning: #f5d927;
+  --bbg-warning-soft: rgba(245, 217, 39, 0.15);
+  --bbg-danger: #ef4444;
+  --bbg-danger-soft: rgba(239, 68, 68, 0.15);
+  --bbg-info: #3b82f6;
+  --bbg-info-soft: rgba(59, 130, 246, 0.15);
 
-  /* Button Text Tokens (Dark: Primary is yellow, text must be black) */
+  /* Shadows (Dark) */
+  --bbg-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.6);
+  --bbg-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.7), 0 2px 4px -2px rgba(0, 0, 0, 0.6);
+  --bbg-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.8), 0 4px 6px -4px rgba(0, 0, 0, 0.7);
+  --bbg-shadow-drawer: -4px 0 24px rgba(0, 0, 0, 0.85);
+
+  /* Focus Ring (Yellow) */
+  --bbg-focus-ring: 0 0 0 3px rgba(245, 217, 39, 0.35);
+
+  /* Button Text Tokens (All yellow buttons must have black text) */
   --bbg-btn-text-on-primary: #000000;
   --bbg-btn-text-on-accent: #000000;
+
+  /* WhatsApp Button Tokens (Dark: Lighter shade of green #25D366 with black text) */
+  --bbg-whatsapp-bg: #25d366;
+  --bbg-whatsapp-bg-hover: #1ebe5d;
+  --bbg-whatsapp-border: #25d366;
+  --bbg-whatsapp-text: #000000;
 }
 
 * {
@@ -181,17 +232,29 @@ textarea,
 select {
   font: inherit;
 }
+
+input,
+textarea,
+select {
+  color: var(--bbg-text-primary, var(--text-primary));
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--bbg-text-muted, #7a847e);
+  opacity: 0.85;
+}
 button,
 a {
   -webkit-tap-highlight-color: transparent;
 }
 :focus-visible {
-  outline: 3px solid rgba(245, 217, 40, 0.75);
+  outline: 3px solid rgba(245, 217, 39, 0.75);
   outline-offset: 3px;
 }
 ::selection {
-  color: #171d19;
-  background: #f5d928;
+  color: #000000;
+  background: var(--bbg-brand-accent, #f5d927);
 }
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -208,18 +271,26 @@ a {
 
 /* ==========================================================================
    BUTTON THEME RULES:
-   When buttons are yellow, text and icons must always be black (#000000)
+   When buttons are yellow, text and icons must always be black (#000000).
    ========================================================================== */
 .btn-accent,
 .btn-yellow,
 .accent-button,
+.plan-badge,
+.register-link,
+.badge-featured,
+.featured-badge,
+.filter-fab,
+.drawer-apply,
 [class*='btn-accent'],
 button.btn-accent,
 .business-register-button,
 .entrepreneur-register-button {
   color: #000000 !important;
 
-  svg, span, i {
+  > svg:not(.emoji),
+  > i:not(.emoji),
+  .action-text {
     color: #000000;
     fill: currentColor;
   }
@@ -231,14 +302,137 @@ body.dark-theme {
   .primary-button,
   .edit-btn.primary,
   button.primary,
+  button.btn-primary,
+  button.action-btn-primary,
   button.btn-publish:not(.published),
   button.save-btn,
-  .btn-publish:not(.published) {
+  .btn-publish:not(.published),
+  .btn-action-primary:not(.btn-danger),
+  .card-action-btn:not(.danger),
+  .btn-enquiry-primary,
+  .btn-return,
+  .btn-write-review,
+  .btn-submit,
+  .btn-write-review-empty {
     color: #000000 !important;
 
-    svg, span, i {
+    > svg:not(.emoji),
+    > i:not(.emoji),
+    .action-text {
       color: #000000;
       fill: currentColor;
     }
   }
+
+  /* Ensure all inputs and textareas have dark backgrounds and crisp white text */
+  input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='image']),
+  textarea,
+  select,
+  .form-input,
+  .form-textarea,
+  .bbg-input,
+  .search-field,
+  .auth-experience input {
+    background-color: var(--bbg-surface-input, #111111) !important;
+    color: #ffffff !important;
+    border-color: var(--bbg-border-default, #292929);
+    caret-color: #f5d927;
+
+    &::placeholder {
+      color: #888888 !important;
+      opacity: 0.9;
+    }
+
+    &:focus,
+    &:focus-visible {
+      background-color: var(--bbg-surface-input, #111111) !important;
+      color: #ffffff !important;
+      border-color: var(--bbg-brand-accent, #f5d927) !important;
+      outline: none;
+    }
+  }
+
+  /* Browser Autofill in Dark Mode */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill,
+  select:-webkit-autofill:hover,
+  select:-webkit-autofill:focus {
+    -webkit-text-fill-color: #ffffff !important;
+    -webkit-box-shadow: 0 0 0px 1000px #111111 inset !important;
+    box-shadow: 0 0 0px 1000px #111111 inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+    caret-color: #ffffff;
+  }
 }
+
+/* ==========================================================================
+   WhatsApp Button Rule
+   Light Mode = Darker shade of green (#075E54) with white text & icon
+   Dark Mode = Lighter shade of green (#25D366) with black text & icon
+   ========================================================================== */
+.btn-whatsapp-action,
+.btn-action-whatsapp,
+a.btn-whatsapp-action,
+button.btn-action-whatsapp {
+  background: var(--bbg-whatsapp-bg, #075e54);
+  color: var(--bbg-whatsapp-text, #ffffff) !important;
+  border-color: var(--bbg-whatsapp-border, #075e54);
+
+  svg,
+  .whatsapp-svg,
+  .action-svg {
+    fill: currentColor !important;
+    color: currentColor !important;
+  }
+
+  &:hover:not(:disabled):not(.disabled) {
+    background: var(--bbg-whatsapp-bg-hover, #054c44);
+    border-color: var(--bbg-whatsapp-border, #054c44);
+  }
+}
+
+:root[data-theme='dark'],
+body.dark-theme {
+  .btn-whatsapp-action,
+  .btn-action-whatsapp,
+  a.btn-whatsapp-action,
+  button.btn-action-whatsapp {
+    background: var(--bbg-whatsapp-bg, #25d366) !important;
+    color: var(--bbg-whatsapp-text, #000000) !important;
+    border-color: var(--bbg-whatsapp-border, #25d366) !important;
+
+    svg,
+    .whatsapp-svg,
+    .action-svg {
+      fill: #000000 !important;
+      color: #000000 !important;
+    }
+
+    &:hover:not(:disabled):not(.disabled) {
+      background: var(--bbg-whatsapp-bg-hover, #1ebe5d) !important;
+      border-color: var(--bbg-whatsapp-border, #1ebe5d) !important;
+    }
+  }
+}
+
+/* ==========================================================================
+   Marketplace & Storefront Footer Consistency:
+   Maintains consistent dark surface identity across Light and Dark mode
+   ========================================================================== */
+.site-footer {
+  background: #0a0a0a !important;
+  color: #ffffff !important;
+  border-top: 1px solid #202020 !important;
+}
+
+.store-footer {
+  background: #000000 !important;
+  color: #c4cbc6 !important;
+  border-top: 1px solid #202020 !important;
+}
+

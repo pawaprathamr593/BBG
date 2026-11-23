@@ -12,6 +12,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   MarketplaceApiService,
   MarketplaceProductDetail,
+  MarketplaceMedia,
 } from '../../core/marketplace/marketplace-api.service';
 import { StorefrontContextService } from './storefront-context.service';
 import { StorefrontSeoService } from './storefront-seo.service';
@@ -37,9 +38,61 @@ export class StorefrontProductDetail implements OnInit {
   private readonly whatsApp = inject(WhatsAppService);
 
   readonly detail = signal<MarketplaceProductDetail | null>(null);
+  readonly selectedMedia = signal<MarketplaceMedia | null>(null);
   readonly loading = signal(true);
   readonly error = signal('');
   readonly slug = this.route.parent?.snapshot.paramMap.get('businessSlug') || '';
+
+  readonly activeMedia = computed<MarketplaceMedia | null>(() => {
+    const current = this.selectedMedia();
+    if (current) return current;
+    const list = this.detail()?.product?.media;
+    if (!list?.length) return null;
+    return (
+      list.find((m) => m.url && m.media_type === 'IMAGE' && m.is_primary) ||
+      list.find((m) => m.url && m.media_type === 'IMAGE') ||
+      list[0]
+    );
+  });
+
+  // Blinkit-style hover zoom state
+  readonly isHoverZooming = signal(false);
+  readonly zoomPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+  readonly lensPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+  readonly lensSize = signal<{ w: number; h: number }>({ w: 120, h: 120 });
+
+  onImageHover(event: MouseEvent): void {
+    if (this.activeMedia()?.media_type !== 'IMAGE') {
+      this.isHoverZooming.set(false);
+      return;
+    }
+
+    const target = event.currentTarget as HTMLElement;
+    if (!target) return;
+
+    const rect = target.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+
+    const x = Math.max(0, Math.min(event.clientX - rect.left, rect.width));
+    const y = Math.max(0, Math.min(event.clientY - rect.top, rect.height));
+
+    const lensW = Math.max(80, Math.min(140, rect.width * 0.3));
+    const lensH = Math.max(80, Math.min(140, rect.height * 0.3));
+    this.lensSize.set({ w: lensW, h: lensH });
+
+    const lensX = Math.max(0, Math.min(x - lensW / 2, rect.width - lensW));
+    const lensY = Math.max(0, Math.min(y - lensH / 2, rect.height - lensH));
+    this.lensPosition.set({ x: lensX, y: lensY });
+
+    const percentX = (x / rect.width) * 100;
+    const percentY = (y / rect.height) * 100;
+    this.zoomPosition.set({ x: percentX, y: percentY });
+    this.isHoverZooming.set(true);
+  }
+
+  onImageLeave(): void {
+    this.isHoverZooming.set(false);
+  }
 
   readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
     const value = this.detail();
@@ -116,10 +169,22 @@ export class StorefrontProductDetail implements OnInit {
 
       const value = response.data as MarketplaceProductDetail;
       this.detail.set(value);
+      const defaultMedia =
+        value.product.media?.find((m) => m.url && m.media_type === 'IMAGE' && m.is_primary) ||
+        value.product.media?.find((m) => m.url && m.media_type === 'IMAGE') ||
+        value.product.media?.[0] ||
+        null;
+      this.selectedMedia.set(defaultMedia);
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Unable to load this product.');
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  selectMedia(media: MarketplaceMedia): void {
+    if (media.media_type === 'IMAGE' || media.media_type === 'VIDEO') {
+      this.selectedMedia.set(media);
     }
   }
 

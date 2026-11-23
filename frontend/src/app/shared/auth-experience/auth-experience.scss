@@ -34,11 +34,11 @@
   color: var(--auth-text, var(--bbg-text-primary, var(--text-primary)));
 }
 :host-context(html[data-theme='dark']) .auth-experience {
-  --auth-control-bg: var(--bbg-surface-card, #242e27);
-  --auth-input-bg: var(--bbg-surface-input, #202923);
-  --auth-soft-bg: var(--bbg-surface-subtle, #202923);
-  --auth-soft-hover: var(--bbg-surface-hover, #2a382e);
-  --auth-border: var(--bbg-border-default, #354139);
+  --auth-control-bg: var(--bbg-surface-card, #141414);
+  --auth-input-bg: var(--bbg-surface-input, #111111);
+  --auth-soft-bg: var(--bbg-surface-subtle, #111111);
+  --auth-soft-hover: var(--bbg-surface-hover, #1a1a1a);
+  --auth-border: var(--bbg-border-default, #292929);
   --auth-warning-bg: #3a2e17;
   --auth-warning-border: #66502a;
   --auth-warning-text: #f4d99a;
@@ -46,10 +46,15 @@
   --auth-error-bg: #3b2020;
   --auth-error-border: #6d3838;
   --auth-error-text: #ffb4ad;
-  --auth-focus-ring: rgba(245, 217, 40, 0.18);
+  --auth-focus-ring: rgba(245, 217, 39, 0.25);
 
   .submit-button {
     color: #000000;
+    background: var(--bbg-brand-primary, #f5d927);
+
+    &:hover:not(:disabled) {
+      background: var(--bbg-brand-primary-hover, #eac816);
+    }
   }
 }
 .auth-page-mode {
@@ -159,7 +164,7 @@
     transform 0.18s;
 }
 .social-button:hover:not(:disabled) {
-  border-color: var(--auth-border-hover, var(--border-strong, #354139));
+  border-color: var(--auth-border-hover, var(--border-strong, #3a3a3a));
   background: var(--auth-soft-bg, var(--surface-subtle));
   transform: translateY(-1px);
 }
@@ -216,7 +221,7 @@
 }
 .email-entry:hover {
   background: var(--auth-soft-hover, var(--surface-subtle));
-  border-color: var(--auth-border-hover, var(--border-strong, #354139));
+  border-color: var(--auth-border-hover, var(--border-strong, #3a3a3a));
 }
 .email-entry span {
   font-size: 18px;

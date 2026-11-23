@@ -67,17 +67,25 @@ final readonly class ProductReviewDao
 
         $reviews = $reviewsResult['data'];
         if (!empty($reviews)) {
-            $reviewIds = array_column($reviews, 'id');
-            $placeholders = implode(',', array_fill(0, count($reviewIds), '?'));
-            $mediaResult = $this->many(
-                $db,
-                "SELECT id, review_id, media_url, file_name, file_size, mime_type, display_order
-                 FROM PRODUCT_REVIEW_MEDIA
-                 WHERE review_id IN ({$placeholders}) AND status = 'A'
-                 ORDER BY display_order ASC, id ASC",
-                $reviewIds,
-                'getProductReviewMedia'
-            );
+            $reviewIds = array_values(array_filter(array_column($reviews, 'id')));
+            $placeholders = [];
+            $mediaParams = [];
+            foreach ($reviewIds as $idx => $id) {
+                $key = ':rid_' . $idx;
+                $placeholders[] = $key;
+                $mediaParams[$key] = (int) $id;
+            }
+            $mediaResult = !empty($placeholders)
+                ? $this->many(
+                    $db,
+                    "SELECT id, review_id, media_url, file_name, file_size, mime_type, display_order
+                     FROM PRODUCT_REVIEW_MEDIA
+                     WHERE review_id IN (" . implode(',', $placeholders) . ") AND status = 'A'
+                     ORDER BY display_order ASC, id ASC",
+                    $mediaParams,
+                    'getProductReviewMedia'
+                )
+                : ['status' => 'SUCCESS', 'data' => []];
 
             $mediaByReview = [];
             if ($mediaResult['status'] === 'SUCCESS') {
@@ -263,10 +271,13 @@ final readonly class ProductReviewDao
         int $rating,
         ?string $title,
         string $text,
+        ?array $media = null,
     ): array {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
 
         try {
+            $transaction = $db->beginTransaction();
+
             $affected = $db->createCommand(
                 "UPDATE PRODUCT_REVIEWS
                  SET rating = :rating, review_title = :review_title, review_text = :review_text,
@@ -283,13 +294,89 @@ final readonly class ProductReviewDao
             )->execute();
 
             if ($affected !== 1) {
-                $resArr['msgArr'][] = 'Review was not found or you are not authorized to update it.';
-                return $resArr;
+                // If rating, title, and text did not change, verify the review exists and belongs to the user
+                $exists = $this->one(
+                    $db,
+                    "SELECT id FROM PRODUCT_REVIEWS WHERE id = :id AND user_id = :user_id AND status = 'A'",
+                    [':id' => $reviewId, ':user_id' => $userId],
+                    'checkReviewExists'
+                );
+                if (empty($exists['data']['id'])) {
+                    if (isset($transaction) && $transaction->isActive()) {
+                        $transaction->rollBack();
+                    }
+                    $resArr['msgArr'][] = 'Review was not found or you are not authorized to update it.';
+                    return $resArr;
+                }
             }
+
+            // Sync media attachments if provided
+            if ($media !== null) {
+                $keptIds = [];
+                $keptUrls = [];
+                foreach ($media as $item) {
+                    if (isset($item['id']) && is_numeric($item['id']) && (int) $item['id'] > 0) {
+                        $keptIds[] = (int) $item['id'];
+                    } elseif (!empty($item['media_url'])) {
+                        $keptUrls[] = (string) $item['media_url'];
+                    }
+                }
+
+                if (!empty($keptUrls)) {
+                    $urlPlaceholders = [];
+                    $urlParams = [':review_id' => $reviewId];
+                    foreach ($keptUrls as $idx => $url) {
+                        $uKey = ':url_' . $idx;
+                        $urlPlaceholders[] = $uKey;
+                        $urlParams[$uKey] = $url;
+                    }
+                    $urlRows = $this->many(
+                        $db,
+                        "SELECT id FROM PRODUCT_REVIEW_MEDIA WHERE review_id = :review_id AND status = 'A' AND media_url IN (" . implode(',', $urlPlaceholders) . ")",
+                        $urlParams,
+                        'resolveKeptMediaIds'
+                    );
+                    if ($urlRows['status'] === 'SUCCESS') {
+                        foreach ($urlRows['data'] as $urow) {
+                            $keptIds[] = (int) $urow['id'];
+                        }
+                    }
+                }
+
+                $keptIds = array_values(array_unique($keptIds));
+
+                if (!empty($keptIds)) {
+                    $placeholders = [];
+                    $delParams = [':review_id' => $reviewId, ':user_id' => $userId];
+                    foreach ($keptIds as $idx => $kid) {
+                        $pKey = ':kid_' . $idx;
+                        $placeholders[] = $pKey;
+                        $delParams[$pKey] = $kid;
+                    }
+                    $db->createCommand(
+                        "UPDATE PRODUCT_REVIEW_MEDIA
+                         SET status = 'Z', updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                         WHERE review_id = :review_id AND status = 'A' AND id NOT IN (" . implode(',', $placeholders) . ")",
+                        $delParams
+                    )->execute();
+                } else {
+                    $db->createCommand(
+                        "UPDATE PRODUCT_REVIEW_MEDIA
+                         SET status = 'Z', updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                         WHERE review_id = :review_id AND status = 'A'",
+                        [':review_id' => $reviewId, ':user_id' => $userId]
+                    )->execute();
+                }
+            }
+
+            $transaction->commit();
 
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = ['id' => $reviewId];
         } catch (Throwable $exception) {
+            if (isset($transaction) && $transaction->isActive()) {
+                $transaction->rollBack();
+            }
             return $this->error('updateReview', $exception);
         }
 

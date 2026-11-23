@@ -67,7 +67,7 @@ export class ProductReviewsComponent implements OnInit {
   protected readonly formTitle = signal('');
   protected readonly formText = signal('');
   protected readonly formMedia = signal<
-    Array<{ media_url: string; file_name: string; preview_url?: string }>
+    Array<{ media_url: string; file_name: string; preview_url?: string; file_size?: number; mime_type?: string }>
   >([]);
 
   // Editing state
@@ -75,6 +75,9 @@ export class ProductReviewsComponent implements OnInit {
   protected readonly editRating = signal(5);
   protected readonly editTitle = signal('');
   protected readonly editText = signal('');
+  protected readonly editMedia = signal<
+    Array<{ id: string | number; url: string; name: string }>
+  >([]);
   protected readonly editSubmitting = signal(false);
 
   // Reporting modal
@@ -84,8 +87,13 @@ export class ProductReviewsComponent implements OnInit {
   protected readonly reportSubmitting = signal(false);
   protected readonly reportSuccess = signal<string | null>(null);
 
-  // Lightbox
+  // Lightbox / Image Detail Modal
   protected readonly activeMediaUrl = signal<string | null>(null);
+  protected readonly activeReviewModal = signal<{
+    review: ProductReview;
+    mediaList: Array<{ id: string | number; url: string; name: string }>;
+    activeIndex: number;
+  } | null>(null);
 
   protected readonly filteredReviews = computed(() => {
     const list = this.reviews();
@@ -221,6 +229,8 @@ export class ProductReviewsComponent implements OnInit {
           media_url: object_key,
           file_name: file.name,
           preview_url: previewUrl,
+          file_size: file.size,
+          mime_type: file.type,
         },
       ]);
       input.value = '';
@@ -354,10 +364,16 @@ export class ProductReviewsComponent implements OnInit {
     this.editRating.set(review.rating);
     this.editTitle.set(review.review_title || '');
     this.editText.set(review.review_text);
+    this.editMedia.set(this.getReviewMedia(review));
   }
 
   protected cancelEditing(): void {
     this.editingReviewId.set(null);
+    this.editMedia.set([]);
+  }
+
+  protected removeEditMedia(index: number): void {
+    this.editMedia.update((list) => list.filter((_, i) => i !== index));
   }
 
   protected async saveEdit(reviewId: number): Promise<void> {
@@ -366,12 +382,20 @@ export class ProductReviewsComponent implements OnInit {
 
     this.editSubmitting.set(true);
     try {
+      const remainingMedia = this.editMedia();
+      const payloadMedia = remainingMedia.map((m) => ({
+        id: typeof m.id === 'number' ? m.id : undefined,
+        media_url: m.url,
+        file_name: m.name,
+      }));
+
       const res = await firstValueFrom(
         this.api.updateReview({
           review_id: reviewId,
           rating: this.editRating(),
           review_title: this.editTitle().trim() || null,
           review_text: text,
+          media: payloadMedia,
         }),
       );
 
@@ -384,11 +408,17 @@ export class ProductReviewsComponent implements OnInit {
                   rating: this.editRating(),
                   review_title: this.editTitle().trim() || null,
                   review_text: text,
+                  media: remainingMedia.map((m) => ({
+                    id: typeof m.id === 'number' ? m.id : undefined,
+                    media_url: m.url,
+                    file_name: m.name,
+                  })),
                 }
               : r,
           ),
         );
         this.editingReviewId.set(null);
+        this.editMedia.set([]);
         void this.loadSummaryOnly();
       }
     } catch {
@@ -484,5 +514,114 @@ export class ProductReviewsComponent implements OnInit {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
     return parts[0].substring(0, 2).toUpperCase();
+  }
+
+  protected getReviewMedia(review: any): Array<{ id: string | number; url: string; name: string }> {
+    let raw = review?.media || review?.images || review?.attachments;
+    if (typeof raw === 'string') {
+      try {
+        raw = JSON.parse(raw);
+      } catch {
+        return [];
+      }
+    }
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    return raw
+      .map((item: any, idx: number) => {
+        let url = '';
+        let name = '';
+        let id: string | number = idx;
+        if (typeof item === 'string') {
+          url = item;
+          name = 'Review photo ' + (idx + 1);
+        } else if (item && typeof item === 'object') {
+          url = item.media_url || item.url || item.image_url || item.thumbnail_url || item.path || '';
+          name = item.file_name || item.name || 'Review photo ' + (idx + 1);
+          id = item.id ?? idx;
+        }
+        url = url.trim();
+        if (!url) return null;
+
+        // Resolve relative S3 object keys to full bucket URL
+        if (
+          !url.startsWith('http://') &&
+          !url.startsWith('https://') &&
+          !url.startsWith('data:') &&
+          !url.startsWith('blob:')
+        ) {
+          url = `https://bbg-839544975641-ap-south-1-an.s3.ap-south-1.amazonaws.com/${url.replace(/^\/+/, '')}`;
+        }
+
+        return { id, url, name };
+      })
+      .filter((item): item is { id: string | number; url: string; name: string } => item !== null);
+  }
+
+  protected openReviewMediaModal(review: ProductReview, mediaIndex: number = 0, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    const mediaList = this.getReviewMedia(review);
+    if (!mediaList.length) return;
+    const clampedIndex = Math.max(0, Math.min(mediaIndex, mediaList.length - 1));
+    this.activeReviewModal.set({
+      review,
+      mediaList,
+      activeIndex: clampedIndex,
+    });
+  }
+
+  protected closeReviewMediaModal(): void {
+    this.activeReviewModal.set(null);
+  }
+
+  protected nextModalMedia(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.activeReviewModal.update((state) => {
+      if (!state || state.mediaList.length <= 1) return state;
+      const nextIdx = (state.activeIndex + 1) % state.mediaList.length;
+      return { ...state, activeIndex: nextIdx };
+    });
+  }
+
+  protected prevModalMedia(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.activeReviewModal.update((state) => {
+      if (!state || state.mediaList.length <= 1) return state;
+      const prevIdx = (state.activeIndex - 1 + state.mediaList.length) % state.mediaList.length;
+      return { ...state, activeIndex: prevIdx };
+    });
+  }
+
+  protected selectModalMediaIndex(index: number, event?: Event): void {
+    if (event) event.stopPropagation();
+    this.activeReviewModal.update((state) => {
+      if (!state) return state;
+      return { ...state, activeIndex: index };
+    });
+  }
+
+  protected onMediaThumbError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.dataset['fallback']) {
+      img.dataset['fallback'] = 'true';
+      img.src =
+        'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="%23222" stroke="%23888" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
+    }
+  }
+
+  protected openLightbox(url: string, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    this.activeMediaUrl.set(url);
+  }
+
+  protected closeLightbox(): void {
+    this.activeMediaUrl.set(null);
   }
 }

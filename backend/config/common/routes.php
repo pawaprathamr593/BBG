@@ -112,6 +112,7 @@ return [
     Route::post('/api/v1/catalogue/products/media/upload-url')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/media/upload-url'),
     Route::post('/api/v1/catalogue/products/media/link')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/media/link'),
     Route::post('/api/v1/catalogue/products/media/delete')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/media/delete'),
+    Route::post('/api/v1/catalogue/products/media/primary')->action([CatalogueController::class, 'actionManageCatalogue'])->name('api/v1/catalogue/products/media/primary'),
 
     Route::post('/api/v1/customers/profile')->action([CustomerController::class, 'actionGetCustomer'])->name('api/v1/customers/profile'),
     Route::post('/api/v1/customers/addresses/list')->action([CustomerController::class, 'actionGetCustomer'])->name('api/v1/customers/addresses/list'),
@@ -141,6 +142,7 @@ return [
     Route::post('/api/v1/promotions/media/upload-url')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/media/upload-url'),
     Route::post('/api/v1/promotions/media/link')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/media/link'),
     Route::post('/api/v1/promotions/media/delete')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/media/delete'),
+    Route::post('/api/v1/promotions/media/primary')->action([PromotionController::class, 'actionManagePromotion'])->name('api/v1/promotions/media/primary'),
 
     Route::post('/api/v1/engagement/likes/toggle')->action([EngagementController::class, 'actionManageEngagement'])->name('api/v1/engagement/likes/toggle'),
     Route::post('/api/v1/engagement/comments/list')->action([EngagementController::class, 'actionGetEngagement'])->name('api/v1/engagement/comments/list'),

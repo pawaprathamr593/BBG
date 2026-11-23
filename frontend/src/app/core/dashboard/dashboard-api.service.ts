@@ -17,8 +17,17 @@ export interface DashboardTenant {
   tenant_type: string;
   tenant_status: string;
   membership_status: string;
+  joined_on?: string | null;
   role_codes: string | null;
   active_entitlements: string | null;
+  profile_business_name?: string | null;
+  logo_path?: string | null;
+  business_email?: string | null;
+  business_phone?: string | null;
+  city?: string | null;
+  state?: string | null;
+  approval_status?: string | null;
+  publication_status?: string | null;
 }
 
 export interface DashboardApiResponse<T> {

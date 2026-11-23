@@ -288,7 +288,7 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
         flex-direction: column;
         overflow: hidden;
         border-right: 1px solid var(--border);
-        background: var(--surface-card);
+        background: var(--surface-sidebar, var(--surface-card));
         transition:
           width 0.2s ease,
           flex-basis 0.2s ease;
@@ -300,7 +300,7 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
       .sidebar-context-switcher {
         padding: 12px 10px;
         border-bottom: 1px solid var(--border);
-        background: var(--surface-card);
+        background: var(--surface-sidebar, var(--surface-card));
       }
       .context-identity-row {
         display: flex;
@@ -501,7 +501,7 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
         padding: 0 23px;
         border: 0;
         border-top: 1px solid var(--border);
-        background: var(--surface-card);
+        background: var(--surface-sidebar, var(--surface-card));
         color: var(--text-secondary);
         font: inherit;
         font-size: 0.72rem;
@@ -1054,6 +1054,40 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
         }
         .mobile-nav-scroll {
           grid-template-columns: 1fr;
+        }
+      }
+      :host-context(html[data-theme='dark']) {
+        .workspace-sidebar,
+        .sidebar-context-switcher,
+        .sidebar-collapse {
+          background: var(--surface-sidebar, #0a0a0a);
+        }
+        .nav-item {
+          color: var(--text-secondary, #a3a3a3);
+        }
+        .nav-item:hover {
+          background: var(--surface-hover, #1a1a1a);
+          color: var(--text-primary, #ffffff);
+        }
+        .nav-item.active {
+          background: var(--surface-card, #141414);
+          color: var(--brand-accent, #f5d927);
+          border-color: rgba(245, 217, 39, 0.3);
+          .nav-icon {
+            color: var(--brand-accent, #f5d927);
+          }
+        }
+        .mobile-quick-nav a.active {
+          background: var(--surface-card, #141414);
+          color: var(--brand-accent, #f5d927);
+        }
+        .mobile-nav-item.active {
+          background: var(--surface-card, #141414);
+          color: var(--brand-accent, #f5d927);
+          border-color: rgba(245, 217, 39, 0.3);
+        }
+        .mobile-nav-item.active > span {
+          color: var(--brand-accent, #f5d927);
         }
       }
       @media (prefers-reduced-motion: reduce) {

@@ -42,10 +42,63 @@
         [disabled]="busy()"
       />
     </div>
+
+    @if (existingMedia().length) {
+      <div class="existing-media-header">
+        <strong>Attached media ({{ existingMedia().length }})</strong>
+      </div>
+      <div class="post-file-list">
+        @for (media of existingMedia(); track media.id) {
+          <div class="media-card">
+            @if (media.url && (media.media_type === 'IMAGE' || isImage(media.file_path))) {
+              <img class="post-file-preview" [src]="media.url" [alt]="media.file_path || 'Media'" />
+            } @else if (media.url && (media.media_type === 'VIDEO' || isVideo(media.file_path))) {
+              <video class="post-file-preview" controls [src]="media.url"></video>
+            } @else if (media.url && (media.media_type === 'AUDIO' || isAudio(media.file_path))) {
+              <audio class="post-file-audio" controls [src]="media.url"></audio>
+            } @else if (media.url) {
+              <a class="post-file-kind" [href]="media.url" target="_blank" rel="noopener">{{ media.media_type || 'DOC' }}</a>
+            } @else {
+              <span class="post-file-kind">{{ media.media_type || 'DOC' }}</span>
+            }
+            <div class="media-info">
+              <strong>{{ getFileName(media.file_path) }}</strong>
+              <small>{{ media.display_order === 0 || media.is_primary ? 'Primary media' : (media.media_type || 'Media') }}</small>
+            </div>
+            <div class="media-card-actions">
+              @if (media.display_order === 0 || media.is_primary) {
+                <span class="media-primary-badge">★ Primary</span>
+              } @else {
+                <button
+                  type="button"
+                  class="btn-make-primary"
+                  (click)="existingMediaPrimary.emit(media)"
+                  [disabled]="busy()"
+                >
+                  Set as Primary
+                </button>
+              }
+              <button
+                type="button"
+                class="btn-remove-media"
+                (click)="existingMediaRemoved.emit(media)"
+                [disabled]="busy()"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
     @if (files().length) {
+      <div class="existing-media-header" style="margin-top: 1rem;">
+        <strong>Ready to upload ({{ files().length }})</strong>
+      </div>
       <div class="post-file-list">
         @for (file of files(); track $index) {
-          <div>
+          <div class="media-card">
             @if (previews().get(file); as preview) {
               @if (file.type.startsWith('image/')) {
                 <img class="post-file-preview" [src]="preview" [alt]="file.name" />
@@ -59,11 +112,32 @@
             } @else {
               <span class="post-file-kind">{{ mediaLabel(file.type) }}</span>
             }
-            <strong>{{ file.name }}</strong
-            ><small>{{ fileSize(file.size) }}</small
-            ><button type="button" (click)="fileRemoved.emit($index)" [disabled]="busy()">
-              Remove
-            </button>
+            <div class="media-info">
+              <strong>{{ file.name }}</strong>
+              <small>{{ fileSize(file.size) }}</small>
+            </div>
+            <div class="media-card-actions">
+              @if ($index === stagedPrimaryIndex()) {
+                <span class="media-primary-badge">★ Primary</span>
+              } @else {
+                <button
+                  type="button"
+                  class="btn-make-primary"
+                  (click)="stagedPrimaryChanged.emit($index)"
+                  [disabled]="busy()"
+                >
+                  Set as Primary
+                </button>
+              }
+              <button
+                type="button"
+                class="btn-remove-media"
+                (click)="fileRemoved.emit($index)"
+                [disabled]="busy()"
+              >
+                Remove
+              </button>
+            </div>
           </div>
         }
       </div>

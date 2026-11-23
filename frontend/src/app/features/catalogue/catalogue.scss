@@ -376,6 +376,53 @@ button:disabled {
   color: var(--text-secondary);
   font-size: 0.66rem;
 }
+.existing-media-heading {
+  margin-top: 14px;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+.media-item-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+.media-primary-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #f59e0b 20%, var(--surface-card));
+  color: #d97706;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border: 1px solid color-mix(in srgb, #f59e0b 40%, transparent);
+}
+.btn-make-primary {
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 120ms ease;
+
+  &:hover:not(:disabled) {
+    background: var(--brand-soft);
+    color: var(--bbg-brand-primary, #174d35);
+    border-color: var(--bbg-brand-primary, #174d35);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
 .media-kind {
   display: grid;
   place-items: center;
@@ -1304,10 +1351,10 @@ button:disabled {
 :host-context(html[data-theme='dark']),
 :host-context(body.dark-theme) {
   .primary-button {
-    color: #000000;
+    color: var(--bbg-btn-text-on-primary, #000000);
   }
 
   .chip.active {
-    color: #000000;
+    color: var(--bbg-btn-text-on-primary, #000000);
   }
 }

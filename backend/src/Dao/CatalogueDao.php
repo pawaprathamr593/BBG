@@ -334,6 +334,38 @@ final readonly class CatalogueDao
         return $resArr;
     }
 
+    public function setPrimaryProductMedia(ConnectionInterface $db, int $tenantId, int $productId, int $mediaId, int $userId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $transaction = $db->beginTransaction();
+
+            $db->createCommand("UPDATE PRODUCT_MEDIA SET is_primary = 0,
+                updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                WHERE tenant_id = :tenant_id AND product_id = :product_id AND status = 'A'",
+                [':user_id' => $userId, ':tenant_id' => $tenantId, ':product_id' => $productId])->execute();
+
+            $affected = $db->createCommand("UPDATE PRODUCT_MEDIA SET is_primary = 1, display_order = 0,
+                updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                WHERE tenant_id = :tenant_id AND product_id = :product_id AND id = :media_id AND status = 'A'",
+                [':user_id' => $userId, ':tenant_id' => $tenantId, ':product_id' => $productId, ':media_id' => $mediaId])->execute();
+
+            if ($affected !== 1) {
+                if ($transaction->isActive()) $transaction->rollBack();
+                $resArr['msgArr'][] = 'Product media record not found.';
+                return $resArr;
+            }
+
+            $transaction->commit();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['media_id' => $mediaId, 'is_primary' => 1];
+        } catch (Throwable $exception) {
+            if (isset($transaction) && $transaction->isActive()) $transaction->rollBack();
+            return $this->error('setPrimaryProductMedia', $exception);
+        }
+        return $resArr;
+    }
+
     public function insertProductMedia(
         ConnectionInterface $db,
         int $tenantId,

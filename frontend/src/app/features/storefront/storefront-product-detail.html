@@ -28,17 +28,32 @@
           @if (data.product.media?.length) {
             <div class="media-gallery-card">
               <!-- Primary Media Display -->
-              <div class="primary-media-viewport">
-                @for (media of data.product.media; track media.id) {
-                  @if (media.url && media.media_type === 'IMAGE' && $first) {
+              <div
+                class="primary-media-viewport"
+                [class.is-zoomable]="activeMedia()?.media_type === 'IMAGE'"
+                (mousemove)="onImageHover($event)"
+                (mouseleave)="onImageLeave()"
+              >
+                @if (activeMedia(); as active) {
+                  @if (active.url && active.media_type === 'IMAGE') {
                     <img
-                      [src]="media.url"
-                      [alt]="media.original_file_name || data.product.product_name"
+                      [src]="active.url"
+                      [alt]="active.original_file_name || data.product.product_name"
                       class="primary-product-img"
                     />
-                  } @else if (media.url && media.media_type === 'VIDEO' && $first) {
+                    @if (isHoverZooming()) {
+                      <div
+                        class="zoom-lens"
+                        [style.left.px]="lensPosition().x"
+                        [style.top.px]="lensPosition().y"
+                        [style.width.px]="lensSize().w"
+                        [style.height.px]="lensSize().h"
+                        aria-hidden="true"
+                      ></div>
+                    }
+                  } @else if (active.url && active.media_type === 'VIDEO') {
                     <video
-                      [src]="media.url"
+                      [src]="active.url"
                       controls
                       preload="metadata"
                       class="primary-product-video"
@@ -52,12 +67,36 @@
                 <div class="media-thumbnails-strip" aria-label="Additional media views">
                   @for (media of data.product.media; track media.id) {
                     @if (media.url && media.media_type === 'IMAGE') {
-                      <div class="thumb-item" tabindex="0">
+                      <button
+                        type="button"
+                        class="thumb-item"
+                        [class.active]="activeMedia()?.id === media.id"
+                        (click)="selectMedia(media)"
+                        [attr.aria-label]="'View image ' + ($index + 1)"
+                      >
                         <img
                           [src]="media.thumbnail_url || media.url"
-                          [alt]="media.original_file_name || 'Thumbnail'"
+                          [alt]="media.original_file_name || 'Thumbnail ' + ($index + 1)"
                         />
-                      </div>
+                      </button>
+                    } @else if (media.url && media.media_type === 'VIDEO') {
+                      <button
+                        type="button"
+                        class="thumb-item thumb-video"
+                        [class.active]="activeMedia()?.id === media.id"
+                        (click)="selectMedia(media)"
+                        [attr.aria-label]="'Play video ' + ($index + 1)"
+                      >
+                        <div class="video-play-badge" aria-hidden="true">▶</div>
+                        @if (media.thumbnail_url) {
+                          <img
+                            [src]="media.thumbnail_url"
+                            [alt]="media.original_file_name || 'Video thumbnail'"
+                          />
+                        } @else {
+                          <div class="video-placeholder">Video</div>
+                        }
+                      </button>
                     } @else if (media.url && media.media_type === 'DOCUMENT') {
                       <a
                         [href]="media.url"
@@ -100,6 +139,17 @@
 
         <!-- RIGHT: Product Commercials & Specifications -->
         <div class="product-info-column">
+          <!-- Blinkit-style Zoom Preview Overlay over Product Information -->
+          @if (isHoverZooming() && activeMedia()?.url && activeMedia()?.media_type === 'IMAGE') {
+            <div class="zoom-preview-overlay" aria-hidden="true">
+              <div
+                class="zoom-preview-image"
+                [style.background-image]="'url(' + activeMedia()?.url + ')'"
+                [style.background-position]="zoomPosition().x + '% ' + zoomPosition().y + '%'"
+              ></div>
+            </div>
+          }
+
           <!-- Category & SKU Badges -->
           <div class="info-badges-row">
             <span class="category-chip">{{ data.product.category_name || 'Product' }}</span>
@@ -264,7 +314,11 @@
                   rel="noopener noreferrer"
                   [attr.aria-label]="'Enquire about ' + data.product.product_name + ' on WhatsApp'"
                 >
-                  <span class="whatsapp-icon" aria-hidden="true">💬</span>
+                  <svg class="whatsapp-svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                    <path
+                      d="M12.03 2C6.5 2 2 6.48 2 12c0 1.98.58 3.83 1.58 5.39L2.5 22l4.74-1.04A9.97 9.97 0 0012.03 22C17.56 22 22 17.52 22 12S17.56 2 12.03 2zm5.82 14.12c-.25.7-1.44 1.33-2 1.41-.51.07-1.15.1-1.85-.12-.43-.14-.98-.32-1.69-.63-2.97-1.29-4.91-4.31-5.06-4.51-.15-.2-1.21-1.61-1.21-3.07 0-1.46.76-2.18 1.03-2.48.27-.3.59-.37.79-.37.2 0 .4 0 .57.01.18.01.43-.07.67.51.25.6.84 2.07.92 2.22.07.15.12.32.02.52-.1.2-.15.32-.3.5-.15.17-.31.39-.44.52-.15.15-.3.31-.13.61.17.3.77 1.27 1.65 2.06 1.13 1.01 2.09 1.32 2.39 1.47.3.15.47.12.64-.07.18-.2.74-.87.94-1.17.2-.3.4-.25.67-.15.27.1 1.73.82 2.03.97.3.15.5.22.57.35.07.12.07.72-.18 1.42z"
+                    />
+                  </svg>
                   <span>Enquire on WhatsApp</span>
                 </a>
               }

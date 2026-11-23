@@ -14,6 +14,8 @@ export class PromotionComposerModule {
   readonly validUntil = input('');
   readonly files = input<File[]>([]);
   readonly previews = input<Map<File, string>>(new Map());
+  readonly existingMedia = input<any[]>([]);
+  readonly stagedPrimaryIndex = input<number>(0);
   readonly busy = input(false);
   readonly progress = input(0);
   readonly error = input('');
@@ -26,6 +28,9 @@ export class PromotionComposerModule {
   readonly dragOver = output<DragEvent>();
   readonly filesDropped = output<DragEvent>();
   readonly fileRemoved = output<number>();
+  readonly existingMediaRemoved = output<any>();
+  readonly existingMediaPrimary = output<any>();
+  readonly stagedPrimaryChanged = output<number>();
   readonly cancel = output<void>();
   readonly submit = output<void>();
 
@@ -45,5 +50,36 @@ export class PromotionComposerModule {
     return bytes < 1024 * 1024
       ? `${Math.max(1, Math.round(bytes / 1024))} KB`
       : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  isImage(urlOrPath?: string): boolean {
+    if (!urlOrPath) return false;
+    const clean = urlOrPath.split('?')[0].toLowerCase();
+    return (
+      clean.endsWith('.jpg') ||
+      clean.endsWith('.jpeg') ||
+      clean.endsWith('.png') ||
+      clean.endsWith('.webp') ||
+      clean.endsWith('.gif')
+    );
+  }
+
+  isVideo(urlOrPath?: string): boolean {
+    if (!urlOrPath) return false;
+    const clean = urlOrPath.split('?')[0].toLowerCase();
+    return clean.endsWith('.mp4') || clean.endsWith('.webm');
+  }
+
+  isAudio(urlOrPath?: string): boolean {
+    if (!urlOrPath) return false;
+    const clean = urlOrPath.split('?')[0].toLowerCase();
+    return clean.endsWith('.mp3') || clean.endsWith('.wav') || clean.endsWith('.ogg');
+  }
+
+  getFileName(path?: string): string {
+    if (!path) return 'Media file';
+    const clean = path.split('?')[0];
+    const parts = clean.split('/');
+    return parts[parts.length - 1] || 'Media file';
   }
 }

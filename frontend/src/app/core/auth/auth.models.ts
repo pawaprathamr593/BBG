@@ -5,6 +5,13 @@ export interface AuthUser {
   mobile: string | null;
   profile_image?: string | null;
   has_password?: boolean;
+  email_verified?: boolean;
+  mobile_verified?: boolean;
+  email_verified_on?: string | null;
+  mobile_verified_on?: string | null;
+  last_login_on?: string | null;
+  account_status?: string;
+  created_on?: string | null;
 }
 
 export interface AuthResponseData {

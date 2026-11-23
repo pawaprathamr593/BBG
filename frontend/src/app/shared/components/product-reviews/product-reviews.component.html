@@ -9,7 +9,21 @@
     </div>
     @if (!showWriteForm()) {
       <button type="button" class="btn-write-review" (click)="openWriteForm($event)">
-        <span aria-hidden="true">✍️</span>
+        <svg
+          class="btn-review-icon"
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
         <span>Write a Review</span>
       </button>
     }
@@ -318,6 +332,33 @@
                   (ngModelChange)="editText.set($event)"
                 ></textarea>
               </div>
+
+              <!-- Attached Images Thumbnail Strip with Delete Capability -->
+              @if (editMedia().length > 0) {
+                <div class="edit-media-section">
+                  <span class="edit-media-title">Attached Photos (click ✕ to remove)</span>
+                  <div class="edit-media-strip">
+                    @for (item of editMedia(); track $index) {
+                      <div class="edit-thumb-item">
+                        <img
+                          [src]="item.url"
+                          [alt]="item.name"
+                          (error)="onMediaThumbError($event)"
+                        />
+                        <button
+                          type="button"
+                          class="btn-remove-thumb"
+                          (click)="removeEditMedia($index)"
+                          [attr.aria-label]="'Remove ' + item.name"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
               <div class="edit-actions-row">
                 <button type="button" class="btn-cancel-edit" (click)="cancelEditing()">
                   Cancel
@@ -345,19 +386,20 @@
             <p class="review-body-text">{{ review.review_text }}</p>
 
             <!-- Media Gallery Strip -->
-            @if (review.media && review.media.length > 0) {
+            @if (getReviewMedia(review).length > 0) {
               <div class="review-gallery-strip" aria-label="Customer product photos">
-                @for (media of review.media; track media.id) {
+                @for (media of getReviewMedia(review); track media.id) {
                   <button
                     type="button"
                     class="gallery-thumb-btn"
-                    (click)="activeMediaUrl.set(media.media_url)"
-                    [attr.aria-label]="'Enlarge ' + (media.file_name || 'review photo')"
+                    (click)="openReviewMediaModal(review, $index, $event)"
+                    [attr.aria-label]="'Enlarge ' + media.name"
                   >
                     <img
-                      [src]="media.media_url"
-                      [alt]="media.file_name || 'Customer review photo'"
+                      [src]="media.url"
+                      [alt]="media.name"
                       loading="lazy"
+                      (error)="onMediaThumbError($event)"
                     />
                   </button>
                 }
@@ -435,25 +477,122 @@
     }
   }
 
-  <!-- Lightbox Modal for Review Images -->
-  @if (activeMediaUrl(); as url) {
+  <!-- Review Image Detail Popup Modal with Review Information Above -->
+  @if (activeReviewModal(); as modal) {
     <div
-      class="lightbox-overlay"
+      class="review-modal-backdrop"
       role="dialog"
       aria-modal="true"
-      aria-label="Enlarged review photo"
-      (click)="activeMediaUrl.set(null)"
+      aria-labelledby="review-modal-title"
+      (click)="closeReviewMediaModal()"
+      (keydown.escape)="closeReviewMediaModal()"
+      (keydown.arrowright)="nextModalMedia($event)"
+      (keydown.arrowleft)="prevModalMedia($event)"
+      tabindex="-1"
     >
-      <div class="lightbox-content" (click)="$event.stopPropagation()">
-        <img [src]="url" alt="Enlarged review attachment" />
+      <div class="review-modal-card" (click)="$event.stopPropagation()">
+        <!-- Close Button -->
         <button
           type="button"
-          class="lightbox-close"
-          (click)="activeMediaUrl.set(null)"
-          aria-label="Close image"
+          class="review-modal-close"
+          (click)="closeReviewMediaModal()"
+          aria-label="Close review photo modal"
         >
           ✕
         </button>
+
+        <!-- TOP: Review Details Section Above Image -->
+        <div class="review-modal-header">
+          <div class="modal-author-row">
+            <div class="reviewer-avatar">
+              {{ getAuthorMonogram(modal.review.author_name) }}
+            </div>
+            <div class="reviewer-meta">
+              <div class="name-badge-line">
+                <strong class="reviewer-name">{{ modal.review.author_name }}</strong>
+                @if (modal.review.is_verified_purchase) {
+                  <span class="verified-pill">
+                    <span class="check-icon" aria-hidden="true">✓</span> Verified Buyer
+                  </span>
+                }
+              </div>
+              <time class="review-date" [dateTime]="modal.review.reviewed_on">
+                {{ modal.review.reviewed_on | date: 'mediumDate' }}
+              </time>
+            </div>
+          </div>
+
+          <div class="modal-rating-row">
+            <app-star-rating [rating]="modal.review.rating" [size]="'sm'" />
+            @if (modal.review.review_title) {
+              <h3 id="review-modal-title" class="modal-review-title">{{ modal.review.review_title }}</h3>
+            }
+          </div>
+
+          @if (modal.review.review_text) {
+            <p class="modal-review-text">{{ modal.review.review_text }}</p>
+          }
+        </div>
+
+        <!-- MIDDLE: Enlarged Image Viewport with Next/Prev Controls -->
+        <div class="review-modal-viewport">
+          @if (modal.mediaList.length > 1) {
+            <button
+              type="button"
+              class="modal-nav-btn prev"
+              (click)="prevModalMedia($event)"
+              aria-label="Previous image"
+            >
+              ‹
+            </button>
+          }
+
+          <div class="modal-active-img-wrap">
+            <img
+              [src]="modal.mediaList[modal.activeIndex]?.url"
+              [alt]="modal.mediaList[modal.activeIndex]?.name || 'Enlarged review photo'"
+              class="modal-active-img"
+              (error)="onMediaThumbError($event)"
+            />
+            @if (modal.mediaList.length > 1) {
+              <div class="modal-img-counter">
+                {{ modal.activeIndex + 1 }} / {{ modal.mediaList.length }}
+              </div>
+            }
+          </div>
+
+          @if (modal.mediaList.length > 1) {
+            <button
+              type="button"
+              class="modal-nav-btn next"
+              (click)="nextModalMedia($event)"
+              aria-label="Next image"
+            >
+              ›
+            </button>
+          }
+        </div>
+
+        <!-- BOTTOM: Multiple Images Thumbnails Switcher Strip -->
+        @if (modal.mediaList.length > 1) {
+          <div class="review-modal-thumbs-strip" aria-label="Review photo thumbnails">
+            @for (item of modal.mediaList; track item.id) {
+              <button
+                type="button"
+                class="modal-thumb-btn"
+                [class.active]="$index === modal.activeIndex"
+                (click)="selectModalMediaIndex($index, $event)"
+                [attr.aria-label]="'Switch to photo ' + ($index + 1)"
+              >
+                <img
+                  [src]="item.url"
+                  [alt]="item.name"
+                  (error)="onMediaThumbError($event)"
+                />
+              </button>
+            }
+          </div>
+        }
       </div>
     </div>
   }

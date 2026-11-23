@@ -54,6 +54,7 @@ final class PromotionController
             '/api/v1/promotions/media/upload-url' => 'generatePromotionMediaUploadUrl',
             '/api/v1/promotions/media/link' => 'linkPromotionMedia',
             '/api/v1/promotions/media/delete' => 'deletePromotionMedia',
+            '/api/v1/promotions/media/primary' => 'setPrimaryPromotionMedia',
         ];
         $path = $request->getUri()->getPath();
         $action = $manage ? ($manageActions[$path] ?? '') : ($getActions[$path] ?? '');

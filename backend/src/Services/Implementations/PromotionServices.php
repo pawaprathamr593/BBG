@@ -105,6 +105,9 @@ final readonly class PromotionServices implements IPromotionServices
                 case 'deletePromotionMedia':
                     $resArr = $this->managePromotionMedia($actionData, 'delete');
                     break;
+                case 'setPrimaryPromotionMedia':
+                    $resArr = $this->setPrimaryPromotionMedia($actionData);
+                    break;
                 default:
                     $resArr['msgArr'][] = 'Unsupported promotion management action.';
                     break;
@@ -137,7 +140,7 @@ final readonly class PromotionServices implements IPromotionServices
             $promotionRow['media'] = [];
             if ($media['status'] === 'SUCCESS') {
                 foreach ($media['data'] as $mediaRow) {
-                    try { $mediaRow['url'] = $this->s3Storage->createDownloadUrl((string) $mediaRow['file_path']); }
+                    try { $mediaRow['url'] = $this->s3Storage->resolveDownloadUrl((string) $mediaRow['file_path']); }
                     catch (Throwable $exception) {
                         $this->logger->warning('Unable to create a post media download URL for promotion list.', [
                             'promotion_id' => (int) $promotionRow['id'], 'exception' => $exception,
@@ -180,6 +183,13 @@ final readonly class PromotionServices implements IPromotionServices
         if ($media['status'] !== 'SUCCESS') {
             return $this->propagateFailure($media, 'PromotionServices::getMyPromotion');
         }
+        foreach ($media['data'] as &$item) {
+            try { $item['url'] = $this->s3Storage->resolveDownloadUrl((string) $item['file_path']); }
+            catch (Throwable $exception) {
+                $item['url'] = null;
+            }
+        }
+        unset($item);
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = ['promotion' => $promotion['data'], 'media' => $media['data']];
         return $resArr;
@@ -200,7 +210,7 @@ final readonly class PromotionServices implements IPromotionServices
         $media = $this->dao->getPromotionMedia($this->db, (int) $context['data']['tenant_id'], $promotionId);
         if ($media['status'] !== 'SUCCESS') return $this->propagateFailure($media, 'PromotionServices::getMyPromotionMedia');
         foreach ($media['data'] as &$item) {
-            try { $item['url'] = $this->s3Storage->createDownloadUrl((string) $item['file_path']); }
+            try { $item['url'] = $this->s3Storage->resolveDownloadUrl((string) $item['file_path']); }
             catch (Throwable $exception) {
                 $this->logger->warning('Unable to create a post media download URL.', ['promotion_id' => $promotionId, 'exception' => $exception]);
                 $item['url'] = null;
@@ -320,6 +330,28 @@ final readonly class PromotionServices implements IPromotionServices
         return $this->dao->insertPromotionMedia(
             $this->db, $tenantId, $promotionId, $filePath, $supported[$mimeType], (int) $displayOrder, $userId,
         );
+    }
+
+    private function setPrimaryPromotionMedia(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->tenantContext($actionData, 'promotion.update');
+        if ($context['status'] !== 'SUCCESS') return $this->propagateFailure($context, 'PromotionServices::setPrimaryPromotionMedia');
+        $tenantId = (int) $context['data']['tenant_id'];
+        $userId = (int) $context['data']['user_id'];
+        $promotionId = $this->positiveInt($actionData['promotion_id'] ?? null);
+        $mediaId = $this->positiveInt($actionData['media_id'] ?? null);
+        if ($promotionId === null || $mediaId === null) {
+            $resArr['msgArr'][] = 'Valid promotion_id and media_id are required.';
+            return $resArr;
+        }
+        $promotion = $this->dao->getMyPromotion($this->db, $tenantId, $promotionId);
+        if ($promotion['status'] !== 'SUCCESS' || $promotion['data'] === []) return $this->propagateFailure($promotion, 'PromotionServices::setPrimaryPromotionMedia');
+        if (($promotion['data']['publication_status'] ?? '') === 'PUBLISHED') {
+            $resArr['msgArr'][] = 'Unpublish this post before changing its media.';
+            return $resArr;
+        }
+        return $this->dao->setPrimaryPromotionMedia($this->db, $tenantId, $promotionId, $mediaId, $userId);
     }
 
     private function promotionMediaSignatureMatches(string $mimeType, string $signature): bool

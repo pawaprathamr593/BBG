@@ -74,7 +74,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
         right: 20px;
         padding: 4px 12px;
         background: var(--bbg-brand-accent);
-        color: #171d19;
+        color: #000000;
         font-size: 0.72rem;
         font-weight: 700;
         border-radius: var(--bbg-radius-full);

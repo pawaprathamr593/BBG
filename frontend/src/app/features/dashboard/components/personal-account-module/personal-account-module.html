@@ -1,64 +1,241 @@
-<section class="personal-account-card" aria-labelledby="personal-account-title">
-  <header class="account-heading">
-    <div class="heading-content">
-      <span class="eyebrow">YOUR BBG ACCOUNT</span>
-      <h2 id="personal-account-title">Personal Details</h2>
-      <p class="heading-desc">
-        These details belong to your personal BBG account and are used across your platform
-        activity.
-      </p>
-    </div>
-    <div class="profile-avatar-wrap">
-      <span class="profile-avatar">{{ initials() }}</span>
-    </div>
-  </header>
-
-  <div class="account-details-grid">
-    <article class="detail-card">
-      <span class="detail-label">Full Name</span>
-      <strong class="detail-value">{{ display('full_name') }}</strong>
-    </article>
-    <article class="detail-card">
-      <span class="detail-label">Email Address</span>
-      <strong class="detail-value">{{ display('email') }}</strong>
-    </article>
-    <article class="detail-card">
-      <span class="detail-label">Mobile Number</span>
-      <strong class="detail-value">{{ display('mobile') }}</strong>
-    </article>
-  </div>
-
-  <footer class="account-actions-card">
-    <div class="security-info">
-      <div class="security-title-row">
-        <span class="lock-icon">🔒</span>
-        <strong>Account Password &amp; Security</strong>
+<section class="personal-account-container" aria-labelledby="personal-account-title">
+  <!-- 1. ACCOUNT OVERVIEW HERO -->
+  <header class="account-hero-card">
+    <div class="hero-main">
+      <div class="avatar-wrap">
+        @if (profileImage()) {
+          <img [src]="profileImage()" [alt]="fullName()" class="profile-avatar-img" />
+        } @else {
+          <span class="profile-avatar">{{ initials() }}</span>
+        }
       </div>
-      <p>
-        {{
-          hasPassword()
-            ? 'A secure password is set for your account. You can sign in using your email or mobile with this password.'
-            : 'You signed in via one-time code or social auth. Set a password to enable password-based sign in.'
-        }}
-      </p>
+      <div class="hero-identity">
+        <div class="hero-badge-row">
+          <span class="eyebrow">PERSONAL BBG ACCOUNT</span>
+          <app-status-badge
+            [status]="accountStatus() === 'ACTIVE' ? 'active' : 'pending'"
+            [label]="accountStatus()"
+            size="sm"
+          />
+        </div>
+        <h2 id="personal-account-title">{{ fullName() }}</h2>
+        <div class="hero-meta-row">
+          @if (email()) {
+            <span class="meta-item">
+              <span class="meta-icon">✉</span> {{ email() }}
+              @if (emailVerified()) {
+                <span class="verified-tag" title="Email verified">✓ Verified</span>
+              } @else {
+                <span class="unverified-tag" title="Email not verified">Unverified</span>
+              }
+            </span>
+          }
+          @if (mobile()) {
+            <span class="meta-item">
+              <span class="meta-icon">📞</span> {{ mobile() }}
+              @if (mobileVerified()) {
+                <span class="verified-tag" title="Mobile verified">✓ Verified</span>
+              } @else {
+                <span class="unverified-tag" title="Mobile not verified">Unverified</span>
+              }
+            </span>
+          }
+          <span class="meta-item">
+            <span class="meta-icon">📅</span> Member since {{ createdOn() }}
+          </span>
+        </div>
+      </div>
     </div>
-    <div class="account-buttons">
-      @if (canEdit()) {
+    @if (canEdit()) {
+      <div class="hero-actions">
         <button type="button" class="btn-primary" (click)="edit()">
           <span class="btn-icon">✎</span> Edit Details
         </button>
-        <button type="button" class="btn-secondary" (click)="openPassword()">
-          {{ hasPassword() ? 'Change Password' : 'Set Password' }}
-        </button>
-      }
-    </div>
-  </footer>
+      </div>
+    }
+  </header>
 
   @if (error()) {
     <p class="account-error" role="alert">{{ error() }}</p>
   }
+
+  <!-- 2. PERSONAL INFORMATION GRID -->
+  <section class="account-section" aria-labelledby="personal-info-heading">
+    <div class="section-header">
+      <div>
+        <h3 id="personal-info-heading">Personal Information</h3>
+        <p class="section-desc">Your verified identity details used across BBG platform activities.</p>
+      </div>
+    </div>
+
+    <div class="account-details-grid">
+      <article class="detail-card">
+        <span class="detail-label">Full Name</span>
+        <strong class="detail-value">{{ display('full_name') }}</strong>
+      </article>
+
+      <article class="detail-card">
+        <div class="card-label-row">
+          <span class="detail-label">Email Address</span>
+          @if (emailVerified()) {
+            <span class="badge-mini-verified">Verified</span>
+          }
+        </div>
+        <strong class="detail-value">{{ display('email') }}</strong>
+      </article>
+
+      <article class="detail-card">
+        <div class="card-label-row">
+          <span class="detail-label">Mobile Number</span>
+          @if (mobileVerified()) {
+            <span class="badge-mini-verified">Verified</span>
+          }
+        </div>
+        <strong class="detail-value">{{ display('mobile') }}</strong>
+      </article>
+
+      <article class="detail-card">
+        <span class="detail-label">Account Created</span>
+        <strong class="detail-value">{{ createdOn() }}</strong>
+      </article>
+    </div>
+  </section>
+
+  <!-- 3. BUSINESS INFORMATION & ASSOCIATIONS -->
+  <section class="account-section" aria-labelledby="business-associations-heading">
+    <div class="section-header">
+      <div>
+        <h3 id="business-associations-heading">Associated Businesses</h3>
+        <p class="section-desc">
+          Businesses and organization memberships associated with your personal account.
+        </p>
+      </div>
+      @if (businesses().length) {
+        <button type="button" class="btn-secondary btn-sm" (click)="registerBusiness()">
+          ＋ Register Another Business
+        </button>
+      }
+    </div>
+
+    @if (businesses().length) {
+      <div class="business-associations-grid">
+        @for (b of businesses(); track b.id) {
+          <article class="business-association-card">
+            <header class="biz-card-header">
+              <div class="biz-avatar">
+                @if (b.logo_path) {
+                  <img [src]="b.logo_path" [alt]="b.tenant_name" class="biz-logo-img" />
+                } @else {
+                  <span class="biz-initials">{{ initials(b.tenant_name) }}</span>
+                }
+              </div>
+              <div class="biz-identity">
+                <div class="biz-title-row">
+                  <h4>{{ b.profile_business_name || b.tenant_name }}</h4>
+                  <app-status-badge
+                    [status]="b.tenant_status === 'ACTIVE' ? 'active' : 'pending'"
+                    [label]="b.tenant_status"
+                    size="sm"
+                  />
+                </div>
+                <div class="biz-meta-tags">
+                  <span class="biz-code">{{ b.tenant_code }}</span>
+                  @if (b.role_codes) {
+                    <span class="biz-role-tag">{{ b.role_codes }}</span>
+                  }
+                  <span class="biz-type-tag">{{ b.tenant_type }}</span>
+                </div>
+              </div>
+            </header>
+
+            <div class="biz-card-body">
+              @if (b.business_email) {
+                <div class="biz-info-row">
+                  <span class="info-label">Email:</span>
+                  <span class="info-val">{{ b.business_email }}</span>
+                </div>
+              }
+              @if (b.business_phone) {
+                <div class="biz-info-row">
+                  <span class="info-label">Phone:</span>
+                  <span class="info-val">{{ b.business_phone }}</span>
+                </div>
+              }
+              @if (b.city || b.state) {
+                <div class="biz-info-row">
+                  <span class="info-label">Location:</span>
+                  <span class="info-val">
+                    {{ b.city }}{{ b.city && b.state ? ', ' : '' }}{{ b.state }}
+                  </span>
+                </div>
+              }
+              @if (b.joined_on) {
+                <div class="biz-info-row">
+                  <span class="info-label">Joined:</span>
+                  <span class="info-val">{{ formatDate(b.joined_on) }}</span>
+                </div>
+              }
+            </div>
+
+            <footer class="biz-card-footer">
+              <button
+                type="button"
+                class="btn-primary btn-sm open-workspace-btn"
+                (click)="openBusinessWorkspace(b.id)"
+                [disabled]="busy()"
+              >
+                <span>🏢</span> Open Business Workspace
+              </button>
+            </footer>
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="empty-business-card">
+        <span class="empty-biz-icon">🏢</span>
+        <div class="empty-biz-content">
+          <h4>No Registered Business Yet</h4>
+          <p>
+            You have not registered or joined any businesses on BBG. If you are an entrepreneur or
+            seller, register your business to manage products, receive customer enquiries, and
+            operate a storefront.
+          </p>
+        </div>
+        <button type="button" class="btn-primary" (click)="registerBusiness()">
+          Register Your Business
+        </button>
+      </div>
+    }
+  </section>
+
+  <!-- 4. SECURITY & CREDENTIALS -->
+  <section class="account-section security-section" aria-labelledby="security-heading">
+    <div class="security-card">
+      <div class="security-icon-wrap">
+        <span class="security-icon">🔒</span>
+      </div>
+      <div class="security-text">
+        <h3 id="security-heading">Password &amp; Sign-in Security</h3>
+        <p>
+          {{
+            hasPassword()
+              ? 'A secure password is set for your account. You can sign in using your email or mobile with this password.'
+              : 'You signed in via one-time code or social auth. Set a password to enable password-based sign-in.'
+          }}
+        </p>
+      </div>
+      @if (canEdit()) {
+        <div class="security-actions">
+          <button type="button" class="btn-secondary" (click)="openPassword()">
+            {{ hasPassword() ? 'Change Password' : 'Set Password' }}
+          </button>
+        </div>
+      }
+    </div>
+  </section>
 </section>
 
+<!-- EDIT PROFILE DRAWER -->
 <app-workspace-drawer
   [open]="profileDrawerOpen()"
   title="Edit Personal Details"
@@ -125,6 +302,7 @@
   </form>
 </app-workspace-drawer>
 
+<!-- PASSWORD MANAGEMENT DRAWER -->
 <app-workspace-drawer
   [open]="passwordDrawerOpen()"
   [title]="hasPassword() ? 'Change Account Password' : 'Set Account Password'"
@@ -176,8 +354,8 @@
       />
     </label>
 
-    @if (error()) {
-      <p class="account-error" role="alert">{{ error() }}</p>
+    @if (passwordError()) {
+      <p class="account-error" role="alert">{{ passwordError() }}</p>
     }
 
     <footer class="drawer-footer">

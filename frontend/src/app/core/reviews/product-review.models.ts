@@ -73,6 +73,11 @@ export interface UpdateProductReviewDto {
   rating: number;
   review_title?: string | null;
   review_text: string;
+  media?: Array<{
+    id?: number | string;
+    media_url?: string;
+    file_name?: string;
+  }>;
 }
 
 export interface ReportProductReviewDto {

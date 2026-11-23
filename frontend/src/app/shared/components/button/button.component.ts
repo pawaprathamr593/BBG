@@ -106,7 +106,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 
       :host-context(html[data-theme='dark']) .btn-primary,
       :host-context(body.dark-theme) .btn-primary {
-        color: #000000;
+        color: var(--bbg-btn-text-on-primary, #000000);
       }
 
       .btn-secondary {

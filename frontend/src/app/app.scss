@@ -161,7 +161,7 @@
   background: transparent;
 }
 .register-link {
-  color: #171d19;
+  color: #000000;
   background: var(--accent);
   border-color: var(--accent);
 }
@@ -196,7 +196,8 @@
   min-height: 86px;
   padding: 18px max(28px, calc((100vw - 1400px) / 2));
   color: #fff;
-  background: #171d19;
+  background: #0a0a0a;
+  border-top: 1px solid #202020;
 }
 .footer-brand {
   display: flex;
@@ -399,4 +400,27 @@
   min-height: 0;
   flex: 1 1 auto;
   overflow: hidden;
+}
+
+:host-context(html[data-theme='dark']) {
+  .nav-link {
+    color: var(--text-secondary);
+
+    &:hover {
+      color: var(--text-primary);
+    }
+
+    &.is-active {
+      color: var(--accent);
+
+      &::after {
+        background: var(--accent);
+      }
+    }
+  }
+
+  .site-footer {
+    background: #0a0a0a;
+    border-top: 1px solid #202020;
+  }
 }

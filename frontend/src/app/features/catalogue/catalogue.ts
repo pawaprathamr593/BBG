@@ -134,6 +134,7 @@ export class Catalogue implements OnInit {
   readonly notice = signal('');
   readonly selectedMediaFiles = signal<File[]>([]);
   readonly existingMedia = signal<ProductMedia[]>([]);
+  readonly stagedPrimaryIndex = signal<number>(0);
   readonly mediaBusy = signal(false);
   readonly mediaUploadProgress = signal(0);
   readonly mediaError = signal('');
@@ -395,6 +396,7 @@ export class Catalogue implements OnInit {
     this.formError.set('');
     this.clearSelectedMedia();
     this.existingMedia.set([]);
+    this.stagedPrimaryIndex.set(0);
     this.mediaError.set('');
     this.showForm.set(true);
   }
@@ -418,13 +420,17 @@ export class Catalogue implements OnInit {
     this.formError.set('');
     this.clearSelectedMedia();
     this.existingMedia.set([]);
+    this.stagedPrimaryIndex.set(-1);
     this.mediaError.set('');
     this.showForm.set(true);
     const tenantId = this.tenantId();
     if (tenantId)
       this.api
         .listProductMedia(tenantId, product.id)
-        .then((items) => this.existingMedia.set(items))
+        .then((items) => {
+          this.existingMedia.set(items);
+          this.stagedPrimaryIndex.set(items.some((m) => m.is_primary === 1) ? -1 : 0);
+        })
         .catch((error) => this.mediaError.set(this.auth.errorMessage(error)));
   }
 
@@ -516,6 +522,51 @@ export class Catalogue implements OnInit {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     if (file) this.mediaPreviewUrls.delete(file);
     this.selectedMediaFiles.update((files) => files.filter((_, position) => position !== index));
+    if (this.stagedPrimaryIndex() === index) {
+      this.stagedPrimaryIndex.set(this.existingMedia().some((m) => m.is_primary === 1) ? -1 : 0);
+    } else if (this.stagedPrimaryIndex() > index) {
+      this.stagedPrimaryIndex.update((i) => i - 1);
+    }
+  }
+
+  isStagedPrimary(index: number): boolean {
+    if (this.stagedPrimaryIndex() === index) {
+      return true;
+    }
+    if (
+      this.stagedPrimaryIndex() < 0 &&
+      !this.existingMedia().some((media) => media.is_primary === 1) &&
+      index === 0
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  setStagedPrimary(index: number): void {
+    this.stagedPrimaryIndex.set(index);
+  }
+
+  async setExistingPrimary(media: ProductMedia): Promise<void> {
+    const tenantId = this.tenantId();
+    const productId = this.editingId();
+    if (!tenantId || !productId || !this.canUpdate() || this.mediaBusy()) return;
+    this.mediaBusy.set(true);
+    this.mediaError.set('');
+    try {
+      await this.api.setPrimaryProductMedia(tenantId, productId, media.id);
+      this.existingMedia.update((items) =>
+        items.map((item) => ({
+          ...item,
+          is_primary: item.id === media.id ? 1 : 0,
+        })),
+      );
+      this.stagedPrimaryIndex.set(-1);
+    } catch (error) {
+      this.mediaError.set(this.auth.errorMessage(error));
+    } finally {
+      this.mediaBusy.set(false);
+    }
   }
 
   async removeExistingMedia(media: ProductMedia): Promise<void> {
@@ -534,6 +585,9 @@ export class Catalogue implements OnInit {
     try {
       await this.api.deleteProductMedia(tenantId, productId, media.id);
       this.existingMedia.update((items) => items.filter((item) => item.id !== media.id));
+      if (media.is_primary === 1 && !this.existingMedia().some((m) => m.is_primary === 1)) {
+        this.stagedPrimaryIndex.set(0);
+      }
     } catch (error) {
       this.mediaError.set(this.auth.errorMessage(error));
     } finally {
@@ -604,15 +658,11 @@ export class Catalogue implements OnInit {
       const files = this.selectedMediaFiles();
       if (files.length) {
         this.mediaBusy.set(true);
-        for (const file of files) {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
           this.mediaUploadProgress.set(0);
-          const displayOrder = this.existingMedia().length;
-          const makePrimary =
-            !this.existingMedia().some((media) => media.is_primary === 1) &&
-            file.type.startsWith('image/') &&
-            !files
-              .slice(0, files.indexOf(file))
-              .some((candidate) => candidate.type.startsWith('image/'));
+          const displayOrder = this.existingMedia().length + i;
+          const makePrimary = this.isStagedPrimary(i);
           await this.api.uploadAndLinkProductMedia(
             tenantId,
             productId,
@@ -621,14 +671,10 @@ export class Catalogue implements OnInit {
             makePrimary,
             (progress) => this.mediaUploadProgress.set(progress),
           );
-          this.selectedMediaFiles.update((remaining) =>
-            remaining.filter((candidate) => candidate !== file),
-          );
-          this.existingMedia.set(await this.api.listProductMedia(tenantId, productId));
         }
-        this.mediaBusy.set(false);
         this.selectedMediaFiles.set([]);
         this.existingMedia.set(await this.api.listProductMedia(tenantId, productId));
+        this.mediaBusy.set(false);
       }
       this.showForm.set(false);
       this.clearSelectedMedia();

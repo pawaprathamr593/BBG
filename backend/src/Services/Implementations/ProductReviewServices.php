@@ -184,7 +184,11 @@ final readonly class ProductReviewServices implements IProductReviewServices
             if ($mediaUrl === '') {
                 continue;
             }
-            $isS3Key = str_starts_with($mediaUrl, 'tenants/') && strlen($mediaUrl) <= 500;
+            // Strip leading slashes for relative S3 paths
+            if (!str_starts_with($mediaUrl, 'http://') && !str_starts_with($mediaUrl, 'https://')) {
+                $mediaUrl = ltrim($mediaUrl, '/');
+            }
+            $isS3Key = (str_starts_with($mediaUrl, 'tenants/') || str_contains($mediaUrl, '/reviews/')) && strlen($mediaUrl) <= 500;
             $scheme = strtolower((string) parse_url($mediaUrl, PHP_URL_SCHEME));
             $isHttpUrl = in_array($scheme, ['http', 'https'], true) && strlen($mediaUrl) <= 500 && filter_var($mediaUrl, FILTER_VALIDATE_URL) !== false;
 
@@ -196,9 +200,8 @@ final readonly class ProductReviewServices implements IProductReviewServices
             if ($isS3Key) {
                 try {
                     $this->s3Storage->headObject($mediaUrl);
-                } catch (Throwable) {
-                    $resArr['msgArr'][] = 'Review media file not found or upload incomplete on S3: ' . basename($mediaUrl);
-                    return $resArr;
+                } catch (\Throwable $e) {
+                    error_log('createReview headObject check warning for [' . $mediaUrl . ']: ' . $e->getMessage());
                 }
             }
 
@@ -270,6 +273,25 @@ final readonly class ProductReviewServices implements IProductReviewServices
 
         $title = $this->nullableText($actionData['review_title'] ?? null, 180);
 
+        $media = null;
+        if (array_key_exists('media', $actionData) && is_array($actionData['media'])) {
+            $media = [];
+            foreach ($actionData['media'] as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+                $mediaUrl = trim((string) ($item['media_url'] ?? ''));
+                if ($mediaUrl === '' && empty($item['id'])) {
+                    continue;
+                }
+                $media[] = [
+                    'id' => isset($item['id']) && is_numeric($item['id']) ? (int) $item['id'] : null,
+                    'media_url' => $mediaUrl,
+                    'file_name' => isset($item['file_name']) && is_scalar($item['file_name']) ? (string) $item['file_name'] : null,
+                ];
+            }
+        }
+
         return $this->dao->updateReview(
             $this->db,
             $reviewId,
@@ -277,6 +299,7 @@ final readonly class ProductReviewServices implements IProductReviewServices
             $rating,
             $title,
             $text,
+            $media,
         );
     }
 

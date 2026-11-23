@@ -219,4 +219,16 @@ export class CatalogueApiService {
       media_id: mediaId,
     });
   }
+
+  setPrimaryProductMedia(
+    tenantId: number,
+    productId: number,
+    mediaId: number,
+  ): Promise<{ media_id: number; is_primary: number }> {
+    return this.post('products/media/primary', {
+      tenant_id: tenantId,
+      product_id: productId,
+      media_id: mediaId,
+    });
+  }
 }

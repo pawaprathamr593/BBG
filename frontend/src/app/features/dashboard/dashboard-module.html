@@ -66,7 +66,7 @@
       <p>{{ unsupported() }}</p>
     </section>
   } @else {
-    @if (section() === 'profile' && summary(); as business) {
+    @if (section() === 'profile' && activeTenantId() && summary(); as business) {
       <app-business-profile-module
         [business]="business"
         [canEdit]="can('business.update')"
@@ -83,7 +83,10 @@
 
     @if (
       summaryCardModels().length &&
-      !(section() === 'customers' && !activeTenantId()) &&
+      !(
+        (section() === 'customers' || section() === 'profile' || section() === 'account') &&
+        !activeTenantId()
+      ) &&
       section() !== 'profile' &&
       section() !== 'storefront' &&
       section() !== 'payment-qr-settings'
@@ -91,15 +94,21 @@
       <app-workspace-summary-module [entries]="summaryCardModels()" />
     }
 
-    @if (section() === 'customers' && !activeTenantId() && summary(); as personalProfile) {
+    @if (
+      (section() === 'customers' || section() === 'profile' || section() === 'account') &&
+      !activeTenantId() &&
+      summary();
+      as personalProfile
+    ) {
       <app-personal-account-module
         [profile]="personalProfile"
-        [canEdit]="can('user.update')"
+        [businesses]="userBusinesses()"
+        [canEdit]="canEditPersonal()"
         (refreshRequested)="load()"
       />
       <app-personal-addresses-module
         [addresses]="items()"
-        [canManage]="can('user.update')"
+        [canManage]="canEditPersonal()"
         (refreshRequested)="load()"
       />
     }
@@ -145,7 +154,10 @@
       <app-moderation-history-module [items]="moderationHistoryItems()" />
     }
     @if (
-      !(section() === 'customers' && !activeTenantId()) &&
+      !(
+        (section() === 'customers' || section() === 'profile' || section() === 'account') &&
+        !activeTenantId()
+      ) &&
       section() !== 'categories' &&
       (filteredItems().length || totalItems() > 0)
     ) {
@@ -168,7 +180,10 @@
         (proofSubmitRequested)="submitProof($event)"
       />
     } @else if (
-      !(section() === 'customers' && !activeTenantId()) &&
+      !(
+        (section() === 'customers' || section() === 'profile' || section() === 'account') &&
+        !activeTenantId()
+      ) &&
       section() !== 'categories' &&
       !summaryEntries().length &&
       !(section() === 'subscriptions' && plans().length)
@@ -1336,6 +1351,8 @@
       [validUntil]="promotionValidUntil()"
       [files]="promotionFiles()"
       [previews]="promotionMediaPreviews()"
+      [existingMedia]="existingPromotionMedia()"
+      [stagedPrimaryIndex]="stagedPromotionPrimaryIndex()"
       [busy]="promotionMediaBusy()"
       [progress]="promotionUploadProgress()"
       [error]="promotionError()"
@@ -1347,6 +1364,9 @@
       (dragOver)="allowPromotionMediaDrop($event)"
       (filesDropped)="dropPromotionMedia($event)"
       (fileRemoved)="removePromotionMedia($event)"
+      (existingMediaRemoved)="removeExistingPromotionMedia($event)"
+      (existingMediaPrimary)="setExistingPromotionPrimary($event)"
+      (stagedPrimaryChanged)="setStagedPromotionPrimary($event)"
       (cancel)="closePromotionComposer()"
       (submit)="submitPromotion()"
     />

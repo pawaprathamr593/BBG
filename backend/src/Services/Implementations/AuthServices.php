@@ -842,6 +842,13 @@ final readonly class AuthServices implements IAuthServices
             'email' => $user['email'] ?? null,
             'mobile' => $user['mobile'] ?? null,
             'profile_image' => $user['profile_image'] ?? null,
+            'email_verified_on' => $user['email_verified_on'] ?? null,
+            'mobile_verified_on' => $user['mobile_verified_on'] ?? null,
+            'email_verified' => !empty($user['email_verified_on']),
+            'mobile_verified' => !empty($user['mobile_verified_on']),
+            'last_login_on' => $user['last_login_on'] ?? null,
+            'account_status' => (string) ($user['account_status'] ?? 'ACTIVE'),
+            'created_on' => $user['created_on'] ?? null,
             'has_password' => is_string($user['password_hash'] ?? null) && ($user['password_hash'] ?? '') !== '',
         ];
     }

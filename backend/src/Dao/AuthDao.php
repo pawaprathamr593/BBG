@@ -147,7 +147,8 @@ final readonly class AuthDao
         $resArr = $this->initialResponse();
         try {
             $row = $connection->createCommand(
-                "SELECT id, full_name, email, mobile, password_hash, profile_image, account_status, status
+                "SELECT id, full_name, email, mobile, password_hash, profile_image,
+                        email_verified_on, mobile_verified_on, last_login_on, account_status, created_on, status
                  FROM USERS
                  WHERE status = 'A' AND (LOWER(email) = :email OR mobile = :mobile)
                  LIMIT 1",
@@ -184,7 +185,8 @@ final readonly class AuthDao
         $resArr = $this->initialResponse();
         try {
             $row = $connection->createCommand(
-                "SELECT id, full_name, email, mobile, password_hash, profile_image, account_status, status
+                "SELECT id, full_name, email, mobile, password_hash, profile_image,
+                        email_verified_on, mobile_verified_on, last_login_on, account_status, created_on, status
                  FROM USERS WHERE id = :id AND status = 'A' LIMIT 1",
                 [':id' => $userId],
             )->queryOne();

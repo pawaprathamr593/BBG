@@ -81,7 +81,7 @@
   padding: 3px 8px;
   border-radius: var(--bbg-radius-sm);
   background: var(--bbg-brand-accent);
-  color: var(--bbg-text-primary);
+  color: var(--bbg-btn-text-on-accent, #000000);
   font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -353,19 +353,26 @@
   min-height: 38px;
   padding: 8px 12px;
   border-radius: var(--bbg-radius-md);
-  background: var(--bbg-success-soft);
-  border: 1px solid color-mix(in srgb, var(--bbg-success) 32%, transparent);
+  background: var(--bbg-whatsapp-bg, #075e54);
+  border: 1px solid var(--bbg-whatsapp-border, #075e54);
   font: inherit;
   font-size: 0.73rem;
   font-weight: 750;
-  color: var(--bbg-success);
+  color: var(--bbg-whatsapp-text, #ffffff);
   cursor: pointer;
   transition: all 0.15s ease;
   flex-shrink: 0;
 
+  .action-svg {
+    width: 17px;
+    height: 17px;
+    fill: currentColor;
+    flex-shrink: 0;
+  }
+
   &:hover:not(.disabled) {
-    background: color-mix(in srgb, var(--bbg-success) 18%, var(--bbg-surface-card));
-    border-color: var(--bbg-success);
+    background: var(--bbg-whatsapp-bg-hover, #054c44);
+    border-color: var(--bbg-whatsapp-border, #054c44);
   }
 
   &:focus-visible {
@@ -393,9 +400,9 @@
   }
 
   .btn-action-whatsapp:not(.disabled) {
-    background: color-mix(in srgb, var(--bbg-success) 22%, var(--bbg-surface-card));
-    border-color: color-mix(in srgb, var(--bbg-success) 48%, transparent);
-    color: var(--bbg-success-soft);
+    background: var(--bbg-whatsapp-bg, #25d366);
+    border-color: var(--bbg-whatsapp-border, #25d366);
+    color: var(--bbg-whatsapp-text, #000000);
   }
 }
 

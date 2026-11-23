@@ -163,7 +163,7 @@
 }
 
 :host-context(html[data-theme='dark']) .primary-button {
-  color: #000000;
+  color: var(--bbg-btn-text-on-primary, #000000);
 }
 
 .secondary-button {

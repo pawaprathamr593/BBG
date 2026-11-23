@@ -24,9 +24,9 @@ import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
         justify-content: center;
         gap: 9px;
         padding: 0 17px;
-        color: #17231b;
-        background: #f5d928;
-        border: 1px solid #e5ca17;
+        color: #000000;
+        background: var(--bbg-brand-accent, #f5d927);
+        border: 1px solid var(--bbg-brand-accent, #f5d927);
         border-radius: 999px;
         box-shadow: 0 8px 28px rgba(16, 42, 27, 0.24);
         font: inherit;
@@ -43,7 +43,7 @@ import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
       }
       .filter-fab:focus-visible,
       .drawer-footer button:focus-visible {
-        outline: 3px solid color-mix(in srgb, #174d35 45%, transparent);
+        outline: 3px solid color-mix(in srgb, var(--bbg-brand-highlight, #10b981) 45%, transparent);
         outline-offset: 3px;
       }
       .filter-fab svg {
@@ -61,11 +61,16 @@ import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
         height: 21px;
         place-items: center;
         padding: 0 5px;
-        color: #fff;
-        background: #174d35;
+        color: var(--bbg-btn-text-on-primary, #fff);
+        background: var(--bbg-brand-primary, #174d35);
         border-radius: 999px;
         font-size: 0.68rem;
         font-weight: 850;
+      }
+      :host-context(html[data-theme='dark']) .filter-count,
+      :host-context(body.dark-theme) .filter-count {
+        color: #000000;
+        background: var(--bbg-brand-primary, #f5d927);
       }
       .drawer-footer {
         justify-content: space-between;
@@ -86,9 +91,9 @@ import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
       }
       .drawer-apply {
         flex: 1;
-        color: #17231b;
-        background: #f5d928;
-        border: 1px solid #f5d928;
+        color: #000000;
+        background: var(--bbg-brand-accent, #f5d927);
+        border: 1px solid var(--bbg-brand-accent, #f5d927);
       }
       @media (max-width: 767.98px) {
         .filter-fab {

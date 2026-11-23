@@ -142,7 +142,8 @@ final readonly class PromotionDao
     public function getPromotionMedia(ConnectionInterface $db, int $tenantId, int $promotionId): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
-        return $this->many($db, "SELECT id, file_path, media_type, display_order
+        return $this->many($db, "SELECT id, file_path, media_type, display_order,
+            (CASE WHEN display_order = 0 THEN 1 ELSE 0 END) AS is_primary
             FROM POST_MEDIA WHERE tenant_id = :tenant_id AND post_id = :post_id AND status = 'A'
             ORDER BY display_order ASC, id ASC",
             [':tenant_id' => $tenantId, ':post_id' => $promotionId], 'getPromotionMedia');
@@ -220,6 +221,47 @@ final readonly class PromotionDao
             $resArr['data'] = ['id' => $mediaId];
         } catch (Throwable $exception) {
             return $this->error('softDeletePromotionMedia', $exception);
+        }
+        return $resArr;
+    }
+
+    public function setPrimaryPromotionMedia(
+        ConnectionInterface $db,
+        int $tenantId,
+        int $promotionId,
+        int $mediaId,
+        int $userId,
+    ): array {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $transaction = $db->beginTransaction();
+        try {
+            $existing = $db->createCommand("SELECT id, display_order FROM POST_MEDIA
+                WHERE id = :media_id AND tenant_id = :tenant_id AND post_id = :post_id AND status = 'A'",
+                [':media_id' => $mediaId, ':tenant_id' => $tenantId, ':post_id' => $promotionId])->queryOne();
+            if (!$existing) {
+                $transaction->rollBack();
+                $resArr['msgArr'][] = 'Promotion media record was not found.';
+                return $resArr;
+            }
+
+            $db->createCommand("UPDATE POST_MEDIA SET display_order = display_order + 1,
+                updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                WHERE tenant_id = :tenant_id AND post_id = :post_id AND id != :media_id AND status = 'A'",
+                [':user_id' => $userId, ':tenant_id' => $tenantId, ':post_id' => $promotionId, ':media_id' => $mediaId])->execute();
+
+            $db->createCommand("UPDATE POST_MEDIA SET display_order = 0,
+                updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                WHERE id = :media_id AND tenant_id = :tenant_id AND post_id = :post_id AND status = 'A'",
+                [':user_id' => $userId, ':media_id' => $mediaId, ':tenant_id' => $tenantId, ':post_id' => $promotionId])->execute();
+
+            $transaction->commit();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['media_id' => $mediaId, 'is_primary' => 1];
+        } catch (Throwable $exception) {
+            if ($transaction->isActive()) {
+                $transaction->rollBack();
+            }
+            return $this->error('setPrimaryPromotionMedia', $exception);
         }
         return $resArr;
     }

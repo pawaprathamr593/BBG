@@ -56,7 +56,7 @@ import {
         padding: 8px 36px 8px 38px;
         font-size: 0.875rem;
         color: var(--bbg-text-primary);
-        background: var(--bbg-surface-card);
+        background: var(--bbg-surface-input, var(--bbg-surface-card));
         border: 1px solid var(--bbg-border-default);
         border-radius: var(--bbg-radius-md);
         transition: all 0.15s ease;

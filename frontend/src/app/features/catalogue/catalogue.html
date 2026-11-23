@@ -763,6 +763,9 @@
           <p class="form-error" role="alert">{{ mediaError() }}</p>
         }
         @if (selectedMediaFiles().length) {
+          <div class="existing-media-heading">
+            <strong>Ready to upload ({{ selectedMediaFiles().length }})</strong>
+          </div>
           <div class="media-list">
             @for (file of selectedMediaFiles(); track $index) {
               <div class="media-item">
@@ -783,19 +786,36 @@
                   <strong>{{ file.name }}</strong
                   ><small>{{ formatFileSize(file.size) }} · Ready to upload</small>
                 </div>
-                <button
-                  type="button"
-                  class="icon-button"
-                  [attr.aria-label]="'Remove ' + file.name"
-                  (click)="removeSelectedMedia($index)"
-                >
-                  ×
-                </button>
+                <div class="media-item-actions">
+                  @if (isStagedPrimary($index)) {
+                    <span class="media-primary-badge">★ Primary</span>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn-make-primary"
+                      [disabled]="mediaBusy()"
+                      (click)="setStagedPrimary($index)"
+                    >
+                      Set as Primary
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="icon-button"
+                    [attr.aria-label]="'Remove ' + file.name"
+                    (click)="removeSelectedMedia($index)"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             }
           </div>
         }
         @if (existingMedia().length) {
+          <div class="existing-media-heading">
+            <strong>Existing product media ({{ existingMedia().length }})</strong>
+          </div>
           <div class="media-list">
             @for (media of existingMedia(); track media.id) {
               <div class="media-item">
@@ -816,20 +836,34 @@
                   <strong>{{ media.original_file_name }}</strong
                   ><small
                     >{{ formatFileSize(media.file_size_bytes) }} ·
-                    {{ media.is_primary ? 'Primary image' : media.media_type }}</small
+                    {{ media.is_primary ? 'Primary media' : media.media_type }}</small
                   >
                 </div>
-                @if (canUpdate()) {
-                  <button
-                    type="button"
-                    class="icon-button"
-                    [disabled]="mediaBusy()"
-                    [attr.aria-label]="'Delete ' + media.original_file_name"
-                    (click)="removeExistingMedia(media)"
-                  >
-                    ×
-                  </button>
-                }
+                <div class="media-item-actions">
+                  @if (media.is_primary === 1) {
+                    <span class="media-primary-badge">★ Primary</span>
+                  } @else if (canUpdate()) {
+                    <button
+                      type="button"
+                      class="btn-make-primary"
+                      [disabled]="mediaBusy()"
+                      (click)="setExistingPrimary(media)"
+                    >
+                      Set as Primary
+                    </button>
+                  }
+                  @if (canUpdate()) {
+                    <button
+                      type="button"
+                      class="icon-button"
+                      [disabled]="mediaBusy()"
+                      [attr.aria-label]="'Delete ' + media.original_file_name"
+                      (click)="removeExistingMedia(media)"
+                    >
+                      ×
+                    </button>
+                  }
+                </div>
               </div>
             }
           </div>

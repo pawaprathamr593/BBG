@@ -242,8 +242,15 @@ final readonly class CustomerServices implements ICustomerServices
                 }
             }
             if ($operation === 'create') {
+                $tenantId = $this->positiveInt($context['data']['tenant_id'] ?? null);
+                $tenantCustomerId = $this->positiveInt($context['data']['tenant_customer_id'] ?? null);
+                if ($tenantId === null || $tenantCustomerId === null) {
+                    $transaction->rollBack();
+                    $resArr['msgArr'][] = 'No active business context is available for address assignment.';
+                    return $resArr;
+                }
                 $result = $this->dao->insertAddress(
-                    $this->db, $userId, $label, $recipient, $mobile,
+                    $this->db, $tenantId, $tenantCustomerId, $userId, $label, $recipient, $mobile,
                     $line1, $line2, $city, $state, $postal, $country, $isDefault,
                 );
             } else {
@@ -308,7 +315,7 @@ final readonly class CustomerServices implements ICustomerServices
     }
 
     /** Resolve the signed-in account for global My Account address operations.
-     * Tenant context is intentionally not required: saved addresses belong to USERS.
+     * Tenant context is automatically resolved without forcing the client to pass tenant_id.
      */
     private function personalAddressContext(array $actionData): array
     {
@@ -317,10 +324,58 @@ final readonly class CustomerServices implements ICustomerServices
             return $this->propagateFailure($identity, 'CustomerServices::personalAddressContext');
         }
         $userId = (int) ($identity['data']['user_id'] ?? 0);
-        if ($userId < 1) {
+        $identityId = (int) ($identity['data']['id'] ?? 0);
+        if ($userId < 1 || $identityId < 1) {
             return ['status' => 'FAILED', 'msgArr' => ['Authenticated user profile is unavailable.'], 'data' => []];
         }
-        return ['status' => 'SUCCESS', 'msgArr' => [], 'data' => ['user_id' => $userId]];
+
+        $tenantId = $this->positiveInt($actionData['tenant_id'] ?? null);
+        $tenantCustomerId = null;
+
+        if ($tenantId !== null) {
+            $tenant = $this->dao->getActiveTenant($this->db, $tenantId);
+            if ($tenant['status'] !== 'SUCCESS' || empty($tenant['data'])) {
+                $tenantId = null;
+            }
+        }
+
+        if ($tenantId === null) {
+            $resolved = $this->dao->findTenantForCustomer($this->db, $userId, $identityId);
+            if ($resolved['status'] === 'SUCCESS' && !empty($resolved['data']['tenant_id'])) {
+                $tenantId = (int) $resolved['data']['tenant_id'];
+                if (!empty($resolved['data']['tenant_customer_id'])) {
+                    $tenantCustomerId = (int) $resolved['data']['tenant_customer_id'];
+                }
+            }
+        }
+
+        if ($tenantId !== null && $tenantCustomerId === null) {
+            $customer = $this->dao->getTenantCustomer($this->db, $tenantId, $identityId);
+            if ($customer['status'] === 'SUCCESS' && !empty($customer['data']['id'])) {
+                $tenantCustomerId = (int) $customer['data']['id'];
+            } else {
+                $created = $this->dao->insertTenantCustomer(
+                    $this->db, $tenantId, $identityId, $userId,
+                    (string) ($identity['data']['full_name'] ?? 'User ' . $userId),
+                    $this->nullableText($identity['data']['email'] ?? null),
+                    $this->nullableText($identity['data']['mobile'] ?? null),
+                );
+                if ($created['status'] === 'SUCCESS' && !empty($created['data']['id'])) {
+                    $tenantCustomerId = (int) $created['data']['id'];
+                }
+            }
+        }
+
+        return [
+            'status' => 'SUCCESS',
+            'msgArr' => [],
+            'data' => [
+                'user_id' => $userId,
+                'identity_id' => $identityId,
+                'tenant_id' => $tenantId,
+                'tenant_customer_id' => $tenantCustomerId,
+            ],
+        ];
     }
 
     private function customerContext(array $actionData): array

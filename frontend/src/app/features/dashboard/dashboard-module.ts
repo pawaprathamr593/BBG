@@ -127,7 +127,11 @@ export class DashboardModule implements OnInit {
   readonly loading = signal(false);
   readonly busy = signal(false);
   readonly activeTenantId = this.workspace.activeTenantId;
-  readonly isPersonalContext = computed(() => this.workspace.activeContext() === 'PERSONAL');
+  readonly isPersonalContext = computed(
+    () => this.workspace.activeContext() === 'PERSONAL' || this.workspace.activeTenantId() === null,
+  );
+  readonly canEditPersonal = computed(() => this.isPersonalContext() || this.can('user.update'));
+  readonly userBusinesses = computed(() => this.workspace.tenants());
   readonly error = signal('');
   readonly notice = signal('');
   readonly unsupported = signal('');
@@ -313,12 +317,16 @@ export class DashboardModule implements OnInit {
   readonly promotionError = signal('');
   readonly draftPromotionId = signal<number | null>(null);
   readonly promotionUploadedCount = signal(0);
+  readonly existingPromotionMedia = signal<DataRecord[]>([]);
+  readonly stagedPromotionPrimaryIndex = signal<number>(0);
 
   readonly title = computed(() => {
     const section = this.section();
     if (this.isPersonalContext()) {
       const personalTitles: Record<string, string> = {
         customers: 'My Profile & Addresses',
+        profile: 'My Profile & Addresses',
+        account: 'My Account',
         enquiries: 'My Enquiries',
         orders: 'My Orders',
         payments: 'My Payments',
@@ -333,6 +341,8 @@ export class DashboardModule implements OnInit {
   readonly description = computed(() => {
     const personalDescriptions: Record<string, string> = {
       customers: 'Manage your personal details and saved delivery addresses.',
+      profile: 'Manage your personal details, saved delivery addresses, and account settings.',
+      account: 'Manage your personal details, saved delivery addresses, and account settings.',
       enquiries: 'Review your enquiries and conversations with businesses.',
       orders: 'Track orders you have placed with businesses on BBG.',
       payments: 'Review payments associated with your customer orders.',
@@ -651,9 +661,28 @@ export class DashboardModule implements OnInit {
           this.setListResult(data);
           break;
         }
+        case 'account':
         case 'profile':
-          if (!tenantId)
-            return this.setUnsupported('Open Business Workspace to view your business profile.');
+          if (!tenantId) {
+            const profile = await this.auth.loadProfile();
+            if (loadId !== this.loadSequence) return;
+            this.summary.set(profile as unknown as DataRecord);
+            try {
+              const addresses = await this.request<ListResult>(
+                '/api/v1/customers/addresses/list',
+                'customerParam',
+                'listMyAddresses',
+              );
+              this.setListResult(addresses);
+            } catch (addressError) {
+              this.setListResult({ items: [] });
+              this.notice.set(
+                'Your account details loaded, but saved addresses are temporarily unavailable. ' +
+                  this.auth.errorMessage(addressError),
+              );
+            }
+            break;
+          }
           try {
             this.summary.set(
               await this.request<DataRecord>(
@@ -1403,7 +1432,10 @@ export class DashboardModule implements OnInit {
   addMediaToPromotion(item: DataRecord): void {
     const localValidUntil = this.utcDateTimeToLocalInput(item['valid_until']);
     this.draftPromotionId.set(this.recordId(item, 'id'));
-    this.promotionUploadedCount.set(this.mediaOf(item).length);
+    const media = this.mediaOf(item);
+    this.existingPromotionMedia.set(media);
+    this.stagedPromotionPrimaryIndex.set(media.length === 0 ? 0 : -1);
+    this.promotionUploadedCount.set(media.length);
     this.promotionTitle.set(String(item['post_title'] ?? ''));
     this.promotionContent.set(String(item['post_content'] ?? ''));
     this.promotionValidUntil.set(localValidUntil);
@@ -1443,6 +1475,8 @@ export class DashboardModule implements OnInit {
 
   async createPromotion(): Promise<void> {
     this.draftPromotionId.set(null);
+    this.existingPromotionMedia.set([]);
+    this.stagedPromotionPrimaryIndex.set(0);
     this.promotionUploadedCount.set(0);
     this.promotionTitle.set('');
     this.promotionContent.set('');
@@ -1458,6 +1492,7 @@ export class DashboardModule implements OnInit {
     if (this.promotionMediaBusy()) return;
     this.showPromotionComposer.set(false);
     this.draftPromotionId.set(null);
+    this.existingPromotionMedia.set([]);
     this.originalPromotionValidUntil.set('');
     this.promotionUploadedCount.set(0);
     this.clearPromotionPreviews();
@@ -1545,6 +1580,83 @@ export class DashboardModule implements OnInit {
         return next;
       });
     this.promotionFiles.update((files) => files.filter((_, position) => position !== index));
+    if (this.stagedPromotionPrimaryIndex() === index) {
+      this.stagedPromotionPrimaryIndex.set(this.existingPromotionMedia().length > 0 ? -1 : 0);
+    } else if (this.stagedPromotionPrimaryIndex() > index) {
+      this.stagedPromotionPrimaryIndex.update((i) => i - 1);
+    }
+  }
+
+  setStagedPromotionPrimary(index: number): void {
+    this.stagedPromotionPrimaryIndex.set(index);
+  }
+
+  async removeExistingPromotionMedia(media: DataRecord): Promise<void> {
+    const tenantId = this.workspace.activeTenantId();
+    const promotionId = this.draftPromotionId();
+    const mediaId = Number(media['id'] ?? 0);
+    if (!tenantId || !promotionId || !mediaId || this.promotionMediaBusy()) return;
+    this.promotionMediaBusy.set(true);
+    this.promotionError.set('');
+    try {
+      await this.request(
+        '/api/v1/promotions/media/delete',
+        'promotionParam',
+        'deletePromotionMedia',
+        {
+          tenant_id: tenantId,
+          promotion_id: promotionId,
+          media_id: mediaId,
+        },
+      );
+      this.existingPromotionMedia.update((items) =>
+        items.filter((item) => Number(item['id']) !== mediaId),
+      );
+      this.promotionUploadedCount.update((count) => Math.max(0, count - 1));
+      this.notice.set('Media attachment removed.');
+      await this.load();
+    } catch (error) {
+      this.promotionError.set(this.auth.errorMessage(error));
+    } finally {
+      this.promotionMediaBusy.set(false);
+    }
+  }
+
+  async setExistingPromotionPrimary(media: DataRecord): Promise<void> {
+    const tenantId = this.workspace.activeTenantId();
+    const promotionId = this.draftPromotionId();
+    const mediaId = Number(media['id'] ?? 0);
+    if (!tenantId || !promotionId || !mediaId || this.promotionMediaBusy()) return;
+    this.promotionMediaBusy.set(true);
+    this.promotionError.set('');
+    try {
+      await this.request(
+        '/api/v1/promotions/media/primary',
+        'promotionParam',
+        'setPrimaryPromotionMedia',
+        {
+          tenant_id: tenantId,
+          promotion_id: promotionId,
+          media_id: mediaId,
+        },
+      );
+      this.existingPromotionMedia.update((items) =>
+        items
+          .map((item) => ({
+            ...item,
+            is_primary: Number(item['id']) === mediaId ? 1 : 0,
+            display_order: Number(item['id']) === mediaId ? 0 : (Number(item['display_order']) || 1) + 1,
+          }))
+          .sort((a, b) => Number(a['display_order']) - Number(b['display_order'])),
+      );
+      this.stagedPromotionPrimaryIndex.set(-1);
+      this.notice.set('Primary media updated.');
+      await this.load();
+    } catch (error) {
+      this.promotionError.set(this.auth.errorMessage(error));
+    } finally {
+      this.promotionMediaBusy.set(false);
+    }
   }
 
   private utcDateTimeToLocalInput(raw: unknown): string {
@@ -1657,7 +1769,12 @@ export class DashboardModule implements OnInit {
             : file.type.startsWith('audio/')
               ? 'AUDIO'
               : 'DOCUMENT';
-        await this.request(
+        const isPrimary =
+          index === this.stagedPromotionPrimaryIndex() ||
+          (this.existingPromotionMedia().length === 0 &&
+            this.stagedPromotionPrimaryIndex() < 0 &&
+            index === 0);
+        const linked = await this.request<{ id: number }>(
           '/api/v1/promotions/media/link',
           'promotionParam',
           'linkPromotionMedia',
@@ -1667,15 +1784,33 @@ export class DashboardModule implements OnInit {
             file_path: upload.object_key,
             mime_type: file.type,
             file_size_bytes: file.size,
-            display_order: index,
+            display_order: isPrimary ? 0 : this.existingPromotionMedia().length + index + 1,
             media_type: mediaType,
           },
         );
+        if (isPrimary && linked?.id) {
+          try {
+            await this.request(
+              '/api/v1/promotions/media/primary',
+              'promotionParam',
+              'setPrimaryPromotionMedia',
+              {
+                tenant_id: tenantId,
+                promotion_id: promotionId,
+                media_id: Number(linked.id),
+              },
+            );
+          } catch {
+            // Non-fatal if already set
+          }
+        }
         this.promotionFiles.update((remaining) =>
           remaining.filter((candidate) => candidate !== file),
         );
         this.promotionUploadedCount.update((count) => count + 1);
       }
+      this.existingPromotionMedia.set([]);
+      this.stagedPromotionPrimaryIndex.set(0);
       this.notice.set('Promotion draft and attachments saved. Publish it when ready.');
       this.showPromotionComposer.set(false);
       this.draftPromotionId.set(null);

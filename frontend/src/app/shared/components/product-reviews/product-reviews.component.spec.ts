@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { ProductReviewsComponent } from './product-reviews.component';
 import { ProductReviewApiService } from '../../../core/reviews/product-review-api.service';
+import { ProductReview } from '../../../core/reviews/product-review.models';
 import { AuthService } from '../../../core/auth/auth.service';
 import { AuthDialogService } from '../../../core/auth/auth-dialog.service';
 import { S3UploadService } from '../../../core/storage/s3-upload.service';
@@ -87,6 +88,13 @@ describe('ProductReviewsComponent', () => {
           expires_in: 600,
           required_headers: { 'Content-Type': 'image/webp' },
         },
+      }),
+    ),
+    updateReview: vi.fn().mockReturnValue(
+      of({
+        status: 'SUCCESS',
+        msgArr: ['Review updated successfully.'],
+        data: { id: 1 },
       }),
     ),
   };
@@ -231,6 +239,75 @@ describe('ProductReviewsComponent', () => {
             media_url: 'tenants/1/reviews/42/99/test.webp',
             file_name: 'valve-photo.png',
           },
+        ],
+      }),
+    );
+  });
+
+  it('should display review media thumbnails in edit mode and save remaining media when deleted', async () => {
+    const reviewWithMedia: ProductReview = {
+      id: 99,
+      tenant_id: 1,
+      product_id: 42,
+      business_id: 1,
+      user_id: 10,
+      author_name: 'Rajesh Sharma',
+      rating: 5,
+      review_title: 'Great valve',
+      review_text: 'Good build quality overall.',
+      review_status: 'PUBLISHED',
+      is_verified_purchase: true,
+      helpful_count: 2,
+      reviewed_on: '2026-11-20T10:00:00Z',
+      user_voted_helpful: false,
+      is_author: true,
+      media: [
+        { id: 101, media_url: 'https://example.com/photo1.jpg', file_name: 'Photo 1' },
+        { id: 102, media_url: 'https://example.com/photo2.jpg', file_name: 'Photo 2' },
+      ],
+    };
+
+    mockApiService.getProductReviews.mockReturnValueOnce(
+      of({
+        status: 'SUCCESS',
+        msgArr: [],
+        data: {
+          items: [reviewWithMedia],
+          pagination: { page: 1, page_size: 10, total_count: 1, total_pages: 1 },
+        },
+      }),
+    );
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    component['startEditing'](reviewWithMedia);
+    fixture.detectChanges();
+
+    expect(component['editMedia']().length).toBe(2);
+    const editThumbs = fixture.nativeElement.querySelectorAll('.edit-thumb-item');
+    expect(editThumbs.length).toBe(2);
+
+    // Delete first image
+    const removeBtn = editThumbs[0].querySelector('.btn-remove-thumb') as HTMLButtonElement;
+    removeBtn.click();
+    fixture.detectChanges();
+
+    expect(component['editMedia']().length).toBe(1);
+    expect(component['editMedia']()[0].id).toBe(102);
+
+    // Save edit
+    await component['saveEdit'](99);
+    expect(mockApiService.updateReview).toHaveBeenCalledWith(
+      expect.objectContaining({
+        review_id: 99,
+        media: [
+          expect.objectContaining({
+            id: 102,
+            media_url: 'https://example.com/photo2.jpg',
+          }),
         ],
       }),
     );

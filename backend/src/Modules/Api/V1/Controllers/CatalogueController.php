@@ -56,6 +56,7 @@ final class CatalogueController
             '/api/v1/catalogue/products/media/upload-url' => 'generateProductMediaUploadUrl',
             '/api/v1/catalogue/products/media/link' => 'linkProductMedia',
             '/api/v1/catalogue/products/media/delete' => 'deleteProductMedia',
+            '/api/v1/catalogue/products/media/primary' => 'setPrimaryProductMedia',
         ];
         $path = $request->getUri()->getPath();
         $action = $manage ? ($manageActions[$path] ?? '') : ($getActions[$path] ?? '');

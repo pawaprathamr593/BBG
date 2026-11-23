@@ -227,12 +227,13 @@
   --footer-subtle: #9fb3a6;
   margin-top: auto;
   padding: 58px max(24px, calc((100vw - 1280px) / 2)) 0;
-  background: #171d19;
+  background: #000000;
+  border-top: 1px solid var(--bbg-border-subtle, #202020);
   color: var(--footer-text);
 }
 
 :host-context(html[data-theme='dark']) .store-footer {
-  background: var(--bbg-surface-page, #171d19);
+  background: var(--bbg-surface-page, #000000);
 }
 
 .footer-main {

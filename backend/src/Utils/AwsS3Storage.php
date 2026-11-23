@@ -82,7 +82,7 @@ final class AwsS3Storage
             return $this->createDownloadUrl($trimmed);
         } catch (\Throwable $exception) {
             error_log('AwsS3Storage::resolveDownloadUrl failed for key [' . $trimmed . ']: ' . $exception->getMessage());
-            return null;
+            return 'https://' . $this->bucket . '.s3.' . $this->region . '.amazonaws.com/' . ltrim($trimmed, '/');
         }
     }
 

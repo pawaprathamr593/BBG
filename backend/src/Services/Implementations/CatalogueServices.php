@@ -107,6 +107,9 @@ final readonly class CatalogueServices implements ICatalogueServices
                 case 'deleteProductMedia':
                     $resArr = $this->manageProductMedia($actionData, 'delete');
                     break;
+                case 'setPrimaryProductMedia':
+                    $resArr = $this->setPrimaryProductMedia($actionData);
+                    break;
                 default:
                     $resArr['msgArr'][] = 'Unsupported catalogue management action.';
                     break;
@@ -238,9 +241,9 @@ final readonly class CatalogueServices implements ICatalogueServices
 
         foreach ($media['data'] as &$item) {
             try {
-                $item['url'] = $this->s3Storage->createDownloadUrl((string) $item['file_path']);
+                $item['url'] = $this->s3Storage->resolveDownloadUrl((string) $item['file_path']);
                 $item['thumbnail_url'] = !empty($item['thumbnail_path'])
-                    ? $this->s3Storage->createDownloadUrl((string) $item['thumbnail_path'])
+                    ? $this->s3Storage->resolveDownloadUrl((string) $item['thumbnail_path'])
                     : null;
             } catch (Throwable $exception) {
                 $this->logger->warning('Unable to create a presigned URL for product media.', [
@@ -669,7 +672,6 @@ final readonly class CatalogueServices implements ICatalogueServices
             || $displayOrder === null || $displayOrder < 0 || $isPrimary === null
             || !in_array($mediaType, ['IMAGE', 'VIDEO', 'AUDIO', 'DOCUMENT'], true)
             || !$this->isSupportedProductMedia($mimeType, $mediaType)
-            || ($isPrimary === 1 && $mediaType !== 'IMAGE')
             || !str_starts_with($filePath, $expectedPrefix) || str_contains($filePath, '..')
             || str_starts_with($filePath, '/') || preg_match('/^[a-z]+:\/\//i', $filePath)
         ) {
@@ -751,6 +753,33 @@ final readonly class CatalogueServices implements ICatalogueServices
             }
             throw $exception;
         }
+    }
+
+    private function setPrimaryProductMedia(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->tenantContext($actionData, 'catalogue.update');
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'CatalogueServices::setPrimaryProductMedia');
+        }
+        $tenantId = (int) $context['data']['tenant_id'];
+        $userId = (int) $context['data']['user_id'];
+        $productId = $this->positiveInt($actionData['product_id'] ?? null);
+        $mediaId = $this->positiveInt($actionData['media_id'] ?? null);
+        if ($productId === null || $mediaId === null) {
+            $resArr['msgArr'][] = 'Valid product_id and media_id are required.';
+            return $resArr;
+        }
+        $product = $this->dao->getTenantProduct($this->db, $tenantId, $productId);
+        if ($product['status'] !== 'SUCCESS' || $product['data'] === []) {
+            return $this->propagateFailure($product, 'CatalogueServices::setPrimaryProductMedia');
+        }
+        $media = $this->dao->getProductMediaRecord($this->db, $tenantId, $productId, $mediaId);
+        if ($media['status'] !== 'SUCCESS' || $media['data'] === []) {
+            $resArr['msgArr'][] = 'Product media record was not found.';
+            return $resArr;
+        }
+        return $this->dao->setPrimaryProductMedia($this->db, $tenantId, $productId, $mediaId, $userId);
     }
 
     private function tenantContext(array $actionData, string $permissionCode): array

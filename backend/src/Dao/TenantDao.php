@@ -19,10 +19,13 @@ final readonly class TenantDao
             $db,
             "SELECT t.id, t.tenant_code, t.tenant_name, t.tenant_type, t.tenant_status,
                     tm.membership_status, tm.joined_on,
+                    bp.business_name AS profile_business_name, bp.logo_path, bp.business_email, bp.business_phone,
+                    bp.city, bp.state, bp.approval_status, bp.publication_status,
                     GROUP_CONCAT(DISTINCT r.role_code ORDER BY r.role_code SEPARATOR ',') AS role_codes,
                     active_plan.active_entitlements
              FROM TENANT_MEMBERSHIPS tm
              INNER JOIN TENANTS t ON t.id = tm.tenant_id AND t.status = 'A'
+             LEFT JOIN BUSINESS_PROFILES bp ON bp.tenant_id = t.id AND bp.status = 'A'
              LEFT JOIN USER_ROLE_ASSIGNMENTS ura ON ura.user_id = tm.user_id
                 AND ura.tenant_id = tm.tenant_id AND ura.status = 'A'
                 AND (ura.expires_on IS NULL OR ura.expires_on > CURRENT_TIMESTAMP)
@@ -41,7 +44,9 @@ final readonly class TenantDao
              WHERE tm.user_id = :user_id AND tm.membership_status = 'ACTIVE'
                 AND tm.status = 'A'
              GROUP BY t.id, t.tenant_code, t.tenant_name, t.tenant_type, t.tenant_status,
-                      tm.membership_status, tm.joined_on, active_plan.active_entitlements
+                      tm.membership_status, tm.joined_on, bp.business_name, bp.logo_path,
+                      bp.business_email, bp.business_phone, bp.city, bp.state, bp.approval_status, bp.publication_status,
+                      active_plan.active_entitlements
              ORDER BY t.tenant_name ASC, t.id ASC
              LIMIT :limit OFFSET :offset",
             [':user_id' => $userId, ':limit' => $limit, ':offset' => $offset],

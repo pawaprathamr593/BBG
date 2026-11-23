@@ -99,30 +99,71 @@ final readonly class CustomerDao
         return $resArr;
     }
 
-    /** Global personal address book: every row is owned by the authenticated USERS.id. */
+    public function getActiveTenant(ConnectionInterface $db, int $tenantId): array
+    {
+        return $this->one($db, "SELECT id, tenant_code, tenant_name
+            FROM TENANTS
+            WHERE id = :tenant_id AND tenant_status = 'ACTIVE' AND status = 'A'
+            LIMIT 1", [':tenant_id' => $tenantId], 'getActiveTenant');
+    }
+
+    public function findTenantForCustomer(ConnectionInterface $db, int $userId, int $identityId): array
+    {
+        // 1. Existing customer association in an active tenant
+        $row = $this->one($db, "SELECT tc.tenant_id, tc.id AS tenant_customer_id
+            FROM TENANT_CUSTOMERS tc
+            INNER JOIN TENANTS t ON t.id = tc.tenant_id AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+            WHERE tc.customer_identity_id = :identity_id AND tc.customer_status = 'ACTIVE' AND tc.status = 'A'
+            ORDER BY tc.id ASC LIMIT 1", [':identity_id' => $identityId], 'findTenantForCustomer');
+        if ($row['status'] === 'SUCCESS' && !empty($row['data']['tenant_id'])) {
+            return $row;
+        }
+
+        // 2. Tenant where user is an active member
+        $row = $this->one($db, "SELECT tm.tenant_id
+            FROM TENANT_MEMBERSHIPS tm
+            INNER JOIN TENANTS t ON t.id = tm.tenant_id AND t.tenant_status = 'ACTIVE' AND t.status = 'A'
+            WHERE tm.user_id = :user_id AND tm.membership_status = 'ACTIVE' AND tm.status = 'A'
+            ORDER BY tm.id ASC LIMIT 1", [':user_id' => $userId], 'findTenantForCustomer');
+        if ($row['status'] === 'SUCCESS' && !empty($row['data']['tenant_id'])) {
+            return $row;
+        }
+
+        // 3. Any active tenant in the platform
+        return $this->one($db, "SELECT t.id AS tenant_id
+            FROM TENANTS t
+            WHERE t.tenant_status = 'ACTIVE' AND t.status = 'A'
+            ORDER BY t.id ASC LIMIT 1", [], 'findTenantForCustomer');
+    }
+
+    /** Global personal address book: every row is owned by the authenticated USERS.id or associated customer identity. */
     public function getAddresses(ConnectionInterface $db, int $userId): array
     {
-        return $this->many($db, "SELECT id, address_label, recipient_name, mobile, address_line_1,
-            address_line_2, city, state, postal_code, country_code, is_default
-            FROM CUSTOMER_ADDRESSES
-            WHERE user_id = :user_id AND status = 'A'
-            ORDER BY is_default DESC, id DESC",
+        return $this->many($db, "SELECT ca.id, ca.tenant_id, ca.tenant_customer_id, ca.address_label, ca.recipient_name, ca.mobile,
+            ca.address_line_1, ca.address_line_2, ca.city, ca.state, ca.postal_code, ca.country_code, ca.is_default
+            FROM CUSTOMER_ADDRESSES ca
+            LEFT JOIN TENANT_CUSTOMERS tc ON tc.id = ca.tenant_customer_id
+            LEFT JOIN CUSTOMER_IDENTITIES ci ON ci.id = tc.customer_identity_id
+            WHERE (ca.created_by = :user_id OR ci.user_id = :user_id) AND ca.status = 'A'
+            ORDER BY ca.is_default DESC, ca.id DESC",
             [':user_id' => $userId], 'getAddresses');
     }
 
-    public function insertAddress(ConnectionInterface $db, int $userId, string $label, string $recipient, string $mobile, string $line1, string $line2, string $city, string $state, string $postal, string $country, int $isDefault): array
+    public function insertAddress(ConnectionInterface $db, int $tenantId, int $tenantCustomerId, int $userId, string $label, string $recipient, string $mobile, string $line1, string $line2, string $city, string $state, string $postal, string $country, int $isDefault): array
     {
         try {
             $db->createCommand("INSERT INTO CUSTOMER_ADDRESSES
-                (user_id, tenant_id, tenant_customer_id, address_label, recipient_name, mobile,
+                (tenant_id, tenant_customer_id, address_label, recipient_name, mobile,
                  address_line_1, address_line_2, city, state, postal_code, country_code,
                  is_default, status, created_by, updated_by)
-                VALUES (:user_id, NULL, NULL, :label, :recipient, :mobile,
+                VALUES (:tenant_id, :tenant_customer_id, :label, :recipient, :mobile,
                  :line1, :line2, :city, :state, :postal, :country,
                  :is_default, 'A', :user_id, :user_id)",
-                [':user_id' => $userId, ':label' => $label, ':recipient' => $recipient, ':mobile' => $mobile,
+                [':tenant_id' => $tenantId, ':tenant_customer_id' => $tenantCustomerId,
+                 ':label' => $label, ':recipient' => $recipient, ':mobile' => $mobile,
                  ':line1' => $line1, ':line2' => $line2, ':city' => $city, ':state' => $state,
-                 ':postal' => $postal, ':country' => $country, ':is_default' => $isDefault])->execute();
+                 ':postal' => $postal, ':country' => $country, ':is_default' => $isDefault,
+                 ':user_id' => $userId])->execute();
             return ['status' => 'SUCCESS', 'msgArr' => [], 'data' => ['id' => (int) $db->getLastInsertId()]];
         } catch (Throwable $exception) {
             return $this->error('insertAddress', $exception);
@@ -131,25 +172,30 @@ final readonly class CustomerDao
 
     public function getAddress(ConnectionInterface $db, int $userId, int $addressId): array
     {
-        return $this->one($db, "SELECT id FROM CUSTOMER_ADDRESSES
-            WHERE id = :id AND user_id = :user_id AND status = 'A' LIMIT 1",
+        return $this->one($db, "SELECT ca.id, ca.tenant_id, ca.tenant_customer_id
+            FROM CUSTOMER_ADDRESSES ca
+            LEFT JOIN TENANT_CUSTOMERS tc ON tc.id = ca.tenant_customer_id
+            LEFT JOIN CUSTOMER_IDENTITIES ci ON ci.id = tc.customer_identity_id
+            WHERE ca.id = :id AND (ca.created_by = :user_id OR ci.user_id = :user_id) AND ca.status = 'A' LIMIT 1",
             [':id' => $addressId, ':user_id' => $userId], 'getAddress');
     }
 
     public function updateAddress(ConnectionInterface $db, int $userId, int $addressId, int $actorId, string $label, string $recipient, string $mobile, string $line1, string $line2, string $city, string $state, string $postal, string $country, int $isDefault): array
     {
         try {
-            $affected = $db->createCommand("UPDATE CUSTOMER_ADDRESSES
-                SET address_label = :label, recipient_name = :recipient, mobile = :mobile,
-                    address_line_1 = :line1, address_line_2 = :line2, city = :city,
-                    state = :state, postal_code = :postal, country_code = :country,
-                    is_default = :is_default, updated_by = :actor_id, updated_on = CURRENT_TIMESTAMP
-                WHERE id = :id AND user_id = :user_id AND status = 'A'",
+            $affected = $db->createCommand("UPDATE CUSTOMER_ADDRESSES ca
+                LEFT JOIN TENANT_CUSTOMERS tc ON tc.id = ca.tenant_customer_id
+                LEFT JOIN CUSTOMER_IDENTITIES ci ON ci.id = tc.customer_identity_id
+                SET ca.address_label = :label, ca.recipient_name = :recipient, ca.mobile = :mobile,
+                    ca.address_line_1 = :line1, ca.address_line_2 = :line2, ca.city = :city,
+                    ca.state = :state, ca.postal_code = :postal, ca.country_code = :country,
+                    ca.is_default = :is_default, ca.updated_by = :actor_id, ca.updated_on = CURRENT_TIMESTAMP
+                WHERE ca.id = :id AND (ca.created_by = :user_id OR ci.user_id = :user_id) AND ca.status = 'A'",
                 [':label' => $label, ':recipient' => $recipient, ':mobile' => $mobile, ':line1' => $line1,
                  ':line2' => $line2, ':city' => $city, ':state' => $state, ':postal' => $postal,
                  ':country' => $country, ':is_default' => $isDefault, ':actor_id' => $actorId,
                  ':id' => $addressId, ':user_id' => $userId])->execute();
-            if ($affected !== 1) return ['status' => 'FAILED', 'msgArr' => ['Customer address was not found.'], 'data' => []];
+            if ($affected < 0) return ['status' => 'FAILED', 'msgArr' => ['Customer address was not found.'], 'data' => []];
             return ['status' => 'SUCCESS', 'msgArr' => [], 'data' => ['id' => $addressId]];
         } catch (Throwable $exception) { return $this->error('updateAddress', $exception); }
     }
@@ -157,8 +203,11 @@ final readonly class CustomerDao
     public function clearDefaultAddresses(ConnectionInterface $db, int $userId, int $actorId): array
     {
         try {
-            $db->createCommand("UPDATE CUSTOMER_ADDRESSES SET is_default = 0, updated_by = :actor_id,
-                updated_on = CURRENT_TIMESTAMP WHERE user_id = :user_id AND status = 'A'",
+            $db->createCommand("UPDATE CUSTOMER_ADDRESSES ca
+                LEFT JOIN TENANT_CUSTOMERS tc ON tc.id = ca.tenant_customer_id
+                LEFT JOIN CUSTOMER_IDENTITIES ci ON ci.id = tc.customer_identity_id
+                SET ca.is_default = 0, ca.updated_by = :actor_id, ca.updated_on = CURRENT_TIMESTAMP
+                WHERE (ca.created_by = :user_id OR ci.user_id = :user_id) AND ca.status = 'A'",
                 [':actor_id' => $actorId, ':user_id' => $userId])->execute();
             return ['status' => 'SUCCESS', 'msgArr' => [], 'data' => []];
         } catch (Throwable $exception) { return $this->error('clearDefaultAddresses', $exception); }
@@ -167,10 +216,13 @@ final readonly class CustomerDao
     public function setDefaultAddress(ConnectionInterface $db, int $userId, int $addressId, int $actorId): array
     {
         try {
-            $affected = $db->createCommand("UPDATE CUSTOMER_ADDRESSES SET is_default = 1, updated_by = :actor_id,
-                updated_on = CURRENT_TIMESTAMP WHERE id = :id AND user_id = :user_id AND status = 'A'",
+            $affected = $db->createCommand("UPDATE CUSTOMER_ADDRESSES ca
+                LEFT JOIN TENANT_CUSTOMERS tc ON tc.id = ca.tenant_customer_id
+                LEFT JOIN CUSTOMER_IDENTITIES ci ON ci.id = tc.customer_identity_id
+                SET ca.is_default = 1, ca.updated_by = :actor_id, ca.updated_on = CURRENT_TIMESTAMP
+                WHERE ca.id = :id AND (ca.created_by = :user_id OR ci.user_id = :user_id) AND ca.status = 'A'",
                 [':actor_id' => $actorId, ':id' => $addressId, ':user_id' => $userId])->execute();
-            if ($affected !== 1) return ['status' => 'FAILED', 'msgArr' => ['Customer address was not found.'], 'data' => []];
+            if ($affected < 0) return ['status' => 'FAILED', 'msgArr' => ['Customer address was not found.'], 'data' => []];
             return ['status' => 'SUCCESS', 'msgArr' => [], 'data' => ['id' => $addressId]];
         } catch (Throwable $exception) { return $this->error('setDefaultAddress', $exception); }
     }
@@ -178,11 +230,13 @@ final readonly class CustomerDao
     public function softDeleteAddress(ConnectionInterface $db, int $userId, int $addressId, int $actorId): array
     {
         try {
-            $affected = $db->createCommand("UPDATE CUSTOMER_ADDRESSES SET status = 'Z', is_default = 0,
-                updated_by = :actor_id, updated_on = CURRENT_TIMESTAMP
-                WHERE id = :id AND user_id = :user_id AND status = 'A'",
+            $affected = $db->createCommand("UPDATE CUSTOMER_ADDRESSES ca
+                LEFT JOIN TENANT_CUSTOMERS tc ON tc.id = ca.tenant_customer_id
+                LEFT JOIN CUSTOMER_IDENTITIES ci ON ci.id = tc.customer_identity_id
+                SET ca.status = 'Z', ca.is_default = 0, ca.updated_by = :actor_id, ca.updated_on = CURRENT_TIMESTAMP
+                WHERE ca.id = :id AND (ca.created_by = :user_id OR ci.user_id = :user_id) AND ca.status = 'A'",
                 [':actor_id' => $actorId, ':id' => $addressId, ':user_id' => $userId])->execute();
-            if ($affected !== 1) return ['status' => 'FAILED', 'msgArr' => ['Customer address was not found.'], 'data' => []];
+            if ($affected < 1) return ['status' => 'FAILED', 'msgArr' => ['Customer address was not found.'], 'data' => []];
             return ['status' => 'SUCCESS', 'msgArr' => [], 'data' => ['id' => $addressId]];
         } catch (Throwable $exception) { return $this->error('softDeleteAddress', $exception); }
     }

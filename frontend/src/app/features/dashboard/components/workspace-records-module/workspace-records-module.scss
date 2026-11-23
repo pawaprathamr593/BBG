@@ -709,7 +709,7 @@
 :host-context(body.dark-theme) {
   .btn-action-primary:not(.btn-danger),
   .card-action-btn:not(.danger) {
-    color: #000000;
+    color: var(--bbg-btn-text-on-primary, #000000);
   }
 }
 
