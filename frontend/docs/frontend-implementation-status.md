@@ -1,9 +1,9 @@
 # BBG Frontend Implementation Status & Repository Audit
 
-**Audit date:** 16 November 2026  
+**Audit date:** 23 November 2026  
 **Repository:** `pawaprathamr593/BBG`  
 **Working branch:** `feature/frontend-development`  
-**Reviewed baseline head:** `4ced0488c8b753c496fe2275cd536ff1ffb27264`  
+**Reviewed implementation head:** `d7d57d4f1ede1214b29d8b92020108c92f149bef`  
 **Scope:** Angular frontend only. Backend source and database files are inspected read-only and are not modified by this work.
 
 ## 1. Repository and technology baseline
@@ -27,7 +27,7 @@
 - Lazy-loaded routes for marketplace home, directory, business storefront, product details, promotions, authentication, Consumer, Entrepreneur, Platform Administrator, access denied and not found.
 - Shared `ApiService`, response/error normalization and functional auth interceptor using the registered POST routes and module envelopes.
 - Authentication/session flow with in-memory access-token state, rotating HttpOnly refresh-cookie requests, `X-BBG-CSRF: 1` on refresh/logout, session restoration and guest/authenticated guards.
-- Permission context is loaded from the backend and distinguishes `PLATFORM` from `TENANT` scope. Unknown permissions deny access; the backend remains authoritative.
+- Permission context is loaded from the backend and distinguishes `PLATFORM` from `TENANT` scope. Unknown permissions deny access; the backend remains authoritative. Permission requests are latest-request-wins, the returned `tenant_id` must match the requested context (platform request `0` returns `null`), and logout/new authentication responses invalidate pending permission requests.
 - Entrepreneur workspace loads active tenant memberships and provides a business selector. Tenant IDs are attached to tenant-scoped actions only after selection; the backend must still verify membership and authorization.
 - Business-context changes now clear displayed response/payload state and invalidate in-flight requests, preventing a late response from the previously selected tenant from repopulating the workspace.
 - Shared responsive workspace shell with Consumer, Entrepreneur and Platform Administrator configurations. Actions without confirmed DTOs retain a JSON payload editor rather than inventing field names.
@@ -54,11 +54,10 @@
 
 ## 6. Validation
 
-- The latest pre-increment branch head (`4ced0488c8b753c496fe2275cd536ff1ffb27264`) passed GitHub Actions Frontend validation run [43561809920](https://github.com/pawaprathamr593/BBG/actions/runs/43561809920) on 14 November 2026. Dependency installation, sitemap syntax check, production build and unit tests all passed.
-- The same head passed backend validation run [43561809946](https://github.com/pawaprathamr593/BBG/actions/runs/43561809946). No backend files are changed by this frontend increment.
-- This increment adds proxy configuration and tenant-context regression tests; its CI run must be checked after commit before calling the new changes verified.
+- Implementation head `d7d57d4f1ede1214b29d8b92020108c92f149bef` passed GitHub Actions [Frontend validation run 45117066676](https://github.com/pawaprathamr593/BBG/actions/runs/45117066676) on 23 November 2026. Dependency installation, sitemap syntax validation, production build and unit tests passed; all 8 test files passed.
+- The corresponding [backend validation run 45117066600](https://github.com/pawaprathamr593/BBG/actions/runs/45117066600) also passed. This increment changed no backend source, routes, migrations or database files.
 - `package.json` does not define a lint script or an E2E runner. Playwright/browser E2E and automated accessibility checks are not yet configured.
-- Previous builds reported non-blocking component stylesheet budget warnings. A production build warning is not a functional test failure, but the affected stylesheets should be optimized without changing the design.
+- The production build succeeds with non-blocking component stylesheet budget warnings: `business-directory.scss` (4.01 kB), `workspace.scss` (7.97 kB), `storefront-section.scss` (5.86 kB), `home.scss` (7.63 kB), `storefront-layout.scss` (4.20 kB) and `storefront-cart.scss` (5.67 kB), against a 4.00 kB warning budget. Optimize these without changing the approved design.
 
 ## 7. Recommended next work
 

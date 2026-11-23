@@ -2,7 +2,7 @@
 
 **Target branch:** `feature/frontend-development`  
 **Repository:** `pawaprathamr593/BBG`  
-**Audit date:** 16 November 2026  
+**Audit date:** 23 November 2026  
 **Status:** Initial repository-backed mapping; runtime verification and final permission/payload contracts remain open.
 
 ## 1. Source authority and audit notes
@@ -44,7 +44,7 @@ The checked-in Yii web middleware stack currently contains content negotiation, 
 | POST | `/api/v1/auth/profile/update` | Profile edit | Checked-in AuthController/AuthServices/AuthDao implement updateProfile; older AUTH_MODULE_IMPLEMENTATION.md is stale on this point; frontend form not included |
 | POST | `/api/v1/auth/permissions` | Permission bootstrap | Controller/service/DAO implementation verified; returns tenant_id and permission records (role_code, scope_type, permission_code, module_code). Tenant ID 0 resolves platform-scope assignments; positive IDs are tenant-scope and membership-checked. |
 
-**Existing frontend DTOs:** LoginRequest, RegisterRequest, AuthResponseData, AuthUser and the permission context/record DTOs. Permission records are returned as role_code, scope_type, permission_code and module_code; the context contains tenant_id and permissions.  
+**Existing frontend DTOs:** LoginRequest, RegisterRequest, AuthResponseData, AuthUser and the permission context/record DTOs. Permission records are returned as role_code, scope_type, permission_code and module_code; the context contains tenant_id and permissions. The checked-in AuthServices returns `tenant_id: null` for the platform permission request (`tenant_id: 0`) and echoes the positive tenant ID for a tenant-scoped request.  
 **Missing/uncertain:** profile-update DTO and final error field mapping.  
 **Authentication:** login/register public; refresh/logout cookie-based; profile/logout-all bearer-token protected.  
 **Provider login:** the backend route catalogue registers provider start/callback routes for Google, Apple, Facebook and Instagram, plus email OTP send/verify routes. The frontend contains popup and email OTP orchestration. Provider credentials, callback URLs, account-linking behavior and live end-to-end verification remain environment-dependent; route registration alone does not make provider sign-in production-ready.
