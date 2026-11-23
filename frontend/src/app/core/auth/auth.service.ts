@@ -16,6 +16,7 @@ export class AuthService {
   ) {}
 
   private readonly accessTokenState = signal<string | null>(null);
+  private permissionRequestSequence = 0;
   readonly accessToken = this.accessTokenState.asReadonly();
   readonly user = signal<AuthUser | null>(null);
   readonly isAuthenticated = signal(false);
@@ -39,7 +40,7 @@ export class AuthService {
       { withCredentials: true },
     ));
     const user = this.acceptAuthResponse(response);
-    await this.loadPermissions(0).catch(() => this.permissionService.clear());
+    await this.loadPermissions(0).catch(() => undefined);
     return user;
   }
 
@@ -82,7 +83,7 @@ export class AuthService {
           void (async () => {
             try {
               const user = this.acceptAuthResponse(event.data.payload as ApiEnvelope<AuthResponseData>);
-              await this.loadPermissions(0).catch(() => this.permissionService.clear());
+              await this.loadPermissions(0).catch(() => undefined);
               finish(() => resolve({ status: 'SUCCESS', user }));
             } catch (error) {
               finish(() => reject(error));
@@ -120,7 +121,7 @@ export class AuthService {
       { withCredentials: true },
     ));
     const user = this.acceptAuthResponse(response);
-    await this.loadPermissions(0).catch(() => this.permissionService.clear());
+    await this.loadPermissions(0).catch(() => undefined);
     return user;
   }
 
@@ -132,7 +133,7 @@ export class AuthService {
         { withCredentials: true, headers: { 'X-BBG-CSRF': '1' } },
       ));
       this.acceptAuthResponse(response);
-      await this.loadPermissions(0).catch(() => this.permissionService.clear());
+      await this.loadPermissions(0).catch(() => undefined);
       return true;
     } catch {
       this.clearLocalSession();
@@ -149,8 +150,16 @@ export class AuthService {
   }
 
   async loadPermissions(tenantId = 0): Promise<PermissionContext> {
+    const requestId = ++this.permissionRequestSequence;
     const token = this.accessTokenState();
     if (!token) throw new ApiError('Sign in before loading permissions.');
+    if (!Number.isInteger(tenantId) || tenantId < 0) {
+      throw new ApiError('A valid non-negative business context is required.');
+    }
+
+    // Remove the previous tenant snapshot while keeping verified platform permissions.
+    // A failed context switch must not leave the previous business permissions active.
+    this.permissionService.clearTenantContext();
 
     const response = await firstValueFrom(this.api.post<PermissionContext>(
       '/api/v1/auth/permissions',
@@ -161,6 +170,20 @@ export class AuthService {
     if (!response.data || Array.isArray(response.data)) {
       throw new ApiError('The permissions response did not contain a context record.');
     }
+    if (requestId !== this.permissionRequestSequence || token !== this.accessTokenState()) {
+      throw new ApiError('The permission context changed before the response was applied.');
+    }
+
+    // Yii returns null for the platform context (requested tenant_id 0) and the
+    // selected positive tenant ID for a tenant-scoped permission snapshot.
+    const responseTenantId = response.data.tenant_id;
+    const contextMatches = tenantId === 0
+      ? responseTenantId === null || responseTenantId === 0
+      : responseTenantId === tenantId;
+    if (!contextMatches) {
+      throw new ApiError('The permissions response did not match the requested business context.');
+    }
+
     this.permissionService.replaceFromVerifiedResponse(response.data);
     return response.data;
   }
@@ -203,6 +226,8 @@ export class AuthService {
       throw new ApiError('The authentication response did not contain a user record.');
     }
     const data = response.data;
+    this.permissionRequestSequence += 1;
+    this.permissionService.clear();
     this.accessTokenState.set(data.access_token);
     this.setSessionHint(true);
     this.user.set(data.user);
@@ -231,6 +256,7 @@ export class AuthService {
   }
 
   private clearLocalSession(): void {
+    this.permissionRequestSequence += 1;
     this.setSessionHint(false);
     this.accessTokenState.set(null);
     this.user.set(null);

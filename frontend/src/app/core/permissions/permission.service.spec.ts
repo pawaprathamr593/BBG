@@ -57,4 +57,24 @@ describe('PermissionService', () => {
     service.clear();
     expect(service.has('admin.review', 'PLATFORM')).toBe(false);
   });
+  it('clears the previous tenant snapshot while retaining verified platform permissions', () => {
+    service.replaceFromVerifiedResponse({
+      tenant_id: null,
+      permissions: [
+        { role_code: 'PLATFORM_ADMIN', scope_type: 'PLATFORM', permission_code: 'PLATFORM_USERS_MANAGE', module_code: 'ADMIN' },
+      ],
+    });
+    service.replaceFromVerifiedResponse({
+      tenant_id: 12,
+      permissions: [
+        { role_code: 'TENANT_OWNER', scope_type: 'TENANT', permission_code: 'CATALOGUE_MANAGE', module_code: 'CATALOGUE' },
+      ],
+    });
+
+    service.clearTenantContext();
+
+    expect(service.context()?.tenant_id).toBeNull();
+    expect(service.has('PLATFORM_USERS_MANAGE', 'PLATFORM')).toBe(true);
+    expect(service.has('CATALOGUE_MANAGE', 'TENANT')).toBe(false);
+  });
 });

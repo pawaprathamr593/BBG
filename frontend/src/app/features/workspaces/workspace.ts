@@ -52,6 +52,7 @@ export class Workspace implements OnInit {
   protected readonly selectedTenantId = signal<number | null>(null);
   protected readonly tenantLoading = signal(false);
   private requestSequence = 0;
+  private tenantActivationSequence = 0;
 
   protected get accountName(): string {
     return this.auth.user()?.full_name || 'Signed in';
@@ -113,9 +114,18 @@ export class Workspace implements OnInit {
     if (!(target instanceof HTMLSelectElement)) return;
     const tenantId = Number(target.value);
     if (!Number.isInteger(tenantId) || tenantId < 1) {
+      const activationId = ++this.tenantActivationSequence;
+      this.tenantLoading.set(true);
       this.selectedTenantId.set(null);
       this.clearWorkspaceResponse();
-      await this.auth.loadPermissions(0).catch(() => undefined);
+      try {
+        await this.auth.loadPermissions(0);
+      } catch (cause) {
+        if (activationId !== this.tenantActivationSequence) return;
+        this.error.set(cause instanceof Error ? cause.message : 'Unable to clear the active business context.');
+      } finally {
+        if (activationId === this.tenantActivationSequence) this.tenantLoading.set(false);
+      }
       return;
     }
     await this.activateTenant(tenantId);
@@ -123,21 +133,24 @@ export class Workspace implements OnInit {
 
   private async activateTenant(tenantId: number): Promise<void> {
     if (!this.tenantOptions().some((tenant) => tenant.id === tenantId)) return;
+    const activationId = ++this.tenantActivationSequence;
     this.tenantLoading.set(true);
     this.selectedTenantId.set(null);
     this.clearWorkspaceResponse();
     try {
       await this.auth.loadPermissions(tenantId);
+      if (activationId !== this.tenantActivationSequence) return;
       this.selectedTenantId.set(tenantId);
       const selected = this.tenantOptions().find((tenant) => tenant.id === tenantId);
       this.notice.set(selected ? `Managing ${selected.tenant_name}. Tenant access is checked again by BBG on every request.` : 'Business context updated.');
       const action = this.activeAction();
       if (action?.tenantScoped && !action.requiresPayload) await this.run(action);
     } catch (cause) {
+      if (activationId !== this.tenantActivationSequence) return;
       this.selectedTenantId.set(null);
       this.error.set(cause instanceof Error ? cause.message : 'Unable to load permissions for this business.');
     } finally {
-      this.tenantLoading.set(false);
+      if (activationId === this.tenantActivationSequence) this.tenantLoading.set(false);
     }
   }
 

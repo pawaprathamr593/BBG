@@ -129,4 +129,36 @@ describe('Workspace tenant context', () => {
     expect(resultText).toContain('Business 2 current result');
     expect(resultText).not.toContain('Business 1 stale result');
   });
+  it('keeps the newest tenant selection when an earlier permission response arrives late', async () => {
+    let resolveFirstTenant: ((context: PermissionContext) => void) | undefined;
+    let resolveSecondTenant: ((context: PermissionContext) => void) | undefined;
+    loadPermissions = (tenantId) => new Promise((resolve) => {
+      if (tenantId === 1) resolveFirstTenant = resolve;
+      else if (tenantId === 2) resolveSecondTenant = resolve;
+      else resolve({ tenant_id: null, permissions: [] });
+    });
+
+    const fixture = createFixture();
+    await waitForTenantOptions(fixture);
+    chooseTenant(fixture, 1);
+    chooseTenant(fixture, 2);
+
+    resolveSecondTenant?.({ tenant_id: 2, permissions: [] });
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      const select = fixture.nativeElement.querySelector('#active-tenant') as HTMLSelectElement;
+      expect(select.value).toBe('2');
+      expect(fixture.nativeElement.querySelector('.result-panel')?.textContent).toContain('Business 2 private result');
+    });
+
+    resolveFirstTenant?.({ tenant_id: 1, permissions: [] });
+    await Promise.resolve();
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    const select = fixture.nativeElement.querySelector('#active-tenant') as HTMLSelectElement;
+    expect(select.value).toBe('2');
+    expect(fixture.nativeElement.querySelector('.result-panel')?.textContent).toContain('Business 2 private result');
+    expect(fixture.nativeElement.querySelector('.result-panel')?.textContent).not.toContain('Business 1 private result');
+  });
 });

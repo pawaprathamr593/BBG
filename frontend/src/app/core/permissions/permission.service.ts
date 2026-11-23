@@ -52,6 +52,15 @@ export class PermissionService {
     this.permissionState.set(new Set(mergedRecords.map((record) => record.permission_code)));
   }
 
+  clearTenantContext(): void {
+    const currentContext = this.contextState();
+    if (!currentContext) return;
+
+    const platformRecords = currentContext.permissions.filter((record) => record.scope_type === 'PLATFORM');
+    this.contextState.set({ tenant_id: null, permissions: platformRecords });
+    this.permissionState.set(new Set(platformRecords.map((record) => record.permission_code)));
+  }
+
   clear(): void {
     this.permissionState.set(new Set());
     this.contextState.set(null);
