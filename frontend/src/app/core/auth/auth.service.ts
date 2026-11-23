@@ -78,6 +78,42 @@ export class AuthService {
   readonly isAuthenticated = signal(false);
   readonly socialConfig = this.socialConfigState.asReadonly();
 
+  constructor() {
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && this.isAuthenticated() && this.isTokenExpired()) {
+          void this.refreshSession();
+        }
+      });
+      window.addEventListener('focus', () => {
+        if (this.isAuthenticated() && this.isTokenExpired()) {
+          void this.refreshSession();
+        }
+      });
+    }
+  }
+
+  isTokenExpired(token?: string | null): boolean {
+    const t = token ?? this.accessTokenState();
+    if (!t) return true;
+    try {
+      const parts = t.split('.');
+      if (parts.length !== 3) return true;
+      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const json = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join(''),
+      );
+      const payload = JSON.parse(json) as { exp?: number };
+      if (typeof payload.exp !== 'number') return false;
+      return Date.now() >= (payload.exp * 1000 - 30000);
+    } catch {
+      return true;
+    }
+  }
+
   async register(payload: RegisterRequest): Promise<AuthUser> {
     const registration = await firstValueFrom(
       this.http.post<ApiResponse<unknown>>(
@@ -207,7 +243,7 @@ export class AuthService {
   }
 
   async restoreSession(): Promise<boolean> {
-    if (this.accessTokenState()) return true;
+    if (this.accessTokenState() && !this.isTokenExpired()) return true;
     return this.refreshSession();
   }
 

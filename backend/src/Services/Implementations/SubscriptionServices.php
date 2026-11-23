@@ -510,8 +510,8 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             return $this->propagateFailure($context, 'SubscriptionServices::requestApplicationSubscription');
         }
         $application = $context['data']['application'];
-        if (($application['approval_status'] ?? '') !== 'DRAFT') {
-            $resArr['msgArr'][] = 'A subscription plan can only be selected for a saved business draft.';
+        if (!in_array($application['approval_status'] ?? '', ['DRAFT', 'PENDING', 'APPROVED'], true)) {
+            $resArr['msgArr'][] = 'A subscription plan can only be selected for a valid business application.';
             return $resArr;
         }
         foreach (['business_email', 'business_phone', 'address_line_1', 'city', 'state', 'postal_code'] as $requiredField) {

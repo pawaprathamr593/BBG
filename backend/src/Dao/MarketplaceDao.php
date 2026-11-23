@@ -296,6 +296,23 @@ final readonly class MarketplaceDao
         );
     }
 
+    public function getActiveTenantEntitlements(ConnectionInterface $db, int $tenantId): array
+    {
+        return $this->many(
+            $db,
+            "SELECT pe.entitlement_code, pe.entitlement_value
+             FROM TENANT_SUBSCRIPTIONS ts
+             INNER JOIN PLAN_ENTITLEMENTS pe ON pe.plan_id = ts.plan_id AND pe.status = 'A'
+             WHERE ts.tenant_id = :tenant_id
+                AND ts.subscription_status = 'ACTIVE' AND ts.status = 'A'
+                AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
+                AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
+             ORDER BY ts.starts_on DESC, ts.id DESC",
+            [':tenant_id' => $tenantId],
+            'getActiveTenantEntitlements',
+        );
+    }
+
     public function getProducts(ConnectionInterface $db, string $slug, string $search = '', int $limit = 20, int $offset = 0): array
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];

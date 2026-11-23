@@ -95,6 +95,10 @@
                   <span>{{ business.rejection_reason }}</span>
                 </div>
               }
+              <button class="market-button" type="button" (click)="resumeDraft(business)">
+                <span>Correct &amp; Resubmit Application</span>
+                <span aria-hidden="true">→</span>
+              </button>
             } @else if (business.approval_status === 'DRAFT') {
               <p class="application-note">
                 This business registration has been saved as a draft. You can continue anytime.

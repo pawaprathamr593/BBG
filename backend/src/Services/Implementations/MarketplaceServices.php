@@ -150,6 +150,24 @@ final readonly class MarketplaceServices implements IMarketplaceServices
         }
 
         $row = $result['data'];
+        $tenantId = (int) $row['tenant_id'];
+        $entitlementsResult = $this->dao->getActiveTenantEntitlements($this->db, $tenantId);
+        $catalogueEnabled = false;
+        $promotionsEnabled = false;
+        if ($entitlementsResult['status'] === 'SUCCESS') {
+            foreach ($entitlementsResult['data'] as $ent) {
+                $code = (string) ($ent['entitlement_code'] ?? '');
+                $val = strtoupper(trim((string) ($ent['entitlement_value'] ?? '')));
+                $isTrue = in_array($val, ['1', 'TRUE', 'YES'], true) || (is_numeric($val) && (int) $val > 0);
+                if (in_array($code, ['catalogue.enabled', 'PRODUCT_MANAGEMENT'], true) && $isTrue) {
+                    $catalogueEnabled = true;
+                }
+                if (in_array($code, ['promotions.enabled', 'DAILY_PROMOTION_LIMIT', 'PROMOTIONAL_POSTS'], true) && $isTrue) {
+                    $promotionsEnabled = true;
+                }
+            }
+        }
+
         $resArr['status'] = 'SUCCESS';
         $resArr['data'] = [
             'business' => $this->publicBusiness($row, true),
@@ -161,6 +179,8 @@ final readonly class MarketplaceServices implements IMarketplaceServices
                 'accept_online_orders' => (bool) $row['accept_online_orders'],
                 'whatsapp_enabled' => (bool) $row['whatsapp_enabled'],
                 'currency' => $row['default_currency'],
+                'catalogue_enabled' => $catalogueEnabled,
+                'promotions_enabled' => $promotionsEnabled,
             ],
         ];
         return $resArr;
@@ -181,9 +201,34 @@ final readonly class MarketplaceServices implements IMarketplaceServices
             return ['status' => 'FAILED', 'msgArr' => ['Published business storefront was not found.'], 'data' => []];
         }
 
+        $tenantId = (int) $business['data']['tenant_id'];
+        $entitlements = $this->dao->getActiveTenantEntitlements($this->db, $tenantId);
+        $catalogueEnabled = false;
+        if ($entitlements['status'] === 'SUCCESS') {
+            foreach ($entitlements['data'] as $ent) {
+                $code = (string) ($ent['entitlement_code'] ?? '');
+                $val = strtoupper(trim((string) ($ent['entitlement_value'] ?? '')));
+                if (in_array($code, ['catalogue.enabled', 'PRODUCT_MANAGEMENT'], true)
+                    && (in_array($val, ['1', 'TRUE', 'YES'], true) || (is_numeric($val) && (int) $val > 0))) {
+                    $catalogueEnabled = true;
+                    break;
+                }
+            }
+        }
+        if (!$catalogueEnabled) {
+            return [
+                'status' => 'SUCCESS',
+                'msgArr' => [],
+                'data' => [
+                    'items' => [],
+                    'pagination' => ['page' => 1, 'page_size' => 20, 'total' => 0],
+                ],
+            ];
+        }
+
         return $this->getMarketplaceProducts(
             $actionData,
-            (int) $business['data']['tenant_id'],
+            $tenantId,
             $slug,
         );
     }
@@ -401,6 +446,29 @@ final readonly class MarketplaceServices implements IMarketplaceServices
                 return $resArr;
             }
             $tenantId = (int) $business['data']['tenant_id'];
+            $entitlements = $this->dao->getActiveTenantEntitlements($this->db, $tenantId);
+            $promotionsEnabled = false;
+            if ($entitlements['status'] === 'SUCCESS') {
+                foreach ($entitlements['data'] as $ent) {
+                    $code = (string) ($ent['entitlement_code'] ?? '');
+                    $val = strtoupper(trim((string) ($ent['entitlement_value'] ?? '')));
+                    if (in_array($code, ['promotions.enabled', 'DAILY_PROMOTION_LIMIT', 'PROMOTIONAL_POSTS'], true)
+                        && (in_array($val, ['1', 'TRUE', 'YES'], true) || (is_numeric($val) && (int) $val > 0))) {
+                        $promotionsEnabled = true;
+                        break;
+                    }
+                }
+            }
+            if (!$promotionsEnabled) {
+                return [
+                    'status' => 'SUCCESS',
+                    'msgArr' => [],
+                    'data' => [
+                        'items' => [],
+                        'pagination' => ['page' => 1, 'page_size' => 20, 'total' => 0],
+                    ],
+                ];
+            }
         }
         $rows = $this->dao->getPublicPromotions($this->db, $tenantId, $pageSize, ($page - 1) * $pageSize);
         if ($rows['status'] !== 'SUCCESS') {

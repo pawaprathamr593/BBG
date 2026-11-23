@@ -537,9 +537,24 @@
             >
           </div>
           @if (proof['proof_file_url']) {
-            <a [href]="asUrl(proof['proof_file_url'])" target="_blank" rel="noopener"
-              >Open receipt</a
-            >
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button
+                type="button"
+                class="refresh"
+                style="padding: 4px 10px; font-size: 0.72rem;"
+                (click)="openProofPreview(proof)"
+              >
+                View Receipt
+              </button>
+              <a
+                [href]="asUrl(proof['proof_file_url'])"
+                download
+                target="_blank"
+                rel="noopener"
+              >
+                Download
+              </a>
+            </div>
           }
         </div>
       } @empty {
@@ -585,20 +600,50 @@
         </label>
       }
       @if (decisionKind() === 'approve-subscription') {
+        <div class="review-detail-grid" style="margin-bottom: 16px;">
+          <div>
+            <span>Selected plan</span>
+            <strong>{{ decisionItem()?.['plan_name'] || decisionItem()?.['plan_code'] || 'Standard' }}</strong>
+          </div>
+          <div>
+            <span>Billing cycle</span>
+            <strong>{{ decisionItem()?.['billing_cycle'] || 'QUARTERLY' }}</strong>
+          </div>
+          @if (decisionItem()?.['amount']) {
+            <div>
+              <span>Amount</span>
+              <strong>{{ decisionItem()?.['currency'] }} {{ decisionItem()?.['amount'] }}</strong>
+            </div>
+          }
+        </div>
         <label class="workspace-message-label"
-          >Subscription starts on<input
-            type="datetime-local"
-            [value]="decisionStartsOn()"
-            (input)="decisionStartsOn.set(inputValue($event))"
-            required
-        /></label>
+          >Subscription starts on (Server Authoritative)
+          <input
+            type="text"
+            [value]="decisionStartsOn() ? (decisionStartsOn().replace('T', ' ') + ' (Approval instant)') : 'Assigned upon approval'"
+            readonly
+            disabled
+          />
+        </label>
         <label class="workspace-message-label"
-          >Subscription ends on<input
+          >Subscription ends on (Calculated from cycle)
+          <input
             type="datetime-local"
             [value]="decisionEndsOn()"
             (input)="decisionEndsOn.set(inputValue($event))"
             required
-        /></label>
+          />
+        </label>
+        <label class="workspace-message-label"
+          >Override reason (optional)
+          <textarea
+            rows="2"
+            maxlength="500"
+            [value]="decisionReason()"
+            (input)="decisionReason.set(inputValue($event))"
+            placeholder="Required only if overriding the calculated billing-cycle duration."
+          ></textarea>
+        </label>
       }
       @if (decisionKind() === 'moderate') {
         <label class="workspace-message-label"
@@ -638,6 +683,111 @@
         </button>
       </footer>
     </form>
+  </app-workspace-drawer>
+
+  <app-workspace-drawer
+    [open]="showReceiptPreviewDrawer()"
+    title="Payment receipt verification"
+    description="Inspect uploaded payment proof, transaction reference, and applicant details."
+    eyebrow="PLATFORM ADMINISTRATION"
+    (closed)="showReceiptPreviewDrawer.set(false)"
+  >
+    @if (selectedProofForPreview(); as proof) {
+      <div class="record-detail-content">
+        <section class="record-detail-section">
+          <h3>Payment summary</h3>
+          <div class="review-detail-grid">
+            <div>
+              <span>Review status</span>
+              <strong>{{ proof['review_status'] || 'PENDING' }}</strong>
+            </div>
+            <div>
+              <span>Payment reference</span>
+              <strong>{{ proof['payment_reference'] || 'No reference provided' }}</strong>
+            </div>
+            <div>
+              <span>Submission timestamp</span>
+              <strong>{{ formatValue(proof['submitted_on']) }}</strong>
+            </div>
+            <div>
+              <span>Reviewed by</span>
+              <strong>{{ proof['reviewer_name'] || (proof['reviewed_by'] ? ('User #' + proof['reviewed_by']) : 'Pending review') }}</strong>
+            </div>
+            @if (proof['reviewed_on']) {
+              <div>
+                <span>Reviewed on</span>
+                <strong>{{ formatValue(proof['reviewed_on']) }}</strong>
+              </div>
+            }
+            @if (proof['review_notes']) {
+              <div>
+                <span>Review notes</span>
+                <strong>{{ proof['review_notes'] }}</strong>
+              </div>
+            }
+          </div>
+        </section>
+
+        @if (subscriptionReviewDetail(); as detail) {
+          <section class="record-detail-section">
+            <h3>Subscription &amp; Business context</h3>
+            <div class="review-detail-grid">
+              <div>
+                <span>Business name</span>
+                <strong>{{ detail['business_name'] || '—' }}</strong>
+              </div>
+              <div>
+                <span>Tenant code</span>
+                <strong>{{ detail['tenant_code'] || '—' }}</strong>
+              </div>
+              <div>
+                <span>Plan name</span>
+                <strong>{{ detail['plan_name'] || '—' }}</strong>
+              </div>
+              <div>
+                <span>Billing cycle</span>
+                <strong>{{ detail['billing_cycle'] || '—' }}</strong>
+              </div>
+              <div>
+                <span>Amount &amp; Currency</span>
+                <strong>{{ detail['currency'] }} {{ detail['amount'] }}</strong>
+              </div>
+              <div>
+                <span>Subscription status</span>
+                <strong>{{ detail['subscription_status'] || '—' }}</strong>
+              </div>
+            </div>
+          </section>
+        }
+
+        <section class="record-detail-section">
+          <h3>Uploaded payment proof</h3>
+          @if (proof['proof_file_url']) {
+            <div class="proof-preview-container" style="margin: 12px 0;">
+              <img
+                [src]="asUrl(proof['proof_file_url'])"
+                alt="Payment proof screenshot"
+                style="max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 8px; display: block;"
+              />
+            </div>
+            <div style="margin-top: 12px;">
+              <a
+                [href]="asUrl(proof['proof_file_url'])"
+                download
+                target="_blank"
+                rel="noopener"
+                class="secondary-action"
+                style="display: inline-block; padding: 8px 16px; text-decoration: none;"
+              >
+                Download Original Proof
+              </a>
+            </div>
+          } @else {
+            <p>No preview URL is available for this receipt.</p>
+          }
+        </section>
+      </div>
+    }
   </app-workspace-drawer>
 
   <app-workspace-drawer

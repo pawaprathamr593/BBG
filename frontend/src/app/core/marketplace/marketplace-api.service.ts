@@ -100,6 +100,8 @@ export interface MarketplaceStorefront {
   accept_online_orders: boolean;
   whatsapp_enabled: boolean;
   currency: string | null;
+  catalogue_enabled?: boolean;
+  promotions_enabled?: boolean;
 }
 export interface MarketplaceBusinessDetail {
   business: MarketplaceBusiness & {

@@ -152,7 +152,12 @@ final readonly class BusinessServices implements IBusinessServices
         $tenantId = $this->positiveInt($actionData['tenant_id'] ?? 0) ?? 0;
         if ($tenantId > 0) {
             $access = $this->requireTenantPermission((int) $principal['data']['user_id'], $tenantId, 'business.view', 'BusinessServices::getBusinessApplication');
-            if ($access['status'] !== 'SUCCESS') return $access;
+            if ($access['status'] !== 'SUCCESS') {
+                $owned = $this->dao->getMyBusinessApplication($this->db, (int) $principal['data']['user_id'], $tenantId);
+                if ($owned['status'] !== 'SUCCESS' || $owned['data'] === []) {
+                    return $access;
+                }
+            }
         }
         $result = $this->dao->getMyBusinessApplication($this->db, (int) $principal['data']['user_id'], $tenantId);
         if ($result['status'] !== 'SUCCESS') {
@@ -377,18 +382,19 @@ final readonly class BusinessServices implements IBusinessServices
         $businessId = $this->positiveInt($actionData['business_id'] ?? 0) ?? 0;
         $tenantId = $this->positiveInt($actionData['tenant_id'] ?? 0) ?? 0;
         $resubmit = $operation === 'resubmit';
+        $submittingDraft = $operation === 'submit' && ($businessId > 0 || $tenantId > 0);
         if ($operation !== 'submit' && ($businessId === 0 || $tenantId === 0)) {
             $resArr['msgArr'][] = 'business_id and tenant_id are required to update or resubmit an application.';
             return $resArr;
         }
-        if ($operation !== 'submit') {
+        if ($operation !== 'submit' && !$submittingDraft) {
             $access = $this->requireTenantPermission($userId, $tenantId, 'business.update', 'BusinessServices::manageBusinessApplication');
-            if ($access['status'] !== 'SUCCESS') return $access;
-        }
-        // Initial business application submission is an authenticated onboarding flow.
-        if ($operation === 'submit' && ($businessId > 0 || $tenantId > 0)) {
-            $resArr['msgArr'][] = 'A new application must not include business_id or tenant_id.';
-            return $resArr;
+            if ($access['status'] !== 'SUCCESS') {
+                $existingCheck = $this->dao->getMyBusinessApplication($this->db, $userId, $tenantId);
+                if ($existingCheck['status'] !== 'SUCCESS' || $existingCheck['data'] === []) {
+                    return $access;
+                }
+            }
         }
         $categoryId = $this->positiveInt($actionData['primary_category_id'] ?? 0);
         $description = $this->optionalText($actionData['business_description'] ?? '', 5000);
@@ -428,24 +434,29 @@ final readonly class BusinessServices implements IBusinessServices
                 return $resArr;
             }
 
-            if ($operation !== 'submit') {
+            if ($operation !== 'submit' || $submittingDraft) {
                 $existing = $this->dao->getMyBusinessApplication($this->db, $userId, $tenantId);
                 if ($existing['status'] !== 'SUCCESS') {
                     return $this->propagateFailure($existing, 'BusinessServices::manageBusinessApplication');
                 }
-                $allowedStatus = $operation === 'resubmit' ? ['REJECTED'] : ['PENDING'];
+                $allowedStatus = $operation === 'resubmit'
+                    ? ['REJECTED']
+                    : ($submittingDraft ? ['DRAFT'] : ['PENDING']);
                 if ($existing['data'] === [] || (int) $existing['data']['business_id'] !== $businessId
                     || !in_array($existing['data']['approval_status'], $allowedStatus, true)
                 ) {
-                    $resArr['msgArr'][] = 'Only the authenticated tenant owner can update a pending or rejected application.';
+                    $resArr['msgArr'][] = $submittingDraft
+                        ? 'Only a saved draft owned by you can be submitted.'
+                        : 'Only the authenticated tenant owner can update a pending or rejected application.';
                     return $resArr;
                 }
                 $transaction = $this->db->beginTransaction();
                 try {
+                    $transitionToPending = $resubmit || $submittingDraft;
                     $update = $this->dao->updateBusinessApplication(
                         $this->db, $tenantId, $businessId, $userId, $businessName, $businessSlug,
                         $description ?? '', $categoryId, $phone, $whatsapp, $email, $address1, $address2,
-                        $city, $state, $postal, $country, $latitude, $longitude, $resubmit,
+                        $city, $state, $postal, $country, $latitude, $longitude, $transitionToPending,
                     );
                     if ($update['status'] !== 'SUCCESS') {
                         $transaction->rollBack();
@@ -453,7 +464,11 @@ final readonly class BusinessServices implements IBusinessServices
                     }
                     $transaction->commit();
                     $resArr['status'] = 'SUCCESS';
-                    $resArr['data'] = ['business_id' => $businessId, 'tenant_id' => $tenantId];
+                    $resArr['data'] = [
+                        'business_id' => $businessId,
+                        'tenant_id' => $tenantId,
+                        'approval_status' => $transitionToPending ? 'PENDING' : $existing['data']['approval_status'],
+                    ];
                     return $resArr;
                 } catch (Throwable $exception) {
                     if ($transaction->isActive()) {
@@ -566,8 +581,13 @@ final readonly class BusinessServices implements IBusinessServices
         if (!empty($businessData['cover_image_path'])) {
             $businessData['cover_image_url'] = $this->s3Storage->resolveDownloadUrl((string) $businessData['cover_image_path']);
         }
+        $settingsData = $settings['data'];
+        $settingsData['publication_status'] = $businessData['publication_status'] ?? 'DRAFT';
+        $settingsData['approval_status'] = $businessData['approval_status'] ?? 'PENDING';
+        $settingsData['business_name'] = $businessData['business_name'] ?? '';
+        $settingsData['business_slug'] = $businessData['business_slug'] ?? '';
         $resArr['status'] = 'SUCCESS';
-        $resArr['data'] = ['business' => $businessData, 'storefront' => $settings['data']];
+        $resArr['data'] = ['business' => $businessData, 'storefront' => $settingsData];
         return $resArr;
     }
 
@@ -612,8 +632,13 @@ final readonly class BusinessServices implements IBusinessServices
         if (!empty($businessData['cover_image_path'])) {
             $businessData['cover_image_url'] = $this->s3Storage->resolveDownloadUrl((string) $businessData['cover_image_path']);
         }
+        $settingsData = $settings['data'];
+        $settingsData['publication_status'] = $businessData['publication_status'] ?? 'DRAFT';
+        $settingsData['approval_status'] = $businessData['approval_status'] ?? 'PENDING';
+        $settingsData['business_name'] = $businessData['business_name'] ?? '';
+        $settingsData['business_slug'] = $businessData['business_slug'] ?? '';
         $resArr['status'] = 'SUCCESS';
-        $resArr['data'] = ['business' => $businessData, 'storefront' => $settings['data']];
+        $resArr['data'] = ['business' => $businessData, 'storefront' => $settingsData];
         return $resArr;
     }
 

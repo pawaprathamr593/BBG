@@ -144,6 +144,15 @@
         </header>
 
         <!-- Alerts -->
+        @if (rejectionFeedback()) {
+          <div class="notice error" role="alert">
+            <span aria-hidden="true">📋</span>
+            <div>
+              <strong>Review Feedback &amp; Correction Required:</strong>
+              <p>{{ rejectionFeedback() }}</p>
+            </div>
+          </div>
+        }
         @if (error()) {
           <div class="notice error" role="alert">
             <span aria-hidden="true">⚠️</span>
@@ -322,13 +331,25 @@
 
             <!-- Action Buttons -->
             <div class="action-buttons-group">
-              <button class="btn-secondary" type="button" (click)="saveDraft()" [disabled]="busy()">
-                {{ busy() ? 'Saving…' : 'Save draft' }}
-              </button>
-              <button class="btn-primary" type="submit" [disabled]="busy()">
-                <span>{{ busy() ? 'Saving…' : 'Save and choose a plan' }}</span>
-                <span aria-hidden="true">→</span>
-              </button>
+              @if (isRejectedApplication()) {
+                <button
+                  class="btn-primary"
+                  type="button"
+                  (click)="resubmitApplication()"
+                  [disabled]="busy()"
+                >
+                  <span>{{ busy() ? 'Submitting…' : 'Correct & Resubmit Application' }}</span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              } @else {
+                <button class="btn-secondary" type="button" (click)="saveDraft()" [disabled]="busy()">
+                  {{ busy() ? 'Saving…' : 'Save draft' }}
+                </button>
+                <button class="btn-primary" type="submit" [disabled]="busy()">
+                  <span>{{ busy() ? 'Saving…' : 'Save and choose a plan' }}</span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              }
             </div>
           </form>
         }

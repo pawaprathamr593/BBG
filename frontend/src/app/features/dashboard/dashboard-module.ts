@@ -215,11 +215,24 @@ export class DashboardModule implements OnInit {
     })),
   );
   readonly storefrontDetails = computed(() => {
-    const value = this.summary()?.['storefront'];
-    return value && typeof value === 'object' && !Array.isArray(value)
-      ? (value as DataRecord)
-      : null;
+    const summary = this.summary();
+    const storefront = summary?.['storefront'];
+    const business = summary?.['business'];
+    if (storefront && typeof storefront === 'object' && !Array.isArray(storefront)) {
+      const merged: DataRecord = { ...(storefront as DataRecord) };
+      if (business && typeof business === 'object' && !Array.isArray(business)) {
+        const b = business as DataRecord;
+        merged['publication_status'] = merged['publication_status'] ?? b['publication_status'];
+        merged['approval_status'] = merged['approval_status'] ?? b['approval_status'];
+        merged['business_name'] = merged['business_name'] ?? b['business_name'];
+        merged['business_slug'] = merged['business_slug'] ?? b['business_slug'];
+      }
+      return merged;
+    }
+    return null;
   });
+  readonly selectedProofForPreview = signal<DataRecord | null>(null);
+  readonly showReceiptPreviewDrawer = signal(false);
   readonly showReplyDrawer = signal(false);
   readonly showPaymentQrDrawer = signal(false);
   readonly showPlanEditDrawer = signal(false);
@@ -1851,12 +1864,54 @@ export class DashboardModule implements OnInit {
     this.showPaymentQrDrawer.set(true);
   }
 
+  openProofPreview(proof: DataRecord): void {
+    this.selectedProofForPreview.set(proof);
+    this.showReceiptPreviewDrawer.set(true);
+  }
+
+  calculateClientSubscriptionEnd(start: Date, billingCycle: string): Date {
+    const cycle = (billingCycle || '').toUpperCase().trim();
+    const months =
+      cycle === 'MONTHLY'
+        ? 1
+        : cycle === 'HALF_YEARLY'
+          ? 6
+          : cycle === 'YEARLY' || cycle === 'ANNUAL'
+            ? 12
+            : 3;
+    const startDay = start.getDate();
+    const startMonth = start.getMonth();
+    const startYear = start.getFullYear();
+
+    const targetTotalMonths = startYear * 12 + startMonth + months;
+    const targetYear = Math.floor(targetTotalMonths / 12);
+    const targetMonth = targetTotalMonths % 12;
+
+    const daysInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+    const targetDay = Math.min(startDay, daysInTargetMonth);
+
+    const end = new Date(start.getTime());
+    end.setFullYear(targetYear, targetMonth, targetDay);
+    return end;
+  }
+
   openDecisionDrawer(kind: DecisionKind, item: DataRecord): void {
     this.decisionKind.set(kind);
     this.decisionItem.set(item);
     this.decisionReason.set('');
-    this.decisionStartsOn.set('');
-    this.decisionEndsOn.set('');
+    if (kind === 'approve-subscription') {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const startStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      const cycle = String(item['billing_cycle'] ?? 'QUARTERLY');
+      const endDate = this.calculateClientSubscriptionEnd(now, cycle);
+      const endStr = `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}T${pad(endDate.getHours())}:${pad(endDate.getMinutes())}`;
+      this.decisionStartsOn.set(startStr);
+      this.decisionEndsOn.set(endStr);
+    } else {
+      this.decisionStartsOn.set('');
+      this.decisionEndsOn.set('');
+    }
     this.moderationAction.set('DISMISS_REPORT');
     this.error.set('');
     this.showDecisionDrawer.set(true);
@@ -1890,16 +1945,12 @@ export class DashboardModule implements OnInit {
       actionType = 'rejectBusiness';
       data = { business_id: Number(item['business_id'] ?? item['id']), reason };
     } else if (kind === 'approve-subscription') {
-      if (!this.decisionStartsOn() || !this.decisionEndsOn()) {
-        this.error.set('Enter both subscription start and end dates.');
-        return;
-      }
       path = '/api/v1/admin/subscriptions/approve';
       actionType = 'approveSubscription';
       data = {
         subscription_id: Number(item['subscription_id'] ?? item['id']),
-        starts_on: this.decisionStartsOn().replace('T', ' ') + ':00',
-        ends_on: this.decisionEndsOn().replace('T', ' ') + ':00',
+        ...(this.decisionEndsOn() ? { ends_on: this.decisionEndsOn().replace('T', ' ') + ':00' } : {}),
+        ...(reason ? { reason } : {}),
       };
     } else if (kind === 'reject-subscription') {
       if (!reason) {

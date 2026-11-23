@@ -506,9 +506,12 @@
             <p>Browse the published catalogue or learn more about the business.</p>
           </div>
           <div class="bottom-actions">
-            <a [routerLink]="['/store', data.business.business_slug, 'products']"
-              >Browse products <span aria-hidden="true">↗</span></a
-            ><a [routerLink]="['/store', data.business.business_slug, 'about']"
+            @if (data.storefront.catalogue_enabled) {
+              <a [routerLink]="['/store', data.business.business_slug, 'products']"
+                >Browse products <span aria-hidden="true">↗</span></a
+              >
+            }
+            <a [routerLink]="['/store', data.business.business_slug, 'about']"
               >About the business <span aria-hidden="true">↗</span></a
             >
           </div>

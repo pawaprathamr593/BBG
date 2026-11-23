@@ -395,7 +395,7 @@ final readonly class BusinessDao
                         publication_status = CASE WHEN :resubmit = 1 THEN 'DRAFT' ELSE publication_status END,
                         updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
                     WHERE id = :business_id AND tenant_id = :tenant_id
-                        AND approval_status IN ('PENDING', 'REJECTED') AND status = 'A'";
+                        AND approval_status IN ('DRAFT', 'PENDING', 'REJECTED') AND status = 'A'";
             $affected = $db->createCommand($sql, [
                 ':business_name' => $businessName, ':business_slug' => $businessSlug,
                 ':description' => $businessDescription, ':category_id' => $categoryId,

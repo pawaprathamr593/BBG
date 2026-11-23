@@ -32,11 +32,13 @@
           }}
         </p>
         <div class="hero-actions">
-          <a
-            class="primary-button"
-            [routerLink]="['/store', data.business.business_slug, 'products']"
-            >Explore catalogue <span aria-hidden="true">↗</span></a
-          >
+          @if (catalogueEnabled()) {
+            <a
+              class="primary-button"
+              [routerLink]="['/store', data.business.business_slug, 'products']"
+              >Explore catalogue <span aria-hidden="true">↗</span></a
+            >
+          }
           <a
             class="secondary-button"
             [routerLink]="['/store', data.business.business_slug, 'contact']"
@@ -114,7 +116,7 @@
       </section>
     }
 
-    @if (visiblePromotions().length) {
+    @if (promotionsEnabled() && visiblePromotions().length) {
       <section
         class="promotion-featured"
         [class.multi-promotions]="visiblePromotions().length > 1"
@@ -132,32 +134,25 @@
 
     <section class="shopping-benefits" aria-label="Store information">
       <div>
-        <span class="benefit-icon" aria-hidden="true">◇</span
-        ><span
+        <span class="benefit-icon" aria-hidden="true">◇</span><span
           ><strong>Shop directly</strong><small>Explore products from {{ brandName }}</small></span
         >
       </div>
       <div>
-        <span class="benefit-icon" aria-hidden="true">↗</span
-        ><span
-          ><strong>Talk to the business</strong
-          ><small>Get product and pricing information</small></span
+        <span class="benefit-icon" aria-hidden="true">↗</span><span
+          ><strong>Talk to the business</strong><small>Get product and pricing information</small></span
         >
       </div>
       @if (data.storefront.accept_online_orders) {
         <div>
-          <span class="benefit-icon" aria-hidden="true">✓</span
-          ><span
-            ><strong>Online ordering</strong
-            ><small>This storefront accepts online orders</small></span
+          <span class="benefit-icon" aria-hidden="true">✓</span><span
+            ><strong>Online ordering</strong><small>This storefront accepts online orders</small></span
           >
         </div>
       } @else {
         <div>
-          <span class="benefit-icon" aria-hidden="true">⌖</span
-          ><span
-            ><strong>Find the business</strong
-            ><small>{{
+          <span class="benefit-icon" aria-hidden="true">⌖</span><span
+            ><strong>Find the business</strong><small>{{
               data.business.city || data.business.state || 'Contact details available'
             }}</small></span
           >
@@ -165,81 +160,83 @@
       }
     </section>
 
-    <section id="featured-products" class="products-section" aria-labelledby="products-heading">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">THE COLLECTION</p>
-          <h2 id="products-heading">Explore our catalogue</h2>
-          <p>Explore the products and offerings currently published by {{ brandName }}.</p>
-        </div>
-        <a class="view-all" [routerLink]="['/store', data.business.business_slug, 'products']"
-          >View full catalogue <span aria-hidden="true">→</span></a
-        >
-      </div>
-
-      @if (categories().length > 1) {
-        <nav class="category-pills" aria-label="Filter catalogue by category">
-          <button
-            type="button"
-            [class.active]="selectedCategory() === 'all'"
-            (click)="selectCategory('all')"
+    @if (catalogueEnabled()) {
+      <section id="featured-products" class="products-section" aria-labelledby="products-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">THE COLLECTION</p>
+            <h2 id="products-heading">Explore our catalogue</h2>
+            <p>Explore the products and offerings currently published by {{ brandName }}.</p>
+          </div>
+          <a class="view-all" [routerLink]="['/store', data.business.business_slug, 'products']"
+            >View full catalogue <span aria-hidden="true">→</span></a
           >
-            All
-          </button>
-          @for (category of categories(); track category) {
+        </div>
+
+        @if (categories().length > 1) {
+          <nav class="category-pills" aria-label="Filter catalogue by category">
             <button
               type="button"
-              [class.active]="selectedCategory() === category"
-              (click)="selectCategory(category)"
+              [class.active]="selectedCategory() === 'all'"
+              (click)="selectCategory('all')"
             >
-              {{ category }}
+              All
             </button>
-          }
-        </nav>
-      }
-
-      @if (loading()) {
-        <div class="product-grid" aria-label="Loading products">
-          <app-skeleton-loader variant="card" [count]="3" />
-        </div>
-      } @else if (products().length) {
-        @if (filteredProductCards().length) {
-          <div class="product-grid">
-            @for (product of filteredProductCards(); track product.id) {
-              <app-product-card
-                [product]="product"
-                [showPrice]="data.storefront.show_prices"
-                [currency]="data.storefront.currency || ''"
-                [actionLabel]="
-                  product.offering_type === 'SERVICE' ? 'Contact Store' : 'View Details'
-                "
-                (selected)="openProduct($event, data.business.business_slug)"
-                (businessSelected)="openBusiness($event)"
-              />
+            @for (category of categories(); track category) {
+              <button
+                type="button"
+                [class.active]="selectedCategory() === category"
+                (click)="selectCategory(category)"
+              >
+                {{ category }}
+              </button>
             }
+          </nav>
+        }
+
+        @if (loading()) {
+          <div class="product-grid" aria-label="Loading products">
+            <app-skeleton-loader variant="card" [count]="3" />
           </div>
+        } @else if (products().length) {
+          @if (filteredProductCards().length) {
+            <div class="product-grid">
+              @for (product of filteredProductCards(); track product.id) {
+                <app-product-card
+                  [product]="product"
+                  [showPrice]="data.storefront.show_prices"
+                  [currency]="data.storefront.currency || ''"
+                  [actionLabel]="
+                    product.offering_type === 'SERVICE' ? 'Contact Store' : 'View Details'
+                  "
+                  (selected)="openProduct($event, data.business.business_slug)"
+                  (businessSelected)="openBusiness($event)"
+                />
+              }
+            </div>
+          } @else {
+            <app-empty-state
+              title="No offerings in this category"
+              description="Choose another category or show all to explore the catalogue."
+              actionText="Show all"
+              icon="⌕"
+              (actionClicked)="selectCategory('all')"
+            />
+          }
         } @else {
           <app-empty-state
-            title="No offerings in this category"
-            description="Choose another category or show all to explore the catalogue."
-            actionText="Show all"
+            title="Catalogue coming soon"
+            [description]="
+              brandName +
+              ' has not published any products or service offerings to this storefront yet. Please check back later or contact the business.'
+            "
+            actionText="Contact the business"
             icon="⌕"
-            (actionClicked)="selectCategory('all')"
+            (actionClicked)="openContact(data.business.business_slug)"
           />
         }
-      } @else {
-        <app-empty-state
-          title="Catalogue coming soon"
-          [description]="
-            brandName +
-            ' has not published any products or service offerings to this storefront yet. Please check back later or contact the business.'
-          "
-          actionText="Contact the business"
-          icon="⌕"
-          (actionClicked)="openContact(data.business.business_slug)"
-        />
-      }
-    </section>
+      </section>
+    }
 
     @if (data.storefront.description || data.business.business_description) {
       <section class="merchant-story">

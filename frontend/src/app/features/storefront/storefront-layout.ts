@@ -66,12 +66,17 @@ export class StorefrontLayout implements OnInit {
 
   get navItems(): StorefrontNavItem[] {
     const base = ['/store', this.slug];
-    return [
+    const items: StorefrontNavItem[] = [
       { label: 'Home', commands: [...base], exact: true },
-      { label: 'Products', commands: [...base, 'products'] },
+    ];
+    if (this.context.detail()?.storefront.catalogue_enabled) {
+      items.push({ label: 'Products', commands: [...base, 'products'] });
+    }
+    items.push(
       { label: 'About', commands: [...base, 'about'] },
       { label: 'Contact', commands: [...base, 'contact'] },
-    ];
+    );
+    return items;
   }
 
   toggleMenu(): void {

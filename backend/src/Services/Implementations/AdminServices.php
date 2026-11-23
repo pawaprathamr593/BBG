@@ -9,6 +9,7 @@ use App\Services\Interfaces\IAdminServices;
 use App\Services\Interfaces\IAuthServices;
 use App\Utils\AwsS3Storage;
 use DateTimeImmutable;
+use DateTimeZone;
 use Psr\Log\LoggerInterface;
 use Throwable;
 use Yiisoft\Db\Connection\ConnectionInterface;
@@ -683,12 +684,23 @@ final readonly class AdminServices implements IAdminServices
                     $resArr['msgArr'][] = 'A pending payment proof must be reviewed before approving the subscription.';
                     return $resArr;
                 }
-                $startsOn = $this->dateTimeText($actionData['starts_on'] ?? null);
-                $endsOn = $this->dateTimeText($actionData['ends_on'] ?? null);
-                if ($startsOn === null || $endsOn === null || strtotime($endsOn) <= strtotime($startsOn)) {
-                    $transaction->rollBack();
-                    $resArr['msgArr'][] = 'Valid starts_on and ends_on are required; ends_on must be later than starts_on.';
-                    return $resArr;
+                // Authoritative approval instant generated server-side in UTC (client cannot override starts_on)
+                $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+                $startsOn = $now->format('Y-m-d H:i:s');
+
+                $billingCycle = (string) ($subscriptionData['billing_cycle'] ?? 'QUARTERLY');
+                $calculatedEnd = $this->calculateSubscriptionEnd($now, $billingCycle);
+
+                $overrideEndsOn = $this->dateTimeText($actionData['ends_on'] ?? null);
+                if ($overrideEndsOn !== null && $overrideEndsOn !== $calculatedEnd->format('Y-m-d H:i:s')) {
+                    if (strtotime($overrideEndsOn) <= strtotime($startsOn)) {
+                        $transaction->rollBack();
+                        $resArr['msgArr'][] = 'The subscription end date must be later than the approval start date.';
+                        return $resArr;
+                    }
+                    $endsOn = $overrideEndsOn;
+                } else {
+                    $endsOn = $calculatedEnd->format('Y-m-d H:i:s');
                 }
                 $upgradeFromSubscriptionId = $this->positiveInt($subscriptionData['upgrade_from_subscription_id'] ?? null);
                 if ($upgradeFromSubscriptionId !== null) {
@@ -759,6 +771,9 @@ final readonly class AdminServices implements IAdminServices
                     return $this->propagateFailure($savedBcn, 'AdminServices::manageSubscriptionDecision');
                 }
                 $result['data']['bcn'] = $bcn;
+                $result['data']['starts_on'] = $startsOn;
+                $result['data']['ends_on'] = $endsOn;
+                $result['data']['billing_cycle'] = $billingCycle;
             }
 
             $transaction->commit();
@@ -1143,6 +1158,31 @@ final readonly class AdminServices implements IAdminServices
             return null;
         }
         return (int) $value;
+    }
+
+    public function calculateSubscriptionEnd(DateTimeImmutable $start, string $billingCycle): DateTimeImmutable
+    {
+        $cycle = strtoupper(trim($billingCycle));
+        $months = match ($cycle) {
+            'MONTHLY' => 1,
+            'QUARTERLY' => 3,
+            'HALF_YEARLY' => 6,
+            'YEARLY', 'ANNUAL' => 12,
+            default => 3,
+        };
+
+        $startDay = (int) $start->format('d');
+        $startMonth = (int) $start->format('m');
+        $startYear = (int) $start->format('Y');
+
+        $targetTotalMonths = ($startYear * 12) + ($startMonth - 1) + $months;
+        $targetYear = intdiv($targetTotalMonths, 12);
+        $targetMonth = ($targetTotalMonths % 12) + 1;
+
+        $daysInTargetMonth = (int) (new DateTimeImmutable(sprintf('%04d-%02d-01', $targetYear, $targetMonth), $start->getTimezone()))->format('t');
+        $targetDay = min($startDay, $daysInTargetMonth);
+
+        return $start->setDate($targetYear, $targetMonth, $targetDay);
     }
 
     private function propagateFailure(array $downstream, string $context): array

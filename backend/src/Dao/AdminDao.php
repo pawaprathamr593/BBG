@@ -382,7 +382,7 @@ final readonly class AdminDao
                     updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
                 WHERE tenant_id = :tenant_id AND status = 'A'",
                 [':admin_id' => $adminId, ':tenant_id' => $tenantId])->execute();
-            $businessExists = $db->createCommand("SELECT id FROM BUSINESS_PROFILES
+            $businessExists = $db->createCommand("SELECT id, created_by FROM BUSINESS_PROFILES
                 WHERE tenant_id = :tenant_id AND status = 'A' LIMIT 1",
                 [':tenant_id' => $tenantId])->queryOne();
             if (!is_array($businessExists)) {
@@ -393,6 +393,46 @@ final readonly class AdminDao
                 updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
                 WHERE id = :tenant_id AND status = 'A'",
                 [':admin_id' => $adminId, ':tenant_id' => $tenantId])->execute();
+
+            // Provision or activate original applicant tenant ownership and active membership
+            if (!empty($businessExists['created_by'])) {
+                $applicantUserId = (int) $businessExists['created_by'];
+                $membershipExists = $db->createCommand(
+                    "SELECT id FROM TENANT_MEMBERSHIPS WHERE tenant_id = :tenant_id AND user_id = :user_id AND status = 'A' LIMIT 1",
+                    [':tenant_id' => $tenantId, ':user_id' => $applicantUserId]
+                )->queryOne();
+                if (!is_array($membershipExists)) {
+                    $db->createCommand(
+                        "INSERT INTO TENANT_MEMBERSHIPS (tenant_id, user_id, membership_status, joined_on, status, created_by, updated_by)
+                         VALUES (:tenant_id, :user_id, 'ACTIVE', CURRENT_TIMESTAMP, 'A', :admin_id, :admin_id)",
+                        [':tenant_id' => $tenantId, ':user_id' => $applicantUserId, ':admin_id' => $adminId]
+                    )->execute();
+                } else {
+                    $db->createCommand(
+                        "UPDATE TENANT_MEMBERSHIPS SET membership_status = 'ACTIVE', updated_by = :admin_id, updated_on = CURRENT_TIMESTAMP
+                         WHERE tenant_id = :tenant_id AND user_id = :user_id AND status = 'A'",
+                        [':tenant_id' => $tenantId, ':user_id' => $applicantUserId, ':admin_id' => $adminId]
+                    )->execute();
+                }
+
+                $roleRow = $db->createCommand(
+                    "SELECT id FROM ROLES WHERE role_code = 'TENANT_OWNER' AND scope_type = 'TENANT' AND status = 'A' LIMIT 1"
+                )->queryOne();
+                if (is_array($roleRow) && !empty($roleRow['id'])) {
+                    $roleId = (int) $roleRow['id'];
+                    $assignmentExists = $db->createCommand(
+                        "SELECT id FROM USER_ROLE_ASSIGNMENTS WHERE user_id = :user_id AND tenant_id = :tenant_id AND role_id = :role_id AND status = 'A' LIMIT 1",
+                        [':user_id' => $applicantUserId, ':tenant_id' => $tenantId, ':role_id' => $roleId]
+                    )->queryOne();
+                    if (!is_array($assignmentExists)) {
+                        $db->createCommand(
+                            "INSERT INTO USER_ROLE_ASSIGNMENTS (user_id, role_id, tenant_id, assigned_by, assigned_on, status, created_by, updated_by)
+                             VALUES (:user_id, :role_id, :tenant_id, :admin_id, CURRENT_TIMESTAMP, 'A', :admin_id, :admin_id)",
+                            [':user_id' => $applicantUserId, ':role_id' => $roleId, ':tenant_id' => $tenantId, ':admin_id' => $adminId]
+                        )->execute();
+                    }
+                }
+            }
             $resArr['status'] = 'SUCCESS';
             $resArr['data'] = ['subscription_id' => $subscriptionId, 'subscription_status' => 'ACTIVE', 'replaced_subscription_id' => $upgradeFromSubscriptionId];
         } catch (Throwable $exception) {

@@ -163,6 +163,10 @@ export class StorefrontSection {
     const canonicalUrl = this.seo.canonicalUrl(path);
 
     if (this.section === 'products') {
+      if (detail.storefront.catalogue_enabled === false) {
+        void this.router.navigate(['/store', slug], { replaceUrl: true });
+        return;
+      }
       await this.loadProducts(this.queryPage, this.querySearch);
       const description =
         'Browse products published by ' +

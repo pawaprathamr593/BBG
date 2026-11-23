@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
@@ -46,6 +46,10 @@ export class BusinessRegistration implements OnInit {
     latitude: null,
     longitude: null,
   });
+  readonly rejectionFeedback = signal<string>('');
+  readonly isRejectedApplication = computed(
+    () => this.application()?.approval_status === 'REJECTED',
+  );
   readonly form = this.fb.nonNullable.group({
     business_name: ['', [Validators.required, Validators.maxLength(180)]],
     business_slug: [
@@ -88,9 +92,12 @@ export class BusinessRegistration implements OnInit {
         );
         if (!existing)
           throw new Error('This business draft was not found or you are not its owner.');
-        if (!['DRAFT', 'PENDING'].includes(existing.approval_status)) {
+        if (!['DRAFT', 'PENDING', 'REJECTED'].includes(existing.approval_status)) {
           await this.router.navigate(['/dashboard/businesses']);
           return;
+        }
+        if (existing.approval_status === 'REJECTED' && existing.rejection_reason) {
+          this.rejectionFeedback.set(existing.rejection_reason);
         }
         this.application.set({
           business_id: businessId,
@@ -115,10 +122,10 @@ export class BusinessRegistration implements OnInit {
           businessId,
           tenantId,
         );
-        if (pendingPayment) {
+        if (pendingPayment && existing.approval_status !== 'REJECTED') {
           this.subscription.set(pendingPayment);
           this.step.set('payment');
-        } else if (existing.approval_status !== 'DRAFT') {
+        } else if (!['DRAFT', 'REJECTED'].includes(existing.approval_status)) {
           await this.router.navigate(['/dashboard/businesses']);
           return;
         }
@@ -355,6 +362,47 @@ export class BusinessRegistration implements OnInit {
       this.notice.set(
         'Your payment receipt has been submitted. Your business and payment are now awaiting BBG review.',
       );
+    } catch (error) {
+      this.error.set(this.auth.errorMessage(error));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async resubmitApplication(): Promise<void> {
+    const application = this.application();
+    if (!application || this.busy()) return;
+    this.form.markAllAsTouched();
+    const values = this.form.getRawValue();
+    const requiredFields = [
+      values.business_name,
+      values.business_slug,
+      values.business_email,
+      values.business_phone,
+      values.address_line_1,
+      values.city,
+      values.state,
+      values.postal_code,
+    ];
+    if (!this.form.valid || requiredFields.some((value) => !value?.trim())) {
+      this.error.set('Please fill in all required fields before resubmitting your application.');
+      return;
+    }
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      const res = await this.api.resubmitApplication(
+        this.payload(),
+        application.business_id,
+        application.tenant_id,
+      );
+      this.application.set({
+        ...application,
+        approval_status: res.approval_status ?? 'PENDING',
+      });
+      this.rejectionFeedback.set('');
+      this.step.set('complete');
+      this.notice.set('Your corrected application has been resubmitted for admin review.');
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {

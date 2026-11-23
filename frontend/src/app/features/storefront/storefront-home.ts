@@ -48,6 +48,8 @@ export class StorefrontHome {
   readonly loading = signal(true);
   readonly selectedCategory = signal('all');
   readonly shareFeedback = signal('');
+  readonly catalogueEnabled = computed(() => this.context.detail()?.storefront.catalogue_enabled ?? false);
+  readonly promotionsEnabled = computed(() => this.context.detail()?.storefront.promotions_enabled ?? false);
   readonly categories = computed(() =>
     [
       ...new Set(
@@ -114,12 +116,20 @@ export class StorefrontHome {
       about: this.businessSchema(detail),
     });
 
+    const productPromise = this.catalogueEnabled()
+      ? firstValueFrom(this.api.listStorefrontProducts(slug, 1, 50, '', { sort: 'newest' }))
+      : Promise.resolve(null);
+    const promotionPromise = this.promotionsEnabled()
+      ? firstValueFrom(this.api.getStorefrontPromotions(slug, 1, 3))
+      : Promise.resolve(null);
+
     const [productResult, promotionResult] = await Promise.allSettled([
-      firstValueFrom(this.api.listStorefrontProducts(slug, 1, 50, '', { sort: 'newest' })),
-      firstValueFrom(this.api.getStorefrontPromotions(slug, 1, 3)),
+      productPromise,
+      promotionPromise,
     ]);
     if (
       productResult.status === 'fulfilled' &&
+      productResult.value &&
       productResult.value.status === 'SUCCESS' &&
       !Array.isArray(productResult.value.data)
     ) {
@@ -127,6 +137,7 @@ export class StorefrontHome {
     }
     if (
       promotionResult.status === 'fulfilled' &&
+      promotionResult.value &&
       promotionResult.value.status === 'SUCCESS' &&
       !Array.isArray(promotionResult.value.data)
     ) {
