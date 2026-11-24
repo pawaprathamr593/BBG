@@ -40,6 +40,7 @@ final readonly class AuthServices implements IAuthServices
             'getProfile' => $this->getUserProfile($actionData),
             'getPrincipal' => $this->resolvePrincipal((string) ($actionData['_accessToken'] ?? '')),
             'getPermissions' => $this->getUserPermissions($actionData),
+            'listActiveSessions' => $this->getActiveSessions($actionData),
             default => $this->failed('Unsupported authentication read action.'),
         };
     }
@@ -63,6 +64,8 @@ final readonly class AuthServices implements IAuthServices
             'refresh' => $this->manageRefreshSession($actionData),
             'logout' => $this->manageLogoutSession($actionData),
             'logoutAll' => $this->manageLogoutAllSessions($actionData),
+            'revokeSession' => $this->manageRevokeOtherSession($actionData),
+            'revokeAllOtherSessions' => $this->manageRevokeAllOtherSessions($actionData),
             'updateProfile' => $this->manageUserProfile($actionData),
             'setPassword' => $this->manageUserPassword($actionData),
             default => $this->failed('Unsupported authentication management action.'),
@@ -479,9 +482,9 @@ final readonly class AuthServices implements IAuthServices
                     $newSessionUuid,
                     $this->tokenService->hashRefreshToken($newRefreshToken),
                     $tokenFamilyId,
-                    null,
-                    null,
-                    null,
+                    $session['device_name'] ?? null,
+                    $session['ip_address'] ?? null,
+                    $session['user_agent'] ?? null,
                     $now,
                     $newExpiresOn,
                 );
@@ -586,6 +589,255 @@ final readonly class AuthServices implements IAuthServices
         $resArr['status'] = 'SUCCESS';
         $resArr['msgArr'][] = 'All user sessions have been revoked.';
         return $resArr;
+    }
+
+    private function getActiveSessions(array $actionData): array
+    {
+        $principal = $this->resolvePrincipal((string) ($actionData['_accessToken'] ?? ''));
+        if ($principal['status'] !== 'SUCCESS') {
+            return $principal;
+        }
+
+        $userId = (int) $principal['data']['user_id'];
+        $currentSessionUuid = (string) $principal['data']['session_uuid'];
+
+        try {
+            $sessionsResult = $this->authDao->getActiveSessionsByUserId($this->connection, $userId);
+            if ($sessionsResult['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($sessionsResult, 'AuthServices::getActiveSessions');
+            }
+
+            $currentSessionItem = null;
+            $otherSessions = [];
+
+            foreach ($sessionsResult['data'] as $session) {
+                $isCurrent = ((string) $session['session_uuid'] === $currentSessionUuid);
+                $meta = $this->parseUserAgentMetadata(
+                    $session['user_agent'] ?? null,
+                    $session['device_name'] ?? null,
+                    $session['ip_address'] ?? null
+                );
+
+                $item = [
+                    'id' => (int) $session['id'],
+                    'device_name' => $meta['device_name'],
+                    'browser' => $meta['browser'],
+                    'os' => $meta['os'],
+                    'device_type' => $meta['device_type'],
+                    'ip_address' => $session['ip_address'] !== null ? (string) $session['ip_address'] : null,
+                    'is_internal_ip' => $meta['is_internal_ip'],
+                    'issued_on' => (string) $session['issued_on'],
+                    'last_used_on' => $session['last_used_on'] !== null ? (string) $session['last_used_on'] : null,
+                    'expires_on' => (string) $session['expires_on'],
+                    'is_current' => $isCurrent,
+                ];
+
+                if ($isCurrent) {
+                    $currentSessionItem = $item;
+                } else {
+                    $otherSessions[] = $item;
+                }
+            }
+
+            $finalList = [];
+            if ($currentSessionItem !== null) {
+                $finalList[] = $currentSessionItem;
+            }
+            foreach ($otherSessions as $other) {
+                $finalList[] = $other;
+            }
+
+            $resArr = $this->initialResponse();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['msgArr'][] = 'Active sessions retrieved successfully.';
+            $resArr['data'] = [
+                'sessions' => $finalList,
+                'total_count' => count($finalList),
+            ];
+            return $resArr;
+        } catch (Throwable $exception) {
+            return $this->exception('getActiveSessions', $exception);
+        }
+    }
+
+    private function manageRevokeOtherSession(array $actionData): array
+    {
+        $principal = $this->resolvePrincipal((string) ($actionData['_accessToken'] ?? ''));
+        if ($principal['status'] !== 'SUCCESS') {
+            return $principal;
+        }
+
+        $userId = (int) $principal['data']['user_id'];
+        $currentSessionUuid = (string) $principal['data']['session_uuid'];
+
+        $sessionId = filter_var($actionData['session_id'] ?? null, FILTER_VALIDATE_INT);
+        if ($sessionId === false || $sessionId <= 0) {
+            return $this->failed('A valid session_id is required.');
+        }
+
+        try {
+            $sessionResult = $this->authDao->getSessionByIdAndUserId($this->connection, (int) $sessionId, $userId);
+            if ($sessionResult['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($sessionResult, 'AuthServices::manageRevokeOtherSession');
+            }
+
+            $targetSession = $sessionResult['data'];
+            if ($targetSession === []) {
+                return $this->failed('Session not found or does not belong to the authenticated user.');
+            }
+
+            if ((string) $targetSession['session_uuid'] === $currentSessionUuid) {
+                return $this->failed('You cannot sign out your current active session from here.');
+            }
+
+            $now = $this->utcNow();
+            $revokeResult = $this->authDao->revokeTokenFamily(
+                $this->connection,
+                (string) $targetSession['token_family_id'],
+                $userId,
+                $now
+            );
+            if ($revokeResult['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($revokeResult, 'AuthServices::manageRevokeOtherSession');
+            }
+
+            $resArr = $this->initialResponse();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['msgArr'][] = 'Session signed out successfully.';
+            $resArr['data'] = [
+                'revoked_session_id' => (int) $sessionId,
+            ];
+            return $resArr;
+        } catch (Throwable $exception) {
+            return $this->exception('manageRevokeOtherSession', $exception);
+        }
+    }
+
+    private function manageRevokeAllOtherSessions(array $actionData): array
+    {
+        $principal = $this->resolvePrincipal((string) ($actionData['_accessToken'] ?? ''));
+        if ($principal['status'] !== 'SUCCESS') {
+            return $principal;
+        }
+
+        $userId = (int) $principal['data']['user_id'];
+        $currentSessionUuid = (string) $principal['data']['session_uuid'];
+
+        try {
+            $currentSessionResult = $this->authDao->getSessionByUuid($this->connection, $currentSessionUuid);
+            if ($currentSessionResult['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($currentSessionResult, 'AuthServices::manageRevokeAllOtherSessions');
+            }
+            if ($currentSessionResult['data'] === []) {
+                return $this->failed('Current session could not be verified.');
+            }
+
+            $currentTokenFamilyId = (string) $currentSessionResult['data']['token_family_id'];
+            $now = $this->utcNow();
+
+            $revokeResult = $this->authDao->revokeAllOtherUserSessions(
+                $this->connection,
+                $userId,
+                $currentTokenFamilyId,
+                $now
+            );
+            if ($revokeResult['status'] !== 'SUCCESS') {
+                return $this->propagateFailure($revokeResult, 'AuthServices::manageRevokeAllOtherSessions');
+            }
+
+            $revokedCount = (int) ($revokeResult['data']['revoked_count'] ?? 0);
+
+            $resArr = $this->initialResponse();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['msgArr'][] = $revokedCount > 0
+                ? "Signed out {$revokedCount} other session(s) successfully."
+                : 'No other active sessions found to sign out.';
+            $resArr['data'] = [
+                'revoked_count' => $revokedCount,
+            ];
+            return $resArr;
+        } catch (Throwable $exception) {
+            return $this->exception('manageRevokeAllOtherSessions', $exception);
+        }
+    }
+
+    private function parseUserAgentMetadata(?string $userAgent, ?string $deviceName, ?string $ipAddress): array
+    {
+        $ua = $userAgent ?? '';
+        $os = 'Unknown OS';
+        $browser = 'Unknown Browser';
+        $deviceType = 'unknown';
+
+        if (preg_match('/iPad/i', $ua)) {
+            $os = 'iOS';
+            $deviceType = 'tablet';
+        } elseif (preg_match('/iPhone|iPod/i', $ua)) {
+            $os = 'iOS';
+            $deviceType = 'mobile';
+        } elseif (preg_match('/Android/i', $ua)) {
+            $os = 'Android';
+            $deviceType = preg_match('/Mobile/i', $ua) ? 'mobile' : 'tablet';
+        } elseif (preg_match('/Macintosh|Mac OS X/i', $ua)) {
+            $os = 'macOS';
+            $deviceType = 'desktop';
+        } elseif (preg_match('/Windows NT/i', $ua)) {
+            $os = 'Windows';
+            $deviceType = 'desktop';
+        } elseif (preg_match('/CrOS/i', $ua)) {
+            $os = 'ChromeOS';
+            $deviceType = 'desktop';
+        } elseif (preg_match('/Linux/i', $ua)) {
+            $os = 'Linux';
+            $deviceType = 'desktop';
+        }
+
+        if (preg_match('/Edg(?:e|A|iOS)?\/([0-9.]+)/i', $ua)) {
+            $browser = 'Microsoft Edge';
+        } elseif (preg_match('/SamsungBrowser\/([0-9.]+)/i', $ua)) {
+            $browser = 'Samsung Internet';
+        } elseif (preg_match('/OPR\/|Opera/i', $ua)) {
+            $browser = 'Opera';
+        } elseif (preg_match('/Chrome\/|CriOS\//i', $ua)) {
+            $browser = 'Google Chrome';
+        } elseif (preg_match('/Firefox\/|FxiOS\//i', $ua)) {
+            $browser = 'Mozilla Firefox';
+        } elseif (preg_match('/Version\/([0-9.]+).*Safari/i', $ua) || (preg_match('/Safari/i', $ua) && !preg_match('/Chrome/i', $ua))) {
+            $browser = 'Apple Safari';
+        }
+
+        $friendlyDevice = trim((string) ($deviceName ?? ''));
+        if ($friendlyDevice === '') {
+            $friendlyDevice = match ($os) {
+                'macOS' => 'Mac',
+                'Windows' => 'Windows PC',
+                'iOS' => ($deviceType === 'tablet' ? 'iPad' : 'iPhone'),
+                'Android' => ($deviceType === 'tablet' ? 'Android Tablet' : 'Android Phone'),
+                'Linux' => 'Linux PC',
+                'ChromeOS' => 'Chromebook',
+                default => 'Unknown Device',
+            };
+        }
+
+        $isInternalIp = false;
+        if (!empty($ipAddress)) {
+            $isValid = filter_var($ipAddress, FILTER_VALIDATE_IP);
+            if ($isValid !== false) {
+                $isPublic = filter_var(
+                    $ipAddress,
+                    FILTER_VALIDATE_IP,
+                    FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+                );
+                $isInternalIp = ($isPublic === false);
+            }
+        }
+
+        return [
+            'device_name' => $friendlyDevice,
+            'browser' => $browser,
+            'os' => $os,
+            'device_type' => $deviceType,
+            'is_internal_ip' => $isInternalIp,
+        ];
     }
 
     private function getUserPermissions(array $actionData): array

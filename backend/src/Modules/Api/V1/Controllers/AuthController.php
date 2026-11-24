@@ -33,6 +33,8 @@ final class AuthController
             '/api/v1/auth/logout-all' => 'logoutAll',
             '/api/v1/auth/profile/update' => 'updateProfile',
             '/api/v1/auth/password/update' => 'setPassword',
+            '/api/v1/auth/sessions/revoke' => 'revokeSession',
+            '/api/v1/auth/sessions/revoke-all-others' => 'revokeAllOtherSessions',
             '/api/v1/auth/social/login' => 'socialLogin',
             '/api/v1/auth/social/link' => 'socialLink',
         ];
@@ -89,7 +91,7 @@ final class AuthController
         if (in_array($action, ['refresh', 'logout'], true)) {
             $actionData['_refreshToken'] = (string) ($cookies['bbg_refresh'] ?? '');
         }
-        if (in_array($action, ['logoutAll', 'updateProfile', 'setPassword', 'socialLink'], true)) {
+        if (in_array($action, ['logoutAll', 'updateProfile', 'setPassword', 'socialLink', 'revokeSession', 'revokeAllOtherSessions'], true)) {
             $authorization = $request->getHeaderLine('Authorization');
             $actionData['_accessToken'] = str_starts_with($authorization, 'Bearer ')
                 ? trim(substr($authorization, 7))
@@ -157,6 +159,7 @@ final class AuthController
         $routeActions = [
             '/api/v1/auth/profile' => 'getProfile',
             '/api/v1/auth/permissions' => 'getPermissions',
+            '/api/v1/auth/sessions/list' => 'listActiveSessions',
         ];
         $action = $routeActions[$request->getUri()->getPath()] ?? '';
         if ($action === '') {

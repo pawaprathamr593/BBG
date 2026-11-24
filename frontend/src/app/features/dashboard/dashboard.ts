@@ -80,7 +80,11 @@ export class Dashboard implements OnInit {
   }
 
   readonly selectedTenant = computed(
-    () => this.tenants().find((tenant) => tenant.id === this.selectedTenantId()) ?? null,
+    () => {
+      const selId = this.selectedTenantId();
+      if (selId === null || selId === undefined) return null;
+      return this.tenants().find((tenant) => Number(tenant.id) === Number(selId)) ?? null;
+    },
   );
   readonly isPlatformContext = computed(() => this.workspace.activeContext() === 'PLATFORM');
   readonly isPersonalContext = computed(() => this.workspace.activeContext() === 'PERSONAL');

@@ -566,5 +566,90 @@ final readonly class AuthDao
         return $resArr;
     }
 
+    public function getActiveSessionsByUserId(ConnectionInterface $connection, int $userId): array
+    {
+        $resArr = $this->initialResponse();
+        try {
+            $rows = $connection->createCommand(
+                "SELECT s.id, s.session_uuid,
+                        COALESCE(s.device_name, root.device_name) AS device_name,
+                        COALESCE(s.user_agent, root.user_agent) AS user_agent,
+                        COALESCE(s.ip_address, root.ip_address) AS ip_address,
+                        s.issued_on, s.expires_on, s.last_used_on, s.token_family_id
+                 FROM USER_SESSIONS s
+                 LEFT JOIN (
+                     SELECT token_family_id, user_agent, ip_address, device_name,
+                            ROW_NUMBER() OVER (PARTITION BY token_family_id ORDER BY id ASC) as rn
+                     FROM USER_SESSIONS
+                     WHERE user_agent IS NOT NULL OR device_name IS NOT NULL OR ip_address IS NOT NULL
+                 ) root ON root.token_family_id = s.token_family_id AND root.rn = 1
+                 WHERE s.user_id = :user_id
+                   AND s.status = 'A'
+                   AND s.revoked_on IS NULL
+                   AND s.expires_on > CURRENT_TIMESTAMP
+                   AND s.replaced_by_session_id IS NULL
+                 ORDER BY s.last_used_on DESC, s.issued_on DESC, s.id DESC",
+                [':user_id' => $userId],
+            )->queryAll();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = is_array($rows) ? $rows : [];
+        } catch (Throwable $exception) {
+            $this->logException('getActiveSessionsByUserId', $exception);
+            $resArr = $this->exceptionResponse('Unable to retrieve active sessions.');
+        }
+        return $resArr;
+    }
+
+    public function getSessionByIdAndUserId(ConnectionInterface $connection, int $sessionId, int $userId): array
+    {
+        $resArr = $this->initialResponse();
+        try {
+            $row = $connection->createCommand(
+                "SELECT id, user_id, session_uuid, token_family_id, expires_on, revoked_on, status, replaced_by_session_id
+                 FROM USER_SESSIONS
+                 WHERE id = :id AND user_id = :user_id AND status = 'A'
+                 LIMIT 1",
+                [':id' => $sessionId, ':user_id' => $userId],
+            )->queryOne();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = is_array($row) ? $row : [];
+        } catch (Throwable $exception) {
+            $this->logException('getSessionByIdAndUserId', $exception);
+            $resArr = $this->exceptionResponse('Unable to retrieve session record.');
+        }
+        return $resArr;
+    }
+
+    public function revokeAllOtherUserSessions(
+        ConnectionInterface $connection,
+        int $userId,
+        string $currentTokenFamilyId,
+        string $revokedOn,
+    ): array {
+        $resArr = $this->initialResponse();
+        try {
+            $affected = $connection->createCommand(
+                "UPDATE USER_SESSIONS
+                 SET revoked_on = COALESCE(revoked_on, :revoked_on), updated_by = :updated_by
+                 WHERE user_id = :user_id
+                   AND token_family_id != :current_token_family_id
+                   AND revoked_on IS NULL
+                   AND status = 'A'",
+                [
+                    ':revoked_on' => $revokedOn,
+                    ':updated_by' => $userId,
+                    ':user_id' => $userId,
+                    ':current_token_family_id' => $currentTokenFamilyId,
+                ],
+            )->execute();
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['revoked_count' => $affected];
+        } catch (Throwable $exception) {
+            $this->logException('revokeAllOtherUserSessions', $exception);
+            $resArr = $this->exceptionResponse('Unable to revoke other user sessions.');
+        }
+        return $resArr;
+    }
+
 
 }

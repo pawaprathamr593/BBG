@@ -16,41 +16,95 @@
     </section>
   } @else {
     <section class="status-card">
-      <p class="eyebrow">BBG BUSINESS WORKSPACE</p>
       <div class="status-heading">
         <div>
+          <p class="eyebrow">BBG BUSINESS WORKSPACE</p>
           <h1>Your registered businesses</h1>
           <p>
-            Review the approval status of your registrations, access active workspaces, or resume
-            drafts.
+            Review the approval status of your registrations, jump directly into active business workspaces, or configure your storefront, catalogue, and team.
           </p>
         </div>
+        <button
+          class="market-button secondary-market-button btn-register-top"
+          type="button"
+          (click)="registerAnotherBusiness()"
+        >
+          ＋ Register another business
+        </button>
       </div>
+
+      @if (actionError()) {
+        <div class="action-error-banner" role="alert">
+          <span class="error-msg">⚠️ {{ actionError() }}</span>
+          <button type="button" class="btn-error-close" (click)="dismissActionError()" aria-label="Dismiss error">✕</button>
+        </div>
+      }
 
       <div class="application-list">
         @for (business of visibleApplications(); track business.business_id) {
-          <article class="application-card">
+          <article class="application-card" [class.is-approved]="business.approval_status === 'APPROVED'">
             <div class="application-heading">
-              <div>
-                <h2>{{ business.business_name }}</h2>
-                <span class="slug-text">bbg.in/store/{{ business.business_slug }}</span>
+              <div class="heading-identity">
+                <div class="business-avatar-box">
+                  @if (business.logo_url || business.logo_path) {
+                    <img [src]="business.logo_url || business.logo_path" [alt]="business.business_name" class="biz-avatar-img" />
+                  } @else {
+                    <span class="biz-avatar-initials">{{ initials(business.business_name) }}</span>
+                  }
+                </div>
+                <div class="heading-titles">
+                  <h2>{{ business.business_name }}</h2>
+                  <div class="slug-row">
+                    <a
+                      class="slug-link"
+                      [href]="'/store/' + business.business_slug"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Open public storefront in new tab"
+                    >
+                      <span>bbg.in/store/{{ business.business_slug }}</span>
+                      <span class="link-arrow" aria-hidden="true">↗</span>
+                    </a>
+                  </div>
+                </div>
               </div>
-              <app-status-badge
-                [status]="business.approval_status"
-                [label]="statusLabel(business.approval_status)"
-              />
+
+              <div class="status-badge-group">
+                <app-status-badge
+                  [status]="business.approval_status"
+                  [label]="statusLabel(business.approval_status)"
+                />
+              </div>
             </div>
 
             <div class="business-summary">
-              <span>
+              <span class="summary-cell">
                 <small>Location</small>
                 <strong>{{ locationLabel(business) }}</strong>
               </span>
-              <span>
+              @if (business.business_email) {
+                <span class="summary-cell">
+                  <small>Business Email</small>
+                  <strong>{{ business.business_email }}</strong>
+                </span>
+              }
+              @if (business.business_phone) {
+                <span class="summary-cell">
+                  <small>Contact Phone</small>
+                  <strong>{{ business.business_phone }}</strong>
+                </span>
+              }
+              @if (business.whatsapp_number) {
+                <span class="summary-cell">
+                  <small>WhatsApp</small>
+                  <strong>{{ business.whatsapp_number }}</strong>
+                </span>
+              }
+              <span class="summary-cell">
                 <small>Application Stage</small>
                 <strong>{{ statusLabel(business.approval_status) }}</strong>
               </span>
-              <span>
+              <span class="summary-cell">
                 <small>Storefront Publication</small>
                 <strong>{{ business.publication_status || 'Draft (Unpublished)' }}</strong>
               </span>
@@ -58,31 +112,111 @@
 
             @if (business.approval_status === 'APPROVED') {
               <div class="approved-actions">
-                <button class="market-button" type="button" (click)="openWorkspace(business)">
-                  <span>Open workspace dashboard</span>
-                  <span aria-hidden="true">→</span>
-                </button>
                 <button
-                  class="market-button secondary-market-button"
+                  class="market-button btn-open-workspace"
                   type="button"
-                  (click)="manageTeam(business)"
+                  (click)="openWorkspace(business)"
+                  [disabled]="actionBusy() !== null"
+                  title="Open the main operational dashboard for this business"
                 >
-                  Manage team
+                  @if (actionBusy() === business.business_id + '-open') {
+                    <span>Switching workspace...</span>
+                  } @else {
+                    <span>🏢 Open Workspace Dashboard</span>
+                    <span aria-hidden="true">→</span>
+                  }
                 </button>
-                <button
-                  class="market-button secondary-market-button"
-                  type="button"
-                  (click)="manageStorefront(business)"
-                >
-                  Configure storefront
-                </button>
-                <button
-                  class="market-button secondary-market-button"
-                  type="button"
-                  (click)="manageSubscription(business)"
-                >
-                  Subscriptions &amp; Billing
-                </button>
+
+                <div class="quick-nav-group" aria-label="Quick management actions">
+                  <button
+                    class="market-button secondary-market-button"
+                    type="button"
+                    (click)="manageCatalogue(business)"
+                    [disabled]="actionBusy() !== null"
+                    title="Manage product catalogue and inventory"
+                  >
+                    @if (actionBusy() === business.business_id + '-catalogue') {
+                      <span>Opening...</span>
+                    } @else {
+                      <span>📦 Products &amp; Catalogue</span>
+                    }
+                  </button>
+                  <button
+                    class="market-button secondary-market-button"
+                    type="button"
+                    (click)="manageOrders(business)"
+                    [disabled]="actionBusy() !== null"
+                    title="View and fulfill customer orders"
+                  >
+                    @if (actionBusy() === business.business_id + '-orders') {
+                      <span>Opening...</span>
+                    } @else {
+                      <span>🛍️ Orders</span>
+                    }
+                  </button>
+                  <button
+                    class="market-button secondary-market-button"
+                    type="button"
+                    (click)="manageStorefront(business)"
+                    [disabled]="actionBusy() !== null"
+                    title="Configure storefront branding, banners, and layout"
+                  >
+                    @if (actionBusy() === business.business_id + '-storefront') {
+                      <span>Opening...</span>
+                    } @else {
+                      <span>🏪 Storefront Settings</span>
+                    }
+                  </button>
+                  <button
+                    class="market-button secondary-market-button"
+                    type="button"
+                    (click)="manageTeam(business)"
+                    [disabled]="actionBusy() !== null"
+                    title="Manage staff, members, and access permissions"
+                  >
+                    @if (actionBusy() === business.business_id + '-team') {
+                      <span>Opening...</span>
+                    } @else {
+                      <span>👥 Team &amp; Access</span>
+                    }
+                  </button>
+                  <button
+                    class="market-button secondary-market-button"
+                    type="button"
+                    (click)="manageSubscription(business)"
+                    [disabled]="actionBusy() !== null"
+                    title="Manage subscription plan, renewals, and billing"
+                  >
+                    @if (actionBusy() === business.business_id + '-subscription') {
+                      <span>Opening...</span>
+                    } @else {
+                      <span>💳 Subscriptions &amp; Billing</span>
+                    }
+                  </button>
+                  <button
+                    class="market-button secondary-market-button"
+                    type="button"
+                    (click)="manageProfile(business)"
+                    [disabled]="actionBusy() !== null"
+                    title="Update business profile and verification details"
+                  >
+                    @if (actionBusy() === business.business_id + '-profile') {
+                      <span>Opening...</span>
+                    } @else {
+                      <span>🏢 Business Profile</span>
+                    }
+                  </button>
+                  <a
+                    class="market-button secondary-market-button btn-view-live"
+                    [href]="'/store/' + business.business_slug"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Open live public storefront"
+                  >
+                    <span>🌐 Live Storefront</span>
+                    <span aria-hidden="true">↗</span>
+                  </a>
+                </div>
               </div>
             } @else if (business.approval_status === 'REJECTED') {
               <p class="application-note">

@@ -1335,7 +1335,7 @@ export class WorkspaceLayout implements OnInit {
         const tenantId = Number(selection.slice('BUSINESS:'.length));
         if (
           !Number.isInteger(tenantId) ||
-          !this.workspace.tenants().some((tenant) => tenant.id === tenantId)
+          !this.workspace.tenants().some((tenant) => Number(tenant.id) === tenantId)
         ) {
           throw new Error('That Business Workspace is not available to your account.');
         }

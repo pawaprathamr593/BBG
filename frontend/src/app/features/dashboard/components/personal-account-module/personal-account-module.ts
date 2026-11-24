@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  OnInit,
   computed,
   inject,
   input,
@@ -10,10 +11,12 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { UserSession } from '../../../../core/auth/auth.models';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { DashboardTenant } from '../../../../core/dashboard/dashboard-api.service';
 import { WorkspaceContextService } from '../../../../core/workspace/workspace-context.service';
 import { WorkspaceModuleApiService } from '../../../../core/workspace/workspace-module-api.service';
+import { ConfirmDialogComponent } from '../../../../shared/components/confirm-dialog/confirm-dialog.component';
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 import { WorkspaceDrawer } from '../../../../shared/workspace-drawer/workspace-drawer';
 
@@ -28,12 +31,12 @@ const emptyProfile = (): PersonalProfileForm => ({ full_name: '', email: '', mob
 @Component({
   selector: 'app-personal-account-module',
   standalone: true,
-  imports: [FormsModule, WorkspaceDrawer, StatusBadgeComponent],
+  imports: [FormsModule, WorkspaceDrawer, StatusBadgeComponent, ConfirmDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './personal-account-module.html',
   styleUrl: './personal-account-module.scss',
 })
-export class PersonalAccountModule {
+export class PersonalAccountModule implements OnInit {
   readonly profile = input.required<Record<string, unknown>>();
   readonly businesses = input<DashboardTenant[]>([]);
   readonly canEdit = input(false);
@@ -49,6 +52,16 @@ export class PersonalAccountModule {
   readonly newPassword = signal('');
   readonly confirmPassword = signal('');
 
+  // Active Sessions Signals
+  readonly sessions = signal<UserSession[]>([]);
+  readonly sessionsLoading = signal(false);
+  readonly sessionsError = signal('');
+  readonly sessionFeedback = signal<{ type: 'success' | 'error'; message: string } | null>(null);
+  readonly revokingSessionId = signal<number | null>(null);
+  readonly revokingAllOthers = signal(false);
+  readonly confirmRevokeTarget = signal<UserSession | null>(null);
+  readonly confirmRevokeAllOpen = signal(false);
+
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly workspace = inject(WorkspaceContextService);
@@ -61,6 +74,14 @@ export class PersonalAccountModule {
       this.alive = false;
     });
   }
+
+  ngOnInit(): void {
+    void this.loadActiveSessions();
+  }
+
+  readonly otherSessionsCount = computed(
+    () => this.sessions().filter((s) => !s.is_current).length,
+  );
 
   readonly fullName = computed(() => String(this.profile()['full_name'] ?? 'BBG User').trim());
   readonly email = computed(() => {
@@ -233,12 +254,12 @@ export class PersonalAccountModule {
     }
   }
 
-  async openBusinessWorkspace(tenantId: number): Promise<void> {
+  async navigateToBusinessSection(tenantId: number, targetRoute: string): Promise<void> {
     if (this.busy()) return;
     try {
       this.busy.set(true);
-      await this.workspace.switchWorkspace(tenantId);
-      await this.router.navigateByUrl('/dashboard');
+      await this.workspace.switchWorkspace(Number(tenantId));
+      await this.router.navigateByUrl(targetRoute);
     } catch (err) {
       this.error.set(this.auth.errorMessage(err));
     } finally {
@@ -246,7 +267,131 @@ export class PersonalAccountModule {
     }
   }
 
+  async openBusinessWorkspace(tenantId: number): Promise<void> {
+    await this.navigateToBusinessSection(tenantId, '/dashboard');
+  }
+
+  async manageCatalogue(tenantId: number): Promise<void> {
+    await this.navigateToBusinessSection(tenantId, '/dashboard/catalogue');
+  }
+
+  async manageOrders(tenantId: number): Promise<void> {
+    await this.navigateToBusinessSection(tenantId, '/dashboard/orders');
+  }
+
+  async manageStorefront(tenantId: number): Promise<void> {
+    await this.navigateToBusinessSection(tenantId, '/dashboard/storefront');
+  }
+
+  async manageTeam(tenantId: number): Promise<void> {
+    await this.navigateToBusinessSection(tenantId, '/dashboard/members');
+  }
+
+  async manageSubscriptions(tenantId: number): Promise<void> {
+    await this.navigateToBusinessSection(tenantId, '/dashboard/subscriptions');
+  }
+
+  async manageBusinessProfile(tenantId: number): Promise<void> {
+    await this.navigateToBusinessSection(tenantId, '/dashboard/profile');
+  }
+
   registerBusiness(): void {
     void this.router.navigateByUrl('/dashboard/businesses/register');
+  }
+
+  async loadActiveSessions(): Promise<void> {
+    this.sessionsLoading.set(true);
+    this.sessionsError.set('');
+    try {
+      const res = await this.auth.getActiveSessions();
+      if (!this.alive) return;
+      this.sessions.set(res.sessions || []);
+    } catch (err) {
+      if (!this.alive) return;
+      this.sessionsError.set(this.auth.errorMessage(err));
+    } finally {
+      if (this.alive) this.sessionsLoading.set(false);
+    }
+  }
+
+  promptRevokeSession(session: UserSession): void {
+    if (session.is_current || this.revokingSessionId() !== null || this.revokingAllOthers()) return;
+    this.confirmRevokeTarget.set(session);
+  }
+
+  cancelRevokeSession(): void {
+    this.confirmRevokeTarget.set(null);
+  }
+
+  async confirmRevokeSession(): Promise<void> {
+    const target = this.confirmRevokeTarget();
+    if (!target) return;
+    this.confirmRevokeTarget.set(null);
+    this.revokingSessionId.set(target.id);
+    this.sessionFeedback.set(null);
+    try {
+      await this.auth.revokeSession(target.id);
+      if (!this.alive) return;
+      this.sessions.update((list) => list.filter((s) => s.id !== target.id));
+      this.sessionFeedback.set({
+        type: 'success',
+        message: `Signed out ${target.device_name || 'session'} successfully.`,
+      });
+    } catch (err) {
+      if (!this.alive) return;
+      this.sessionFeedback.set({
+        type: 'error',
+        message: this.auth.errorMessage(err),
+      });
+    } finally {
+      if (this.alive) this.revokingSessionId.set(null);
+    }
+  }
+
+  promptRevokeAllOthers(): void {
+    if (this.otherSessionsCount() === 0 || this.revokingAllOthers() || this.sessionsLoading()) return;
+    this.confirmRevokeAllOpen.set(true);
+  }
+
+  cancelRevokeAllOthers(): void {
+    this.confirmRevokeAllOpen.set(false);
+  }
+
+  async confirmRevokeAllOthers(): Promise<void> {
+    this.confirmRevokeAllOpen.set(false);
+    this.revokingAllOthers.set(true);
+    this.sessionFeedback.set(null);
+    try {
+      const count = await this.auth.revokeAllOtherSessions();
+      if (!this.alive) return;
+      this.sessions.update((list) => list.filter((s) => s.is_current));
+      this.sessionFeedback.set({
+        type: 'success',
+        message:
+          count > 0
+            ? `Signed out ${count} other device(s) successfully.`
+            : 'No other devices were active.',
+      });
+    } catch (err) {
+      if (!this.alive) return;
+      this.sessionFeedback.set({
+        type: 'error',
+        message: this.auth.errorMessage(err),
+      });
+    } finally {
+      if (this.alive) this.revokingAllOthers.set(false);
+    }
+  }
+
+  dismissSessionFeedback(): void {
+    this.sessionFeedback.set(null);
+  }
+
+  getDeviceIcon(deviceType: string): string {
+    const t = (deviceType || '').toLowerCase();
+    if (t === 'desktop') return '💻';
+    if (t === 'mobile') return '📱';
+    if (t === 'tablet') return '📟';
+    return '🌐';
   }
 }

@@ -44,6 +44,23 @@ export class BusinessWorkspace implements OnInit {
   });
   readonly rejectedPaymentBusinessIds = signal<number[]>([]);
   readonly rejectedPaymentReasons = signal<Record<number, string>>({});
+  readonly actionBusy = signal<string | null>(null);
+  readonly actionError = signal<string>('');
+
+  dismissActionError(): void {
+    this.actionError.set('');
+  }
+
+  initials(name?: string): string {
+    const target = name?.trim() || 'BB';
+    return (
+      target
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((p) => p.charAt(0).toUpperCase())
+        .join('') || 'BB'
+    );
+  }
 
   onPageChange(page: number): void {
     this.currentPage.set(page);
@@ -135,43 +152,100 @@ export class BusinessWorkspace implements OnInit {
   }
 
   async manageSubscription(business: BusinessApplication): Promise<void> {
-    if (business.approval_status !== 'APPROVED') return;
+    if (business.approval_status !== 'APPROVED' || this.actionBusy()) return;
+    this.actionError.set('');
+    this.actionBusy.set(business.business_id + '-subscription');
     try {
-      await this.workspace.switchWorkspace(business.tenant_id);
+      await this.workspace.switchWorkspace(Number(business.tenant_id));
       await this.router.navigate(['/dashboard/subscriptions']);
     } catch (error) {
-      this.error.set(this.auth.errorMessage(error));
+      this.actionError.set(this.auth.errorMessage(error));
+    } finally {
+      this.actionBusy.set(null);
     }
   }
 
   async manageStorefront(business: BusinessApplication): Promise<void> {
-    if (business.approval_status !== 'APPROVED') return;
+    if (business.approval_status !== 'APPROVED' || this.actionBusy()) return;
+    this.actionError.set('');
+    this.actionBusy.set(business.business_id + '-storefront');
     try {
-      await this.workspace.switchWorkspace(business.tenant_id);
+      await this.workspace.switchWorkspace(Number(business.tenant_id));
       await this.router.navigate(['/dashboard/storefront']);
     } catch (error) {
-      this.error.set(this.auth.errorMessage(error));
+      this.actionError.set(this.auth.errorMessage(error));
+    } finally {
+      this.actionBusy.set(null);
     }
   }
 
   async manageTeam(business: BusinessApplication): Promise<void> {
-    if (business.approval_status !== 'APPROVED') return;
+    if (business.approval_status !== 'APPROVED' || this.actionBusy()) return;
+    this.actionError.set('');
+    this.actionBusy.set(business.business_id + '-team');
     try {
-      await this.workspace.switchWorkspace(business.tenant_id);
+      await this.workspace.switchWorkspace(Number(business.tenant_id));
       await this.router.navigate(['/dashboard/members']);
     } catch (error) {
-      this.error.set(this.auth.errorMessage(error));
+      this.actionError.set(this.auth.errorMessage(error));
+    } finally {
+      this.actionBusy.set(null);
+    }
+  }
+
+  async manageCatalogue(business: BusinessApplication): Promise<void> {
+    if (business.approval_status !== 'APPROVED' || this.actionBusy()) return;
+    this.actionError.set('');
+    this.actionBusy.set(business.business_id + '-catalogue');
+    try {
+      await this.workspace.switchWorkspace(Number(business.tenant_id));
+      await this.router.navigate(['/dashboard/catalogue']);
+    } catch (error) {
+      this.actionError.set(this.auth.errorMessage(error));
+    } finally {
+      this.actionBusy.set(null);
+    }
+  }
+
+  async manageOrders(business: BusinessApplication): Promise<void> {
+    if (business.approval_status !== 'APPROVED' || this.actionBusy()) return;
+    this.actionError.set('');
+    this.actionBusy.set(business.business_id + '-orders');
+    try {
+      await this.workspace.switchWorkspace(Number(business.tenant_id));
+      await this.router.navigate(['/dashboard/orders']);
+    } catch (error) {
+      this.actionError.set(this.auth.errorMessage(error));
+    } finally {
+      this.actionBusy.set(null);
+    }
+  }
+
+  async manageProfile(business: BusinessApplication): Promise<void> {
+    if (business.approval_status !== 'APPROVED' || this.actionBusy()) return;
+    this.actionError.set('');
+    this.actionBusy.set(business.business_id + '-profile');
+    try {
+      await this.workspace.switchWorkspace(Number(business.tenant_id));
+      await this.router.navigate(['/dashboard/profile']);
+    } catch (error) {
+      this.actionError.set(this.auth.errorMessage(error));
+    } finally {
+      this.actionBusy.set(null);
     }
   }
 
   async openWorkspace(business: BusinessApplication): Promise<void> {
-    if (business.approval_status !== 'APPROVED') return;
+    if (business.approval_status !== 'APPROVED' || this.actionBusy()) return;
+    this.actionError.set('');
+    this.actionBusy.set(business.business_id + '-open');
     try {
-      await this.workspace.initialize();
-      await this.workspace.switchWorkspace(business.tenant_id);
+      await this.workspace.switchWorkspace(Number(business.tenant_id));
       await this.router.navigate(['/dashboard']);
     } catch (error) {
-      this.error.set(this.auth.errorMessage(error));
+      this.actionError.set(this.auth.errorMessage(error));
+    } finally {
+      this.actionBusy.set(null);
     }
   }
 

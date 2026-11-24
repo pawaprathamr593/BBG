@@ -3,6 +3,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { API_BASE_URL } from '../config/api-base-url';
 import {
+  ActiveSessionsResponse,
   ApiResponse,
   AuthResponseData,
   AuthUser,
@@ -11,6 +12,7 @@ import {
   SocialAuthConfig,
   SocialAuthIntent,
   SocialProvider,
+  UserSession,
 } from './auth.models';
 
 interface GoogleCredentialResponse {
@@ -275,6 +277,62 @@ export class AuthService {
     } finally {
       this.clearLocalSession();
     }
+  }
+
+  async getActiveSessions(): Promise<ActiveSessionsResponse> {
+    const response = await firstValueFrom(
+      this.http.get<ApiResponse<ActiveSessionsResponse>>(
+        `${this.apiBaseUrl}/api/v1/auth/sessions/list`,
+        { withCredentials: true },
+      ),
+    );
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Active sessions could not be loaded.');
+    }
+    return response.data as ActiveSessionsResponse;
+  }
+
+  async revokeSession(sessionId: number): Promise<void> {
+    const response = await firstValueFrom(
+      this.http.post<ApiResponse<{ revoked_session_id: number }>>(
+        `${this.apiBaseUrl}/api/v1/auth/sessions/revoke`,
+        {
+          authParam: {
+            actionType: 'manageAuth',
+            actionData: {
+              action: 'revokeSession',
+              session_id: sessionId,
+            },
+          },
+        },
+        { withCredentials: true },
+      ),
+    );
+    if (response.status !== 'SUCCESS') {
+      throw new Error(response.msgArr?.join(' ') || 'Session could not be signed out.');
+    }
+  }
+
+  async revokeAllOtherSessions(): Promise<number> {
+    const response = await firstValueFrom(
+      this.http.post<ApiResponse<{ revoked_count: number }>>(
+        `${this.apiBaseUrl}/api/v1/auth/sessions/revoke-all-others`,
+        {
+          authParam: {
+            actionType: 'manageAuth',
+            actionData: {
+              action: 'revokeAllOtherSessions',
+            },
+          },
+        },
+        { withCredentials: true },
+      ),
+    );
+    if (response.status !== 'SUCCESS') {
+      throw new Error(response.msgArr?.join(' ') || 'Other sessions could not be signed out.');
+    }
+    const data = response.data as { revoked_count: number };
+    return data?.revoked_count ?? 0;
   }
 
   private async authenticateGoogle(

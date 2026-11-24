@@ -64,7 +64,11 @@ export class WorkspaceContextService {
   readonly error = signal('');
 
   readonly activeTenant = computed(
-    () => this.tenants().find((tenant) => tenant.id === this.activeTenantId()) ?? null,
+    () => {
+      const activeId = this.activeTenantId();
+      if (activeId === null || activeId === undefined) return null;
+      return this.tenants().find((tenant) => Number(tenant.id) === Number(activeId)) ?? null;
+    },
   );
 
   initialize(): Promise<void> {
@@ -83,19 +87,28 @@ export class WorkspaceContextService {
       await this.switchToMyAccount();
       return;
     }
-    if (!this.tenants().some((tenant) => tenant.id === tenantId)) {
-      throw new Error('You do not have access to Business Workspace.');
+    const targetId = Number(tenantId);
+    if (!this.tenants().some((tenant) => Number(tenant.id) === targetId)) {
+      try {
+        const freshTenants = await this.api.getMyTenants();
+        this.tenants.set(freshTenants);
+      } catch {
+        // preserve existing tenants on network error
+      }
+      if (!this.tenants().some((tenant) => Number(tenant.id) === targetId)) {
+        throw new Error('You do not have access to Business Workspace.');
+      }
     }
 
     // Fetch permissions before changing the active context. A failed or denied
     // permission request therefore cannot leave the UI in a false active state.
-    const permissions = await this.api.getPermissions(tenantId);
-    this.activeTenantId.set(tenantId);
+    const permissions = await this.api.getPermissions(targetId);
+    this.activeTenantId.set(targetId);
     this.activeContext.set('BUSINESS');
-    this.lastActiveTenantId.set(tenantId);
+    this.lastActiveTenantId.set(targetId);
     this.permissions.set(permissions);
-    this.persistActiveWorkspace(tenantId);
-    this.persistLastWorkspace(tenantId);
+    this.persistActiveWorkspace(targetId);
+    this.persistLastWorkspace(targetId);
     this.persistActiveContext('BUSINESS');
   }
 
@@ -163,12 +176,14 @@ export class WorkspaceContextService {
 
       const savedId = this.readActiveWorkspace();
       const restoredTenantId =
-        savedId !== null && tenants.some((tenant) => tenant.id === savedId) ? savedId : null;
+        savedId !== null && tenants.some((tenant) => Number(tenant.id) === Number(savedId))
+          ? Number(savedId)
+          : null;
       const savedLastId = this.readLastWorkspace();
       const lastTenantId =
         restoredTenantId ??
-        (savedLastId !== null && tenants.some((tenant) => tenant.id === savedLastId)
-          ? savedLastId
+        (savedLastId !== null && tenants.some((tenant) => Number(tenant.id) === Number(savedLastId))
+          ? Number(savedLastId)
           : null);
       this.lastActiveTenantId.set(lastTenantId);
       if (restoredTenantId !== null) this.persistLastWorkspace(restoredTenantId);

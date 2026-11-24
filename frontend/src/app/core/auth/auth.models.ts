@@ -51,3 +51,22 @@ export interface SocialProviderConfig {
 export interface SocialAuthConfig {
   providers: Record<SocialProvider, SocialProviderConfig>;
 }
+
+export interface UserSession {
+  id: number;
+  device_name: string;
+  browser: string;
+  os: string;
+  device_type: 'desktop' | 'mobile' | 'tablet' | 'unknown';
+  ip_address: string | null;
+  is_internal_ip: boolean;
+  issued_on: string;
+  last_used_on: string | null;
+  expires_on: string;
+  is_current: boolean;
+}
+
+export interface ActiveSessionsResponse {
+  sessions: UserSession[];
+  total_count: number;
+}

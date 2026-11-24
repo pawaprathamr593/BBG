@@ -183,9 +183,67 @@
                 class="btn-primary btn-sm open-workspace-btn"
                 (click)="openBusinessWorkspace(b.id)"
                 [disabled]="busy()"
+                title="Open main workspace dashboard"
               >
                 <span>🏢</span> Open Business Workspace
               </button>
+
+              <div class="biz-quick-actions" aria-label="Quick management actions">
+                <button
+                  type="button"
+                  class="btn-secondary btn-xs"
+                  (click)="manageCatalogue(b.id)"
+                  [disabled]="busy()"
+                  title="Manage product catalogue and inventory"
+                >
+                  📦 Products
+                </button>
+                <button
+                  type="button"
+                  class="btn-secondary btn-xs"
+                  (click)="manageOrders(b.id)"
+                  [disabled]="busy()"
+                  title="View and fulfill customer orders"
+                >
+                  🛍️ Orders
+                </button>
+                <button
+                  type="button"
+                  class="btn-secondary btn-xs"
+                  (click)="manageStorefront(b.id)"
+                  [disabled]="busy()"
+                  title="Configure storefront branding and layout"
+                >
+                  🏪 Storefront
+                </button>
+                <button
+                  type="button"
+                  class="btn-secondary btn-xs"
+                  (click)="manageTeam(b.id)"
+                  [disabled]="busy()"
+                  title="Manage staff, members and access permissions"
+                >
+                  👥 Team
+                </button>
+                <button
+                  type="button"
+                  class="btn-secondary btn-xs"
+                  (click)="manageSubscriptions(b.id)"
+                  [disabled]="busy()"
+                  title="Manage subscription plans and billing"
+                >
+                  💳 Plans
+                </button>
+                <button
+                  type="button"
+                  class="btn-secondary btn-xs"
+                  (click)="manageBusinessProfile(b.id)"
+                  [disabled]="busy()"
+                  title="Update business profile and verification details"
+                >
+                  ⚙️ Profile
+                </button>
+              </div>
             </footer>
           </article>
         }
@@ -233,7 +291,162 @@
       }
     </div>
   </section>
+
+  <!-- 5. ACTIVE SESSIONS & CONNECTED DEVICES -->
+  <section class="account-section sessions-section" aria-labelledby="active-sessions-heading">
+    <div class="section-header">
+      <div>
+        <h3 id="active-sessions-heading">Active Sign-in Sessions</h3>
+        <p class="section-desc">
+          Devices and browsers where your account is currently signed in. You can remotely sign out any session you don't recognize.
+        </p>
+      </div>
+      @if (otherSessionsCount() > 0) {
+        <button
+          type="button"
+          class="btn-danger-outline btn-sm"
+          (click)="promptRevokeAllOthers()"
+          [disabled]="revokingAllOthers() || sessionsLoading()"
+        >
+          @if (revokingAllOthers()) {
+            Signing out...
+          } @else {
+            Sign Out All Other Devices ({{ otherSessionsCount() }})
+          }
+        </button>
+      }
+    </div>
+
+    @if (sessionFeedback(); as fb) {
+      <div
+        class="session-feedback-banner"
+        [class.banner-success]="fb.type === 'success'"
+        [class.banner-error]="fb.type === 'error'"
+        role="status"
+      >
+        <span class="feedback-msg">{{ fb.message }}</span>
+        <button
+          type="button"
+          class="btn-feedback-close"
+          (click)="dismissSessionFeedback()"
+          aria-label="Dismiss message"
+        >
+          ✕
+        </button>
+      </div>
+    }
+
+    @if (sessionsLoading()) {
+      <div class="sessions-state-box loading">
+        <span class="state-icon">⏳</span>
+        <span>Loading active sessions...</span>
+      </div>
+    } @else if (sessionsError()) {
+      <div class="sessions-state-box error" role="alert">
+        <span class="state-icon">⚠️</span>
+        <div class="state-content">
+          <p>{{ sessionsError() }}</p>
+          <button type="button" class="btn-secondary btn-sm" (click)="loadActiveSessions()">
+            Retry
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="sessions-list">
+        @for (s of sessions(); track s.id) {
+          <article class="session-card" [class.current-session]="s.is_current">
+            <div class="session-card-main">
+              <div class="session-icon-box" [attr.aria-label]="s.device_type">
+                {{ getDeviceIcon(s.device_type) }}
+              </div>
+              <div class="session-info">
+                <div class="session-title-row">
+                  <h4 class="session-device-name">{{ s.device_name }}</h4>
+                  @if (s.is_current) {
+                    <span class="badge-current-device">Current Device</span>
+                  }
+                </div>
+                <div class="session-meta-line">
+                  <span class="session-browser-os">{{ s.browser }} on {{ s.os }}</span>
+                  @if (s.ip_address) {
+                    <span class="session-bullet">•</span>
+                    <span class="session-ip">
+                      {{ s.ip_address }}
+                      @if (s.is_internal_ip) {
+                        <span class="badge-internal-ip">Local Network</span>
+                      }
+                    </span>
+                  }
+                </div>
+                <div class="session-timestamps">
+                  <span class="session-time">
+                    First signed in: {{ formatDateTime(s.issued_on) }}
+                  </span>
+                  <span class="session-bullet">•</span>
+                  <span class="session-time">
+                    Last active: {{ s.is_current ? 'Active now' : (s.last_used_on ? formatDateTime(s.last_used_on) : 'Recently') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="session-card-actions">
+              @if (s.is_current) {
+                <span class="this-device-text" title="This device cannot be signed out remotely from here">
+                  ✓ Active session
+                </span>
+              } @else {
+                <button
+                  type="button"
+                  class="btn-revoke"
+                  (click)="promptRevokeSession(s)"
+                  [disabled]="revokingSessionId() === s.id || revokingAllOthers()"
+                  [attr.aria-label]="'Sign out ' + s.device_name"
+                >
+                  @if (revokingSessionId() === s.id) {
+                    Signing out...
+                  } @else {
+                    Sign Out
+                  }
+                </button>
+              }
+            </div>
+          </article>
+        }
+      </div>
+
+      @if (sessions().length === 1 && sessions()[0].is_current) {
+        <div class="no-other-sessions-card">
+          <span class="reassurance-icon">🛡️</span>
+          <p>No other active sessions. Your account is only signed in on this device.</p>
+        </div>
+      }
+    }
+  </section>
 </section>
+
+<!-- CONFIRM DIALOG: REVOKE INDIVIDUAL SESSION -->
+<app-confirm-dialog
+  [open]="confirmRevokeTarget() !== null"
+  title="Sign Out Device"
+  [message]="'Are you sure you want to sign out ' + (confirmRevokeTarget()?.device_name || 'this session') + '? It will be signed out immediately and required to sign in again.'"
+  confirmText="Sign Out Device"
+  cancelText="Keep Signed In"
+  intent="danger"
+  (confirmed)="confirmRevokeSession()"
+  (cancelled)="cancelRevokeSession()"
+/>
+
+<!-- CONFIRM DIALOG: REVOKE ALL OTHER SESSIONS -->
+<app-confirm-dialog
+  [open]="confirmRevokeAllOpen()"
+  title="Sign Out All Other Devices"
+  message="Are you sure you want to sign out of all other active sessions? All other devices will be signed out immediately. Your current session will remain active."
+  confirmText="Sign Out All Other Devices"
+  cancelText="Cancel"
+  intent="danger"
+  (confirmed)="confirmRevokeAllOthers()"
+  (cancelled)="cancelRevokeAllOthers()"
+/>
 
 <!-- EDIT PROFILE DRAWER -->
 <app-workspace-drawer
