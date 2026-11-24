@@ -56,6 +56,9 @@ final readonly class SubscriptionServices implements ISubscriptionServices
                 case 'getMySubscription':
                     $resArr = $this->getMySubscription($actionData);
                     break;
+                case 'getPaymentInstructions':
+                    $resArr = $this->getPaymentInstructions($actionData);
+                    break;
                 default:
                     $resArr['msgArr'][] = 'Unsupported subscription read action.';
                     break;
@@ -101,6 +104,9 @@ final readonly class SubscriptionServices implements ISubscriptionServices
                     break;
                 case 'submitApplicationSubscriptionProof':
                     $resArr = $this->submitApplicationSubscriptionProof($actionData);
+                    break;
+                case 'cancelApplicationSubscription':
+                    $resArr = $this->cancelApplicationSubscription($actionData);
                     break;
                 case 'requestSubscriptionRenewal':
                     $resArr = $this->manageSubscriptionRequest($actionData, true);
@@ -179,7 +185,8 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             $resArr['msgArr'][] = 'A valid subscription_id is required.';
             return $resArr;
         }
-        $result = $this->dao->getTenantSubscription($this->db, (int) $context['data']['tenant_id'], $subscriptionId);
+        $tenantId = (int) $context['data']['tenant_id'];
+        $result = $this->dao->getTenantSubscription($this->db, $tenantId, $subscriptionId);
         if ($result['status'] !== 'SUCCESS' || $result['data'] === []) {
             return $this->propagateFailure($result, 'SubscriptionServices::getMySubscription');
         }
@@ -188,6 +195,20 @@ final readonly class SubscriptionServices implements ISubscriptionServices
         if (!empty($resArr['data']['payment_qr_file_path'])) {
             $resArr['data']['payment_qr_url'] = $this->s3Storage->createDownloadUrl((string) $resArr['data']['payment_qr_file_path']);
         }
+
+        $proofs = $this->dao->getSubscriptionProofs($this->db, $tenantId, $subscriptionId);
+        if ($proofs['status'] === 'SUCCESS') {
+            foreach ($proofs['data'] as &$proof) {
+                if (!empty($proof['proof_file_path'])) {
+                    $proof['proof_file_url'] = $this->s3Storage->createDownloadUrl((string) $proof['proof_file_path']);
+                }
+            }
+            unset($proof);
+            $resArr['data']['proofs'] = $proofs['data'];
+        } else {
+            $resArr['data']['proofs'] = [];
+        }
+
         return $resArr;
     }
 
@@ -616,16 +637,21 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             return $this->propagateFailure($current, 'SubscriptionServices::requestApplicationSubscriptionReplacement');
         }
         $currentStatus = (string) ($current['data']['subscription_status'] ?? '');
-        if ($currentStatus === 'ACTIVE' && !empty($current['data']['ends_on'])
-            && strtotime((string) $current['data']['ends_on']) < time()) {
-            $currentStatus = 'EXPIRED';
+        if ($currentStatus === 'ACTIVE' && !empty($current['data']['ends_on'])) {
+            $endTime = strtotime((string) $current['data']['ends_on']);
+            $graceEndTime = $endTime + (2 * 86400); // 2 days grace period
+            if (time() > $graceEndTime) {
+                $currentStatus = 'EXPIRED';
+            } elseif (time() > $endTime) {
+                $currentStatus = 'GRACE_PERIOD';
+            }
         }
-        if ($operation === 'upgrade' && $currentStatus !== 'ACTIVE') {
-            $resArr['msgArr'][] = 'Only an active subscription can be upgraded.';
+        if ($operation === 'upgrade' && !in_array($currentStatus, ['ACTIVE', 'GRACE_PERIOD', 'EXPIRED'], true)) {
+            $resArr['msgArr'][] = 'Only an active, grace period or expired subscription can be upgraded.';
             return $resArr;
         }
-        if ($operation === 'renewal' && !in_array($currentStatus, ['ACTIVE', 'EXPIRED'], true)) {
-            $resArr['msgArr'][] = 'Only an active or expired subscription can be renewed.';
+        if ($operation === 'renewal' && !in_array($currentStatus, ['ACTIVE', 'GRACE_PERIOD', 'EXPIRED'], true)) {
+            $resArr['msgArr'][] = 'Only an active, grace period or expired subscription can be renewed.';
             return $resArr;
         }
         $planId = $operation === 'renewal'
@@ -933,5 +959,49 @@ final readonly class SubscriptionServices implements ISubscriptionServices
             $downstream['data'] = [];
         }
         return $downstream;
+    }
+
+    private function getPaymentInstructions(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $qrConfig = $this->dao->getActivePaymentQrConfig($this->db);
+        if ($qrConfig['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($qrConfig, 'SubscriptionServices::getPaymentInstructions');
+        }
+        if ($qrConfig['data'] === []) {
+            $resArr['msgArr'][] = 'Payment instructions are not configured yet.';
+            return $resArr;
+        }
+        $data = $qrConfig['data'];
+        if (!empty($data['qr_file_path'])) {
+            $data['payment_qr_url'] = $this->s3Storage->createDownloadUrl((string) $data['qr_file_path']);
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = $data;
+        return $resArr;
+    }
+
+    private function cancelApplicationSubscription(array $actionData): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        $context = $this->applicationOwnerContext($actionData);
+        if ($context['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($context, 'SubscriptionServices::cancelApplicationSubscription');
+        }
+        $application = $context['data']['application'];
+        $tenantId = (int) $application['tenant_id'];
+        $userId = (int) $context['data']['user_id'];
+        $subscriptionId = $this->positiveInt($actionData['subscription_id'] ?? null);
+        if ($subscriptionId === null) {
+            $resArr['msgArr'][] = 'A valid subscription_id is required.';
+            return $resArr;
+        }
+        $result = $this->dao->cancelPendingSubscription($this->db, $tenantId, $subscriptionId, $userId);
+        if ($result['status'] !== 'SUCCESS') {
+            return $this->propagateFailure($result, 'SubscriptionServices::cancelApplicationSubscription');
+        }
+        $resArr['status'] = 'SUCCESS';
+        $resArr['data'] = $result['data'];
+        return $resArr;
     }
 }

@@ -36,8 +36,8 @@ export class PromotionFeed implements OnInit {
     this.load();
   }
 
-  protected openBusiness(promotion: PromotionCardModel): void {
-    void this.router.navigate(['/store', promotion.business_slug]);
+  protected openPromotion(promotion: PromotionCardModel): void {
+    void this.router.navigate(['/promotions', promotion.id]);
   }
 
   protected exploreProducts(): void {

@@ -175,6 +175,14 @@ export const routes: Routes = [
   },
   { path: 'categories', pathMatch: 'full', redirectTo: 'products' },
   {
+    path: 'promotions/:id',
+    loadComponent: () =>
+      import('./features/marketplace/promotions/promotion-detail/promotion-detail').then(
+        (m) => m.PromotionDetail,
+      ),
+    title: 'Promotion Details | BBG',
+  },
+  {
     path: 'promotions',
     loadComponent: () =>
       import('./features/marketplace/promotions/promotion-feed').then((m) => m.PromotionFeed),

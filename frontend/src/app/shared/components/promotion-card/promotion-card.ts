@@ -10,12 +10,13 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthDialogService } from '../../../core/auth/auth-dialog.service';
 import { EngagementApiService } from '../../../core/engagement/engagement-api.service';
 import type { CardMediaModel, PromotionCardModel } from '../../models/marketplace-card.models';
 import { PromotionEngagementComponent } from '../promotion-engagement/promotion-engagement.component';
+import { SkeletonLoaderComponent } from '../skeleton-loader/skeleton-loader.component';
 
 const SAVED_PROMOTIONS_STORAGE_KEY = 'bbg_saved_promotions_v1';
 
@@ -23,21 +24,27 @@ const SAVED_PROMOTIONS_STORAGE_KEY = 'bbg_saved_promotions_v1';
   selector: 'app-promotion-card',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FormsModule, RouterLink, PromotionEngagementComponent],
+  imports: [
+    DatePipe,
+    FormsModule,
+    RouterLink,
+    PromotionEngagementComponent,
+    SkeletonLoaderComponent,
+  ],
   templateUrl: './promotion-card.html',
   styleUrl: './promotion-card.scss',
 })
 export class PromotionCard {
+  private readonly router = inject(Router);
   private readonly engagementApi = inject(EngagementApiService);
   private readonly authDialog = inject(AuthDialogService);
 
   readonly promotion = input.required<PromotionCardModel>();
   readonly label = input('BBG PROMOTION');
-  readonly mediaLimit = input(4);
   readonly selected = output<PromotionCardModel>();
 
-  protected readonly isExpanded = signal(false);
   protected readonly logoError = signal(false);
+  protected readonly imageLoading = signal(true);
   protected readonly failedMediaIds = signal<ReadonlySet<number>>(new Set());
   protected readonly isSaved = signal(false);
   protected readonly saveFeedback = signal<string | null>(null);
@@ -72,16 +79,23 @@ export class PromotionCard {
     return city || state || null;
   });
 
-  protected readonly mediaItems = computed<CardMediaModel[]>(() => {
-    return this.promotion().media ?? [];
+  /**
+   * Authoritative Primary Image selection:
+   * 1. Media item of type 'IMAGE' with explicit is_primary === 1 or display_order === 0
+   * 2. Fall back to first available media item of type 'IMAGE'
+   * 3. null when no image exists or loading failed
+   */
+  protected readonly primaryImage = computed<CardMediaModel | null>(() => {
+    const media = this.promotion().media ?? [];
+    const images = media.filter(
+      (m) => m.media_type === 'IMAGE' && !!m.url && !this.failedMediaIds().has(m.id),
+    );
+    if (!images.length) return null;
+    const explicit = images.find(
+      (m) => (m as any).is_primary === 1 || (m as any).display_order === 0,
+    );
+    return explicit ?? images[0];
   });
-
-  protected readonly firstMediaType = computed<'IMAGE' | 'VIDEO' | 'AUDIO' | 'DOCUMENT' | null>(
-    () => {
-      const items = this.mediaItems();
-      return items.length > 0 ? items[0].media_type : null;
-    },
-  );
 
   protected readonly businessMonogram = computed<string>(() => {
     const name = (this.promotion().business_name || '').trim();
@@ -91,10 +105,6 @@ export class PromotionCard {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
     return name.slice(0, 2).toUpperCase();
-  });
-
-  protected readonly isLongContent = computed<boolean>(() => {
-    return (this.promotion().post_content || '').length > 180;
   });
 
   protected readonly isExpired = computed<boolean>(() => {
@@ -108,19 +118,21 @@ export class PromotionCard {
     effect(() => {
       const id = this.promotion().id;
       this.logoError.set(false);
+      this.imageLoading.set(true);
       this.isSaved.set(this.readSavedIds().has(id));
     });
-  }
-
-  protected toggleExpand(): void {
-    this.isExpanded.update((v) => !v);
   }
 
   protected onLogoError(): void {
     this.logoError.set(true);
   }
 
+  protected onImageLoad(): void {
+    this.imageLoading.set(false);
+  }
+
   protected onMediaError(mediaId: number): void {
+    this.imageLoading.set(false);
     this.failedMediaIds.update((prev) => {
       const next = new Set(prev);
       next.add(mediaId);
@@ -128,13 +140,30 @@ export class PromotionCard {
     });
   }
 
-  protected isMediaFailed(mediaId: number): boolean {
-    return this.failedMediaIds().has(mediaId);
+  protected openDetail(event?: Event): void {
+    if (event) {
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.closest(
+          'button, a, input, textarea, select, .report-post-panel, app-promotion-engagement',
+        ) &&
+        !target.closest('.card-media-frame, .post-title, .btn-view-promotion')
+      ) {
+        return;
+      }
+    }
+    this.selected.emit(this.promotion());
+    void this.router.navigate(['/promotions', this.promotion().id]);
+  }
+
+  protected onCommentClick(event?: Event): void {
+    event?.stopPropagation();
+    void this.router.navigate(['/promotions', this.promotion().id], { fragment: 'comments' });
   }
 
   protected onSelectKeydown(event: Event): void {
     event.preventDefault();
-    this.selected.emit(this.promotion());
+    this.openDetail(event);
   }
 
   protected toggleSave(event: Event): void {

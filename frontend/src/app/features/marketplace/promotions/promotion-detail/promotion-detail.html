@@ -1,0 +1,400 @@
+<main class="page promotion-detail-page">
+  <div class="page-top-nav">
+    <app-breadcrumbs [items]="breadcrumbs()" />
+    <button
+      type="button"
+      class="btn-back-feed"
+      (click)="goBack()"
+      aria-label="Back to promotions feed"
+    >
+      <span class="back-arrow" aria-hidden="true">←</span>
+      <span>Back to Promotions</span>
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="detail-loading-state" aria-busy="true" aria-label="Loading promotion details">
+      <div class="loading-hero">
+        <app-skeleton-loader variant="card" />
+      </div>
+      <div class="loading-body">
+        <app-skeleton-loader [count]="4" />
+      </div>
+    </div>
+  } @else if (error()) {
+    <div class="state-container">
+      <div class="error-banner" role="alert">
+        <span class="error-icon" aria-hidden="true">⚠️</span>
+        <div class="error-text">
+          <h3>Promotion unavailable</h3>
+          <p>{{ error() }}</p>
+        </div>
+      </div>
+      <button type="button" class="btn-return-feed" (click)="goBack()">
+        Explore other promotions
+      </button>
+    </div>
+  } @else if (promotion(); as promo) {
+    <div class="promotion-layout">
+      <!-- Main Promotion Region -->
+      <div class="promotion-main-column">
+        <!-- 1. Hero Media Viewer -->
+        <section class="promotion-hero-section" aria-label="Promotion media">
+          <div class="hero-media-container">
+            @if (activeMedia(); as media) {
+              @if (media.media_type === 'IMAGE' && media.url) {
+                <img
+                  class="hero-media-image"
+                  [src]="media.url"
+                  [alt]="media.original_file_name || promo.post_title || 'Promotion image'"
+                />
+              } @else if (media.media_type === 'VIDEO' && media.url) {
+                <video
+                  class="hero-media-video"
+                  [src]="media.url"
+                  controls
+                  preload="metadata"
+                ></video>
+              } @else if (media.media_type === 'AUDIO' && media.url) {
+                <div class="hero-audio-wrapper">
+                  <span class="audio-icon" aria-hidden="true">🎵</span>
+                  <audio class="hero-media-audio" [src]="media.url" controls></audio>
+                </div>
+              } @else if (media.media_type === 'DOCUMENT' && media.url) {
+                <div class="hero-doc-wrapper">
+                  <span class="doc-icon" aria-hidden="true">📄</span>
+                  <div class="doc-meta">
+                    <strong>{{ media.original_file_name || 'Attached Document' }}</strong>
+                    <a
+                      [href]="media.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="btn-doc-download"
+                    >
+                      Download file ↗
+                    </a>
+                  </div>
+                </div>
+              }
+            } @else {
+              <div class="hero-media-placeholder" aria-label="Promotion placeholder">
+                <svg
+                  class="placeholder-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+                  />
+                </svg>
+                <span class="placeholder-label">{{ promo.business_name }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Secondary Media Attachments Gallery -->
+          @if (mediaList().length > 1) {
+            <div class="media-gallery-strip" aria-label="Additional media attachments">
+              @for (item of mediaList(); track item.id) {
+                <button
+                  type="button"
+                  class="gallery-thumbnail-btn"
+                  [class.active]="activeMedia()?.id === item.id"
+                  (click)="selectMedia(item)"
+                  [attr.aria-label]="
+                    'Select attachment ' + (item.original_file_name || item.media_type)
+                  "
+                >
+                  @if (item.media_type === 'IMAGE' && item.url) {
+                    <img
+                      [src]="item.url"
+                      [alt]="item.original_file_name || 'Thumbnail'"
+                      loading="lazy"
+                    />
+                  } @else if (item.media_type === 'VIDEO') {
+                    <span class="thumb-type-icon" aria-hidden="true">🎬</span>
+                  } @else if (item.media_type === 'AUDIO') {
+                    <span class="thumb-type-icon" aria-hidden="true">🎵</span>
+                  } @else {
+                    <span class="thumb-type-icon" aria-hidden="true">📄</span>
+                  }
+                </button>
+              }
+            </div>
+          }
+        </section>
+
+        <!-- 2. Promotion Header & Content -->
+        <article class="promotion-article">
+          <div class="article-top-bar">
+            <span class="promotion-type-badge">
+              <span class="badge-dot" aria-hidden="true"></span>
+              <span>BBG PROMOTION</span>
+            </span>
+
+            <div class="utility-actions">
+              <button
+                type="button"
+                class="btn-util-action btn-save"
+                [class.saved]="isSaved()"
+                (click)="toggleSave()"
+                [attr.aria-pressed]="isSaved()"
+                [title]="isSaved() ? 'Saved to bookmarks' : 'Save promotion'"
+              >
+                <svg
+                  class="action-svg"
+                  viewBox="0 0 24 24"
+                  [attr.fill]="isSaved() ? 'currentColor' : 'none'"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z"
+                  />
+                </svg>
+                <span>{{ isSaved() ? 'Saved' : 'Save' }}</span>
+              </button>
+
+              <button
+                type="button"
+                class="btn-util-action btn-share"
+                (click)="copyShareLink()"
+                title="Share promotion link"
+              >
+                <svg
+                  class="action-svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"
+                  />
+                </svg>
+                <span>Share</span>
+              </button>
+
+              <button
+                type="button"
+                class="btn-util-action btn-report"
+                [class.active]="reportOpen()"
+                (click)="toggleReportPanel($event)"
+                title="Report post"
+              >
+                <svg
+                  class="action-svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5"
+                  />
+                </svg>
+                <span>Report</span>
+              </button>
+            </div>
+          </div>
+
+          @if (saveFeedback()) {
+            <div class="feedback-toast" role="status">{{ saveFeedback() }}</div>
+          }
+          @if (shareFeedback()) {
+            <div class="feedback-toast" role="status">{{ shareFeedback() }}</div>
+          }
+
+          <!-- Report Form Panel -->
+          @if (reportOpen()) {
+            <div class="report-box" role="region" aria-label="Report promotion">
+              <div class="report-box-header">
+                <strong>Report this promotional post</strong>
+                <button type="button" class="btn-close-box" (click)="closeReportPanel()">×</button>
+              </div>
+              @if (reportError()) {
+                <p class="box-error" role="alert">{{ reportError() }}</p>
+              }
+              <label class="box-field">
+                <span>Reason</span>
+                <select [ngModel]="reportReason()" (ngModelChange)="reportReason.set($event)">
+                  @for (item of reportReasons; track item.value) {
+                    <option [value]="item.value">{{ item.label }}</option>
+                  }
+                </select>
+              </label>
+              <label class="box-field">
+                <span>Additional details</span>
+                <textarea
+                  rows="2"
+                  maxlength="1000"
+                  placeholder="Provide context for moderators..."
+                  [ngModel]="reportDetails()"
+                  (ngModelChange)="reportDetails.set($event)"
+                ></textarea>
+              </label>
+              <div class="box-actions">
+                <button type="button" class="btn-box-cancel" (click)="closeReportPanel()">
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  class="btn-box-submit"
+                  [disabled]="submittingReport()"
+                  (click)="submitReport()"
+                >
+                  {{ submittingReport() ? 'Submitting…' : 'Submit Report' }}
+                </button>
+              </div>
+            </div>
+          }
+
+          @if (reportFeedback()) {
+            <div class="report-feedback-toast" role="status">{{ reportFeedback() }}</div>
+          }
+
+          <h1 class="promotion-title">{{ promo.post_title || 'Special Promotion Offer' }}</h1>
+
+          <!-- Campaign Validity and Schedule Bar -->
+          <div class="promotion-schedule-bar" [class.expired]="isExpired()">
+            <svg
+              class="calendar-icon"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.6"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4.5" width="14" height="12.5" rx="2" />
+              <path d="M6.5 2.5v3M13.5 2.5v3M3 8.5h14" stroke-linecap="round" />
+            </svg>
+            <div class="schedule-details">
+              @if (promo.valid_until) {
+                <span class="schedule-text">
+                  Valid from <strong>{{ promo.published_on | date: 'mediumDate' }}</strong> until
+                  <strong>{{ promo.valid_until | date: 'mediumDate' }}</strong>
+                </span>
+              } @else {
+                <span class="schedule-text">
+                  Published on <strong>{{ promo.published_on | date: 'mediumDate' }}</strong>
+                </span>
+              }
+            </div>
+            @if (isExpired()) {
+              <span class="validity-pill expired">Offer Expired</span>
+            } @else if (promo.valid_until) {
+              <span class="validity-pill active">Active Offer</span>
+            }
+          </div>
+
+          <!-- Full Content Description -->
+          <div class="promotion-content-body">
+            <p class="content-paragraph">{{ promo.post_content }}</p>
+          </div>
+
+          <!-- Hashtags -->
+          @if (promo.hashtags?.length) {
+            <div class="hashtags-list" aria-label="Promotion tags">
+              @for (tag of promo.hashtags; track tag) {
+                <span class="tag-pill">#{{ tag }}</span>
+              }
+            </div>
+          }
+        </article>
+
+        <!-- 3. Dedicated Comments Section (Targeted by #comments anchor) -->
+        <div id="comments" #commentsAnchor class="comments-section-container">
+          <app-promotion-engagement
+            [postId]="promo.id"
+            [postTitle]="promo.post_title"
+            [mode]="'detail'"
+          />
+        </div>
+      </div>
+
+      <!-- Supporting Business Column -->
+      <aside class="promotion-sidebar" aria-label="Business storefront context">
+        <div class="business-sidebar-card">
+          <div class="card-brand-header">
+            @if (!logoError() && promo.logo_path) {
+              <img
+                class="brand-avatar"
+                [src]="promo.logo_path"
+                [alt]="promo.business_name + ' logo'"
+                loading="lazy"
+                (error)="onLogoError()"
+              />
+            } @else {
+              <div class="brand-monogram" aria-hidden="true">
+                {{ businessMonogram() }}
+              </div>
+            }
+
+            <div class="brand-headings">
+              <h2 class="brand-name">{{ promo.business_name }}</h2>
+              <span class="verified-label" title="Verified BBG Merchant">
+                <svg class="check-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                <span>Verified Business</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="business-info-list">
+            @if (promo.category_name) {
+              <div class="info-row">
+                <span class="info-label">Category:</span>
+                <span class="info-val">{{ promo.category_name }}</span>
+              </div>
+            }
+            @if (businessLocation()) {
+              <div class="info-row">
+                <span class="info-label">Location:</span>
+                <span class="info-val">{{ businessLocation() }}</span>
+              </div>
+            }
+          </div>
+
+          <div class="sidebar-action-wrap">
+            <a
+              [routerLink]="['/store', promo.business_slug]"
+              class="btn-visit-storefront"
+              aria-label="Visit Business Storefront"
+            >
+              <span>Visit Storefront</span>
+              <span class="arrow-glyph" aria-hidden="true">→</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="promotion-meta-card">
+          <h3 class="meta-card-title">Campaign Summary</h3>
+          <ul class="meta-bullets">
+            <li>Community promotion hosted on BBG marketplace.</li>
+            <li>Connect directly with the business for terms and fulfilment.</li>
+            <li>Use the comments section to ask questions or share feedback.</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  }
+</main>

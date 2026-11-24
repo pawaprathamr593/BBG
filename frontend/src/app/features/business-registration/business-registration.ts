@@ -10,6 +10,7 @@ import {
   SubscriptionPlan,
 } from '../../core/business/business-registration-api.service';
 import { PlanCardComponent } from '../../shared/components/plan-card/plan-card.component';
+import { parseOfferedPlanFeatures } from '../../core/subscription/subscription-plan.utils';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -311,6 +312,12 @@ export class BusinessRegistration implements OnInit {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  planFeatures(plan: SubscriptionPlan): string[] {
+    const features = parseOfferedPlanFeatures(plan.entitlements);
+    if (features.length) return features;
+    return [plan.description || 'Full marketplace access and verified storefront'];
   }
 
   async choosePlan(plan: SubscriptionPlan): Promise<void> {

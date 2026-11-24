@@ -146,7 +146,13 @@ export interface MarketplacePromotion {
   city?: string | null;
   state?: string | null;
   category_name?: string | null;
+  hashtags?: string[];
   media?: MarketplaceMedia[];
+}
+
+export interface MarketplacePromotionDetail {
+  promotion: MarketplacePromotion;
+  media: MarketplaceMedia[];
 }
 
 export interface MarketplaceHomeStats {
@@ -295,6 +301,17 @@ export class MarketplaceApiService {
     >(`${this.apiBaseUrl}/api/v1/marketplace/promotions/list`, {
       marketplaceParam: { actionData: { page, page_size: pageSize } },
     });
+  }
+
+  getPublicPromotion(
+    promotionId: number,
+  ): Observable<MarketplaceApiResponse<MarketplacePromotionDetail>> {
+    return this.http.post<MarketplaceApiResponse<MarketplacePromotionDetail>>(
+      `${this.apiBaseUrl}/api/v1/marketplace/promotions/detail`,
+      {
+        marketplaceParam: { actionData: { promotion_id: promotionId } },
+      },
+    );
   }
 
   getStorefrontProduct(

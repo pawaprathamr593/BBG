@@ -89,6 +89,7 @@ describe('PromotionEngagementComponent', () => {
     component = fixture.componentInstance;
     fixture.componentRef.setInput('postId', 88);
     fixture.componentRef.setInput('postTitle', 'Winter B2B Promotion');
+    fixture.componentRef.setInput('mode', 'detail');
     await component.ngOnInit();
     fixture.detectChanges();
   });
@@ -190,5 +191,52 @@ describe('PromotionEngagementComponent', () => {
     );
     expect(likeCommentBtn.textContent).toContain('Liked');
     expect(likeCommentBtn.textContent).toContain('(1)');
+  });
+
+  it('should preserve comment count when user toggles like reaction', async () => {
+    mockEngagementApi.toggleReaction.mockReturnValue(
+      of({
+        status: 'SUCCESS',
+        data: {
+          total_likes: 16,
+          user_reaction: 'LIKE',
+          reactions: { LIKE: 11, LOVE: 5, HAHA: 0, WOW: 0, SAD: 0, ANGRY: 0 },
+        },
+      }),
+    );
+
+    expect(component['summary']().total_comments).toBe(3);
+    const commentCountBtnBefore = fixture.nativeElement.querySelector('.comments-count-btn');
+    expect(commentCountBtnBefore).toBeTruthy();
+    expect(commentCountBtnBefore.textContent).toContain('3 comments');
+
+    // Click like
+    const likeBtn = fixture.nativeElement.querySelector('.btn-reaction') as HTMLButtonElement;
+    likeBtn.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    // Comment count must be preserved!
+    expect(component['summary']().total_comments).toBe(3);
+    const commentCountBtnAfter = fixture.nativeElement.querySelector('.comments-count-btn');
+    expect(commentCountBtnAfter).toBeTruthy();
+    expect(commentCountBtnAfter.textContent).toContain('3 comments');
+  });
+
+  it('should emit commentClick and not open drawer when mode is card', () => {
+    fixture.componentRef.setInput('mode', 'card');
+    fixture.detectChanges();
+
+    let emitted = false;
+    component.commentClick.subscribe(() => {
+      emitted = true;
+    });
+
+    const commentBtn = fixture.nativeElement.querySelector('.btn-comment') as HTMLButtonElement;
+    commentBtn.click();
+    fixture.detectChanges();
+
+    expect(emitted).toBe(true);
+    expect(fixture.nativeElement.querySelector('.expanded-comments-drawer')).toBeNull();
   });
 });

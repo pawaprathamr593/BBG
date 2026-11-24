@@ -111,6 +111,27 @@
             </div>
 
             @if (business.approval_status === 'APPROVED') {
+              @if (gracePeriodFor(business.tenant_id); as grace) {
+                <div class="workspace-grace-banner" role="alert">
+                  <span class="grace-banner-icon" aria-hidden="true">⏳</span>
+                  <div class="grace-banner-content">
+                    <strong>Storefront Grace Period Active</strong>
+                    <p>
+                      Subscription expired. Storefront remains publicly visible for
+                      <strong>{{ grace.remainingText }}</strong> before going offline.
+                    </p>
+                  </div>
+                  <button
+                    class="btn-workspace-grace-renew"
+                    type="button"
+                    (click)="manageSubscription(business)"
+                    [disabled]="actionBusy() !== null"
+                  >
+                    Renew Now →
+                  </button>
+                </div>
+              }
+
               <div class="approved-actions">
                 <button
                   class="market-button btn-open-workspace"

@@ -172,12 +172,12 @@
           <div class="commercial-pricing-card">
             <span class="pricing-label">COMMERCIAL TERMS</span>
             @if (
-              context.detail()?.storefront?.show_prices && data.product.selling_price !== undefined
+              context.detail()?.storefront?.show_prices && hasValidPrice(data.product.selling_price)
             ) {
               <div class="price-value-row">
                 <strong class="price-figure">
                   {{ context.detail()?.storefront?.currency || '₹' }}
-                  {{ data.product.selling_price }}
+                  {{ formatPrice(data.product.selling_price) }}
                 </strong>
                 <span class="price-unit">per {{ data.product.unit.name }}</span>
               </div>
@@ -186,10 +186,10 @@
               </p>
             } @else {
               <div class="price-value-row">
-                <strong class="price-figure price-quote">Quote on Request</strong>
+                <strong class="price-figure price-quote">Price on Request</strong>
               </div>
               <p class="price-subtext">
-                Contact seller directly for volume pricing, wholesale discounts, and delivery.
+                Contact the business to know the product price, volume pricing, and availability.
               </p>
             }
           </div>
@@ -260,13 +260,13 @@
                         </td>
                         @if (context.detail()?.storefront?.show_prices) {
                           <td style="text-align: right">
-                            @if (variant.selling_price !== undefined) {
+                            @if (hasValidPrice(variant.selling_price)) {
                               <strong class="variant-price">
                                 {{ context.detail()?.storefront?.currency || '₹' }}
-                                {{ variant.selling_price }}
+                                {{ formatPrice(variant.selling_price) }}
                               </strong>
                             } @else {
-                              <span class="price-subtext">On Enquiry</span>
+                              <span class="price-subtext">Price on Request</span>
                             }
                           </td>
                         }
@@ -312,14 +312,24 @@
                   (click)="onWhatsAppEnquiry($event)"
                   target="_blank"
                   rel="noopener noreferrer"
-                  [attr.aria-label]="'Enquire about ' + data.product.product_name + ' on WhatsApp'"
+                  [attr.aria-label]="
+                    context.detail()?.storefront?.show_prices && hasValidPrice(data.product.selling_price)
+                      ? 'Enquire about ' + data.product.product_name + ' on WhatsApp'
+                      : 'Contact business for price on ' + data.product.product_name
+                  "
                 >
                   <svg class="whatsapp-svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
                     <path
                       d="M12.03 2C6.5 2 2 6.48 2 12c0 1.98.58 3.83 1.58 5.39L2.5 22l4.74-1.04A9.97 9.97 0 0012.03 22C17.56 22 22 17.52 22 12S17.56 2 12.03 2zm5.82 14.12c-.25.7-1.44 1.33-2 1.41-.51.07-1.15.1-1.85-.12-.43-.14-.98-.32-1.69-.63-2.97-1.29-4.91-4.31-5.06-4.51-.15-.2-1.21-1.61-1.21-3.07 0-1.46.76-2.18 1.03-2.48.27-.3.59-.37.79-.37.2 0 .4 0 .57.01.18.01.43-.07.67.51.25.6.84 2.07.92 2.22.07.15.12.32.02.52-.1.2-.15.32-.3.5-.15.17-.31.39-.44.52-.15.15-.3.31-.13.61.17.3.77 1.27 1.65 2.06 1.13 1.01 2.09 1.32 2.39 1.47.3.15.47.12.64-.07.18-.2.74-.87.94-1.17.2-.3.4-.25.67-.15.27.1 1.73.82 2.03.97.3.15.5.22.57.35.07.12.07.72-.18 1.42z"
                     />
                   </svg>
-                  <span>Enquire on WhatsApp</span>
+                  <span>
+                    {{
+                      context.detail()?.storefront?.show_prices && hasValidPrice(data.product.selling_price)
+                        ? 'WhatsApp Enquiry'
+                        : 'Contact Business for Price'
+                    }}
+                  </span>
                 </a>
               }
             </div>

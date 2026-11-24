@@ -253,6 +253,76 @@
   }
 }
 
+.workspace-grace-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #fffdf5;
+  border: 1.5px solid #fde68a;
+  border-radius: var(--bbg-radius-lg, 12px);
+  padding: 14px 18px;
+  margin-top: 14px;
+  color: #92400e;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .grace-banner-icon {
+    font-size: 1.35rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .grace-banner-content {
+    flex: 1;
+
+    strong {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 800;
+      color: #78350f;
+      margin-bottom: 2px;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.8125rem;
+      line-height: 1.45;
+      color: #92400e;
+
+      strong {
+        display: inline;
+        color: #78350f;
+      }
+    }
+  }
+
+  .btn-workspace-grace-renew {
+    padding: 8px 16px;
+    background: #b45309;
+    color: #ffffff;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--bbg-radius-md, 8px);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease;
+
+    &:hover:not(:disabled) {
+      background: #92400e;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
 .approved-actions {
   display: flex;
   flex-direction: column;

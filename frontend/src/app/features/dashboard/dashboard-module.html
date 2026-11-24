@@ -408,18 +408,147 @@
               </button>
             </footer>
           }
-        } @else {
-          @if (section() === 'subscriptions') {
-            <div class="bcn-record">
-              <span>Bavdhan Contribution Number (BCN)</span>
+        } @else if (section() === 'subscriptions') {
+          <div class="bcn-record">
+            <span>Bavdhan Contribution Number (BCN)</span>
+            <div>
+              <strong>{{ detail['bcn'] || 'Not assigned yet' }}</strong>
+              @if (hasBcn(detail)) {
+                <button type="button" (click)="copyBcn(detail['bcn'])">Copy</button>
+              }
+            </div>
+          </div>
+
+          <section class="record-detail-section">
+            <h3>Plan &amp; Subscription Details</h3>
+            <div class="review-detail-grid">
               <div>
-                <strong>{{ detail['bcn'] || 'Not assigned yet' }}</strong>
-                @if (hasBcn(detail)) {
-                  <button type="button" (click)="copyBcn(detail['bcn'])">Copy</button>
+                <span>Plan Name</span>
+                <strong>{{ detail['plan_name'] || '—' }}</strong>
+              </div>
+              <div>
+                <span>Plan Code</span>
+                <strong>{{ detail['plan_code'] || '—' }}</strong>
+              </div>
+              <div>
+                <span>Billing Cycle</span>
+                <strong>{{ detail['billing_cycle'] || '—' }}</strong>
+              </div>
+              <div>
+                <span>Amount</span>
+                <strong>{{ detail['currency'] }} {{ detail['amount'] }}</strong>
+              </div>
+              <div>
+                <span>Subscription Status</span>
+                <strong [class]="statusClass(statusOf(detail))">{{ humanize(statusOf(detail)) }}</strong>
+              </div>
+              <div>
+                <span>Created On</span>
+                <strong>{{ formatValue(detail['created_on']) }}</strong>
+              </div>
+              @if (detail['starts_on']) {
+                <div>
+                  <span>Started On</span>
+                  <strong>{{ formatValue(detail['starts_on']) }}</strong>
+                </div>
+              }
+              @if (detail['ends_on']) {
+                <div>
+                  <span>Valid Until</span>
+                  <strong>{{ formatValue(detail['ends_on']) }}</strong>
+                </div>
+              }
+            </div>
+          </section>
+
+          <section class="record-detail-section">
+            <h3>Payment Details</h3>
+            <div class="review-detail-grid">
+              <div>
+                <span>Payee Name</span>
+                <strong>{{ detail['payment_payee_name'] || 'Bavdhan Business Group' }}</strong>
+              </div>
+              <div>
+                <span>Official UPI ID</span>
+                <strong>{{ detail['payment_upi_id'] || '—' }}</strong>
+              </div>
+              @if (detail['payment_instructions']) {
+                <div class="detail-value-wide">
+                  <span>Payment Instructions</span>
+                  <strong>{{ detail['payment_instructions'] }}</strong>
+                </div>
+              }
+            </div>
+          </section>
+
+          <!-- PAYMENT PROOF & VERIFICATION STATE -->
+          <section class="record-detail-section">
+            <h3>Payment Proof &amp; Verification</h3>
+
+            <!-- 1. LOCKED IF ACTIVE / APPROVED / EXPIRED -->
+            @if (['ACTIVE', 'APPROVED', 'EXPIRED', 'GRACE_PERIOD'].includes(statusOf(detail).toUpperCase())) {
+              <div class="proof-locked-banner">
+                <span class="banner-icon" aria-hidden="true">🔒</span>
+                <div>
+                  <strong>Payment Proof Verified &amp; Approved</strong>
+                  <p>This subscription and its payment receipt have been verified by BBG administration. The payment record is permanently locked and cannot be modified.</p>
+                </div>
+              </div>
+            }
+
+            <!-- 2. REJECTED: User can change and resubmit! -->
+            @if (statusOf(detail).toUpperCase() === 'REJECTED') {
+              <div class="proof-rejected-banner">
+                <span class="banner-icon" aria-hidden="true">⚠️</span>
+                <div>
+                  <strong>Payment Proof Rejected</strong>
+                  <p>{{ detail['rejection_reason'] || 'Your payment proof was rejected. You can upload a new receipt to resubmit for verification.' }}</p>
+                </div>
+              </div>
+            }
+
+            <!-- 3. PENDING REVIEW -->
+            @if (statusOf(detail).toUpperCase() === 'PENDING') {
+              <div class="proof-pending-banner">
+                <span class="banner-icon" aria-hidden="true">⏳</span>
+                <div>
+                  <strong>Awaiting Admin Verification</strong>
+                  <p>Your subscription request and transaction receipt are awaiting review by BBG administration.</p>
+                </div>
+              </div>
+            }
+
+            <!-- PROOFS LIST -->
+            @if (asArray(detail['proofs']).length) {
+              <div class="proofs-history-list">
+                <h4>Submitted Receipts</h4>
+                @for (p of asArray(detail['proofs']); track p.id) {
+                  <div class="proof-history-card">
+                    <div class="proof-meta-row">
+                      <span class="proof-ref">Ref: <strong>{{ p.payment_reference || 'Not provided' }}</strong></span>
+                      <span class="proof-status-pill" [class.verified]="p.review_status === 'VERIFIED'" [class.rejected]="p.review_status === 'REJECTED'">
+                        {{ p.review_status }}
+                      </span>
+                    </div>
+                    @if (p.submitted_on) {
+                      <div class="proof-date-row">Submitted on {{ p.submitted_on }}</div>
+                    }
+                    @if (p.proof_file_url) {
+                      <div class="proof-file-row">
+                        <a [href]="p.proof_file_url" target="_blank" rel="noopener noreferrer" class="btn-view-receipt">
+                          📄 View Submitted Receipt ↗
+                        </a>
+                      </div>
+                    }
+                    @if (p.review_notes) {
+                      <div class="proof-notes-row"><strong>Note:</strong> {{ p.review_notes }}</div>
+                    }
+                  </div>
                 }
               </div>
-            </div>
-          }
+            }
+          </section>
+        } @else {
           @for (group of detailGroups(detail); track group.title) {
             <section class="record-detail-section">
               <h3>{{ group.title }}</h3>

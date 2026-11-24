@@ -1,6 +1,14 @@
-<article class="bbg-promotion-card" [class.has-media]="mediaItems().length > 0">
+<article
+  class="bbg-promotion-card"
+  (click)="openDetail($event)"
+  (keydown.enter)="onSelectKeydown($event)"
+  (keydown.space)="onSelectKeydown($event)"
+  tabindex="0"
+  role="article"
+  [attr.aria-label]="promotion().post_title || 'Promotion by ' + promotion().business_name"
+>
   <!-- 1. Top Utility Bar: Standalone BBG Promotion Badge + Visible Save & Report Icons -->
-  <div class="card-top-bar">
+  <div class="card-top-bar" (click)="$event.stopPropagation()">
     <span class="promotion-badge">
       <span class="badge-accent-dot" aria-hidden="true"></span>
       <span>{{ label() }}</span>
@@ -60,7 +68,7 @@
   </div>
 
   <!-- 2. Business Identity Header & Campaign Schedule -->
-  <header class="card-header">
+  <header class="card-header" (click)="$event.stopPropagation()">
     <div class="business-identity">
       @if (hasValidLogo()) {
         <img
@@ -161,9 +169,14 @@
     <div class="save-feedback" role="status">{{ saveFeedback() }}</div>
   }
 
-  <!-- Inline Report Panel (Backed by EngagementApiService.reportContent) -->
+  <!-- Inline Report Panel -->
   @if (reportOpen()) {
-    <div class="report-post-panel" role="region" aria-label="Report promotional post">
+    <div
+      class="report-post-panel"
+      role="region"
+      aria-label="Report promotional post"
+      (click)="$event.stopPropagation()"
+    >
       <div class="report-panel-header">
         <strong>Report this promotional post</strong>
         <button
@@ -214,35 +227,55 @@
     <div class="report-feedback" role="status">{{ reportFeedback() }}</div>
   }
 
-  <!-- 3. Post Title, Description & Optional Hashtags -->
-  <div class="card-body">
-    @if (promotion().post_title) {
-      <h3
-        class="post-title"
-        (click)="selected.emit(promotion())"
-        (keydown.enter)="onSelectKeydown($event)"
-        (keydown.space)="onSelectKeydown($event)"
-        role="button"
-        tabindex="0"
-      >
-        {{ promotion().post_title }}
-      </h3>
+  <!-- 3. Consistent Fixed Aspect-Ratio Primary Image Frame (Single Image Only) -->
+  <div class="card-media-frame" (click)="openDetail($event)">
+    @if (primaryImage(); as img) {
+      @if (imageLoading()) {
+        <div class="media-skeleton-overlay" aria-hidden="true">
+          <app-skeleton-loader variant="card" [count]="1" />
+        </div>
+      }
+      <img
+        class="primary-media-img"
+        [src]="img.url"
+        [alt]="img.original_file_name || promotion().post_title || 'Promotion image'"
+        loading="lazy"
+        (load)="onImageLoad()"
+        (error)="onMediaError(img.id)"
+        [class.is-hidden]="imageLoading()"
+      />
+    } @else {
+      <!-- Neutral Fallback Placeholder (Ensures Card Dimensions Never Change) -->
+      <div class="card-media-placeholder" aria-label="Promotion placeholder">
+        <svg
+          class="placeholder-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+          />
+        </svg>
+        <span class="placeholder-text">{{ promotion().business_name }}</span>
+      </div>
     }
+  </div>
+
+  <!-- 4. Post Title, Description & Optional Hashtags (Bounded Regions) -->
+  <div class="card-body">
+    <h3 class="post-title" (click)="openDetail($event)">
+      {{ promotion().post_title || 'Special Promotion' }}
+    </h3>
 
     <div class="post-content-container">
-      <p class="post-text" [class.clamped]="!isExpanded() && isLongContent()">
+      <p class="post-text">
         {{ promotion().post_content }}
       </p>
-      @if (isLongContent()) {
-        <button
-          type="button"
-          class="btn-expand-text"
-          (click)="toggleExpand()"
-          [attr.aria-expanded]="isExpanded()"
-        >
-          {{ isExpanded() ? 'Show less' : 'Read more' }}
-        </button>
-      }
     </div>
 
     @if (promotion().hashtags?.length) {
@@ -254,108 +287,26 @@
     }
   </div>
 
-  <!-- 4. Responsive Media Section with Multi-Media Indicator -->
-  @if (mediaItems().length > 0) {
-    <div class="card-media-section">
-      @if (mediaItems().length > 1 && firstMediaType() === 'IMAGE') {
-        <span
-          class="multi-media-badge"
-          [attr.aria-label]="mediaItems().length + ' media attachments'"
-        >
-          {{ mediaItems().length }} photos
-        </span>
-      }
-
-      @if (firstMediaType() === 'IMAGE') {
-        @if (mediaItems().length === 1) {
-          <div class="single-media-hero">
-            @if (!isMediaFailed(mediaItems()[0].id) && mediaItems()[0].url) {
-              <img
-                class="hero-media-img"
-                [src]="mediaItems()[0].url"
-                [alt]="mediaItems()[0].original_file_name || promotion().post_title"
-                loading="lazy"
-                (error)="onMediaError(mediaItems()[0].id)"
-              />
-            } @else {
-              <div class="media-fallback" aria-label="Image unavailable">Image unavailable</div>
-            }
-          </div>
-        } @else {
-          <div
-            class="media-grid"
-            [attr.data-count]="mediaItems().length > 4 ? 4 : mediaItems().length"
-          >
-            @for (media of mediaItems(); track media.id; let idx = $index) {
-              @if (idx < mediaLimit()) {
-                <div
-                  class="media-grid-item"
-                  [class.has-overlay]="
-                    idx === mediaLimit() - 1 && mediaItems().length > mediaLimit()
-                  "
-                >
-                  @if (!isMediaFailed(media.id) && media.url) {
-                    <img
-                      class="grid-media-img"
-                      [src]="media.url"
-                      [alt]="media.original_file_name || promotion().post_title"
-                      loading="lazy"
-                      (error)="onMediaError(media.id)"
-                    />
-                  } @else {
-                    <div class="media-fallback" aria-label="Image unavailable">Unavailable</div>
-                  }
-                  @if (idx === mediaLimit() - 1 && mediaItems().length > mediaLimit()) {
-                    <div class="media-overflow-overlay">
-                      <span class="overflow-count">+{{ mediaItems().length - mediaLimit() }}</span>
-                    </div>
-                  }
-                </div>
-              }
-            }
-          </div>
-        }
-      } @else if (firstMediaType() === 'VIDEO') {
-        <div class="video-container">
-          <video class="feed-video" [src]="mediaItems()[0].url" controls preload="metadata"></video>
-        </div>
-      } @else if (firstMediaType() === 'AUDIO') {
-        <div class="audio-container">
-          <audio class="feed-audio" [src]="mediaItems()[0].url" controls></audio>
-        </div>
-      } @else if (firstMediaType() === 'DOCUMENT') {
-        <div class="documents-list">
-          @for (doc of mediaItems(); track doc.id) {
-            <a
-              class="document-pill"
-              [href]="doc.url"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Download attachment"
-            >
-              <span class="doc-icon" aria-hidden="true">📄</span>
-              <span class="doc-title">{{ doc.original_file_name || 'Download document' }}</span>
-              <span class="doc-action-icon" aria-hidden="true">↗</span>
-            </a>
-          }
-        </div>
-      }
+  <!-- 5. Bottom-Anchored Actions (Engagement & Navigation) -->
+  <div class="card-bottom-actions" (click)="$event.stopPropagation()">
+    <div class="card-footer-cta">
+      <button
+        type="button"
+        class="btn-view-promotion"
+        (click)="openDetail($event)"
+        [attr.aria-label]="'View ' + (promotion().post_title || 'promotion') + ' details'"
+      >
+        <span>View Promotion</span>
+        <span class="cta-arrow" aria-hidden="true">→</span>
+      </button>
     </div>
-  }
 
-  <!-- 5. Storefront Navigation CTA -->
-  <div class="card-footer-cta">
-    <button
-      type="button"
-      class="btn-view-promotion"
-      (click)="selected.emit(promotion())"
-      [attr.aria-label]="'Visit ' + promotion().business_name + ' storefront'"
-    >
-      <span>Visit Storefront</span>
-      <span class="cta-arrow" aria-hidden="true">→</span>
-    </button>
+    <!-- Strictly ONE Engagement Row in Card Mode (Navigates to detail comments on click) -->
+    <app-promotion-engagement
+      [postId]="promotion().id"
+      [postTitle]="promotion().post_title"
+      [mode]="'card'"
+      (commentClick)="onCommentClick()"
+    />
   </div>
-
-  <!-- 6. Strictly ONE Engagement Row & Comments Component -->
-  <app-promotion-engagement [postId]="promotion().id" [postTitle]="promotion().post_title" />
 </article>

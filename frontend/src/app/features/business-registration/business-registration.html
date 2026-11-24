@@ -363,7 +363,7 @@
                 [price]="plan.price"
                 [period]="plan.billing_cycle || 'billing cycle'"
                 [badge]="plan.plan_code"
-                [features]="[plan.description || 'Full marketplace access and verified storefront']"
+                [features]="planFeatures(plan)"
                 (selected)="choosePlan(plan)"
               />
             }

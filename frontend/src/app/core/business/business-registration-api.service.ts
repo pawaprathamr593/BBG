@@ -102,9 +102,11 @@ export interface SubscriptionPlan {
 
 export interface ApplicationSubscription {
   id: number;
+  tenant_id?: number;
   plan_id: number;
   bcn?: string | null;
   plan_name: string;
+  plan_code?: string | null;
   billing_cycle: string;
   created_on?: string;
   subscription_status: string;
@@ -116,6 +118,14 @@ export interface ApplicationSubscription {
   payment_upi_id: string;
   payment_qr_url: string | null;
   payment_instructions: string | null;
+  description?: string | null;
+  entitlements?: string | null;
+  plan_description?: string | null;
+  plan_entitlements?: string | null;
+  starts_on?: string | null;
+  ends_on?: string | null;
+  approved_on?: string | null;
+  renewal_due_on?: string | null;
 }
 
 interface UploadUrlResponse {
@@ -352,6 +362,78 @@ export class BusinessRegistrationApiService {
       );
     }
     return (response.data as { subscription: ApplicationSubscription }).subscription;
+  }
+
+  async cancelApplicationSubscription(
+    tenantId: number,
+    subscriptionId: number,
+  ): Promise<void> {
+    const response = await firstValueFrom(
+      this.http.post<BusinessApiResponse<{ subscription_id: number; subscription_status: string }>>(
+        `${this.apiBaseUrl}/api/v1/subscription/manage`,
+        {
+          subscriptionParam: {
+            actionType: 'cancelApplicationSubscription',
+            actionData: { tenant_id: tenantId, subscription_id: subscriptionId },
+          },
+        },
+        { headers: this.headers },
+      ),
+    );
+    if (response.status !== 'SUCCESS') {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to cancel subscription request.');
+    }
+  }
+
+  async getPaymentInstructions(): Promise<{
+    payment_payee_name: string;
+    payment_upi_id: string;
+    payment_qr_url: string | null;
+    payment_instructions: string | null;
+  }> {
+    const response = await firstValueFrom(
+      this.http.post<BusinessApiResponse<any>>(
+        `${this.apiBaseUrl}/api/v1/subscription/get`,
+        {
+          subscriptionParam: {
+            actionType: 'getPaymentInstructions',
+            actionData: {},
+          },
+        },
+        { headers: this.headers },
+      ),
+    );
+    if (response.status !== 'SUCCESS' || !response.data) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to load payment instructions.');
+    }
+    return {
+      payment_payee_name: response.data.payee_name || response.data.payment_payee_name || '',
+      payment_upi_id: response.data.upi_id || response.data.payment_upi_id || '',
+      payment_qr_url: response.data.payment_qr_url || null,
+      payment_instructions: response.data.instructions || response.data.payment_instructions || null,
+    };
+  }
+
+  async getSubscriptionDetail(
+    tenantId: number,
+    subscriptionId: number,
+  ): Promise<ApplicationSubscription & { proofs?: any[] }> {
+    const response = await firstValueFrom(
+      this.http.post<BusinessApiResponse<ApplicationSubscription & { proofs?: any[] }>>(
+        `${this.apiBaseUrl}/api/v1/subscriptions/mine/detail`,
+        {
+          subscriptionParam: {
+            actionType: 'getMySubscription',
+            actionData: { tenant_id: tenantId, subscription_id: subscriptionId },
+          },
+        },
+        { headers: this.headers },
+      ),
+    );
+    if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
+      throw new Error(response.msgArr?.join(' ') || 'Unable to load subscription details.');
+    }
+    return response.data;
   }
 
   async getCurrentApplicationSubscription(

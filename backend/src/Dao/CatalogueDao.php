@@ -21,7 +21,7 @@ final readonly class CatalogueDao
                 AND pe.entitlement_code IN ('catalogue.enabled', 'PRODUCT_MANAGEMENT', 'product.limit', 'PRODUCT_LIMIT') AND pe.status = 'A'
             WHERE ts.tenant_id = :tenant_id AND ts.subscription_status = 'ACTIVE' AND ts.status = 'A'
                 AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
-                AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
+                AND (ts.ends_on IS NULL OR DATE_ADD(ts.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
             ORDER BY ts.starts_on DESC, ts.id DESC, pe.entitlement_code ASC",
             [':tenant_id' => $tenantId], 'getActiveProductEntitlements');
     }

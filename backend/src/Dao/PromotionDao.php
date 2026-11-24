@@ -24,7 +24,7 @@ final readonly class PromotionDao
             WHERE ts.tenant_id = :tenant_id AND ts.subscription_status = 'ACTIVE'
                 AND ts.status = 'A'
                 AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
-                AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
+                AND (ts.ends_on IS NULL OR DATE_ADD(ts.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
             LIMIT 1", [':tenant_id' => $tenantId], 'hasPromotionEntitlement');
     }
 

@@ -13,6 +13,7 @@ import {
   BusinessRegistrationApiService,
 } from '../../core/business/business-registration-api.service';
 import { WorkspaceContextService } from '../../core/workspace/workspace-context.service';
+import { GracePeriodInfo, getGracePeriodInfo } from '../../core/subscription/subscription-plan.utils';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { PaginationComponent } from '../../shared/components/pagination/pagination.component';
 
@@ -44,8 +45,13 @@ export class BusinessWorkspace implements OnInit {
   });
   readonly rejectedPaymentBusinessIds = signal<number[]>([]);
   readonly rejectedPaymentReasons = signal<Record<number, string>>({});
+  readonly gracePeriodsByTenantId = signal<Record<number, GracePeriodInfo>>({});
   readonly actionBusy = signal<string | null>(null);
   readonly actionError = signal<string>('');
+
+  gracePeriodFor(tenantId: number): GracePeriodInfo | null {
+    return this.gracePeriodsByTenantId()[tenantId] ?? null;
+  }
 
   dismissActionError(): void {
     this.actionError.set('');
@@ -108,6 +114,37 @@ export class BusinessWorkspace implements OnInit {
       this.rejectedPaymentBusinessIds.set(rejectedPayments.map((item) => item.businessId));
       this.rejectedPaymentReasons.set(
         Object.fromEntries(rejectedPayments.map((item) => [item.businessId, item.reason])),
+      );
+
+      const graceStates = await Promise.all(
+        applications
+          .filter((business) => business.approval_status === 'APPROVED' && business.tenant_id > 0)
+          .map(async (business) => {
+            try {
+              const subscription = await this.api.getCurrentApplicationSubscription(
+                null,
+                business.tenant_id,
+              );
+              if (subscription) {
+                const info = getGracePeriodInfo(
+                  subscription.subscription_status,
+                  subscription.ends_on,
+                );
+                if (info.inGracePeriod) {
+                  return { tenantId: business.tenant_id, info };
+                }
+              }
+              return null;
+            } catch {
+              return null;
+            }
+          }),
+      );
+      const activeGrace = graceStates.filter(
+        (item): item is { tenantId: number; info: GracePeriodInfo } => item !== null,
+      );
+      this.gracePeriodsByTenantId.set(
+        Object.fromEntries(activeGrace.map((item) => [item.tenantId, item.info])),
       );
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));

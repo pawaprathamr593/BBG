@@ -51,12 +51,12 @@ final readonly class DashboardDao
             (SELECT COUNT(*) FROM TENANT_SUBSCRIPTIONS WHERE tenant_id = :subscriptions_tenant
                 AND subscription_status = 'ACTIVE' AND status = 'A'
                 AND (starts_on IS NULL OR starts_on <= CURRENT_TIMESTAMP)
-                AND (ends_on IS NULL OR ends_on >= CURRENT_TIMESTAMP)) AS active_subscriptions,
+                AND (ends_on IS NULL OR DATE_ADD(ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)) AS active_subscriptions,
             (SELECT p.plan_name FROM TENANT_SUBSCRIPTIONS ts
                 INNER JOIN PLANS p ON p.id = ts.plan_id AND p.status = 'A'
                 WHERE ts.tenant_id = :plan_tenant AND ts.subscription_status = 'ACTIVE' AND ts.status = 'A'
                     AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
-                    AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
+                    AND (ts.ends_on IS NULL OR DATE_ADD(ts.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                 ORDER BY ts.starts_on DESC, ts.id DESC LIMIT 1) AS current_plan",
             [':products_tenant' => $tenantId, ':promotions_tenant' => $tenantId,
              ':orders_tenant' => $tenantId, ':enquiries_tenant' => $tenantId,

@@ -33,37 +33,141 @@
         <p>Loading subscription details…</p>
       </div>
     } @else if (step() === 'overview') {
+      <!-- PENDING REQUEST BANNER / CARD -->
+      @if (pendingSubscription(); as pending) {
+        <section class="pending-request-card" role="status">
+          <div class="pending-badge-row">
+            <span class="status-pill pending">● AWAITING VERIFICATION</span>
+            <span class="pending-tag">Request ID #{{ pending.id }}</span>
+          </div>
+          <div class="pending-content-grid">
+            <div class="pending-details">
+              <h3>{{ pending.plan_name }} Request Submitted</h3>
+              <p class="pending-desc">
+                Your payment proof is under review by BBG administration. Your current storefront
+                access remains active during review.
+              </p>
+              <div class="pending-meta-strip">
+                <span><strong>Amount:</strong> {{ pending.currency }} {{ pending.amount }}</span>
+                <span><strong>Cycle:</strong> {{ pending.billing_cycle }}</span>
+                <span><strong>Submitted:</strong> {{ pending.created_on }}</span>
+              </div>
+            </div>
+            <div class="pending-action-side">
+              <button class="btn-detail-secondary" type="button" (click)="openDetail(pending)">
+                View Details
+              </button>
+              <button
+                class="btn-cancel-pending"
+                type="button"
+                (click)="cancelPendingRequest(pending.id)"
+                [disabled]="cancellingPending()"
+              >
+                {{ cancellingPending() ? 'Cancelling…' : 'Cancel Request' }}
+              </button>
+            </div>
+          </div>
+        </section>
+      }
+
       <!-- ACTIVE SUBSCRIPTION HERO CARD -->
       @if (activeSubscription(); as active) {
-        <section class="current-plan-card">
+        <section
+          class="current-plan-card"
+          [class.is-grace-period]="graceInfo(active).inGracePeriod"
+        >
           <div class="plan-info">
             <div class="plan-badge-line">
-              <span class="plan-kicker">ACTIVE PLAN</span>
-              <span class="status-pill active">● ACTIVE</span>
+              <span class="plan-kicker">CURRENT SUBSCRIPTION</span>
+              @if (graceInfo(active).inGracePeriod) {
+                <span class="status-pill grace">⏳ GRACE PERIOD (2 DAYS)</span>
+              } @else {
+                <span class="status-pill active">● ACTIVE</span>
+              }
             </div>
+
             <h2>{{ active.plan_name }}</h2>
+
             <div class="plan-cost-line">
               <strong>{{ active.currency }} {{ active.amount }}</strong>
               <span>/ {{ active.billing_cycle }}</span>
             </div>
+
+            <div class="plan-dates-line">
+              @if (active.starts_on) {
+                <span
+                  >Started: <strong>{{ active.starts_on }}</strong></span
+                >
+              }
+              @if (active.ends_on) {
+                <span
+                  >Valid until: <strong>{{ active.ends_on }}</strong></span
+                >
+              }
+            </div>
+
             <div class="bcn-allocation-box">
               <span class="bcn-label">Bavdhan Contribution Number (BCN)</span>
               <div class="bcn-val-row">
                 <app-bcn-badge [bcn]="active.bcn || 'BCN-PENDING'" />
               </div>
             </div>
+
+            <!-- GRACE PERIOD NOTICE BANNER -->
+            @if (graceInfo(active).inGracePeriod) {
+              <div class="grace-alert-box" role="alert">
+                <span class="grace-icon" aria-hidden="true">⏳</span>
+                <div class="grace-alert-text">
+                  <strong>Storefront Grace Period Active</strong>
+                  <p>
+                    Your subscription expired on {{ active.ends_on }}. Your digital storefront
+                    remains publicly live for <strong>{{ graceInfo(active).remainingText }}</strong
+                    >. Renew now to avoid storefront unpublishing.
+                  </p>
+                </div>
+              </div>
+            }
+
+            <!-- PLAN OFFERINGS (STRICT: NO 0/FALSE/UNAVAILABLE) -->
+            <div class="plan-entitlements-box">
+              <span class="entitlements-title">Included in your plan:</span>
+              <ul class="features-checklist">
+                @for (
+                  feat of planFeatures(active.plan_entitlements || active.entitlements);
+                  track feat
+                ) {
+                  <li>
+                    <span class="check-icon" aria-hidden="true">✓</span>
+                    <span>{{ feat }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
           </div>
 
           <div class="renew-action-side">
-            <p class="renew-note">Need to extend your active subscription period?</p>
-            <button
-              class="btn-secondary"
-              type="button"
-              (click)="requestRenewal(active)"
-              [disabled]="busy()"
-            >
-              {{ busy() ? 'Processing…' : 'Renew current plan' }}
-            </button>
+            <p class="renew-note">
+              {{
+                graceInfo(active).inGracePeriod
+                  ? 'Renew your plan now to keep your storefront online.'
+                  : 'Need to extend your active subscription period?'
+              }}
+            </p>
+            <div class="hero-action-buttons">
+              <button class="btn-detail-secondary" type="button" (click)="openDetail(active)">
+                View Details
+              </button>
+              <button
+                class="btn-primary"
+                type="button"
+                (click)="openRenewalDrawer(active)"
+                [disabled]="busy()"
+              >
+                {{
+                  graceInfo(active).inGracePeriod ? 'Renew subscription now' : 'Renew current plan'
+                }}
+              </button>
+            </div>
           </div>
         </section>
 
@@ -71,10 +175,10 @@
         <section class="upgrade-section">
           <div class="section-title-row">
             <div>
-              <h3>Upgrade your subscription tier</h3>
+              <h3>Explore &amp; Upgrade Subscription Tiers</h3>
               <p>
-                Your current plan remains active until your upgrade request and receipt are
-                approved.
+                Switch or upgrade your plan. Your current storefront remains active until your new
+                request is approved.
               </p>
             </div>
           </div>
@@ -83,7 +187,12 @@
             @for (plan of plans(); track plan.id) {
               <article class="plan-card" [class.is-current]="plan.id === active.plan_id">
                 <div class="plan-card-top">
-                  <span class="plan-code">{{ plan.plan_code }}</span>
+                  <div class="plan-code-row">
+                    <span class="plan-code">{{ plan.plan_code }}</span>
+                    @if (plan.id === active.plan_id) {
+                      <span class="current-plan-badge">CURRENT PLAN</span>
+                    }
+                  </div>
                   <h4>{{ plan.plan_name }}</h4>
                   <p class="plan-desc">
                     {{
@@ -100,14 +209,29 @@
                   </div>
                 </div>
 
+                <!-- PLAN OFFERINGS (STRICT: NO 0/FALSE/UNAVAILABLE) -->
+                <div class="plan-card-features">
+                  <span class="features-heading">Plan Inclusions:</span>
+                  <ul class="features-checklist">
+                    @for (feat of planFeatures(plan.entitlements); track feat) {
+                      <li>
+                        <span class="check-icon" aria-hidden="true">✓</span>
+                        <span>{{ feat }}</span>
+                      </li>
+                    }
+                  </ul>
+                </div>
+
                 <button
                   class="btn-plan-action"
                   [class.btn-current]="plan.id === active.plan_id"
                   type="button"
-                  (click)="requestUpgrade(plan)"
-                  [disabled]="busy() || plan.id === active.plan_id"
+                  (click)="
+                    plan.id === active.plan_id ? openRenewalDrawer(active) : openUpgradeDrawer(plan)
+                  "
+                  [disabled]="busy()"
                 >
-                  {{ plan.id === active.plan_id ? 'Current Plan' : 'Upgrade to this Tier →' }}
+                  {{ plan.id === active.plan_id ? 'Renew Current Plan' : 'Choose this Plan →' }}
                 </button>
               </article>
             }
@@ -126,24 +250,105 @@
               <strong>{{ expired.currency }} {{ expired.amount }}</strong>
               <span>/ {{ expired.billing_cycle }}</span>
             </div>
+            <div class="plan-dates-line">
+              @if (expired.starts_on) {
+                <span
+                  >Started: <strong>{{ expired.starts_on }}</strong></span
+                >
+              }
+              @if (expired.ends_on) {
+                <span
+                  >Ended: <strong>{{ expired.ends_on }}</strong></span
+                >
+              }
+            </div>
             <div class="bcn-allocation-box">
               <span class="bcn-label">Allocated BCN ID</span>
               <app-bcn-badge [bcn]="expired.bcn || 'BCN-RETAINED'" />
+            </div>
+
+            <!-- PREVIOUS PLAN INCLUSIONS -->
+            <div class="plan-entitlements-box">
+              <span class="entitlements-title">Features in this plan:</span>
+              <ul class="features-checklist">
+                @for (
+                  feat of planFeatures(expired.plan_entitlements || expired.entitlements);
+                  track feat
+                ) {
+                  <li>
+                    <span class="check-icon" aria-hidden="true">✓</span>
+                    <span>{{ feat }}</span>
+                  </li>
+                }
+              </ul>
             </div>
           </div>
 
           <div class="renew-action-side">
             <p class="renew-note">
-              Renew this subscription to reactivate storefront and marketplace visibility.
+              Reactivate this subscription to republish storefront and restore marketplace
+              visibility.
             </p>
-            <button
-              class="btn-primary"
-              type="button"
-              (click)="requestRenewal(expired)"
-              [disabled]="busy()"
-            >
-              {{ busy() ? 'Processing…' : 'Reactivate subscription' }}
-            </button>
+            <div class="hero-action-buttons">
+              <button class="btn-detail-secondary" type="button" (click)="openDetail(expired)">
+                View Details
+              </button>
+              <button
+                class="btn-primary"
+                type="button"
+                (click)="openRenewalDrawer(expired)"
+                [disabled]="busy()"
+              >
+                Reactivate subscription
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- PLANS AVAILABLE FOR REACTIVATION -->
+        <section class="upgrade-section">
+          <div class="section-title-row">
+            <div>
+              <h3>Choose a plan to reactivate</h3>
+              <p>Select any plan to reactivate your digital storefront.</p>
+            </div>
+          </div>
+
+          <div class="plans-grid">
+            @for (plan of plans(); track plan.id) {
+              <article class="plan-card">
+                <div class="plan-card-top">
+                  <span class="plan-code">{{ plan.plan_code }}</span>
+                  <h4>{{ plan.plan_name }}</h4>
+                  <p class="plan-desc">{{ plan.description }}</p>
+                </div>
+                <div class="plan-price-block">
+                  <div class="price-row">
+                    <strong class="price-num">{{ plan.currency }} {{ plan.price }}</strong>
+                    <span class="price-cycle">/ {{ plan.billing_cycle }}</span>
+                  </div>
+                </div>
+                <div class="plan-card-features">
+                  <span class="features-heading">Plan Inclusions:</span>
+                  <ul class="features-checklist">
+                    @for (feat of planFeatures(plan.entitlements); track feat) {
+                      <li>
+                        <span class="check-icon" aria-hidden="true">✓</span>
+                        <span>{{ feat }}</span>
+                      </li>
+                    }
+                  </ul>
+                </div>
+                <button
+                  class="btn-plan-action"
+                  type="button"
+                  (click)="openUpgradeDrawer(plan)"
+                  [disabled]="busy()"
+                >
+                  Subscribe to this Plan →
+                </button>
+              </article>
+            }
           </div>
         </section>
       } @else {
@@ -162,12 +367,20 @@
                 <div class="history-details">
                   <strong>{{ item.plan_name }}</strong>
                   <span class="history-date">Created on {{ item.created_on }}</span>
+                  @if (item.starts_on && item.ends_on) {
+                    <span class="history-date"
+                      >Duration: {{ item.starts_on }} to {{ item.ends_on }}</span
+                    >
+                  }
                   @if (item.bcn) {
                     <span class="history-bcn">BCN: {{ item.bcn }}</span>
                   }
                 </div>
                 <div class="history-meta">
                   <app-status-badge [status]="item.subscription_status" />
+                  <button class="btn-history-detail" type="button" (click)="openDetail(item)">
+                    View Details
+                  </button>
                 </div>
               </div>
             }
@@ -176,127 +389,8 @@
       }
     }
 
-    <!-- PAYMENT & RECEIPT STEP -->
-    @else if (step() === 'payment') {
-      @if (payment(); as item) {
-        <section class="payment-step-card">
-          <div class="payment-card-header">
-            <h3>Complete Subscription Payment</h3>
-            <p>
-              Scan the official BBG QR code using any UPI app and upload your receipt screenshot or
-              PDF.
-            </p>
-          </div>
-
-          <div class="payment-summary-strip">
-            <div class="strip-item">
-              <span class="strip-label">Target Tier</span>
-              <strong class="strip-val">{{ item.plan_name }}</strong>
-            </div>
-            <div class="strip-item">
-              <span class="strip-label">Amount Payable</span>
-              <strong class="strip-val">{{ item.currency }} {{ item.amount }}</strong>
-            </div>
-            <div class="strip-item">
-              <span class="strip-label">Allocated BCN</span>
-              <strong class="strip-val">{{ item.bcn || 'Assigned on Verification' }}</strong>
-            </div>
-          </div>
-
-          @if (item.subscription_status === 'REJECTED' && item.rejection_reason) {
-            <div class="notice error">
-              <span>⚠️</span>
-              <span>Previous payment proof was rejected: {{ item.rejection_reason }}</span>
-            </div>
-          }
-
-          @if (item.payment_qr_url) {
-            <div class="qr-viewer-box">
-              <img [src]="item.payment_qr_url" alt="Official BBG subscription payment QR code" />
-              <span class="qr-instruction">Scan with GPay, PhonePe, Paytm, or BHIM</span>
-            </div>
-          }
-
-          @if (item.payment_payee_name) {
-            <div class="meta-row">
-              <span class="meta-key">Verified Payee:</span>
-              <strong class="meta-val">{{ item.payment_payee_name }}</strong>
-            </div>
-          }
-          @if (item.payment_upi_id) {
-            <div class="meta-row">
-              <span class="meta-key">Official UPI ID:</span>
-              <strong class="meta-val">{{ item.payment_upi_id }}</strong>
-            </div>
-          }
-          @if (item.payment_instructions) {
-            <div class="instructions-box">
-              {{ item.payment_instructions }}
-            </div>
-          }
-
-          <div class="proof-upload-form">
-            <label class="field">
-              <span class="field-label">Payment Reference / UTR Number (optional)</span>
-              <input
-                [value]="paymentReference()"
-                (input)="paymentReference.set($any($event.target).value)"
-                maxlength="120"
-                placeholder="e.g. 12-digit UPI transaction reference / UTR"
-              />
-            </label>
-
-            <div class="field">
-              <span class="field-label"
-                >Upload payment receipt <span class="required-mark">*</span></span
-              >
-              <label class="receipt-file-dropzone">
-                <div class="dropzone-inner">
-                  <span class="dropzone-icon" aria-hidden="true">📄</span>
-                  @if (proofFile(); as file) {
-                    <span class="dropzone-filename">{{ file.name }}</span>
-                    <span class="dropzone-hint">Click to replace receipt</span>
-                  } @else {
-                    <span class="dropzone-prompt">Choose payment screenshot or PDF</span>
-                    <span class="dropzone-hint"
-                      >Accepted formats: JPG, PNG, WEBP, or PDF (Max 10MB)</span
-                    >
-                  }
-                </div>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,application/pdf"
-                  (change)="onProofSelected($event)"
-                />
-              </label>
-            </div>
-
-            <div class="payment-action-buttons">
-              <button
-                class="btn-secondary"
-                type="button"
-                (click)="step.set('overview')"
-                [disabled]="busy()"
-              >
-                Cancel
-              </button>
-              <button
-                class="btn-primary"
-                type="button"
-                (click)="submitProof()"
-                [disabled]="busy() || !proofFile()"
-              >
-                <span>{{ busy() ? 'Submitting receipt…' : 'Submit payment proof' }}</span>
-                <span aria-hidden="true">→</span>
-              </button>
-            </div>
-          </div>
-        </section>
-      }
-    }
-
-    <!-- SUBMITTED CONFIRMATION STEP -->
-    @else {
+    <!-- COMPATIBILITY SUBMITTED CONFIRMATION STEP -->
+    @else if (step() === 'submitted') {
       <section class="submitted-confirmation-card">
         <div class="confirmation-crest" aria-hidden="true">✓</div>
         <h2>Payment proof submitted!</h2>
@@ -311,4 +405,488 @@
       </section>
     }
   </div>
+
+  <!-- SLIDE-OVER SUBSCRIPTION CHECKOUT DRAWER -->
+  @if (drawerOpen()) {
+    <div class="drawer-backdrop" (click)="closeDrawer()" aria-hidden="true"></div>
+    <aside
+      class="subscription-drawer"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="drawer-title"
+    >
+      <div class="drawer-header">
+        <div>
+          <p class="drawer-kicker">SUBSCRIPTION CHECKOUT</p>
+          <h2 id="drawer-title">
+            {{ drawerMode() === 'renewal' ? 'Renew Subscription' : 'Upgrade Subscription Tier' }}
+          </h2>
+        </div>
+        <button
+          class="btn-drawer-close"
+          type="button"
+          (click)="closeDrawer()"
+          aria-label="Close drawer"
+        >
+          ✕
+        </button>
+      </div>
+
+      @if (drawerError()) {
+        <div class="drawer-notice error" role="alert">
+          <span>⚠️</span>
+          <span>{{ drawerError() }}</span>
+        </div>
+      }
+
+      <div class="drawer-body">
+        <!-- Plan Switcher: lets user switch plan right here without error! -->
+        <div class="drawer-field-group">
+          <label for="drawer-plan-select" class="drawer-label">Selected Subscription Plan</label>
+          <select
+            id="drawer-plan-select"
+            class="drawer-select"
+            [value]="selectedPlan()?.id"
+            (change)="onPlanSelectChange($event)"
+            [disabled]="drawerBusy()"
+          >
+            @for (plan of plans(); track plan.id) {
+              <option [value]="plan.id">
+                {{ plan.plan_name }} — {{ plan.currency }} {{ plan.price }} /
+                {{ plan.billing_cycle }}
+              </option>
+            }
+          </select>
+        </div>
+
+        <!-- Selected plan summary box -->
+        @if (selectedPlan(); as plan) {
+          <div class="selected-plan-summary">
+            <div class="plan-summary-head">
+              <div>
+                <span class="plan-summary-code">{{ plan.plan_code }}</span>
+                <h3>{{ plan.plan_name }}</h3>
+              </div>
+              <div class="plan-summary-price">
+                <strong>{{ plan.currency }} {{ plan.price }}</strong>
+                <span>/ {{ plan.billing_cycle }}</span>
+              </div>
+            </div>
+
+            <div class="plan-summary-features">
+              <span class="summary-feat-title">Included in this plan:</span>
+              <ul class="summary-feat-list">
+                @for (feat of planFeatures(plan.entitlements); track feat) {
+                  <li>
+                    <span class="feat-check" aria-hidden="true">✓</span>
+                    <span>{{ feat }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          </div>
+        }
+
+        <!-- Official Payment Instructions -->
+        <div class="drawer-payment-section">
+          <h4>Official BBG Payment Details</h4>
+          <p class="drawer-payment-sub">
+            Scan the official QR code via any UPI application (GPay, PhonePe, Paytm, BHIM) or
+            transfer directly to the UPI ID.
+          </p>
+
+          @if (paymentInstructions(); as info) {
+            @if (info.payment_qr_url) {
+              <div class="drawer-qr-box">
+                <img [src]="info.payment_qr_url" alt="Official BBG subscription payment QR code" />
+                <span class="qr-scan-tag">Scan with any UPI app</span>
+              </div>
+            }
+
+            <div class="payment-meta-block">
+              @if (info.payment_payee_name) {
+                <div class="meta-item">
+                  <span class="meta-label">Payee Name</span>
+                  <strong class="meta-value">{{ info.payment_payee_name }}</strong>
+                </div>
+              }
+              @if (info.payment_upi_id) {
+                <div class="meta-item">
+                  <span class="meta-label">Official UPI ID</span>
+                  <div class="upi-copy-row">
+                    <code class="upi-code">{{ info.payment_upi_id }}</code>
+                    <button
+                      type="button"
+                      class="btn-copy-upi"
+                      (click)="copyUpiId(info.payment_upi_id)"
+                      title="Copy UPI ID to clipboard"
+                    >
+                      {{ copiedUpi() ? '✓ Copied' : 'Copy' }}
+                    </button>
+                  </div>
+                </div>
+              }
+              @if (info.payment_instructions) {
+                <div class="drawer-instructions-box">
+                  {{ info.payment_instructions }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Reference & Receipt Form -->
+        <div class="drawer-form-section">
+          <label class="drawer-field">
+            <span class="drawer-label">Payment Reference / UTR Number (optional)</span>
+            <input
+              type="text"
+              class="drawer-input"
+              [value]="drawerReference()"
+              (input)="drawerReference.set($any($event.target).value)"
+              maxlength="120"
+              placeholder="e.g. 12-digit UPI transaction reference / UTR"
+              [disabled]="drawerBusy()"
+            />
+          </label>
+
+          <div class="drawer-field">
+            <span class="drawer-label">
+              Upload payment receipt <span class="required-mark">*</span>
+            </span>
+            <label class="drawer-dropzone">
+              <div class="dropzone-inner">
+                <span class="dropzone-icon" aria-hidden="true">📄</span>
+                @if (drawerProofFile(); as file) {
+                  <span class="dropzone-filename">{{ file.name }}</span>
+                  <span class="dropzone-hint">Click to replace receipt</span>
+                } @else {
+                  <span class="dropzone-prompt">Choose payment screenshot or PDF</span>
+                  <span class="dropzone-hint"
+                    >Accepted formats: JPG, PNG, WEBP, or PDF (Max 10MB)</span
+                  >
+                }
+              </div>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                (change)="onDrawerProofSelected($event)"
+                [disabled]="drawerBusy()"
+              />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-footer">
+        <button
+          class="btn-drawer-cancel"
+          type="button"
+          (click)="closeDrawer()"
+          [disabled]="drawerBusy()"
+        >
+          Cancel
+        </button>
+        <button
+          class="btn-drawer-submit"
+          type="button"
+          (click)="submitDrawerPayment()"
+          [disabled]="drawerBusy() || !drawerProofFile()"
+        >
+          @if (drawerBusy()) {
+            <span class="btn-spinner" aria-hidden="true"></span>
+            <span>Submitting proof…</span>
+          } @else {
+            <span>Submit Payment Proof</span>
+            <span aria-hidden="true">→</span>
+          }
+        </button>
+      </div>
+    </aside>
+  }
+
+  <!-- SUBSCRIPTION & PAYMENT DETAILS DRAWER -->
+  @if (detailDrawerOpen()) {
+    <div class="drawer-backdrop" (click)="closeDetailDrawer()" aria-hidden="true"></div>
+    <aside
+      class="subscription-drawer detail-drawer"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="detail-drawer-title"
+    >
+      <div class="drawer-header">
+        <div>
+          <p class="drawer-kicker">SUBSCRIPTION ARCHIVE &amp; VERIFICATION</p>
+          <h2 id="detail-drawer-title">Subscription &amp; Payment Details</h2>
+        </div>
+        <button
+          class="btn-drawer-close"
+          type="button"
+          (click)="closeDetailDrawer()"
+          aria-label="Close drawer"
+        >
+          ✕
+        </button>
+      </div>
+
+      @if (detailError()) {
+        <div class="drawer-notice error" role="alert">
+          <span>⚠️</span>
+          <span>{{ detailError() }}</span>
+        </div>
+      }
+      @if (detailNotice()) {
+        <div class="drawer-notice success" role="status">
+          <span>✓</span>
+          <span>{{ detailNotice() }}</span>
+        </div>
+      }
+
+      <div class="drawer-body">
+        @if (loadingDetail()) {
+          <div class="loading-state-box">
+            <div class="loader-spinner"></div>
+            <p>Loading full subscription records…</p>
+          </div>
+        } @else if (selectedDetail(); as sub) {
+          <!-- Summary card -->
+          <div class="selected-plan-summary">
+            <div class="plan-summary-head">
+              <div>
+                <span class="plan-summary-code">{{ sub.plan_code || 'PLAN' }}</span>
+                <h3>{{ sub.plan_name }}</h3>
+              </div>
+              <div class="plan-summary-price">
+                <strong>{{ sub.currency }} {{ sub.amount }}</strong>
+                <span>/ {{ sub.billing_cycle }}</span>
+              </div>
+            </div>
+
+            <div class="detail-meta-grid">
+              <div class="meta-cell">
+                <span class="meta-label">Status</span>
+                <app-status-badge [status]="sub.subscription_status" size="sm" />
+              </div>
+              <div class="meta-cell">
+                <span class="meta-label">Allocated BCN</span>
+                <strong class="meta-val">{{ sub.bcn || 'Not Assigned' }}</strong>
+              </div>
+              @if (sub.starts_on) {
+                <div class="meta-cell">
+                  <span class="meta-label">Started On</span>
+                  <strong class="meta-val">{{ sub.starts_on }}</strong>
+                </div>
+              }
+              @if (sub.ends_on) {
+                <div class="meta-cell">
+                  <span class="meta-label">Valid Until</span>
+                  <strong class="meta-val">{{ sub.ends_on }}</strong>
+                </div>
+              }
+              @if (sub.approved_on) {
+                <div class="meta-cell">
+                  <span class="meta-label">Approved On</span>
+                  <strong class="meta-val">{{ sub.approved_on }}</strong>
+                </div>
+              }
+            </div>
+
+            <!-- Features -->
+            @if (planFeatures(sub.plan_entitlements || sub.entitlements).length) {
+              <div class="plan-summary-features">
+                <span class="summary-feat-title">Included in this plan:</span>
+                <ul class="summary-feat-list">
+                  @for (
+                    feat of planFeatures(sub.plan_entitlements || sub.entitlements);
+                    track feat
+                  ) {
+                    <li>
+                      <span class="feat-check" aria-hidden="true">✓</span>
+                      <span>{{ feat }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          </div>
+
+          <!-- Official Payment Instructions -->
+          @if (sub.payment_payee_name || sub.payment_upi_id) {
+            <div class="drawer-payment-section">
+              <h4>Payment Destination</h4>
+              <div class="payment-meta-block">
+                @if (sub.payment_payee_name) {
+                  <div class="meta-item">
+                    <span class="meta-label">Payee Name</span>
+                    <strong class="meta-value">{{ sub.payment_payee_name }}</strong>
+                  </div>
+                }
+                @if (sub.payment_upi_id) {
+                  <div class="meta-item">
+                    <span class="meta-label">UPI ID</span>
+                    <strong class="meta-value">{{ sub.payment_upi_id }}</strong>
+                  </div>
+                }
+                @if (sub.payment_instructions) {
+                  <div class="drawer-instructions-box">
+                    {{ sub.payment_instructions }}
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- PAYMENT PROOF & VERIFICATION STATE -->
+          <div class="drawer-proof-section">
+            <h4>Payment Proof &amp; Verification</h4>
+
+            <!-- 1. LOCKED IF ACTIVE / APPROVED / EXPIRED -->
+            @if (
+              ['ACTIVE', 'APPROVED', 'EXPIRED', 'GRACE_PERIOD'].includes(
+                sub.subscription_status.toUpperCase()
+              )
+            ) {
+              <div class="proof-verified-box">
+                <span class="lock-icon" aria-hidden="true">🔒</span>
+                <div class="proof-box-content">
+                  <strong>Payment Proof Verified &amp; Approved</strong>
+                  <p>
+                    This subscription and its transaction receipt have been verified and approved by
+                    BBG administration. The payment proof is locked and cannot be modified.
+                  </p>
+                </div>
+              </div>
+            }
+
+            <!-- 2. REJECTED: User can change and resubmit! -->
+            @if (sub.subscription_status.toUpperCase() === 'REJECTED') {
+              <div class="proof-rejected-box">
+                <span class="warn-icon" aria-hidden="true">⚠️</span>
+                <div class="proof-box-content">
+                  <strong>Payment Proof Rejected</strong>
+                  <p>
+                    {{
+                      sub.rejection_reason ||
+                        'Your payment proof was rejected. Please review the note and upload a clear payment receipt below to resubmit.'
+                    }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="resubmit-proof-form">
+                <h5>Upload Revised Receipt to Resubmit</h5>
+                <label class="drawer-field">
+                  <span class="drawer-label">Payment Reference / UTR Number (optional)</span>
+                  <input
+                    type="text"
+                    class="drawer-input"
+                    [value]="resubmitReference()"
+                    (input)="resubmitReference.set($any($event.target).value)"
+                    placeholder="e.g. 12-digit UPI transaction reference / UTR"
+                    [disabled]="resubmitting()"
+                  />
+                </label>
+
+                <div class="drawer-field">
+                  <span class="drawer-label"
+                    >Payment Receipt Screenshot or PDF <span class="required-mark">*</span></span
+                  >
+                  <label class="drawer-dropzone">
+                    <div class="dropzone-inner">
+                      <span class="dropzone-icon" aria-hidden="true">📄</span>
+                      @if (resubmitProofFile(); as file) {
+                        <span class="dropzone-filename">{{ file.name }}</span>
+                        <span class="dropzone-hint">Click to replace receipt</span>
+                      } @else {
+                        <span class="dropzone-prompt"
+                          >Choose revised receipt screenshot or PDF</span
+                        >
+                        <span class="dropzone-hint">JPG, PNG, WEBP, or PDF (Max 10MB)</span>
+                      }
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      (change)="onResubmitFileSelected($event)"
+                      [disabled]="resubmitting()"
+                    />
+                  </label>
+                </div>
+
+                <button
+                  type="button"
+                  class="btn-resubmit-proof"
+                  (click)="submitResubmittedProof()"
+                  [disabled]="resubmitting() || !resubmitProofFile()"
+                >
+                  {{ resubmitting() ? 'Submitting receipt…' : 'Resubmit Payment Proof →' }}
+                </button>
+              </div>
+            }
+
+            <!-- 3. PENDING: Under Review -->
+            @if (sub.subscription_status.toUpperCase() === 'PENDING') {
+              <div class="proof-pending-box">
+                <span class="clock-icon" aria-hidden="true">⏳</span>
+                <div class="proof-box-content">
+                  <strong>Awaiting Admin Review</strong>
+                  <p>
+                    Your subscription request and transaction proof are awaiting verification by BBG
+                    administration.
+                  </p>
+                </div>
+              </div>
+            }
+
+            <!-- Submitted Proofs History List -->
+            @if (sub.proofs && sub.proofs.length) {
+              <div class="proofs-history-list">
+                <span class="proofs-title">Submitted Receipts</span>
+                @for (proof of sub.proofs; track proof.id) {
+                  <div class="proof-history-card">
+                    <div class="proof-meta-line">
+                      <span class="proof-ref">
+                        Ref: <strong>{{ proof.payment_reference || 'No UTR' }}</strong>
+                      </span>
+                      <span
+                        class="proof-badge"
+                        [class.verified]="proof.review_status === 'VERIFIED'"
+                        [class.rejected]="proof.review_status === 'REJECTED'"
+                      >
+                        {{ proof.review_status }}
+                      </span>
+                    </div>
+                    @if (proof.submitted_on) {
+                      <div class="proof-date-line">Submitted on {{ proof.submitted_on }}</div>
+                    }
+                    @if (proof.proof_file_url) {
+                      <div class="proof-view-action">
+                        <a
+                          [href]="proof.proof_file_url"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="btn-receipt-link"
+                        >
+                          📄 View Submitted Receipt ↗
+                        </a>
+                      </div>
+                    }
+                    @if (proof.review_notes) {
+                      <div class="proof-notes-line">
+                        <strong>Review Note:</strong> {{ proof.review_notes }}
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="drawer-footer">
+        <button class="btn-drawer-cancel" type="button" (click)="closeDetailDrawer()">Close</button>
+      </div>
+    </aside>
+  }
 </main>

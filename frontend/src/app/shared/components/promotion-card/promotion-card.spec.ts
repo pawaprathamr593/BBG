@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { PromotionCard } from './promotion-card';
 import type { PromotionCardModel } from '../../models/marketplace-card.models';
 import { EngagementApiService } from '../../../core/engagement/engagement-api.service';
@@ -68,7 +68,7 @@ describe('PromotionCard', () => {
     await TestBed.configureTestingModule({
       imports: [PromotionCard],
       providers: [
-        provideRouter([]),
+        provideRouter([{ path: 'promotions/:id', component: PromotionCard }]),
         { provide: EngagementApiService, useValue: mockEngagementApi },
         { provide: AuthDialogService, useValue: mockAuthDialog },
       ],
@@ -128,11 +128,13 @@ describe('PromotionCard', () => {
     });
   });
 
-  it('should render post without media cleanly and emit selected on CTA click', () => {
+  it('should render neutral placeholder when post has no media and emit selected on CTA click', () => {
     fixture.componentRef.setInput('promotion', { ...mockPromotion, media: [] });
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.card-media-section')).toBeNull();
+    const mediaFrame = fixture.nativeElement.querySelector('.card-media-frame');
+    expect(mediaFrame).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.card-media-placeholder')).toBeTruthy();
 
     const emitted: PromotionCardModel[] = [];
     component.selected.subscribe((val) => {
@@ -146,7 +148,7 @@ describe('PromotionCard', () => {
     expect(emitted[0].id).toBe(101);
   });
 
-  it('should render standalone BBG Promotion badge, campaign dates bar, bookmark toggle, multi-media badge, and no three-dot or edit/delete menu', () => {
+  it('should render standalone BBG Promotion badge, campaign dates bar, bookmark toggle, single primary image, and no three-dot or edit/delete menu', () => {
     localStorage.removeItem('bbg_saved_promotions_v1');
     fixture.componentRef.setInput('promotion', {
       ...mockPromotion,
@@ -168,8 +170,10 @@ describe('PromotionCard', () => {
     const datesBar = fixture.nativeElement.querySelector('.campaign-dates-bar');
     expect(datesBar).toBeTruthy();
 
-    const multiMediaBadge = fixture.nativeElement.querySelector('.multi-media-badge');
-    expect(multiMediaBadge?.textContent).toContain('2 photos');
+    // Exactly one primary image rendered; no multi-media badge or grid
+    const primaryImg = fixture.nativeElement.querySelector('.primary-media-img');
+    expect(primaryImg).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.media-grid')).toBeNull();
 
     const saveBtn = fixture.nativeElement.querySelector('.btn-save-post') as HTMLButtonElement;
     expect(saveBtn).toBeTruthy();
@@ -188,5 +192,17 @@ describe('PromotionCard', () => {
       .join(' ');
     expect(allButtonsText).not.toContain('edit');
     expect(allButtonsText).not.toContain('delete');
+  });
+
+  it('should navigate to promotion detail on card click and to #comments on comment click', () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    const title = fixture.nativeElement.querySelector('.post-title');
+    title.click();
+    expect(navigateSpy).toHaveBeenCalledWith(['/promotions', 101]);
+
+    component['onCommentClick']();
+    expect(navigateSpy).toHaveBeenCalledWith(['/promotions', 101], { fragment: 'comments' });
   });
 });

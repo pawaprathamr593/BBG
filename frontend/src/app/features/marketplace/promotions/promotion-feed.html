@@ -21,7 +21,7 @@
     } @else if (promotions().length) {
       <div class="grid">
         @for (promotion of promotions(); track promotion.id) {
-          <app-promotion-card [promotion]="promotion" (selected)="openBusiness($event)" />
+          <app-promotion-card [promotion]="promotion" (selected)="openPromotion($event)" />
         }
       </div>
       @if (total() > pageSize) {

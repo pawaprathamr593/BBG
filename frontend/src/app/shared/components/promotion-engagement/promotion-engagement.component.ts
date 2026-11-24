@@ -8,6 +8,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
@@ -45,6 +46,8 @@ export class PromotionEngagementComponent implements OnInit {
 
   readonly postId = input.required<number>();
   readonly postTitle = input<string>('Promotion');
+  readonly mode = input<'card' | 'detail'>('card');
+  readonly commentClick = output<void>();
 
   private readonly commentInputRef = viewChild<ElementRef<HTMLInputElement>>('commentInput');
 
@@ -159,6 +162,10 @@ export class PromotionEngagementComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.loadSummary();
+    if (this.mode() === 'detail') {
+      this.commentsExpanded.set(true);
+      await this.loadComments(1, false);
+    }
   }
 
   protected async loadSummary(): Promise<void> {
@@ -244,7 +251,13 @@ export class PromotionEngagementComponent implements OnInit {
             }),
           );
           if (res.status === 'SUCCESS' && res.data && !Array.isArray(res.data)) {
-            this.summary.set(res.data);
+            const reactionData = res.data as Partial<ContentEngagementSummary>;
+            this.summary.update((prev) => ({
+              ...prev,
+              ...reactionData,
+              total_comments: prev.total_comments,
+              total_views: prev.total_views,
+            }));
           }
         } catch {
           this.summary.set(prevSummary);
@@ -253,6 +266,19 @@ export class PromotionEngagementComponent implements OnInit {
         }
       },
     );
+  }
+
+  protected onCommentClick(event?: Event): void {
+    event?.stopPropagation();
+    if (this.mode() === 'card') {
+      this.commentClick.emit();
+      return;
+    }
+    this.commentsExpanded.set(true);
+    if (this.comments().length === 0) {
+      void this.loadComments(1, false);
+    }
+    setTimeout(() => this.commentInputRef()?.nativeElement.focus(), 0);
   }
 
   protected toggleComments(): void {

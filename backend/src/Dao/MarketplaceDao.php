@@ -35,7 +35,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )) AS businesses_registered,
                 (SELECT COUNT(*) FROM USERS u
                  WHERE u.account_status = 'ACTIVE' AND u.status = 'A') AS platform_users,
@@ -48,7 +48,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                     AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
                  INNER JOIN TENANTS t ON t.id = p.tenant_id
@@ -172,7 +172,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
                 AND (COALESCE(v.view_count, 0) + COALESCE(e.enquiry_count, 0)) > 0
@@ -213,7 +213,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
                 AND (COALESCE(v.view_count, 0) + COALESCE(e.enquiry_count, 0)) > 0",
@@ -249,7 +249,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              ORDER BY bp.created_on DESC, bp.id DESC
@@ -286,7 +286,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED'
                 AND bp.status = 'A'
@@ -306,7 +306,7 @@ final readonly class MarketplaceDao
              WHERE ts.tenant_id = :tenant_id
                 AND ts.subscription_status = 'ACTIVE' AND ts.status = 'A'
                 AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
-                AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
+                AND (ts.ends_on IS NULL OR DATE_ADD(ts.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
              ORDER BY ts.starts_on DESC, ts.id DESC",
             [':tenant_id' => $tenantId],
             'getActiveTenantEntitlements',
@@ -342,7 +342,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = p.tenant_id
@@ -385,7 +385,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = p.tenant_id
@@ -425,7 +425,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = p.tenant_id
@@ -458,7 +458,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = p.tenant_id
@@ -527,7 +527,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = p.tenant_id
@@ -611,7 +611,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = p.tenant_id
@@ -661,7 +661,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = p.tenant_id
@@ -738,7 +738,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              LEFT JOIN CATEGORIES c ON c.id = bp.primary_category_id AND c.status = 'A'
@@ -777,7 +777,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              JOIN TENANTS t ON t.id = pp.tenant_id
@@ -809,7 +809,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
                 AND bp.publication_status = 'PUBLISHED' AND bp.status = 'A'
              LEFT JOIN CATEGORIES c ON c.id = bp.primary_category_id AND c.status = 'A'
@@ -882,7 +882,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
             AND bp.publication_status = 'PUBLISHED'
             AND bp.status = 'A'";
@@ -977,7 +977,7 @@ final readonly class MarketplaceDao
                         WHERE ts_public.tenant_id = bp.tenant_id
                             AND ts_public.subscription_status = 'ACTIVE' AND ts_public.status = 'A'
                             AND (ts_public.starts_on IS NULL OR ts_public.starts_on <= CURRENT_TIMESTAMP)
-                            AND (ts_public.ends_on IS NULL OR ts_public.ends_on >= CURRENT_TIMESTAMP)
+                            AND (ts_public.ends_on IS NULL OR DATE_ADD(ts_public.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                     )
             AND bp.publication_status = 'PUBLISHED'
             AND bp.status = 'A'";

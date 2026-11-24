@@ -20,8 +20,8 @@
           <button
             type="button"
             class="comments-count-btn"
-            (click)="toggleComments()"
-            [attr.aria-expanded]="commentsExpanded()"
+            (click)="onCommentClick($event)"
+            [attr.aria-expanded]="mode() === 'detail' ? commentsExpanded() : false"
             aria-label="View comments"
           >
             {{ summary().total_comments }}
@@ -86,10 +86,10 @@
     <button
       type="button"
       class="btn-engagement-action btn-comment"
-      [class.active]="commentsExpanded()"
-      (click)="toggleComments()"
-      [attr.aria-expanded]="commentsExpanded()"
-      aria-label="Toggle comments"
+      [class.active]="mode() === 'detail' && commentsExpanded()"
+      (click)="onCommentClick($event)"
+      [attr.aria-expanded]="mode() === 'detail' ? commentsExpanded() : false"
+      aria-label="View comments"
     >
       <span class="action-icon" aria-hidden="true">💬</span>
       <span class="action-label">Comment</span>
@@ -114,7 +114,7 @@
   }
 
   <!-- Expandable Comments Section -->
-  @if (commentsExpanded()) {
+  @if (mode() === 'detail' && commentsExpanded()) {
     <div class="expanded-comments-drawer" role="region" aria-label="Comments Section">
       <div class="comments-drawer-header">
         <h4 class="drawer-heading">

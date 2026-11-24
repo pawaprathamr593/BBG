@@ -1016,15 +1016,16 @@ export class DashboardModule implements OnInit {
       url: entry['url'] ? this.asUrl(entry['url']) : null,
       canRemove: status.toUpperCase() !== 'PUBLISHED' && this.can('promotion.update'),
     }));
-    const paymentQr = item['payment_qr_url']
-      ? {
-          url: this.asUrl(item['payment_qr_url']),
-          payeeName: String(item['payment_payee_name'] ?? ''),
-          upiId: String(item['payment_upi_id'] ?? ''),
-          version: String(item['payment_qr_version'] ?? ''),
-          instructions: String(item['payment_instructions'] ?? ''),
-        }
-      : null;
+    const paymentQr =
+      this.section() === 'payment-qr-settings' && item['payment_qr_url']
+        ? {
+            url: this.asUrl(item['payment_qr_url']),
+            payeeName: String(item['payment_payee_name'] ?? ''),
+            upiId: String(item['payment_upi_id'] ?? ''),
+            version: String(item['payment_qr_version'] ?? ''),
+            instructions: String(item['payment_instructions'] ?? ''),
+          }
+        : null;
     return {
       id: this.recordId(item, 'id'),
       record: item,
@@ -2720,6 +2721,9 @@ export class DashboardModule implements OnInit {
   }
   asUrl(value: unknown): string {
     return typeof value === 'string' ? value : String(value ?? '');
+  }
+  asArray(value: unknown): any[] {
+    return Array.isArray(value) ? value : [];
   }
   formatValue(value: unknown): string {
     if (value === null || value === undefined || value === '') return '—';

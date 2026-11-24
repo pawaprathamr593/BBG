@@ -39,7 +39,7 @@ final readonly class SubscriptionDao
         return $this->one($db, "SELECT id FROM TENANT_SUBSCRIPTIONS
             WHERE tenant_id = :tenant_id AND subscription_status = 'ACTIVE' AND status = 'A'
                 AND (starts_on IS NULL OR starts_on <= CURRENT_TIMESTAMP)
-                AND (ends_on IS NULL OR ends_on >= CURRENT_TIMESTAMP)
+                AND (ends_on IS NULL OR DATE_ADD(ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
             LIMIT 1", [':tenant_id' => $tenantId], 'hasActiveSubscription');
     }
 
@@ -133,7 +133,14 @@ final readonly class SubscriptionDao
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->many($db, "SELECT ts.id, ts.upgrade_from_subscription_id, ts.plan_id, p.plan_code, p.plan_name, p.billing_cycle,
-            CASE WHEN ts.subscription_status = 'ACTIVE' AND ts.ends_on < CURRENT_TIMESTAMP THEN 'EXPIRED' ELSE ts.subscription_status END AS subscription_status,
+            p.description AS plan_description,
+            (SELECT GROUP_CONCAT(CONCAT(pe.entitlement_code, '=', pe.entitlement_value) ORDER BY pe.entitlement_code SEPARATOR ';')
+             FROM PLAN_ENTITLEMENTS pe WHERE pe.plan_id = ts.plan_id AND pe.status = 'A') AS plan_entitlements,
+            CASE 
+                WHEN ts.subscription_status = 'ACTIVE' AND ts.ends_on < CURRENT_TIMESTAMP AND CURRENT_TIMESTAMP <= DATE_ADD(ts.ends_on, INTERVAL 2 DAY) THEN 'GRACE_PERIOD'
+                WHEN ts.subscription_status = 'ACTIVE' AND ts.ends_on < CURRENT_TIMESTAMP THEN 'EXPIRED' 
+                ELSE ts.subscription_status 
+            END AS subscription_status,
             ts.starts_on, ts.ends_on, ts.renewal_due_on,
             ts.amount, ts.currency, ts.approved_on, ts.rejection_reason, ts.created_on, ts.bcn,
             instructions.config_version AS payment_qr_version, instructions.payee_name AS payment_payee_name,
@@ -166,7 +173,15 @@ final readonly class SubscriptionDao
     {
         $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
         return $this->one($db, "SELECT ts.id, ts.tenant_id, ts.upgrade_from_subscription_id, ts.plan_id, p.plan_code, p.plan_name,
-            p.billing_cycle, ts.subscription_status, ts.starts_on, ts.ends_on, ts.renewal_due_on,
+            p.billing_cycle, p.description AS plan_description,
+            (SELECT GROUP_CONCAT(CONCAT(pe.entitlement_code, '=', pe.entitlement_value) ORDER BY pe.entitlement_code SEPARATOR ';')
+             FROM PLAN_ENTITLEMENTS pe WHERE pe.plan_id = ts.plan_id AND pe.status = 'A') AS plan_entitlements,
+            CASE 
+                WHEN ts.subscription_status = 'ACTIVE' AND ts.ends_on < CURRENT_TIMESTAMP AND CURRENT_TIMESTAMP <= DATE_ADD(ts.ends_on, INTERVAL 2 DAY) THEN 'GRACE_PERIOD'
+                WHEN ts.subscription_status = 'ACTIVE' AND ts.ends_on < CURRENT_TIMESTAMP THEN 'EXPIRED' 
+                ELSE ts.subscription_status 
+            END AS subscription_status,
+            ts.starts_on, ts.ends_on, ts.renewal_due_on,
             ts.amount, ts.currency, ts.approved_by, ts.approved_on, ts.rejection_reason, ts.created_on, ts.bcn,
             instructions.config_version AS payment_qr_version, instructions.payee_name AS payment_payee_name,
             instructions.upi_id AS payment_upi_id, instructions.qr_file_path AS payment_qr_file_path,
@@ -178,6 +193,38 @@ final readonly class SubscriptionDao
                 AND instructions.status = 'A'
             WHERE ts.id = :id AND ts.tenant_id = :tenant_id AND ts.status = 'A' LIMIT 1",
             [':id' => $subscriptionId, ':tenant_id' => $tenantId], 'getTenantSubscription');
+    }
+
+    public function getSubscriptionProofs(ConnectionInterface $db, int $tenantId, int $subscriptionId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        return $this->many($db, "SELECT id, payment_reference, proof_file_path, submitted_on,
+            reviewed_by, reviewed_on, review_status, review_notes
+            FROM SUBSCRIPTION_PAYMENT_PROOFS
+            WHERE tenant_id = :tenant_id AND subscription_id = :subscription_id AND status = 'A'
+            ORDER BY submitted_on DESC, id DESC",
+            [':tenant_id' => $tenantId, ':subscription_id' => $subscriptionId], 'getSubscriptionProofs');
+    }
+
+    public function cancelPendingSubscription(ConnectionInterface $db, int $tenantId, int $subscriptionId, int $userId): array
+    {
+        $resArr = ['status' => 'FAILED', 'msgArr' => [], 'data' => []];
+        try {
+            $affected = $db->createCommand("UPDATE TENANT_SUBSCRIPTIONS
+                SET subscription_status = 'CANCELLED', status = 'I', updated_by = :user_id, updated_on = CURRENT_TIMESTAMP
+                WHERE id = :subscription_id AND tenant_id = :tenant_id
+                    AND subscription_status = 'PENDING' AND status = 'A'",
+                [':user_id' => $userId, ':subscription_id' => $subscriptionId, ':tenant_id' => $tenantId])->execute();
+            if ($affected !== 1) {
+                $resArr['msgArr'][] = 'Pending subscription could not be cancelled or was already processed.';
+                return $resArr;
+            }
+            $resArr['status'] = 'SUCCESS';
+            $resArr['data'] = ['subscription_id' => $subscriptionId, 'subscription_status' => 'CANCELLED'];
+        } catch (Throwable $exception) {
+            return $this->error('cancelPendingSubscription', $exception);
+        }
+        return $resArr;
     }
 
     public function hasPendingProof(ConnectionInterface $db, int $tenantId, int $subscriptionId): array

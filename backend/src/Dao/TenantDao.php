@@ -38,7 +38,7 @@ final readonly class TenantDao
                 INNER JOIN PLAN_ENTITLEMENTS pe ON pe.plan_id = ts.plan_id AND pe.status = 'A'
                 WHERE ts.subscription_status = 'ACTIVE' AND ts.status = 'A'
                     AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
-                    AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
+                    AND (ts.ends_on IS NULL OR DATE_ADD(ts.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
                 GROUP BY ts.tenant_id
              ) active_plan ON active_plan.tenant_id = t.id
              WHERE tm.user_id = :user_id AND tm.membership_status = 'ACTIVE'
@@ -135,7 +135,7 @@ final readonly class TenantDao
              WHERE ts.tenant_id = :tenant_id
                 AND ts.subscription_status = 'ACTIVE' AND ts.status = 'A'
                 AND (ts.starts_on IS NULL OR ts.starts_on <= CURRENT_TIMESTAMP)
-                AND (ts.ends_on IS NULL OR ts.ends_on >= CURRENT_TIMESTAMP)
+                AND (ts.ends_on IS NULL OR DATE_ADD(ts.ends_on, INTERVAL 2 DAY) >= CURRENT_TIMESTAMP)
              ORDER BY ts.starts_on DESC, ts.id DESC
              LIMIT 1",
             $params,

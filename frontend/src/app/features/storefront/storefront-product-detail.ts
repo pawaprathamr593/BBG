@@ -123,7 +123,7 @@ export class StorefrontProductDetail implements OnInit {
       const path = '/store/' + encodeURIComponent(this.slug) + '/products/' + routeSlug;
       const currency = business.storefront.currency;
       const showPrice =
-        business.storefront.show_prices && product.selling_price !== undefined && !!currency;
+        business.storefront.show_prices && this.hasValidPrice(product.selling_price) && !!currency;
 
       this.seo.update(product.product_name + ' | ' + businessName, description, path, {
         '@context': 'https://schema.org',
@@ -199,11 +199,29 @@ export class StorefrontProductDetail implements OnInit {
     );
   }
 
+  hasValidPrice(price: number | string | null | undefined): boolean {
+    if (price === undefined || price === null || price === '') return false;
+    const numeric = Number(price);
+    return Number.isFinite(numeric) && numeric > 0;
+  }
+
+  formatPrice(price: number | string | null | undefined): string {
+    const numeric = Number(price);
+    if (!Number.isFinite(numeric) || numeric <= 0) return '';
+    return new Intl.NumberFormat('en-IN', {
+      maximumFractionDigits: 2,
+    }).format(numeric);
+  }
+
   get whatsappUrl(): string | null {
     const product = this.detail()?.product;
     const biz = this.context.detail()?.business;
     if (!product || !biz) return null;
     const country = biz.address?.country_code ?? biz.country_code;
+    const showPrice = this.context.detail()?.storefront?.show_prices;
+    if (!showPrice || !this.hasValidPrice(product.selling_price)) {
+      return this.whatsApp.buildProductPriceEnquiryUrl(product.product_name, biz.whatsapp_number, country);
+    }
     return this.whatsApp.buildProductEnquiryUrl(product.product_name, biz.whatsapp_number, country);
   }
 
@@ -215,6 +233,11 @@ export class StorefrontProductDetail implements OnInit {
     const biz = this.context.detail()?.business;
     if (!product || !biz) return;
     const country = biz.address?.country_code ?? biz.country_code;
-    this.whatsApp.openProductEnquiry(product.product_name, biz.whatsapp_number, country);
+    const showPrice = this.context.detail()?.storefront?.show_prices;
+    if (!showPrice || !this.hasValidPrice(product.selling_price)) {
+      this.whatsApp.openProductPriceEnquiry(product.product_name, biz.whatsapp_number, country);
+    } else {
+      this.whatsApp.openProductEnquiry(product.product_name, biz.whatsapp_number, country);
+    }
   }
 }

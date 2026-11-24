@@ -1147,3 +1147,177 @@ h1 {
   font-size: 0.72rem;
   color: var(--text-secondary);
 }
+
+/* Subscription Proof Review & Locked State Banners */
+.proof-locked-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: #166534;
+  margin-bottom: 14px;
+
+  .banner-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  strong {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+}
+
+.proof-rejected-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fef2f2;
+  border: 1.5px solid #fca5a5;
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: #991b1b;
+  margin-bottom: 14px;
+
+  .banner-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  strong {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+}
+
+.proof-pending-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 14px 16px;
+  color: #1e40af;
+  margin-bottom: 14px;
+
+  .banner-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  strong {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+}
+
+.proofs-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+
+  h4 {
+    font-size: 0.8125rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin: 0 0 4px;
+  }
+
+  .proof-history-card {
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    .proof-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8125rem;
+
+      .proof-status-pill {
+        font-size: 0.6875rem;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--surface-subtle);
+        color: var(--text-secondary);
+
+        &.verified {
+          background: #dcfce7;
+          color: #15803d;
+        }
+
+        &.rejected {
+          background: #fee2e2;
+          color: #b91c1c;
+        }
+      }
+    }
+
+    .proof-date-row {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .proof-file-row {
+      margin-top: 2px;
+
+      .btn-view-receipt {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        color: var(--brand);
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+
+    .proof-notes-row {
+      font-size: 0.75rem;
+      color: #b91c1c;
+      background: #fef2f2;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+  }
+}
+
