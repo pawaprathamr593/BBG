@@ -255,9 +255,12 @@
   align-items: center;
   gap: 11px;
   padding: 13px 15px;
-  border: 1px solid var(--bbg-border-default, var(--border));
-  border-radius: var(--bbg-radius-md, 8px);
-  background: var(--bbg-surface-card, var(--surface-card));
+  border: 1px solid var(--bbg-glass-border, var(--bbg-border-default, var(--border)));
+  border-radius: var(--bbg-radius-lg, 12px);
+  background: var(--bbg-glass-bg-elevated, var(--bbg-surface-card, var(--surface-card)));
+  backdrop-filter: var(--bbg-glass-blur-sm);
+  -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+  box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
   color: var(--bbg-text-primary, var(--text-primary));
   text-decoration: none;
   transition:

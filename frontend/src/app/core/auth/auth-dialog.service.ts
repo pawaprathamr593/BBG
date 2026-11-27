@@ -9,6 +9,7 @@ export interface AuthDialogState {
   left: number;
   placement: 'bottom' | 'top';
   arrowOffset: number;
+  hasAnchor?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -38,28 +39,40 @@ export class AuthDialogService {
   ): void {
     this.pendingAction = onAuthenticated ?? null;
     const width = Math.min(360, window.innerWidth - 24);
-    const height = Math.min(440, window.innerHeight - 24);
-    const gap = 12;
-    let top = Math.max(12, (window.innerHeight - height) / 2);
-    let left = Math.max(12, (window.innerWidth - width) / 2);
+    const estimatedHeight = 320;
+    const headerHeight = 56;
+    const gap = 10;
+    const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    const scrollX = window.scrollX || window.pageXOffset || document.documentElement.scrollLeft || 0;
+    const hasAnchor = !!anchor;
+
+    let top = scrollY + Math.max(headerHeight + 12, (window.innerHeight - estimatedHeight) / 2);
+    let left = scrollX + Math.max(12, (window.innerWidth - width) / 2);
     let placement: AuthDialogState['placement'] = 'bottom';
     let arrowOffset = 40;
+
     if (anchor) {
       const rect = anchor.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
-      left = Math.min(Math.max(12, centerX - width / 2), window.innerWidth - width - 12);
-      top = rect.bottom + gap;
-      if (top + height > window.innerHeight - 12) {
-        top = rect.top - height - gap;
+      const viewportLeft = Math.min(
+        Math.max(12, centerX - width / 2),
+        window.innerWidth - width - 12,
+      );
+      left = viewportLeft + scrollX;
+
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top - headerHeight;
+
+      if (spaceBelow < estimatedHeight + gap && spaceAbove > spaceBelow) {
         placement = 'top';
+        top = Math.max(scrollY + headerHeight + 12, rect.top + scrollY - gap);
+      } else {
+        placement = 'bottom';
+        top = Math.max(scrollY + headerHeight + 12, rect.bottom + scrollY + gap);
       }
-      if (top < 12) {
-        top = Math.max(12, Math.min(rect.top, window.innerHeight - height - 12));
-        placement = rect.bottom < window.innerHeight / 2 ? 'bottom' : 'top';
-      }
-      arrowOffset = Math.min(Math.max(centerX - left, 24), width - 24);
+      arrowOffset = Math.min(Math.max(centerX - viewportLeft, 24), width - 24);
     }
-    this.state.set({ reason, mode, top, left, placement, arrowOffset });
+    this.state.set({ reason, mode, top, left, placement, arrowOffset, hasAnchor });
   }
 
   close(): void {

@@ -19,6 +19,7 @@ import { StorefrontSeoService } from './storefront-seo.service';
 import { WhatsAppService } from '../../core/whatsapp/whatsapp.service';
 import { ProductCard } from '../../shared/components/product-card/product-card';
 import { PromotionCard } from '../../shared/components/promotion-card/promotion-card';
+import { InfiniteScrollSentinelComponent } from '../../shared/components/infinite-scroll-sentinel/infinite-scroll-sentinel.component';
 import { SkeletonLoaderComponent } from '../../shared/components/skeleton-loader/skeleton-loader.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import {
@@ -33,7 +34,14 @@ import type {
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-storefront-home',
-  imports: [RouterLink, ProductCard, PromotionCard, SkeletonLoaderComponent, EmptyStateComponent],
+  imports: [
+    RouterLink,
+    ProductCard,
+    PromotionCard,
+    InfiniteScrollSentinelComponent,
+    SkeletonLoaderComponent,
+    EmptyStateComponent,
+  ],
   templateUrl: './storefront-home.html',
   styleUrl: './storefront-home.scss',
 })
@@ -45,6 +53,11 @@ export class StorefrontHome {
   private readonly whatsApp = inject(WhatsAppService);
   readonly products = signal<MarketplaceProduct[]>([]);
   readonly promotions = signal<MarketplacePromotion[]>([]);
+  readonly promotionsPage = signal(1);
+  readonly promotionsPageSize = 3;
+  readonly promotionsTotal = signal(0);
+  readonly promotionsLoadingMore = signal(false);
+  readonly hasMorePromotions = computed(() => this.promotions().length < this.promotionsTotal());
   readonly loading = signal(true);
   readonly selectedCategory = signal('all');
   readonly shareFeedback = signal('');
@@ -65,9 +78,7 @@ export class StorefrontHome {
       : this.products().filter((item) => item.category_name === this.selectedCategory())
     ).slice(0, 3),
   );
-  readonly visiblePromotions = computed<MarketplacePromotion[]>(() =>
-    this.promotions().slice(0, 3),
-  );
+  readonly visiblePromotions = computed<MarketplacePromotion[]>(() => this.promotions());
   readonly filteredProductCards = computed<ProductCardModel[]>(() => {
     const detail = this.context.detail();
     return this.filteredProducts().map((product) =>
@@ -120,7 +131,7 @@ export class StorefrontHome {
       ? firstValueFrom(this.api.listStorefrontProducts(slug, 1, 50, '', { sort: 'newest' }))
       : Promise.resolve(null);
     const promotionPromise = this.promotionsEnabled()
-      ? firstValueFrom(this.api.getStorefrontPromotions(slug, 1, 3))
+      ? firstValueFrom(this.api.getStorefrontPromotions(slug, 1, this.promotionsPageSize))
       : Promise.resolve(null);
 
     const [productResult, promotionResult] = await Promise.allSettled([
@@ -141,9 +152,36 @@ export class StorefrontHome {
       promotionResult.value.status === 'SUCCESS' &&
       !Array.isArray(promotionResult.value.data)
     ) {
-      this.promotions.set(promotionResult.value.data.items || []);
+      const items = promotionResult.value.data.items || [];
+      this.promotions.set(items);
+      this.promotionsTotal.set(promotionResult.value.data.pagination?.total ?? items.length);
     }
     this.loading.set(false);
+  }
+
+  async loadMorePromotions(): Promise<void> {
+    const slug = this.context.detail()?.business.business_slug;
+    if (!slug || this.promotionsLoadingMore() || !this.hasMorePromotions()) return;
+    const nextPage = this.promotionsPage() + 1;
+    this.promotionsLoadingMore.set(true);
+    try {
+      const result = await firstValueFrom(
+        this.api.getStorefrontPromotions(slug, nextPage, this.promotionsPageSize),
+      );
+      if (result.status === 'SUCCESS' && result.data && !Array.isArray(result.data)) {
+        const items = result.data.items || [];
+        this.promotionsPage.set(nextPage);
+        this.promotions.update((existing) => {
+          const seen = new Set(existing.map((p) => p.id));
+          return [...existing, ...items.filter((p) => !seen.has(p.id))];
+        });
+        this.promotionsTotal.set(result.data.pagination?.total ?? this.promotions().length);
+      }
+    } catch {
+      // Keep currently displayed promotions on transient failure.
+    } finally {
+      this.promotionsLoadingMore.set(false);
+    }
   }
 
   private businessSchema(data: MarketplaceBusinessDetail): Record<string, unknown> {

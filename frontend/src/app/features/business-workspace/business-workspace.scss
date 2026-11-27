@@ -121,11 +121,14 @@
 .application-card {
   width: 100%;
   box-sizing: border-box;
-  background: var(--bbg-surface-subtle);
-  border: 1px solid var(--bbg-border-default);
-  border-radius: var(--bbg-radius-lg, 12px);
+  background: var(--bbg-glass-bg-elevated, var(--bbg-surface-subtle));
+  backdrop-filter: var(--bbg-glass-blur-sm);
+  -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+  border: 1px solid var(--bbg-glass-border, var(--bbg-border-default));
+  border-radius: var(--bbg-radius-xl, 16px);
+  box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
   padding: clamp(18px, 2vw, 24px);
-  transition: all 0.2s ease;
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 
   &:hover {
     border-color: color-mix(in srgb, var(--bbg-brand-primary) 50%, var(--bbg-border-default));
@@ -150,7 +153,7 @@
     align-items: center;
     gap: 14px;
     flex: 1;
-    min-width: 260px;
+    min-width: 0;
   }
 
   .business-avatar-box {

@@ -1,11 +1,11 @@
 <main class="page">
-  <section class="intro">
-    <p class="eyebrow">THE BBG COMMUNITY</p>
-    <h1>Discover <span>businesses</span></h1>
-    <p class="lead">
-      Find businesses, explore what they offer and connect with the people behind them.
-    </p>
-  </section>
+  <app-page-banner
+    variant="discovery"
+    eyebrow="Bavdhan Business Group"
+    title="Discover"
+    titleAccent="businesses"
+    description="Find businesses, explore what they offer and connect with the people behind them."
+  />
   <section class="results" aria-labelledby="results-title">
     <div class="heading">
       <div>
@@ -95,11 +95,13 @@
           <app-business-card [business]="business" (selected)="openBusiness($event)" />
         }
       </div>
-      <app-pagination
-        [currentPage]="page()"
+      <app-infinite-scroll-sentinel
+        [hasMore]="hasMore()"
+        [loadingMore]="loadingMore()"
+        [loadedCount]="businessCards().length"
         [totalItems]="total()"
-        [pageSize]="pageSize"
-        (pageChange)="changePage($event)"
+        itemLabel="businesses"
+        (loadMore)="loadMore()"
       />
     } @else {
       <app-empty-state

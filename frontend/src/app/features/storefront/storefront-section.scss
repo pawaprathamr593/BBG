@@ -536,9 +536,12 @@
 .about-aside {
   align-self: start;
   padding: 26px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface-card);
+  border: 1px solid var(--bbg-glass-border, var(--border));
+  border-radius: var(--bbg-radius-xl, 16px);
+  background: var(--bbg-glass-bg-elevated, var(--surface-card));
+  backdrop-filter: var(--bbg-glass-blur-sm);
+  -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+  box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
 }
 .about-aside .section-label {
   margin-bottom: 20px;
@@ -657,9 +660,12 @@
   flex-direction: column;
   align-items: flex-start;
   padding: 19px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-card);
+  border: 1px solid var(--bbg-glass-border, var(--border));
+  border-radius: var(--bbg-radius-xl, 16px);
+  background: var(--bbg-glass-bg-elevated, var(--surface-card));
+  backdrop-filter: var(--bbg-glass-blur-sm);
+  -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+  box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
   color: var(--text-primary);
   text-decoration: none;
   transition:
@@ -717,9 +723,12 @@
 .address-panel {
   align-self: start;
   padding: 27px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface-card);
+  border: 1px solid var(--bbg-glass-border, var(--border));
+  border-radius: var(--bbg-radius-xl, 16px);
+  background: var(--bbg-glass-bg-elevated, var(--surface-card));
+  backdrop-filter: var(--bbg-glass-blur-sm);
+  -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+  box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
 }
 .address-panel-top {
   display: flex;

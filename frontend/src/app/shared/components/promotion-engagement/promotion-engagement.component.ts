@@ -1,7 +1,8 @@
-import { DatePipe } from '@angular/common';
+import { DOCUMENT, DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   OnInit,
   computed,
@@ -43,6 +44,8 @@ export class PromotionEngagementComponent implements OnInit {
   private readonly api = inject(EngagementApiService);
   private readonly auth = inject(AuthService);
   private readonly authDialog = inject(AuthDialogService);
+  private readonly document = inject(DOCUMENT);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly postId = input.required<number>();
   readonly postTitle = input<string>('Promotion');
@@ -62,6 +65,13 @@ export class PromotionEngagementComponent implements OnInit {
 
   // Reaction Picker
   protected readonly showReactionPicker = signal(false);
+  protected readonly dragHoveredReaction = signal<ReactionType | null>(null);
+  private pointerDownActive = false;
+  private longPressTriggered = false;
+  private suppressNextClick = false;
+  private pressTimer: ReturnType<typeof setTimeout> | null = null;
+  private hoverCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private removePointerListeners: (() => void) | null = null;
   protected readonly reactionConfigs: ReactionConfig[] = [
     { type: 'LIKE', emoji: '👍', label: 'Like', color: 'var(--bbg-brand-primary)' },
     { type: 'LOVE', emoji: '❤️', label: 'Love', color: 'var(--bbg-danger)' },
@@ -158,6 +168,7 @@ export class PromotionEngagementComponent implements OnInit {
         void this.loadSummary();
       }
     });
+    this.destroyRef.onDestroy(() => this.cleanupPointerTracking());
   }
 
   async ngOnInit(): Promise<void> {
@@ -184,14 +195,122 @@ export class PromotionEngagementComponent implements OnInit {
   }
 
   protected openReactionPicker(): void {
+    if (this.hoverCloseTimer) {
+      clearTimeout(this.hoverCloseTimer);
+      this.hoverCloseTimer = null;
+    }
     this.showReactionPicker.set(true);
   }
 
   protected closeReactionPicker(): void {
+    if (this.pointerDownActive) return;
+    if (this.hoverCloseTimer) {
+      clearTimeout(this.hoverCloseTimer);
+    }
+    this.hoverCloseTimer = setTimeout(() => {
+      this.hoverCloseTimer = null;
+      this.showReactionPicker.set(false);
+      this.dragHoveredReaction.set(null);
+    }, 180);
+  }
+
+  private forceCloseReactionPicker(): void {
+    if (this.hoverCloseTimer) {
+      clearTimeout(this.hoverCloseTimer);
+      this.hoverCloseTimer = null;
+    }
     this.showReactionPicker.set(false);
+    this.dragHoveredReaction.set(null);
+  }
+
+  protected onReactionPointerDown(event: PointerEvent): void {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    this.cleanupPointerTracking();
+
+    const anchor = (event.currentTarget as HTMLElement) ?? null;
+    const startY = event.clientY;
+    this.pointerDownActive = true;
+    this.longPressTriggered = false;
+    this.suppressNextClick = false;
+    this.dragHoveredReaction.set(null);
+
+    this.pressTimer = setTimeout(() => {
+      this.longPressTriggered = true;
+      this.openReactionPicker();
+    }, 650);
+
+    const win = this.document.defaultView;
+    if (!win) return;
+
+    const handleMove = (moveEvent: PointerEvent) => {
+      if (!this.pointerDownActive) return;
+      if (moveEvent.clientY < startY - 10 && !this.showReactionPicker()) {
+        this.longPressTriggered = true;
+        this.openReactionPicker();
+      }
+      if (this.showReactionPicker()) {
+        const hit = this.document
+          .elementFromPoint(moveEvent.clientX, moveEvent.clientY)
+          ?.closest('[data-reaction]');
+        const reaction = hit?.getAttribute('data-reaction') as ReactionType | null;
+        this.dragHoveredReaction.set(reaction ?? null);
+      }
+    };
+
+    const handleUp = (upEvent: PointerEvent) => {
+      const wasLongPress = this.longPressTriggered;
+      const hit = this.showReactionPicker()
+        ? this.document
+            .elementFromPoint(upEvent.clientX, upEvent.clientY)
+            ?.closest('[data-reaction]')
+        : null;
+      const chosen = (hit?.getAttribute('data-reaction') as ReactionType | null) ?? this.dragHoveredReaction();
+
+      this.cleanupPointerTracking();
+
+      if (wasLongPress) {
+        this.suppressNextClick = true;
+        setTimeout(() => {
+          this.suppressNextClick = false;
+        }, 0);
+        if (chosen) {
+          void this.selectReaction(chosen, anchor);
+        } else {
+          this.openReactionPicker();
+        }
+      }
+    };
+
+    win.addEventListener('pointermove', handleMove, { passive: true });
+    win.addEventListener('pointerup', handleUp, { once: true });
+    win.addEventListener('pointercancel', handleUp, { once: true });
+    this.removePointerListeners = () => {
+      win.removeEventListener('pointermove', handleMove);
+      win.removeEventListener('pointerup', handleUp);
+      win.removeEventListener('pointercancel', handleUp);
+    };
+  }
+
+  private cleanupPointerTracking(): void {
+    if (this.pressTimer) {
+      clearTimeout(this.pressTimer);
+      this.pressTimer = null;
+    }
+    if (this.hoverCloseTimer) {
+      clearTimeout(this.hoverCloseTimer);
+      this.hoverCloseTimer = null;
+    }
+    this.removePointerListeners?.();
+    this.removePointerListeners = null;
+    this.pointerDownActive = false;
+    this.dragHoveredReaction.set(null);
   }
 
   protected async onQuickLikeClick(event?: Event): Promise<void> {
+    if (this.suppressNextClick) {
+      this.suppressNextClick = false;
+      return;
+    }
     const anchor = (event?.currentTarget as HTMLElement) ?? null;
     const current = this.summary().user_reaction;
     const targetType: ReactionType = current ? current : 'LIKE';
@@ -205,7 +324,7 @@ export class PromotionEngagementComponent implements OnInit {
     if (this.inFlightReaction()) {
       return;
     }
-    this.closeReactionPicker();
+    this.forceCloseReactionPicker();
 
     void this.authDialog.requireAuthentication(
       'Sign in to react to this promotional post',

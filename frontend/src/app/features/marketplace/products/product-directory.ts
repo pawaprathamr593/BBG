@@ -15,7 +15,8 @@ import {
 } from '../../../core/marketplace/marketplace-api.service';
 import { FilterDrawer } from '../../../shared/filter-drawer/filter-drawer';
 import { ProductCard } from '../../../shared/components/product-card/product-card';
-import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { PageBannerComponent } from '../../../shared/components/page-banner/page-banner.component';
+import { InfiniteScrollSentinelComponent } from '../../../shared/components/infinite-scroll-sentinel/infinite-scroll-sentinel.component';
 import { SkeletonLoaderComponent } from '../../../shared/components/skeleton-loader/skeleton-loader.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import {
@@ -45,7 +46,8 @@ type ProductFilterKey = keyof ProductFilterValues;
     FormsModule,
     FilterDrawer,
     ProductCard,
-    PaginationComponent,
+    PageBannerComponent,
+    InfiniteScrollSentinelComponent,
     SkeletonLoaderComponent,
     EmptyStateComponent,
   ],
@@ -97,12 +99,13 @@ export class ProductDirectory implements OnInit {
     this.products().map((product) => mapMarketplaceProductToCardModel(product)),
   );
   protected readonly loading = signal(true);
+  protected readonly loadingMore = signal(false);
   protected readonly error = signal('');
   protected readonly filterNotice = signal('');
   protected readonly total = signal(0);
   protected readonly page = signal(1);
-  protected readonly pageSize = 3;
-  protected readonly pages = signal(1);
+  protected readonly pageSize = 6;
+  protected readonly hasMore = computed(() => this.products().length < this.total());
   private latitude: number | undefined;
   private longitude: number | undefined;
 
@@ -248,13 +251,18 @@ export class ProductDirectory implements OnInit {
     };
   }
 
-  protected changePage(value: number): void {
-    this.page.set(value);
-    this.load();
+  protected loadMore(): void {
+    if (this.loading() || this.loadingMore() || !this.hasMore()) return;
+    this.page.update((p) => p + 1);
+    this.load(true);
   }
 
-  protected load(): void {
-    this.loading.set(true);
+  protected load(append = false): void {
+    if (append) {
+      this.loadingMore.set(true);
+    } else {
+      this.loading.set(true);
+    }
     this.error.set('');
     const applied = this.appliedFilters();
     const filters = {
@@ -276,25 +284,35 @@ export class ProductDirectory implements OnInit {
     this.api.listProducts(filters, this.page(), this.pageSize).subscribe({
       next: (response) => {
         if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
-          this.error.set(
-            response.msgArr?.join(' ') || 'Product listings are currently unavailable.',
-          );
-          this.products.set([]);
-          this.total.set(0);
-          this.pages.set(1);
+          if (!append) {
+            this.error.set(
+              response.msgArr?.join(' ') || 'Product listings are currently unavailable.',
+            );
+            this.products.set([]);
+            this.total.set(0);
+          }
         } else {
           const data = response.data;
-          this.products.set(data.items ?? []);
-          this.total.set(data.pagination?.total ?? data.items?.length ?? 0);
-          this.pages.set(
-            Math.max(1, Math.ceil(this.total() / (data.pagination?.page_size || this.pageSize))),
-          );
+          const items = data.items ?? [];
+          if (append) {
+            this.products.update((existing) => {
+              const seen = new Set(existing.map((p) => p.id));
+              return [...existing, ...items.filter((p) => !seen.has(p.id))];
+            });
+          } else {
+            this.products.set(items);
+          }
+          this.total.set(data.pagination?.total ?? items.length);
         }
         this.loading.set(false);
+        this.loadingMore.set(false);
       },
       error: () => {
-        this.error.set('We could not load products. Please try again.');
+        if (!append) {
+          this.error.set('We could not load products. Please try again.');
+        }
         this.loading.set(false);
+        this.loadingMore.set(false);
       },
     });
   }

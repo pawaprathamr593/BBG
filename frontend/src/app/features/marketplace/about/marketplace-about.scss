@@ -1,6 +1,6 @@
 :host {
   display: block;
-  background: var(--surface-page);
+  background: transparent;
   color: var(--text-primary);
 }
 
@@ -17,24 +17,14 @@
   overflow: hidden;
   padding: 80px max(24px, calc((100vw - 1280px) / 2)) 88px;
   color: #ffffff;
-  background: linear-gradient(135deg, #0a2418 0%, #123f2c 48%, #174d35 100%);
+  background:
+    radial-gradient(ellipse 60% 65% at 14% 18%, rgba(33, 140, 131, 0.34), transparent 62%),
+    radial-gradient(ellipse 50% 55% at 86% 12%, rgba(245, 217, 40, 0.14), transparent 58%),
+    linear-gradient(135deg, #0a2418 0%, #123f2c 48%, #174d35 100%);
   border-radius: 0 0 var(--bbg-radius-2xl, 24px) var(--bbg-radius-2xl, 24px);
-  box-shadow: 0 20px 52px rgba(10, 36, 24, 0.16);
-
-  &::before {
-    position: absolute;
-    z-index: -1;
-    top: -160px;
-    right: 8%;
-    width: 440px;
-    height: 440px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 50%;
-    box-shadow:
-      0 0 0 40px rgba(255, 255, 255, 0.03),
-      0 0 0 84px rgba(255, 255, 255, 0.02);
-    content: '';
-  }
+  box-shadow:
+    0 24px 60px rgba(10, 36, 24, 0.16),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12);
 
   > * {
     position: relative;

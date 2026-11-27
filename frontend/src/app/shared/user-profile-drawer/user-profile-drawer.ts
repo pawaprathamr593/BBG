@@ -25,10 +25,10 @@ import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
         place-items: center;
         overflow: hidden;
         padding: 0;
-        border: 2px solid var(--border);
+        border: 2px solid rgba(255, 255, 255, 0.35);
         border-radius: 50%;
-        background: var(--surface-subtle);
-        color: var(--text-primary);
+        background: var(--bbg-brand-accent, #f5d928);
+        color: #000000;
         font: inherit;
         font-size: 0.82rem;
         font-weight: 800;
@@ -39,7 +39,7 @@ import { WorkspaceDrawer } from '../workspace-drawer/workspace-drawer';
       }
       .profile-trigger:hover {
         transform: translateY(-1px);
-        border-color: var(--brand);
+        border-color: #ffffff;
       }
       .profile-trigger img {
         width: 100%;

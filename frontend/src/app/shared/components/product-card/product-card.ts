@@ -26,6 +26,7 @@ export class ProductCardComponent {
   readonly showPrice = input(true);
   readonly currency = input('₹');
   readonly showCreated = input(false);
+  readonly showStoreDetails = input(true);
   readonly actionLabel = input('View Details');
 
   readonly selected = output<ProductCardModel>();

@@ -89,16 +89,19 @@ describe('PromotionCard', () => {
     expect(engagementElements.length).toBe(1);
   });
 
-  it('should display business monogram, name, category, location, and visible report icon (no 3-dot menu)', () => {
-    const monogram = fixture.nativeElement.querySelector('.business-monogram');
-    expect(monogram.textContent.trim()).toBe('AI');
+  it('should omit storefront details, render post title above the image, and show visible report icon', () => {
+    expect(fixture.nativeElement.querySelector('.business-monogram')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.business-name-link')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.post-meta-subline')).toBeNull();
 
-    const businessLink = fixture.nativeElement.querySelector('.business-name-link');
-    expect(businessLink.textContent).toContain('Apex Industrial Solutions');
-
-    const metaSubline = fixture.nativeElement.querySelector('.post-meta-subline');
-    expect(metaSubline.textContent).toContain('Industrial Supplies');
-    expect(metaSubline.textContent).toContain('Pune, Maharashtra');
+    const card = fixture.nativeElement.querySelector('.bbg-promotion-card') as HTMLElement;
+    const title = card.querySelector('.post-title') as HTMLElement;
+    const media = card.querySelector('.card-media-frame') as HTMLElement;
+    expect(title).toBeTruthy();
+    expect(media).toBeTruthy();
+    expect(
+      title.compareDocumentPosition(media) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
 
     const reportBtn = fixture.nativeElement.querySelector('.btn-report-post') as HTMLButtonElement;
     expect(reportBtn).toBeTruthy();

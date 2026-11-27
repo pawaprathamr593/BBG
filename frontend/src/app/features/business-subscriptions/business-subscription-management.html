@@ -70,6 +70,43 @@
         </section>
       }
 
+      <!-- REJECTED REQUEST BANNER / CARD -->
+      @if (rejectedSubscription(); as rejected) {
+        <section class="rejected-request-card" role="alert">
+          <div class="rejected-badge-row">
+            <span class="status-pill rejected">● ACTION REQUIRED: REJECTED</span>
+            <span class="pending-tag">Request ID #{{ rejected.id }}</span>
+          </div>
+          <div class="pending-content-grid">
+            <div class="pending-details">
+              <h3>{{ rejected.plan_name }} Request Rejected</h3>
+              <p class="pending-desc">
+                {{
+                  rejected.rejection_reason ||
+                    'Your payment proof could not be verified. Please upload an updated receipt or switch to another plan.'
+                }}
+              </p>
+              <div class="pending-meta-strip">
+                <span><strong>Amount:</strong> {{ rejected.currency }} {{ rejected.amount }}</span>
+                <span><strong>Cycle:</strong> {{ rejected.billing_cycle }}</span>
+              </div>
+            </div>
+            <div class="pending-action-side">
+              <button class="btn-primary" type="button" (click)="openDetail(rejected)">
+                Resubmit Updated Info →
+              </button>
+              <button
+                class="btn-detail-secondary"
+                type="button"
+                (click)="openRenewalDrawer(rejected)"
+              >
+                Switch Plan
+              </button>
+            </div>
+          </div>
+        </section>
+      }
+
       <!-- ACTIVE SUBSCRIPTION HERO CARD -->
       @if (activeSubscription(); as active) {
         <section
@@ -410,7 +447,7 @@
   @if (drawerOpen()) {
     <div class="drawer-backdrop" (click)="closeDrawer()" aria-hidden="true"></div>
     <aside
-      class="subscription-drawer"
+      class="subscription-drawer checkout-drawer"
       role="dialog"
       aria-modal="true"
       aria-labelledby="drawer-title"
@@ -419,7 +456,7 @@
         <div>
           <p class="drawer-kicker">SUBSCRIPTION CHECKOUT</p>
           <h2 id="drawer-title">
-            {{ drawerMode() === 'renewal' ? 'Renew Subscription' : 'Upgrade Subscription Tier' }}
+            {{ drawerMode() === 'renewal' ? 'Renew Subscription' : 'Switch or Upgrade Plan' }}
           </h2>
         </div>
         <button
@@ -439,10 +476,44 @@
         </div>
       }
 
+      @if (pendingSubscription(); as pending) {
+        <div class="drawer-notice info" role="status">
+          <span aria-hidden="true">ℹ️</span>
+          <span>
+            Submitting will automatically replace your pending request (#{{ pending.id }} —
+            {{ pending.plan_name }}).
+          </span>
+        </div>
+      }
+
       <div class="drawer-body">
-        <!-- Plan Switcher: lets user switch plan right here without error! -->
+        <!-- Interactive Plan Cards + Accessible Select -->
         <div class="drawer-field-group">
-          <label for="drawer-plan-select" class="drawer-label">Selected Subscription Plan</label>
+          <label for="drawer-plan-select" class="drawer-label">1. Choose Subscription Plan</label>
+          @if (plans().length > 1) {
+            <div class="drawer-plan-cards" role="radiogroup" aria-label="Available subscription plans">
+              @for (plan of plans(); track plan.id) {
+                <button
+                  type="button"
+                  class="drawer-plan-option"
+                  [class.selected]="selectedPlan()?.id === plan.id"
+                  (click)="selectPlanInDrawer(plan)"
+                  [disabled]="drawerBusy()"
+                >
+                  <div class="option-top">
+                    <span class="option-name">{{ plan.plan_name }}</span>
+                    @if (activeSubscription()?.plan_id === plan.id) {
+                      <span class="option-tag">Current</span>
+                    }
+                  </div>
+                  <div class="option-price">
+                    <strong>{{ plan.currency }} {{ plan.price }}</strong>
+                    <span>/ {{ plan.billing_cycle }}</span>
+                  </div>
+                </button>
+              }
+            </div>
+          }
           <select
             id="drawer-plan-select"
             class="drawer-select"
@@ -556,7 +627,11 @@
             </span>
             <label class="drawer-dropzone">
               <div class="dropzone-inner">
-                <span class="dropzone-icon" aria-hidden="true">📄</span>
+                @if (drawerProofPreviewUrl(); as previewUrl) {
+                  <img class="dropzone-preview-img" [src]="previewUrl" alt="Selected receipt preview" />
+                } @else {
+                  <span class="dropzone-icon" aria-hidden="true">📄</span>
+                }
                 @if (drawerProofFile(); as file) {
                   <span class="dropzone-filename">{{ file.name }}</span>
                   <span class="dropzone-hint">Click to replace receipt</span>
@@ -775,6 +850,24 @@
 
               <div class="resubmit-proof-form">
                 <h5>Upload Revised Receipt to Resubmit</h5>
+                @if (plans().length > 1) {
+                  <label class="drawer-field">
+                    <span class="drawer-label">Subscription Plan</span>
+                    <select
+                      class="drawer-select"
+                      [value]="resubmitPlanId() || sub.plan_id"
+                      (change)="resubmitPlanId.set(+$any($event.target).value)"
+                      [disabled]="resubmitting()"
+                    >
+                      @for (plan of plans(); track plan.id) {
+                        <option [value]="plan.id">
+                          {{ plan.plan_name }} — {{ plan.currency }} {{ plan.price }} /
+                          {{ plan.billing_cycle }}
+                        </option>
+                      }
+                    </select>
+                  </label>
+                }
                 <label class="drawer-field">
                   <span class="drawer-label">Payment Reference / UTR Number (optional)</span>
                   <input
@@ -793,7 +886,15 @@
                   >
                   <label class="drawer-dropzone">
                     <div class="dropzone-inner">
-                      <span class="dropzone-icon" aria-hidden="true">📄</span>
+                      @if (resubmitProofPreviewUrl(); as previewUrl) {
+                        <img
+                          class="dropzone-preview-img"
+                          [src]="previewUrl"
+                          alt="Revised receipt preview"
+                        />
+                      } @else {
+                        <span class="dropzone-icon" aria-hidden="true">📄</span>
+                      }
                       @if (resubmitProofFile(); as file) {
                         <span class="dropzone-filename">{{ file.name }}</span>
                         <span class="dropzone-hint">Click to replace receipt</span>

@@ -19,6 +19,7 @@ import {
 } from '../../core/marketplace/marketplace-api.service';
 import { FilterDrawer } from '../../shared/filter-drawer/filter-drawer';
 import { ProductCard } from '../../shared/components/product-card/product-card';
+import { InfiniteScrollSentinelComponent } from '../../shared/components/infinite-scroll-sentinel/infinite-scroll-sentinel.component';
 import {
   buildProductRouteSlug,
   mapMarketplaceProductToCardModel,
@@ -46,7 +47,7 @@ type ProductFilterKey = keyof ProductFilterValues;
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-storefront-section',
-  imports: [FormsModule, RouterLink, FilterDrawer, ProductCard],
+  imports: [FormsModule, RouterLink, FilterDrawer, ProductCard, InfiniteScrollSentinelComponent],
   templateUrl: './storefront-section.html',
   styleUrl: './storefront-section.scss',
 })
@@ -66,8 +67,11 @@ export class StorefrontSection {
     return this.products().map((product) => mapMarketplaceProductToCardModel(product, detail));
   });
   readonly loading = signal(true);
+  readonly loadingMore = signal(false);
   readonly searchTerm = signal('');
-  readonly pagination = signal({ page: 1, page_size: 3, total: 0 });
+  readonly pageSize = 6;
+  readonly pagination = signal({ page: 1, page_size: 6, total: 0 });
+  readonly hasMore = computed(() => this.products().length < this.pagination().total);
   readonly skeletons = [1, 2, 3];
   readonly loadError = signal('');
   readonly categories = signal<MarketplaceCategory[]>([]);
@@ -423,24 +427,27 @@ export class StorefrontSection {
     });
   }
 
-  changePage(page: number): void {
-    if (page < 1 || page > this.totalPages || this.loading()) return;
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { page, q: this.searchTerm().trim() || null },
-      queryParamsHandling: 'merge',
-    });
+  loadMore(): void {
+    if (this.loading() || this.loadingMore() || !this.hasMore()) return;
+    const nextPage = this.pagination().page + 1;
+    void this.loadProducts(nextPage, this.searchTerm(), true);
   }
 
-  async loadProducts(page: number, search = this.searchTerm()): Promise<void> {
+  async loadProducts(page: number, search = this.searchTerm(), append = false): Promise<void> {
     const slug = this.context.detail()?.business.business_slug;
     if (!slug) {
       this.loading.set(false);
+      this.loadingMore.set(false);
       return;
     }
-    this.loading.set(true);
+    if (append) {
+      this.loadingMore.set(true);
+    } else {
+      this.loading.set(true);
+    }
     this.loadError.set('');
     this.searchTerm.set(search);
+    const currentPageSize = this.pageSize;
     try {
       const applied = this.appliedFilters();
       const filters = {
@@ -459,29 +466,39 @@ export class StorefrontSection {
           : {}),
       };
       const response = await firstValueFrom(
-        this.api.listStorefrontProducts(slug, page, 3, search.trim(), filters),
+        this.api.listStorefrontProducts(slug, page, currentPageSize, search.trim(), filters),
       );
       if (response.status === 'SUCCESS' && !Array.isArray(response.data)) {
-        const items = (response.data.items || []).slice(0, 3);
-        this.products.set(items);
+        const items = response.data.items || [];
+        if (append) {
+          this.products.update((existing) => {
+            const seen = new Set(existing.map((p) => p.id));
+            return [...existing, ...items.filter((p) => !seen.has(p.id))];
+          });
+        } else {
+          this.products.set(items);
+        }
         this.pagination.set(
           response.data.pagination || {
             page,
-            page_size: 3,
+            page_size: currentPageSize,
             total: items.length,
           },
         );
-      } else {
+      } else if (!append) {
         this.products.set([]);
-        this.pagination.set({ page: 1, page_size: 3, total: 0 });
+        this.pagination.set({ page: 1, page_size: currentPageSize, total: 0 });
         this.loadError.set('The product catalogue is currently unavailable. Please try again.');
       }
     } catch {
-      this.products.set([]);
-      this.pagination.set({ page: 1, page_size: 3, total: 0 });
-      this.loadError.set('We could not load the product catalogue. Please try again.');
+      if (!append) {
+        this.products.set([]);
+        this.pagination.set({ page: 1, page_size: currentPageSize, total: 0 });
+        this.loadError.set('We could not load the product catalogue. Please try again.');
+      }
     } finally {
       this.loading.set(false);
+      this.loadingMore.set(false);
     }
   }
 

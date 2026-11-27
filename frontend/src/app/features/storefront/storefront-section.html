@@ -193,7 +193,7 @@
           </div>
         } @else if (products().length) {
           <p class="results-summary" aria-live="polite">
-            Showing {{ resultStart }}–{{ resultEnd }} of {{ pagination().total }}
+            Showing {{ products().length }} of {{ pagination().total }}
             {{ pagination().total === 1 ? 'result' : 'results' }}
             @if (searchTerm().trim()) {
               <span>for “{{ searchTerm().trim() }}”</span>
@@ -208,37 +208,21 @@
                 [product]="product"
                 [showPrice]="data.storefront.show_prices"
                 [currency]="data.storefront.currency || ''"
+                [showStoreDetails]="false"
                 [actionLabel]="'View Details'"
                 (selected)="openProduct($event, data.business.business_slug)"
                 (businessSelected)="openBusiness($event)"
               />
             }
           </div>
-          @if (totalPages > 1) {
-            <nav class="pagination" aria-label="Product pages">
-              @if (pagination().page > 1) {
-                <a
-                  [routerLink]="[]"
-                  [queryParams]="{ page: pagination().page - 1, q: searchTerm().trim() || null }"
-                  >← Previous</a
-                >
-              } @else {
-                <span class="page-disabled">← Previous</span>
-              }
-              <span
-                >Page <strong>{{ pagination().page }}</strong> of {{ totalPages }}</span
-              >
-              @if (pagination().page < totalPages) {
-                <a
-                  [routerLink]="[]"
-                  [queryParams]="{ page: pagination().page + 1, q: searchTerm().trim() || null }"
-                  >Next →</a
-                >
-              } @else {
-                <span class="page-disabled">Next →</span>
-              }
-            </nav>
-          }
+          <app-infinite-scroll-sentinel
+            [hasMore]="hasMore()"
+            [loadingMore]="loadingMore()"
+            [loadedCount]="products().length"
+            [totalItems]="pagination().total"
+            itemLabel="products"
+            (loadMore)="loadMore()"
+          />
         } @else if (loadError()) {
           <div class="empty-state" role="alert">
             <span class="empty-icon" aria-hidden="true">!</span>

@@ -115,7 +115,7 @@
     }
 
     <!-- 4. Associated Business Information -->
-    @if (product().business?.business_name) {
+    @if (showStoreDetails() && product().business?.business_name) {
       <div class="associated-business-block">
         @if (hasValidBusinessLogo()) {
           <img
@@ -194,7 +194,7 @@
       </div>
 
       <!-- Dedicated Full-Width Explore Storefront Button -->
-      @if (hasBusinessSlug()) {
+      @if (showStoreDetails() && hasBusinessSlug()) {
         <button
           type="button"
           class="btn-explore-storefront"

@@ -66,6 +66,7 @@ export class BusinessSubscriptionManagement implements OnInit {
   readonly drawerMode = signal<'renewal' | 'upgrade'>('renewal');
   readonly drawerReference = signal('');
   readonly drawerProofFile = signal<File | null>(null);
+  readonly drawerProofPreviewUrl = signal<string | null>(null);
   readonly drawerBusy = signal(false);
   readonly drawerError = signal('');
   readonly cancellingPending = signal(false);
@@ -84,7 +85,9 @@ export class BusinessSubscriptionManagement implements OnInit {
   readonly detailError = signal('');
   readonly detailNotice = signal('');
   readonly resubmitReference = signal('');
+  readonly resubmitPlanId = signal<number>(0);
   readonly resubmitProofFile = signal<File | null>(null);
+  readonly resubmitProofPreviewUrl = signal<string | null>(null);
   readonly resubmitting = signal(false);
 
   activeSubscription(): ApplicationSubscription | null {
@@ -102,6 +105,11 @@ export class BusinessSubscriptionManagement implements OnInit {
 
   pendingSubscription(): ApplicationSubscription | null {
     return this.subscriptions().find((item) => item.subscription_status === 'PENDING') ?? null;
+  }
+
+  rejectedSubscription(): ApplicationSubscription | null {
+    if (this.pendingSubscription()) return null;
+    return this.subscriptions().find((item) => item.subscription_status === 'REJECTED') ?? null;
   }
 
   graceInfo(subscription?: ApplicationSubscription | null): GracePeriodInfo {
@@ -144,15 +152,7 @@ export class BusinessSubscriptionManagement implements OnInit {
       this.subscriptions.set(subscriptions);
       this.plans.set(plans);
       this.payment.set(pending);
-      if (pending && pending.subscription_status === 'PENDING') {
-        if (pending.latest_proof_review_status === 'PENDING') {
-          this.step.set('submitted');
-        } else {
-          this.step.set('overview');
-        }
-      } else {
-        this.step.set('overview');
-      }
+      this.step.set('overview');
     } catch (error) {
       this.error.set(this.auth.errorMessage(error));
     } finally {
@@ -232,13 +232,26 @@ export class BusinessSubscriptionManagement implements OnInit {
   closeDrawer(): void {
     this.drawerOpen.set(false);
     this.drawerError.set('');
+    this.revokePreviewUrl(this.drawerProofPreviewUrl());
+    this.drawerProofPreviewUrl.set(null);
     this.drawerProofFile.set(null);
     this.drawerReference.set('');
   }
 
   onDrawerProofSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.drawerProofFile.set(input.files?.[0] ?? null);
+    const file = input.files?.[0] ?? null;
+    this.revokePreviewUrl(this.drawerProofPreviewUrl());
+    this.drawerProofPreviewUrl.set(
+      file && file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+    );
+    this.drawerProofFile.set(file);
+  }
+
+  private revokePreviewUrl(url: string | null): void {
+    if (url && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+      URL.revokeObjectURL(url);
+    }
   }
 
   async copyUpiId(upiId: string): Promise<void> {
@@ -276,6 +289,11 @@ export class BusinessSubscriptionManagement implements OnInit {
     this.drawerBusy.set(true);
     this.drawerError.set('');
     try {
+      const existingPending = this.pendingSubscription();
+      if (existingPending) {
+        await this.api.cancelApplicationSubscription(this.tenantId, existingPending.id);
+      }
+
       const active = this.activeSubscription();
       const expired = this.expiredSubscription();
       let createdPending: ApplicationSubscription;
@@ -366,12 +384,20 @@ export class BusinessSubscriptionManagement implements OnInit {
     this.detailDrawerOpen.set(true);
     this.detailError.set('');
     this.detailNotice.set('');
+    this.resubmitPlanId.set(subscription.plan_id);
     this.resubmitReference.set('');
+    this.revokePreviewUrl(this.resubmitProofPreviewUrl());
+    this.resubmitProofPreviewUrl.set(null);
     this.resubmitProofFile.set(null);
     this.loadingDetail.set(true);
     try {
       const fullDetail = await this.api.getSubscriptionDetail(this.tenantId, subscription.id);
-      this.selectedDetail.set({ ...subscription, ...fullDetail });
+      const merged = { ...subscription, ...fullDetail };
+      this.selectedDetail.set(merged);
+      const latestRef = merged.proofs?.[0]?.payment_reference ?? '';
+      if (latestRef && !this.resubmitReference()) {
+        this.resubmitReference.set(latestRef);
+      }
     } catch {
       // Keep basic subscription info if detail API call fails
     } finally {
@@ -382,15 +408,23 @@ export class BusinessSubscriptionManagement implements OnInit {
   closeDetailDrawer(): void {
     this.detailDrawerOpen.set(false);
     this.selectedDetail.set(null);
+    this.revokePreviewUrl(this.resubmitProofPreviewUrl());
+    this.resubmitProofPreviewUrl.set(null);
     this.resubmitProofFile.set(null);
     this.resubmitReference.set('');
+    this.resubmitPlanId.set(0);
     this.detailError.set('');
     this.detailNotice.set('');
   }
 
   onResubmitFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.resubmitProofFile.set(input.files?.[0] ?? null);
+    const file = input.files?.[0] ?? null;
+    this.revokePreviewUrl(this.resubmitProofPreviewUrl());
+    this.resubmitProofPreviewUrl.set(
+      file && file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+    );
+    this.resubmitProofFile.set(file);
   }
 
   async submitResubmittedProof(): Promise<void> {
@@ -413,21 +447,40 @@ export class BusinessSubscriptionManagement implements OnInit {
     this.detailError.set('');
     this.detailNotice.set('');
     try {
+      const targetPlanId = this.resubmitPlanId() || detail.plan_id;
+      let targetSubscriptionId = detail.id;
+
+      if (targetPlanId !== detail.plan_id) {
+        await this.api.cancelApplicationSubscription(this.tenantId, detail.id);
+        const baseSub = this.activeSubscription() ?? this.expiredSubscription();
+        const created =
+          baseSub && targetPlanId === baseSub.plan_id
+            ? await this.api.requestApplicationSubscriptionRenewal(this.tenantId, baseSub.id)
+            : await this.api.requestApplicationSubscriptionUpgrade(
+                this.tenantId,
+                baseSub?.id ?? 0,
+                targetPlanId,
+              );
+        targetSubscriptionId = created.id;
+      }
+
       await this.api.uploadApplicationPaymentProof(
         null,
         this.tenantId,
-        detail.id,
+        targetSubscriptionId,
         file,
         this.resubmitReference(),
       );
       this.detailNotice.set('Your revised payment proof has been submitted for admin review.');
       await this.load();
       try {
-        const updated = await this.api.getSubscriptionDetail(this.tenantId, detail.id);
+        const updated = await this.api.getSubscriptionDetail(this.tenantId, targetSubscriptionId);
         this.selectedDetail.set({ ...detail, ...updated });
       } catch {
         // Fallback
       }
+      this.revokePreviewUrl(this.resubmitProofPreviewUrl());
+      this.resubmitProofPreviewUrl.set(null);
       this.resubmitProofFile.set(null);
     } catch (error) {
       this.detailError.set(this.auth.errorMessage(error));

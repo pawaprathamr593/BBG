@@ -10,7 +10,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { FilterDrawer } from '../../../shared/filter-drawer/filter-drawer';
 import { BusinessCard } from '../../../shared/components/business-card/business-card';
-import { PaginationComponent } from '../../../shared/components/pagination/pagination.component';
+import { PageBannerComponent } from '../../../shared/components/page-banner/page-banner.component';
+import { InfiniteScrollSentinelComponent } from '../../../shared/components/infinite-scroll-sentinel/infinite-scroll-sentinel.component';
 import { SkeletonLoaderComponent } from '../../../shared/components/skeleton-loader/skeleton-loader.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { mapMarketplaceBusinessToCardModel } from '../../../shared/models/marketplace-card.mappers';
@@ -35,7 +36,8 @@ interface BusinessFilterValues {
     FormsModule,
     FilterDrawer,
     BusinessCard,
-    PaginationComponent,
+    PageBannerComponent,
+    InfiniteScrollSentinelComponent,
     SkeletonLoaderComponent,
     EmptyStateComponent,
   ],
@@ -67,11 +69,12 @@ export class BusinessDirectory implements OnInit {
     this.businesses().map((business) => mapMarketplaceBusinessToCardModel(business)),
   );
   protected readonly loading = signal(true);
+  protected readonly loadingMore = signal(false);
   protected readonly error = signal('');
   protected readonly total = signal(0);
   protected readonly page = signal(1);
-  protected readonly pageSize = 3;
-  protected readonly pages = signal(1);
+  protected readonly pageSize = 6;
+  protected readonly hasMore = computed(() => this.businesses().length < this.total());
   protected readonly heading = signal('All businesses');
 
   ngOnInit(): void {
@@ -140,16 +143,21 @@ export class BusinessDirectory implements OnInit {
   private defaultFilters(): BusinessFilterValues {
     return { categoryId: '', city: '', state: '' };
   }
-  protected changePage(value: number): void {
-    this.page.set(value);
-    this.load();
+  protected loadMore(): void {
+    if (this.loading() || this.loadingMore() || !this.hasMore()) return;
+    this.page.update((p) => p + 1);
+    this.load(true);
   }
   protected location(business: MarketplaceBusiness): string {
     return [business.city, business.state].filter(Boolean).join(', ') || 'Location not provided';
   }
 
-  private load(): void {
-    this.loading.set(true);
+  private load(append = false): void {
+    if (append) {
+      this.loadingMore.set(true);
+    } else {
+      this.loading.set(true);
+    }
     this.error.set('');
     const applied = this.appliedFilters();
     const filters = {
@@ -165,25 +173,35 @@ export class BusinessDirectory implements OnInit {
     this.api.listBusinesses(filters, this.page(), this.pageSize).subscribe({
       next: (response) => {
         if (response.status !== 'SUCCESS' || !response.data || Array.isArray(response.data)) {
-          this.error.set(
-            response.msgArr?.join(' ') || 'Business listings are currently unavailable.',
-          );
-          this.businesses.set([]);
-          this.total.set(0);
-          this.pages.set(1);
+          if (!append) {
+            this.error.set(
+              response.msgArr?.join(' ') || 'Business listings are currently unavailable.',
+            );
+            this.businesses.set([]);
+            this.total.set(0);
+          }
         } else {
           const data = response.data;
-          this.businesses.set(data.items ?? []);
-          this.total.set(data.pagination?.total ?? data.items?.length ?? 0);
-          this.pages.set(
-            Math.max(1, Math.ceil(this.total() / (data.pagination?.page_size || this.pageSize))),
-          );
+          const items = data.items ?? [];
+          if (append) {
+            this.businesses.update((existing) => {
+              const seen = new Set(existing.map((b) => b.id));
+              return [...existing, ...items.filter((b) => !seen.has(b.id))];
+            });
+          } else {
+            this.businesses.set(items);
+          }
+          this.total.set(data.pagination?.total ?? items.length);
         }
         this.loading.set(false);
+        this.loadingMore.set(false);
       },
       error: () => {
-        this.error.set('We could not load businesses. Please try again.');
+        if (!append) {
+          this.error.set('We could not load businesses. Please try again.');
+        }
         this.loading.set(false);
+        this.loadingMore.set(false);
       },
     });
   }

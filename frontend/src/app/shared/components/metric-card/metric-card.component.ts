@@ -38,16 +38,20 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       }
       .metric-card {
         padding: 20px;
-        background: var(--bbg-surface-card);
-        border: 1px solid var(--bbg-border-default);
-        border-radius: var(--bbg-radius-lg);
-        box-shadow: var(--bbg-shadow-sm);
+        background: var(--bbg-glass-bg, var(--bbg-surface-card));
+        backdrop-filter: var(--bbg-glass-blur-sm);
+        -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+        border: 1px solid var(--bbg-glass-border, var(--bbg-border-default));
+        border-radius: var(--bbg-radius-xl, 16px);
+        box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
         transition:
-          transform 0.15s ease,
-          box-shadow 0.15s ease;
+          transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+          box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+          border-color 0.22s ease;
       }
       .metric-card:hover {
-        box-shadow: var(--bbg-shadow-md);
+        transform: translateY(-2px);
+        box-shadow: var(--bbg-shadow-lg), var(--bbg-glass-highlight);
       }
       .header {
         display: flex;
@@ -64,8 +68,14 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
         letter-spacing: 0.03em;
       }
       .icon {
-        font-size: 1.1rem;
-        opacity: 0.7;
+        width: 36px;
+        height: 36px;
+        border-radius: var(--bbg-radius-md, 8px);
+        background: var(--bbg-surface-subtle);
+        border: 1px solid var(--bbg-border-default);
+        display: grid;
+        place-items: center;
+        font-size: 1.15rem;
       }
       .value-row {
         display: flex;

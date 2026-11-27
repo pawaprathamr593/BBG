@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  HostListener,
+  OnInit,
+  inject,
+  signal,
+} from '@angular/core';
 import {
   ActivatedRoute,
   NavigationEnd,
@@ -10,6 +19,7 @@ import {
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../core/auth/auth.service';
+import { PwaInstallService } from '../../core/pwa/pwa-install.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { WhatsAppService } from '../../core/whatsapp/whatsapp.service';
 import type { MarketplaceBusinessDetail } from '../../core/marketplace/marketplace-api.service';
@@ -34,14 +44,16 @@ export class StorefrontLayout implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
+  private readonly hostEl = inject(ElementRef<HTMLElement>);
 
   readonly context = inject(StorefrontContextService);
   readonly auth = inject(AuthService);
+  readonly pwa = inject(PwaInstallService);
   readonly theme = inject(ThemeService);
   private readonly whatsApp = inject(WhatsAppService);
   slug = '';
   currentUrl = '';
-  menuOpen = false;
+  readonly menuOpen = signal(false);
   readonly year = new Date().getFullYear();
 
   isWhatsAppAvailable(data: MarketplaceBusinessDetail): boolean {
@@ -79,14 +91,40 @@ export class StorefrontLayout implements OnInit {
     return items;
   }
 
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.menuOpen()) this.closeMenu();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    if (!this.menuOpen()) return;
+    const header = this.hostEl.nativeElement.querySelector('.store-header');
+    if (header && !header.contains(event.target as Node)) {
+      this.closeMenu();
+    }
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    if (this.menuOpen() && window.innerWidth > 1000) {
+      this.closeMenu();
+    }
+  }
+
   toggleMenu(): void {
-    this.menuOpen = !this.menuOpen;
+    this.menuOpen.update((open) => !open);
   }
   closeMenu(): void {
-    this.menuOpen = false;
+    this.menuOpen.set(false);
   }
   toggleTheme(): void {
     this.theme.toggle();
+  }
+  installApp(event?: Event): void {
+    const anchor = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+    void this.pwa.triggerInstall(anchor);
+    this.closeMenu();
   }
 
   ngOnInit(): void {
@@ -97,6 +135,7 @@ export class StorefrontLayout implements OnInit {
       )
       .subscribe((event) => {
         this.currentUrl = event.urlAfterRedirects;
+        this.closeMenu();
       });
 
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {

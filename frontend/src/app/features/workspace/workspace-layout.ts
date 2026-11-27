@@ -47,8 +47,8 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
         color: var(--text-primary);
       }
       .workspace-shell {
-        --workspace-topbar: 72px;
-        --bbg-header-height: 72px;
+        --workspace-topbar: 56px;
+        --bbg-header-height: 56px;
         --bbg-filter-fab-bottom: max(86px, calc(env(safe-area-inset-bottom) + 82px));
         --sidebar-width: 258px;
         position: relative;
@@ -67,65 +67,57 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
         flex: 0 0 var(--workspace-topbar);
         height: var(--workspace-topbar);
         align-items: center;
-        gap: 18px;
-        padding: 0 26px;
-        background: var(--surface-header);
-        border-bottom: 1px solid var(--border);
-        box-shadow: 0 2px 12px rgba(15, 35, 24, 0.035);
+        gap: 14px;
+        padding: 0 20px;
+        box-shadow: 0 4px 20px rgba(11, 48, 32, 0.14);
+      }
+      .workspace-topbar::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background: var(--bbg-glass-bg-nav, var(--bbg-surface-header, #174d35));
+        backdrop-filter: var(--bbg-glass-blur-sm);
+        -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+        pointer-events: none;
       }
       .workspace-brand {
         display: flex;
-        flex: 0 0 190px;
+        flex: 0 0 auto;
         align-items: center;
         gap: 10px;
-        color: var(--text-primary);
+        color: #ffffff;
         text-decoration: none;
       }
-      .brand-mark {
-        position: relative;
+      .workspace-brand-img {
+        height: 28px;
+        width: auto;
+        max-width: 40px;
+        object-fit: contain;
         display: block;
-        width: 36px;
-        height: 36px;
-        overflow: hidden;
-        border-radius: 9px;
-        background: #174d35;
       }
-      .brand-mark i {
-        position: absolute;
-        width: 42px;
-        height: 6px;
-        left: 3px;
-        background: #fff;
-        border-radius: 5px;
-        transform: rotate(-42deg);
+      .brand-titles {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        line-height: 1.15;
       }
-      .brand-mark i:nth-child(1) {
-        top: 7px;
+      .brand-wordmark {
+        font-family: var(--bbg-font-heading, 'Outfit', sans-serif);
+        font-size: 0.95rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        color: #ffffff;
       }
-      .brand-mark i:nth-child(2) {
-        top: 16px;
-        left: -4px;
-      }
-      .brand-mark i:nth-child(3) {
-        top: 25px;
-        background: #f5d928;
-      }
-      .brand-copy {
-        display: grid;
-        gap: 0;
-      }
-      .brand-copy strong {
-        font-size: 1.5rem;
-        line-height: 1;
-        font-weight: 850;
-        letter-spacing: -0.07em;
-      }
-      .brand-copy small {
-        margin-top: 3px;
-        color: var(--text-secondary);
-        font-size: 0.53rem;
-        font-weight: 850;
-        letter-spacing: 0.16em;
+      .brand-subname {
+        font-family: var(--bbg-font-body, 'Inter', sans-serif);
+        font-size: 0.65rem;
+        font-weight: 450;
+        letter-spacing: -0.005em;
+        color: rgba(255, 255, 255, 0.88);
+        text-transform: none;
+        line-height: 1.15;
+        margin-top: 1px;
       }
       .workspace-identity {
         display: flex;
@@ -200,18 +192,21 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
         display: inline-flex;
         align-items: center;
         gap: 7px;
-        padding: 8px 11px;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        color: var(--text-secondary);
-        font-size: 0.7rem;
+        padding: 8px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: var(--bbg-radius-full, 9999px);
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+        font-size: 0.76rem;
         font-weight: 750;
         text-decoration: none;
         white-space: nowrap;
+        transition: all 0.16s ease;
       }
       .marketplace-link:hover {
-        border-color: var(--brand);
-        color: var(--brand);
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.45);
+        color: var(--bbg-brand-accent, #f5d928);
       }
       .switch-error {
         max-width: 210px;
@@ -287,8 +282,10 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
         flex: 0 0 var(--sidebar-width);
         flex-direction: column;
         overflow: hidden;
-        border-right: 1px solid var(--border);
-        background: var(--surface-sidebar, var(--surface-card));
+        border-right: 1px solid var(--bbg-glass-border-subtle, var(--border));
+        background: var(--bbg-glass-bg-sidebar, var(--surface-sidebar));
+        backdrop-filter: var(--bbg-glass-blur);
+        -webkit-backdrop-filter: var(--bbg-glass-blur);
         transition:
           width 0.2s ease,
           flex-basis 0.2s ease;
@@ -299,8 +296,8 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
       }
       .sidebar-context-switcher {
         padding: 12px 10px;
-        border-bottom: 1px solid var(--border);
-        background: var(--surface-sidebar, var(--surface-card));
+        border-bottom: 1px solid var(--bbg-glass-border-subtle, var(--border));
+        background: transparent;
       }
       .context-identity-row {
         display: flex;
@@ -454,8 +451,9 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
         color: var(--text-primary);
       }
       .nav-item.active {
-        border-color: color-mix(in srgb, var(--brand) 22%, transparent);
-        background: var(--brand-soft);
+        border-color: color-mix(in srgb, var(--bbg-brand-accent, #f5d928) 40%, var(--brand));
+        background: color-mix(in srgb, var(--brand) 12%, transparent);
+        box-shadow: var(--bbg-glass-highlight);
         color: var(--brand);
         font-weight: 800;
       }
@@ -614,15 +612,50 @@ import { getWorkspaceNavGroups, getWorkspaceNavItems } from './workspace-navigat
       }
       @media (max-width: 767.98px) {
         .workspace-shell {
-          --workspace-topbar: 66px;
-          --bbg-header-height: 66px;
+          --workspace-topbar: 52px;
+          --bbg-header-height: 52px;
         }
         .workspace-topbar {
-          gap: 10px;
-          padding: 0 14px;
+          gap: 8px;
+          padding: 0 12px;
         }
         .workspace-brand {
-          flex-basis: auto;
+          flex: 1 1 auto;
+          min-width: 0;
+          gap: 8px;
+        }
+        .workspace-brand-img {
+          height: 24px;
+          max-width: 34px;
+          flex-shrink: 0;
+        }
+        .brand-titles {
+          min-width: 0;
+        }
+        .brand-wordmark {
+          font-size: 0.78rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .brand-subname {
+          font-size: 0.58rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .topbar-spacer {
+          display: none;
+        }
+        .marketplace-link {
+          flex: 0 0 auto;
+          padding: 5px 9px;
+          font-size: 0.72rem;
+        }
+        @media (max-width: 520px) {
+          .marketplace-link span:last-child {
+            display: none;
+          }
         }
         .brand-copy small {
           display: none;

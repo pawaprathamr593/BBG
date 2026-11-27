@@ -1,9 +1,11 @@
 <main class="page">
-  <section class="intro">
-    <p class="eyebrow">OFFERS FROM THE BBG COMMUNITY</p>
-    <h1>Discover <span>promotions</span></h1>
-    <p class="lead">Keep up with the latest public promotions shared by businesses on BBG.</p>
-  </section>
+  <app-page-banner
+    variant="discovery"
+    eyebrow="Bavdhan Business Group"
+    title="Discover"
+    titleAccent="promotions"
+    description="Keep up with the latest public promotions and exclusive deals shared by businesses in Bavdhan."
+  />
   <section class="content">
     <div class="heading">
       <div>
@@ -24,14 +26,14 @@
           <app-promotion-card [promotion]="promotion" (selected)="openPromotion($event)" />
         }
       </div>
-      @if (total() > pageSize) {
-        <app-pagination
-          [currentPage]="page()"
-          [totalItems]="total()"
-          [pageSize]="pageSize"
-          (pageChange)="changePage($event)"
-        />
-      }
+      <app-infinite-scroll-sentinel
+        [hasMore]="hasMore()"
+        [loadingMore]="loadingMore()"
+        [loadedCount]="promotions().length"
+        [totalItems]="total()"
+        itemLabel="promotions"
+        (loadMore)="loadMore()"
+      />
     } @else {
       <app-empty-state
         icon="🎁"

@@ -40,9 +40,9 @@ import { ChangeDetectionStrategy, Component, HostListener, input, output } from 
       .dialog-backdrop {
         position: fixed;
         inset: 0;
-        background: var(--bbg-surface-overlay);
+        background: var(--bbg-surface-overlay, rgba(0, 0, 0, 0.4));
         z-index: 1000;
-        backdrop-filter: blur(2px);
+        animation: fade-in 0.15s ease-out;
       }
       .dialog-box {
         position: fixed;
@@ -52,10 +52,12 @@ import { ChangeDetectionStrategy, Component, HostListener, input, output } from 
         width: 90%;
         max-width: 440px;
         padding: 24px;
-        background: var(--bbg-surface-card);
-        border: 1px solid var(--bbg-border-default);
-        border-radius: var(--bbg-radius-lg);
-        box-shadow: var(--bbg-shadow-lg);
+        background: var(--bbg-glass-bg-elevated, var(--bbg-surface-card));
+        backdrop-filter: var(--bbg-glass-blur);
+        -webkit-backdrop-filter: var(--bbg-glass-blur);
+        border: 1px solid var(--bbg-glass-border, var(--bbg-border-default));
+        border-radius: var(--bbg-radius-xl, 16px);
+        box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
         z-index: 1001;
       }
       .dialog-title {

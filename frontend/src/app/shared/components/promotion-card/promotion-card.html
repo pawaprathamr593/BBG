@@ -67,74 +67,8 @@
     </div>
   </div>
 
-  <!-- 2. Business Identity Header & Campaign Schedule -->
+  <!-- 2. Campaign Schedule -->
   <header class="card-header" (click)="$event.stopPropagation()">
-    <div class="business-identity">
-      @if (hasValidLogo()) {
-        <img
-          class="business-avatar"
-          [src]="promotion().logo_path"
-          [alt]="promotion().business_name + ' logo'"
-          loading="lazy"
-          (error)="onLogoError()"
-        />
-      } @else {
-        <div class="business-monogram" aria-hidden="true">
-          {{ businessMonogram() }}
-        </div>
-      }
-
-      <div class="business-meta">
-        <div class="business-name-row">
-          @if (promotion().business_slug) {
-            <a
-              class="business-name-link"
-              [routerLink]="['/store', promotion().business_slug]"
-              (click)="$event.stopPropagation()"
-            >
-              {{ promotion().business_name }}
-            </a>
-          } @else {
-            <span class="business-name">{{ promotion().business_name }}</span>
-          }
-
-          @if (isVerified()) {
-            <span
-              class="verified-badge"
-              title="Verified BBG Merchant"
-              aria-label="Verified Merchant"
-            >
-              <svg class="verified-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path
-                  fill-rule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-            </span>
-          }
-        </div>
-
-        <div class="post-meta-subline">
-          @if (promotion().category_name) {
-            <span class="business-category">{{ promotion().category_name }}</span>
-          }
-          @if (businessLocation()) {
-            @if (promotion().category_name) {
-              <span class="meta-separator" aria-hidden="true">·</span>
-            }
-            <span class="business-location">{{ businessLocation() }}</span>
-          }
-          @if (promotion().category_name || businessLocation()) {
-            <span class="meta-separator" aria-hidden="true">·</span>
-          }
-          <time class="published-time" [attr.datetime]="promotion().published_on">
-            {{ promotion().published_on | date: 'mediumDate' }}
-          </time>
-        </div>
-      </div>
-    </div>
-
     <!-- Compact Readable Promotion Dates Bar -->
     <div class="campaign-dates-bar" [class.expired]="isExpired()">
       <svg
@@ -227,7 +161,12 @@
     <div class="report-feedback" role="status">{{ reportFeedback() }}</div>
   }
 
-  <!-- 3. Consistent Fixed Aspect-Ratio Primary Image Frame (Single Image Only) -->
+  <!-- 3. Post Title (Above Image) -->
+  <h3 class="post-title" (click)="openDetail($event)">
+    {{ promotion().post_title || 'Special Promotion' }}
+  </h3>
+
+  <!-- 4. Consistent Fixed Aspect-Ratio Primary Image Frame (Single Image Only) -->
   <div class="card-media-frame" (click)="openDetail($event)">
     @if (primaryImage(); as img) {
       @if (imageLoading()) {
@@ -261,17 +200,13 @@
             d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
           />
         </svg>
-        <span class="placeholder-text">{{ promotion().business_name }}</span>
+        <span class="placeholder-text">{{ promotion().post_title || 'Special Promotion' }}</span>
       </div>
     }
   </div>
 
-  <!-- 4. Post Title, Description & Optional Hashtags (Bounded Regions) -->
+  <!-- 5. Description & Optional Hashtags (Bounded Regions) -->
   <div class="card-body">
-    <h3 class="post-title" (click)="openDetail($event)">
-      {{ promotion().post_title || 'Special Promotion' }}
-    </h3>
-
     <div class="post-content-container">
       <p class="post-text">
         {{ promotion().post_content }}

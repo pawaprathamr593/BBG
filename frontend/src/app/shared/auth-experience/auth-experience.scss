@@ -65,13 +65,22 @@
 }
 .auth-popup-mode {
   box-sizing: border-box;
-  height: 100%;
-  max-height: 100%;
+  height: auto;
+  max-height: calc(100vh - 48px);
   padding: 17px 17px 14px;
-  border-radius: 15px;
+  border-radius: var(--bbg-radius-xl, 16px);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: var(--bbg-glass-blur-sm);
+  -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+  border: 1px solid var(--bbg-glass-border, var(--auth-border));
+  box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+}
+:host-context(html[data-theme='dark']) .auth-popup-mode,
+:host-context(body.dark-theme) .auth-popup-mode {
+  background: rgba(18, 32, 24, 0.96);
 }
 .auth-heading {
   text-align: center;

@@ -33,9 +33,12 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
         justify-content: center;
         text-align: center;
         padding: 48px 24px;
-        border-radius: var(--bbg-radius-lg);
-        background: var(--bbg-surface-subtle);
-        border: 1px dashed var(--bbg-border-strong);
+        border-radius: var(--bbg-radius-xl, 16px);
+        background: var(--bbg-glass-bg-subtle, var(--bbg-surface-subtle));
+        backdrop-filter: var(--bbg-glass-blur-sm);
+        -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+        border: 1px solid var(--bbg-glass-border, var(--bbg-border-default));
+        box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
       }
       .icon-wrap {
         font-size: 2.5rem;

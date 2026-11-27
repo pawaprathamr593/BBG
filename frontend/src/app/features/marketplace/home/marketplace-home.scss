@@ -1,6 +1,6 @@
 :host {
   display: block;
-  background: var(--bbg-surface-page);
+  background: transparent;
   color: var(--bbg-text-primary);
 }
 
@@ -21,15 +21,19 @@
   min-height: 520px;
   overflow: hidden;
   color: #ffffff;
-  background: linear-gradient(135deg, #0a2418 0%, #123f2c 48%, #174d35 100%);
+  background:
+    radial-gradient(ellipse 60% 65% at 14% 18%, rgba(33, 140, 131, 0.34), transparent 62%),
+    radial-gradient(ellipse 50% 55% at 86% 12%, rgba(245, 217, 40, 0.14), transparent 58%),
+    linear-gradient(135deg, #0a2418 0%, #123f2c 48%, #174d35 100%);
   border-radius: 0 0 var(--bbg-radius-2xl) var(--bbg-radius-2xl);
-  box-shadow: 0 24px 60px rgba(10, 36, 24, 0.16);
+  box-shadow: 0 24px 60px rgba(10, 36, 24, 0.16), inset 0 -1px 0 rgba(255, 255, 255, 0.12);
   padding: 48px max(24px, calc((100vw - 1360px) / 2));
 
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
-    padding: 40px 20px 36px;
-    gap: 32px;
+    min-height: auto;
+    padding: 32px 16px 28px;
+    gap: 24px;
   }
 }
 
@@ -95,10 +99,12 @@
   max-width: 620px;
   min-height: 54px;
   padding: 6px 8px 6px 18px;
-  background: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: var(--bbg-glass-blur-sm);
+  -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+  border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: var(--bbg-radius-full);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.8);
   transition: all 0.2s ease;
 
   &:focus-within {
@@ -116,17 +122,30 @@
     flex-shrink: 0;
   }
 
-  input {
+  input,
+  input#marketplace-query {
     flex: 1;
+    min-width: 0;
+    width: 100%;
     border: none;
     outline: none;
-    background: transparent;
+    background: transparent !important;
+    background-color: transparent !important;
     font-size: 0.9375rem;
-    color: #123f2c;
+    color: #123f2c !important;
+    caret-color: #123f2c;
     font-family: inherit;
 
     &::placeholder {
-      color: #64748b;
+      color: #64748b !important;
+    }
+
+    &:focus,
+    &:focus-visible {
+      background: transparent !important;
+      background-color: transparent !important;
+      color: #123f2c !important;
+      outline: none;
     }
   }
 
@@ -188,8 +207,10 @@
     align-items: center;
     gap: 6px;
     padding: 12px 20px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: var(--bbg-glass-blur-sm);
+    -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+    border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: var(--bbg-radius-full);
     color: #ffffff;
     font-size: 0.875rem;
@@ -402,9 +423,12 @@
     align-items: flex-start;
     gap: 16px;
     padding: 20px;
-    background: var(--bbg-surface-card);
-    border: 1px solid var(--bbg-border-default);
-    border-radius: var(--bbg-radius-lg);
+    background: var(--bbg-glass-bg, var(--bbg-surface-card));
+    backdrop-filter: var(--bbg-glass-blur-sm);
+    -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+    border: 1px solid var(--bbg-glass-border, var(--bbg-border-default));
+    border-radius: var(--bbg-radius-xl, 16px);
+    box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
 
     .prop-icon {
       font-size: 1.75rem;
@@ -514,17 +538,20 @@
     align-items: center;
     gap: 14px;
     padding: 16px 18px;
-    background: var(--bbg-surface-card);
-    border: 1px solid var(--bbg-border-default);
-    border-radius: var(--bbg-radius-lg);
+    background: var(--bbg-glass-bg-elevated, var(--bbg-surface-card));
+    backdrop-filter: var(--bbg-glass-blur-sm);
+    -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+    border: 1px solid var(--bbg-glass-border, var(--bbg-border-default));
+    border-radius: var(--bbg-radius-xl, 16px);
+    box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
     text-decoration: none;
     color: inherit;
-    transition: all 0.15s ease;
+    transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 
     &:hover {
       border-color: var(--bbg-brand-primary);
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(23, 77, 53, 0.08);
+      box-shadow: var(--bbg-shadow-lg), var(--bbg-glass-highlight);
 
       .category-mark {
         background: var(--bbg-brand-primary);

@@ -1,15 +1,11 @@
 <main class="page">
-  <section class="intro">
-    <p class="eyebrow">THE BBG MARKETPLACE</p>
-    <h1>Discover <span>products</span></h1>
-    <p class="lead">
-      Explore products from approved BBG businesses. Search by name, compare prices and find sellers
-      near you.
-    </p>
-    <div class="intro-meta">
-      <span>One marketplace</span><i></i><span>Products from verified storefronts</span>
-    </div>
-  </section>
+  <app-page-banner
+    variant="discovery"
+    eyebrow="Bavdhan Business Group"
+    title="Discover"
+    titleAccent="products"
+    description="Explore products from approved BBG businesses. Search by name, compare prices and find sellers near you."
+  />
 
   <section class="results" aria-labelledby="products-title">
     <div class="heading">
@@ -178,11 +174,13 @@
           />
         }
       </div>
-      <app-pagination
-        [currentPage]="page()"
+      <app-infinite-scroll-sentinel
+        [hasMore]="hasMore()"
+        [loadingMore]="loadingMore()"
+        [loadedCount]="productCards().length"
         [totalItems]="total()"
-        [pageSize]="pageSize"
-        (pageChange)="changePage($event)"
+        itemLabel="products"
+        (loadMore)="loadMore()"
       />
       <p class="data-note">
         Only active products published by approved businesses with active storefronts are displayed.

@@ -284,11 +284,13 @@
 
 /* Form Card Container */
 .form-card {
-  background: var(--bbg-surface-card);
-  border: 1px solid var(--bbg-border-default);
-  border-radius: var(--bbg-radius-xl);
+  background: var(--bbg-glass-bg-elevated, var(--bbg-surface-card));
+  backdrop-filter: var(--bbg-glass-blur);
+  -webkit-backdrop-filter: var(--bbg-glass-blur);
+  border: 1px solid var(--bbg-glass-border, var(--bbg-border-default));
+  border-radius: var(--bbg-radius-2xl, var(--bbg-radius-xl));
   padding: clamp(24px, 4vw, 40px);
-  box-shadow: 0 12px 36px rgba(18, 45, 30, 0.05);
+  box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
 
   .card-header {
     margin-bottom: 28px;

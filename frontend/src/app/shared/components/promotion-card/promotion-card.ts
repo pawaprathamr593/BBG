@@ -10,7 +10,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthDialogService } from '../../../core/auth/auth-dialog.service';
 import { EngagementApiService } from '../../../core/engagement/engagement-api.service';
@@ -27,7 +27,6 @@ const SAVED_PROMOTIONS_STORAGE_KEY = 'bbg_saved_promotions_v1';
   imports: [
     DatePipe,
     FormsModule,
-    RouterLink,
     PromotionEngagementComponent,
     SkeletonLoaderComponent,
   ],

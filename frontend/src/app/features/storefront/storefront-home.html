@@ -129,6 +129,16 @@
             (selected)="openPromotionBusiness($event)"
           />
         }
+        @if (hasMorePromotions() || promotionsLoadingMore()) {
+          <app-infinite-scroll-sentinel
+            [hasMore]="hasMorePromotions()"
+            [loadingMore]="promotionsLoadingMore()"
+            [loadedCount]="promotions().length"
+            [totalItems]="promotionsTotal()"
+            itemLabel="promotions"
+            (loadMore)="loadMorePromotions()"
+          />
+        }
       </section>
     }
 
@@ -206,6 +216,7 @@
                   [product]="product"
                   [showPrice]="data.storefront.show_prices"
                   [currency]="data.storefront.currency || ''"
+                  [showStoreDetails]="false"
                   [actionLabel]="
                     product.offering_type === 'SERVICE' ? 'Contact Store' : 'View Details'
                   "

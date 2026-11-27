@@ -497,11 +497,13 @@
 /* 3. Dedicated Comments Section Wrapper */
 .comments-section-container {
   padding: 24px 28px;
-  background: var(--bbg-surface-card);
-  border: 1px solid var(--bbg-border-default);
-  border-radius: var(--bbg-radius-lg);
-  box-shadow: var(--bbg-shadow-sm);
-  scroll-margin-top: calc(var(--bbg-header-height, 76px) + 20px);
+  background: var(--bbg-glass-bg-elevated, var(--bbg-surface-card));
+  backdrop-filter: var(--bbg-glass-blur-sm);
+  -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+  border: 1px solid var(--bbg-glass-border, var(--bbg-border-default));
+  border-radius: var(--bbg-radius-xl, 16px);
+  box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
+  scroll-margin-top: calc(var(--bbg-header-height, 56px) + 20px);
 }
 
 /* 4. Supporting Business Column */
@@ -510,15 +512,17 @@
   flex-direction: column;
   gap: 20px;
   position: sticky;
-  top: calc(var(--bbg-header-height, 76px) + 20px);
+  top: calc(var(--bbg-header-height, 56px) + 20px);
 }
 
 .business-sidebar-card {
   padding: 22px;
-  background: var(--bbg-surface-card);
-  border: 1px solid var(--bbg-border-default);
-  border-radius: var(--bbg-radius-lg);
-  box-shadow: var(--bbg-shadow-sm);
+  background: var(--bbg-glass-bg-elevated, var(--bbg-surface-card));
+  backdrop-filter: var(--bbg-glass-blur-sm);
+  -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+  border: 1px solid var(--bbg-glass-border, var(--bbg-border-default));
+  border-radius: var(--bbg-radius-xl, 16px);
+  box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
   display: flex;
   flex-direction: column;
   gap: 16px;

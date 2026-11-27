@@ -34,7 +34,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       }
       .header-main {
         flex: 1;
-        min-width: 260px;
+        min-width: 0;
       }
       .page-title {
         margin: 0;

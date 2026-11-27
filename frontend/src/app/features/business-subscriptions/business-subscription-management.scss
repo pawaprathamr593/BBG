@@ -1,7 +1,7 @@
 :host {
   display: block;
   min-height: 100vh;
-  background: var(--bbg-surface-page);
+  background: transparent;
   color: var(--bbg-text-primary);
 }
 
@@ -693,8 +693,7 @@
 .drawer-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(3px);
+  background: var(--bbg-surface-overlay, rgba(0, 0, 0, 0.4));
   z-index: 1000;
   animation: fadeIn 0.2s ease-out;
 }

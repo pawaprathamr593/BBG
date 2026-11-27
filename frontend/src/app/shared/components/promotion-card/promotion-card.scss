@@ -10,19 +10,22 @@
   flex-direction: column;
   height: 100%;
   padding: 16px 18px 14px;
-  background: var(--bbg-surface-card);
-  border: 1px solid var(--bbg-border-default);
-  border-radius: var(--bbg-radius-lg);
+  background: var(--bbg-glass-bg-elevated, var(--bbg-surface-card));
+  backdrop-filter: var(--bbg-glass-blur-sm);
+  -webkit-backdrop-filter: var(--bbg-glass-blur-sm);
+  border: 1px solid var(--bbg-glass-border, var(--bbg-border-default));
+  border-radius: var(--bbg-radius-xl, 16px);
   color: var(--bbg-text-primary);
-  box-shadow: var(--bbg-shadow-sm);
+  box-shadow: var(--bbg-glass-shadow), var(--bbg-glass-highlight);
   transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.22s ease;
 
   &:hover {
+    transform: translateY(-2px);
     border-color: var(--bbg-border-strong);
-    box-shadow: var(--bbg-shadow-md);
+    box-shadow: var(--bbg-shadow-lg), var(--bbg-glass-highlight);
   }
 }
 
@@ -123,7 +126,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .business-identity {
@@ -238,22 +241,19 @@
   opacity: 0.65;
 }
 
-/* Compact Readable Campaign Dates Bar */
+/* Compact Readable Campaign Dates Strip */
 .campaign-dates-bar {
   display: flex;
   align-items: center;
   gap: 7px;
   flex-wrap: wrap;
-  padding: 6px 10px;
-  border-radius: var(--bbg-radius-md);
-  background: var(--bbg-surface-subtle);
-  border: 1px solid var(--bbg-border-default);
-  font-size: 0.72rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 0.74rem;
   color: var(--bbg-text-secondary);
 
   &.expired {
-    background: var(--bbg-danger-soft);
-    border-color: color-mix(in srgb, var(--bbg-danger) 25%, transparent);
     color: var(--bbg-danger);
   }
 }
@@ -275,6 +275,7 @@
   gap: 4px;
   font-weight: 650;
   color: var(--bbg-text-primary);
+  white-space: nowrap;
 }
 
 .date-dash {
@@ -434,7 +435,7 @@
 }
 
 .post-title {
-  margin: 0 0 6px;
+  margin: 0 0 12px;
   font-size: 1.02rem;
   font-weight: 750;
   line-height: 1.35;
